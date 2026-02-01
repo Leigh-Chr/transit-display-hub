@@ -1,0 +1,120 @@
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import {
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { Line, Stop, RegisterDeviceRequest } from '@shared/models';
+import { StopService } from '@core/api/stop.service';
+
+export interface DeviceDialogData {
+  lines: Line[];
+}
+
+interface DeviceForm {
+  lineId: string;
+  stopId: string;
+}
+
+@Component({
+  selector: 'app-device-dialog',
+  standalone: true,
+  imports: [
+    FormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatSelectModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>Register New Device</h2>
+    <mat-dialog-content>
+      <form #deviceForm="ngForm" class="form-container">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Line</mat-label>
+          <mat-select
+            [(ngModel)]="form.lineId"
+            name="lineId"
+            required
+            (selectionChange)="onLineChange()"
+          >
+            @for (line of data.lines; track line.id) {
+              <mat-option [value]="line.id">
+                {{ line.code }} - {{ line.name }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Stop</mat-label>
+          <mat-select
+            [(ngModel)]="form.stopId"
+            name="stopId"
+            required
+            [disabled]="!form.lineId"
+          >
+            @for (stop of stops(); track stop.id) {
+              <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="!deviceForm.valid"
+        (click)="save()"
+      >
+        Register Device
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      min-width: 350px;
+      padding-top: 8px;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+  `,
+})
+export class DeviceDialogComponent {
+  private readonly stopService = inject(StopService);
+  readonly dialogRef = inject(MatDialogRef<DeviceDialogComponent>);
+  readonly data = inject<DeviceDialogData>(MAT_DIALOG_DATA);
+
+  stops = signal<Stop[]>([]);
+
+  form: DeviceForm = {
+    lineId: '',
+    stopId: '',
+  };
+
+  onLineChange(): void {
+    this.form.stopId = '';
+    if (this.form.lineId) {
+      this.stopService.getAll(this.form.lineId).subscribe((stops) => this.stops.set(stops));
+    } else {
+      this.stops.set([]);
+    }
+  }
+
+  save(): void {
+    const request: RegisterDeviceRequest = {
+      stopId: this.form.stopId,
+    };
+    this.dialogRef.close(request);
+  }
+}

@@ -1,86 +1,206 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { forkJoin } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, BroadcastMessage, Device } from '@shared/models';
+import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
+import { gridStagger, fadeIn } from '@shared/animations';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    RouterLink,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    StatsSkeletonComponent,
+  ],
+  animations: [gridStagger, fadeIn],
   template: `
-    <div>
-      <h1 class="text-2xl font-bold text-neutral-900 mb-6">Dashboard</h1>
+    <div class="dashboard">
+      <h1 class="page-title">Dashboard</h1>
 
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="card p-6">
-          <div class="text-3xl font-bold text-neutral-900">{{ lines().length }}</div>
-          <div class="text-neutral-600">Lines</div>
+      @if (loading()) {
+        <app-stats-skeleton />
+      } @else {
+        <div class="stats-grid" [@gridStagger]="3">
+          <mat-card>
+            <mat-card-content class="stat-card">
+              <div class="stat-value">{{ lines().length }}</div>
+              <div class="stat-label">Lines</div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card>
+            <mat-card-content class="stat-card">
+              <div class="stat-value">{{ activeMessages().length }}</div>
+              <div class="stat-label">Active Messages</div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card>
+            <mat-card-content class="stat-card">
+              <div class="stat-value">
+                {{ onlineDevices() }} / {{ devices().length }}
+              </div>
+              <div class="stat-label">Devices Online</div>
+            </mat-card-content>
+          </mat-card>
         </div>
+      }
 
-        <div class="card p-6">
-          <div class="text-3xl font-bold text-neutral-900">{{ activeMessages().length }}</div>
-          <div class="text-neutral-600">Active Messages</div>
-        </div>
-
-        <div class="card p-6">
-          <div class="text-3xl font-bold text-neutral-900">
-            {{ onlineDevices() }} / {{ devices().length }}
-          </div>
-          <div class="text-neutral-600">Devices Online</div>
-        </div>
-      </div>
-
-      <!-- Alerts -->
-      @if (criticalMessages().length > 0 || offlineDevices().length > 0) {
-        <div class="card mb-8">
-          <div class="px-6 py-4 border-b border-neutral-200">
-            <h2 class="text-lg font-semibold text-neutral-900">Active Alerts</h2>
-          </div>
-          <div class="p-6">
+      @if (!loading() && (criticalMessages().length > 0 || offlineDevices().length > 0)) {
+        <mat-card class="alerts-card" @fadeIn>
+          <mat-card-header>
+            <mat-card-title>Active Alerts</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
             @for (message of criticalMessages(); track message.id) {
-              <div class="flex items-center p-3 bg-red-50 border border-red-200 rounded-md mb-3 last:mb-0">
-                <span class="text-critical mr-3">⚠️</span>
+              <div class="alert alert-critical">
+                <mat-icon class="alert-icon">warning</mat-icon>
                 <div>
-                  <span class="font-medium text-critical">CRITICAL:</span>
+                  <span class="alert-badge">CRITICAL:</span>
                   {{ message.title }}
                 </div>
               </div>
             }
 
             @for (device of offlineDevices(); track device.id) {
-              <div class="flex items-center p-3 bg-orange-50 border border-orange-200 rounded-md mb-3 last:mb-0">
-                <span class="text-warning mr-3">📺</span>
+              <div class="alert alert-warning">
+                <mat-icon class="alert-icon">tv_off</mat-icon>
                 <div>
                   Device at <span class="font-medium">{{ device.stopName }}</span> is offline
                 </div>
               </div>
             }
-          </div>
-        </div>
+          </mat-card-content>
+        </mat-card>
       }
 
-      <!-- Quick Links -->
-      <div class="card">
-        <div class="px-6 py-4 border-b border-neutral-200">
-          <h2 class="text-lg font-semibold text-neutral-900">Quick Actions</h2>
-        </div>
-        <div class="p-6 flex gap-4">
-          <a routerLink="/admin/messages" class="btn btn-primary">
-            New Message
-          </a>
-          <a routerLink="/admin/lines" class="btn btn-secondary">
-            Manage Lines
-          </a>
-        </div>
-      </div>
+      <mat-card class="quick-actions-card" @fadeIn>
+        <mat-card-header>
+          <mat-card-title>Quick Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="actions-row">
+            <a mat-flat-button color="primary" routerLink="/admin/messages">
+              <mat-icon>add</mat-icon>
+              New Message
+            </a>
+            <a mat-stroked-button color="primary" routerLink="/admin/lines">
+              <mat-icon>subway</mat-icon>
+              Manage Lines
+            </a>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
-  `
+  `,
+  styles: `
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin-bottom: 28px;
+      letter-spacing: -0.5px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      padding: 20px;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--app-on-surface);
+      letter-spacing: -1px;
+    }
+
+    .stat-label {
+      color: var(--app-on-surface-variant);
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .alerts-card {
+      margin-bottom: 28px;
+    }
+
+    .alert {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .alert:last-child {
+      margin-bottom: 0;
+    }
+
+    .alert-critical {
+      background-color: var(--app-critical-container);
+      color: var(--app-on-critical-container);
+    }
+
+    .alert-warning {
+      background-color: var(--app-warning-container);
+      color: var(--app-on-warning-container);
+    }
+
+    .alert-icon {
+      margin-right: 14px;
+      flex-shrink: 0;
+    }
+
+    .alert-badge {
+      font-weight: 700;
+    }
+
+    .font-medium {
+      font-weight: 600;
+    }
+
+    .quick-actions-card mat-card-content {
+      padding-top: 16px;
+    }
+
+    .actions-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .actions-row a {
+      border-radius: 8px;
+    }
+
+    .actions-row mat-icon {
+      margin-right: 8px;
+    }
+  `,
 })
 export class DashboardComponent implements OnInit {
+  private readonly lineService = inject(LineService);
+  private readonly messageService = inject(MessageService);
+  private readonly deviceService = inject(DeviceService);
+
+  loading = signal(true);
   lines = signal<Line[]>([]);
   activeMessages = signal<BroadcastMessage[]>([]);
   devices = signal<Device[]>([]);
@@ -88,31 +208,33 @@ export class DashboardComponent implements OnInit {
   criticalMessages = signal<BroadcastMessage[]>([]);
   offlineDevices = signal<Device[]>([]);
 
-  constructor(
-    private lineService: LineService,
-    private messageService: MessageService,
-    private deviceService: DeviceService
-  ) {}
-
   ngOnInit(): void {
     this.loadData();
   }
 
   loadData(): void {
-    this.lineService.getAll().subscribe(lines => this.lines.set(lines));
+    this.loading.set(true);
 
-    this.messageService.getAll(true).subscribe(messages => {
-      this.activeMessages.set(messages);
-      this.criticalMessages.set(messages.filter(m => m.severity === 'CRITICAL'));
-    });
-
-    this.deviceService.getAll().subscribe(devices => {
-      this.devices.set(devices);
-      this.offlineDevices.set(devices.filter(d => d.status === 'OFFLINE'));
+    forkJoin({
+      lines: this.lineService.getAll(),
+      messages: this.messageService.getAll(true),
+      devices: this.deviceService.getAll(),
+    }).subscribe({
+      next: ({ lines, messages, devices }) => {
+        this.lines.set(lines);
+        this.activeMessages.set(messages);
+        this.criticalMessages.set(messages.filter((m) => m.severity === 'CRITICAL'));
+        this.devices.set(devices);
+        this.offlineDevices.set(devices.filter((d) => d.status === 'OFFLINE'));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
     });
   }
 
   onlineDevices(): number {
-    return this.devices().filter(d => d.status === 'ONLINE').length;
+    return this.devices().filter((d) => d.status === 'ONLINE').length;
   }
 }

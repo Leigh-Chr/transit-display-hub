@@ -1,0 +1,679 @@
+@use '@angular/material' as mat;
+
+// ============================================================================
+// TRANSIT DISPLAY HUB - THEME CONFIGURATION
+// Following Angular Material M3 (Material 3) best practices
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// 1. THEME DEFINITIONS
+// ----------------------------------------------------------------------------
+
+// Main application theme using M3 color system
+// Blue primary for transit/transportation branding
+// Orange as tertiary for accents and warnings
+html {
+  // Set color scheme for light mode (enables light-dark() CSS function)
+  color-scheme: light;
+
+  // Apply Material core styles
+  @include mat.core();
+
+  // Define and apply the theme
+  @include mat.theme((
+    color: (
+      theme-type: light,
+      primary: mat.$azure-palette,
+      tertiary: mat.$orange-palette,
+    ),
+    typography: (
+      brand-family: 'Inter, system-ui, sans-serif',
+      plain-family: 'Inter, system-ui, sans-serif',
+      bold-weight: 600,
+      medium-weight: 500,
+      regular-weight: 400,
+    ),
+    density: (
+      scale: 0,
+    ),
+  ));
+}
+
+// Dark theme for kiosk display mode
+.dark-theme {
+  color-scheme: dark;
+
+  @include mat.theme((
+    color: (
+      theme-type: dark,
+      primary: mat.$azure-palette,
+      tertiary: mat.$orange-palette,
+    ),
+    typography: (
+      brand-family: 'Roboto, system-ui, sans-serif',
+      plain-family: 'Roboto, system-ui, sans-serif',
+      bold-weight: 700,
+      medium-weight: 500,
+      regular-weight: 400,
+    ),
+    density: (
+      scale: 0,
+    ),
+  ));
+}
+
+// ----------------------------------------------------------------------------
+// 2. DESIGN TOKENS
+// M3 motion tokens + semantic color tokens for our domain
+// ----------------------------------------------------------------------------
+
+:root {
+  // === M3 Motion Tokens ===
+  // Easing Curves (Material 3 spec)
+  --m3-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --m3-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --m3-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  // M3 Expressive Spring (CSS linear() for physics-based bounce)
+  --m3-spring-bounce: linear(
+    0, 0.004, 0.016, 0.035, 0.063, 0.098, 0.141, 0.191, 0.25, 0.316,
+    0.391 36.8%, 0.563, 0.766, 1.006, 1.094, 1.139, 1.156, 1.156,
+    1.141, 1.116, 1.086, 1.055, 1.023, 0.995, 0.97, 0.953, 0.942,
+    0.938, 0.941, 0.948, 0.959, 0.971, 0.984, 0.995, 1.004, 1.009, 1
+  );
+
+  // Duration Tokens (Material 3 spec)
+  --m3-duration-short1: 50ms;
+  --m3-duration-short2: 100ms;
+  --m3-duration-short3: 150ms;
+  --m3-duration-short4: 200ms;
+  --m3-duration-medium2: 300ms;
+
+  // === Status Colors (semantic) ===
+  --app-success: #2E7D32;
+  --app-success-container: #E8F5E9;
+  --app-on-success: #FFFFFF;
+  --app-on-success-container: #1B5E20;
+
+  --app-warning: #F57C00;
+  --app-warning-container: #FFF3E0;
+  --app-on-warning: #FFFFFF;
+  --app-on-warning-container: #E65100;
+
+  --app-critical: #C62828;
+  --app-critical-container: #FFEBEE;
+  --app-on-critical: #FFFFFF;
+  --app-on-critical-container: #B71C1C;
+
+  --app-info: #0288D1;
+  --app-info-container: #E1F5FE;
+  --app-on-info: #FFFFFF;
+  --app-on-info-container: #01579B;
+
+  // Transparent container variants (for overlays on varied backgrounds)
+  --app-success-container-alpha: rgba(46, 125, 50, 0.12);
+  --app-warning-container-alpha: rgba(245, 124, 0, 0.12);
+  --app-critical-container-alpha: rgba(198, 40, 40, 0.12);
+  --app-info-container-alpha: rgba(2, 136, 209, 0.12);
+
+  // === Surface hierarchy (light theme) ===
+  --app-surface: #FAFAFA;
+  --app-surface-variant: #F5F5F5;
+  --app-surface-container: #FFFFFF;
+  --app-surface-container-high: #EEEEEE;
+
+  // === Text colors (light theme) ===
+  // Note: #616161 provides 5.91:1 contrast ratio (WCAG AA compliant)
+  --app-on-surface: #212121;
+  --app-on-surface-variant: #616161;
+  --app-on-surface-muted: #757575;
+
+  // === Outline colors ===
+  --app-outline: #E0E0E0;
+  --app-outline-variant: #BDBDBD;
+
+  // === Surface Tinting (M3 Expressive) ===
+  // Fallback for browsers without color-mix support
+  --app-surface-tinted: #F8FAFC;
+  @supports (color: color-mix(in srgb, red 50%, blue)) {
+    --app-surface-tinted: color-mix(in srgb, var(--mat-sys-primary, #0078D4) 5%, var(--app-surface));
+  }
+
+  // === Sidebar (admin navigation) ===
+  --app-sidebar-bg: #1A1A2E;
+  --app-sidebar-text: rgba(255, 255, 255, 0.87);
+  --app-sidebar-text-muted: rgba(255, 255, 255, 0.6);
+  --app-sidebar-active: #0F4C75;
+}
+
+// Dark theme overrides
+.dark-theme {
+  --app-surface: #0D1117;
+  --app-surface-variant: #161B22;
+  --app-surface-container: #21262D;
+  --app-surface-container-high: #30363D;
+
+  --app-on-surface: #F0F6FC;
+  --app-on-surface-variant: #8B949E;
+  --app-on-surface-muted: #6E7681;
+
+  --app-outline: #30363D;
+  --app-outline-variant: #484F58;
+
+  // Status colors for dark mode (brighter for visibility)
+  --app-success: #4CAF50;
+  --app-success-container: rgba(76, 175, 80, 0.15);
+  --app-on-success-container: #81C784;
+
+  --app-warning: #FF9800;
+  --app-warning-container: rgba(255, 152, 0, 0.15);
+  --app-on-warning-container: #FFB74D;
+
+  --app-critical: #EF5350;
+  --app-critical-container: rgba(239, 83, 80, 0.15);
+  --app-on-critical-container: #EF9A9A;
+
+  --app-info: #29B6F6;
+  --app-info-container: rgba(41, 182, 246, 0.15);
+  --app-on-info-container: #81D4FA;
+
+  // Transparent container variants (same as containers in dark mode)
+  --app-success-container-alpha: rgba(76, 175, 80, 0.15);
+  --app-warning-container-alpha: rgba(255, 152, 0, 0.15);
+  --app-critical-container-alpha: rgba(239, 83, 80, 0.15);
+  --app-info-container-alpha: rgba(41, 182, 246, 0.15);
+
+  // Surface tinting for dark theme
+  --app-surface-tinted: #0E1218;
+  @supports (color: color-mix(in srgb, red 50%, blue)) {
+    --app-surface-tinted: color-mix(in srgb, var(--mat-sys-primary, #60A5FA) 4%, var(--app-surface));
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 3. BASE STYLES
+// ----------------------------------------------------------------------------
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--mat-sys-body-medium-font, 'Inter', system-ui, sans-serif);
+  background-color: var(--app-surface-tinted);
+  color: var(--app-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  // OpenType features for Inter font
+  font-feature-settings:
+    'cv01' 1,  // Alternate a
+    'cv02' 1,  // Alternate g
+    'ss01' 1;  // Alternate digits
+}
+
+// ----------------------------------------------------------------------------
+// 4. LAYOUT UTILITIES
+// ----------------------------------------------------------------------------
+
+.full-width {
+  width: 100%;
+}
+
+// ----------------------------------------------------------------------------
+// 5. COMPONENT OVERRIDES
+// ----------------------------------------------------------------------------
+
+// Snackbar custom styles
+.success-snackbar {
+  --mdc-snackbar-container-color: var(--app-success);
+  --mdc-snackbar-supporting-text-color: var(--app-on-success);
+}
+
+.error-snackbar {
+  --mdc-snackbar-container-color: var(--app-critical);
+  --mdc-snackbar-supporting-text-color: var(--app-on-critical);
+}
+
+.warning-snackbar {
+  --mdc-snackbar-container-color: var(--app-warning);
+  --mdc-snackbar-supporting-text-color: var(--app-on-warning);
+}
+
+.info-snackbar {
+  --mdc-snackbar-container-color: var(--app-info);
+  --mdc-snackbar-supporting-text-color: var(--app-on-info);
+}
+
+// ----------------------------------------------------------------------------
+// 6. ADMIN SIDEBAR THEMING
+// Override Material component colors for dark sidebar
+// ----------------------------------------------------------------------------
+
+.admin-sidenav {
+  // Override mat-sidenav background
+  --mat-sidenav-container-background-color: var(--app-sidebar-bg);
+  --mat-sidenav-container-text-color: var(--app-sidebar-text);
+  --mat-sidenav-container-divider-color: rgba(255, 255, 255, 0.12);
+
+  // Force all text and icons to be light colored
+  mat-nav-list {
+    // List item text color
+    --mdc-list-item-label-text-color: rgba(255, 255, 255, 0.7);
+    --mdc-list-item-supporting-text-color: rgba(255, 255, 255, 0.5);
+    --mdc-list-item-hover-label-text-color: rgba(255, 255, 255, 0.95);
+
+    // List item icon color
+    --mat-list-item-leading-icon-color: rgba(255, 255, 255, 0.7);
+    --mat-list-item-hover-leading-icon-color: rgba(255, 255, 255, 0.95);
+
+    // Hover/focus states
+    --mdc-list-item-hover-state-layer-color: rgba(255, 255, 255, 0.08);
+    --mdc-list-item-hover-state-layer-opacity: 1;
+    --mdc-list-item-focus-state-layer-color: rgba(255, 255, 255, 0.12);
+    --mdc-list-item-focus-state-layer-opacity: 1;
+
+    a[mat-list-item] {
+      border-radius: 8px;
+      margin: 2px 8px;
+
+      // Force text color with direct styling
+      .mdc-list-item__primary-text,
+      .mat-mdc-list-item-title,
+      [matlistitemtitle],
+      span {
+        color: rgba(255, 255, 255, 0.7) !important;
+      }
+
+      mat-icon {
+        color: rgba(255, 255, 255, 0.7) !important;
+      }
+
+      &:hover {
+        .mdc-list-item__primary-text,
+        .mat-mdc-list-item-title,
+        [matlistitemtitle],
+        span {
+          color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        mat-icon {
+          color: rgba(255, 255, 255, 0.95) !important;
+        }
+      }
+
+      &.active-link {
+        background-color: var(--app-sidebar-active) !important;
+
+        .mdc-list-item__primary-text,
+        .mat-mdc-list-item-title,
+        [matlistitemtitle],
+        span {
+          color: #FFFFFF !important;
+        }
+
+        mat-icon {
+          color: #FFFFFF !important;
+        }
+      }
+    }
+  }
+
+  // Override mat-divider
+  mat-divider {
+    --mat-divider-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 7. GLOBAL MATERIAL COMPONENT STYLES
+// Consistent styling for Material components across the app
+// ----------------------------------------------------------------------------
+
+// Cards - consistent appearance
+mat-card {
+  --mdc-elevated-card-container-shape: 12px;
+  --mdc-outlined-card-container-shape: 12px;
+}
+
+// Interactive cards - only apply hover effects to cards with click handlers
+// Use this class on cards that have (click) actions
+.card-interactive {
+  cursor: pointer;
+  transition:
+    transform var(--m3-duration-short4) var(--m3-easing-emphasized-decelerate),
+    box-shadow var(--m3-duration-short4) var(--m3-easing-standard);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.08),
+      0 8px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.99);
+    transition-duration: var(--m3-duration-short2);
+  }
+}
+
+// Tables - enhanced styling with M3 hover feedback
+.mat-mdc-table {
+  --mat-table-background-color: var(--app-surface-container);
+  --mat-table-header-headline-color: var(--app-on-surface);
+  --mat-table-row-item-label-text-color: var(--app-on-surface);
+  --mat-table-row-item-outline-color: var(--app-outline);
+
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--app-on-surface-variant);
+    background-color: var(--app-surface-variant);
+  }
+
+  .mat-mdc-row {
+    transition: background-color var(--m3-duration-short3) var(--m3-easing-standard);
+
+    &:hover {
+      background-color: var(--app-surface-tinted);
+
+      // Show action buttons fully on row hover
+      .mat-mdc-icon-button {
+        opacity: 1;
+      }
+    }
+  }
+
+  .mat-mdc-cell {
+    font-size: 14px;
+    color: var(--app-on-surface);
+  }
+
+  // Action buttons dimmed until row hover
+  .actions-column .mat-mdc-icon-button {
+    opacity: 0.7;
+    transition: opacity var(--m3-duration-short3) var(--m3-easing-standard);
+  }
+}
+
+// Dialogs - consistent appearance
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-shape: 16px;
+}
+
+// Form fields - enhanced focus
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-outline-color: var(--app-outline);
+  --mdc-outlined-text-field-hover-outline-color: var(--app-outline-variant);
+}
+
+// Buttons - consistent border radius
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-flat-button,
+.mat-mdc-stroked-button,
+.mat-mdc-outlined-button {
+  --mdc-filled-button-container-shape: 8px;
+  --mdc-outlined-button-container-shape: 8px;
+  --mdc-text-button-container-shape: 8px;
+}
+
+// Primary button emphasis (M3 Expressive: larger, more prominent)
+.mat-mdc-flat-button[color="primary"],
+.mat-mdc-raised-button[color="primary"] {
+  font-weight: 600;
+  letter-spacing: 0.25px;
+  transition:
+    transform var(--m3-duration-short3) var(--m3-easing-standard),
+    box-shadow var(--m3-duration-short3) var(--m3-easing-standard);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--mat-sys-primary, #0078D4) 30%, transparent);
+  }
+
+  &:active {
+    transform: scale(0.98);
+    transition-duration: var(--m3-duration-short1);
+  }
+}
+
+// Icon buttons - M3 spring hover with scale
+.mat-mdc-icon-button {
+  // Fallback for browsers without linear() support
+  transition:
+    background-color var(--m3-duration-short3) var(--m3-easing-standard),
+    transform var(--m3-duration-short4) var(--m3-easing-emphasized-decelerate);
+
+  // Modern browsers with linear() easing (spring physics)
+  @supports (animation-timing-function: linear(0, 1)) {
+    transition:
+      background-color var(--m3-duration-short3) var(--m3-easing-standard),
+      transform var(--m3-duration-short4) var(--m3-spring-bounce);
+  }
+
+  &:hover {
+    background-color: var(--app-surface-variant);
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    transition-duration: var(--m3-duration-short1);
+  }
+}
+
+// Chips - consistent sizing
+.mat-mdc-chip {
+  --mdc-chip-container-shape-radius: 16px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+// ----------------------------------------------------------------------------
+// 8. ANIMATIONS
+// ----------------------------------------------------------------------------
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn var(--m3-duration-medium2) var(--m3-easing-emphasized-decelerate);
+}
+
+// Dialog spring animation (M3 Expressive)
+@keyframes dialogSpringIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  60% {
+    transform: scale(1.02) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.mat-mdc-dialog-container {
+  animation: dialogSpringIn var(--m3-duration-medium2) var(--m3-easing-emphasized-decelerate);
+}
+
+// ----------------------------------------------------------------------------
+// 9. FOCUS STYLES (Accessibility)
+// ----------------------------------------------------------------------------
+
+// Animated focus ring keyframes
+@keyframes focusRingExpand {
+  from {
+    outline-offset: 0px;
+    outline-color: transparent;
+  }
+  to {
+    outline-offset: 3px;
+    outline-color: var(--mat-sys-primary, #1976D2);
+  }
+}
+
+// Enhanced focus visibility for keyboard navigation
+:focus-visible {
+  outline: 2px solid var(--mat-sys-primary, #1976D2);
+  outline-offset: 3px;
+  border-radius: 4px;
+  animation: focusRingExpand var(--m3-duration-short4) var(--m3-easing-emphasized-decelerate);
+}
+
+// Icon buttons get circular focus
+.mat-mdc-icon-button:focus-visible {
+  border-radius: 50%;
+}
+
+// Remove focus outline for mouse users
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// ----------------------------------------------------------------------------
+// 10. SCROLLBAR STYLING
+// ----------------------------------------------------------------------------
+
+// Custom scrollbar for webkit browsers
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--app-surface-variant);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--app-outline-variant);
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--app-on-surface-muted);
+  }
+}
+
+// Firefox scrollbar
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-outline-variant) var(--app-surface-variant);
+}
+
+// ----------------------------------------------------------------------------
+// 11. RESPONSIVE BREAKPOINTS
+// ----------------------------------------------------------------------------
+
+// Breakpoint variables (matching BreakpointService)
+// Mobile: < 600px
+// Tablet: 600-1024px
+// Desktop: > 1024px
+
+// Responsive page title
+.page-title {
+  @media (max-width: 600px) {
+    font-size: 22px !important;
+  }
+}
+
+// Responsive page header
+.page-header {
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 16px;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+// Responsive grids
+.stats-grid,
+.devices-grid {
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+// Responsive tables - hide less important columns on mobile
+@media (max-width: 600px) {
+  .mat-mdc-table {
+    // Make table cells wrap better on mobile
+    .mat-mdc-cell,
+    .mat-mdc-header-cell {
+      padding: 12px 8px !important;
+    }
+  }
+}
+
+// Responsive cards
+@media (max-width: 600px) {
+  mat-card {
+    border-radius: 8px !important;
+  }
+}
+
+// Hide on mobile utility
+.hide-mobile {
+  @media (max-width: 600px) {
+    display: none !important;
+  }
+}
+
+// Responsive form fields
+.selector-row,
+.filter-row {
+  @media (max-width: 600px) {
+    mat-form-field {
+      width: 100% !important;
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 12. TYPOGRAPHY ENHANCEMENTS (M3 Expressive)
+// ----------------------------------------------------------------------------
+
+// Tabular numbers for data alignment
+.stat-value,
+.device-id,
+.arrival-time,
+.current-time {
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}

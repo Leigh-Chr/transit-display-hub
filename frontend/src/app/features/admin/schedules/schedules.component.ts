@@ -1,164 +1,248 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal, viewChild, AfterViewInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSortModule, MatSort } from '@angular/material/sort';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
-import { Line, Stop, TimedEntry, CreateTimedEntryRequest } from '@shared/models';
+import { Line, Stop, TimedEntry } from '@shared/models';
+import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { fadeIn } from '@shared/animations';
 
 @Component({
   selector: 'app-schedules',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    FormsModule,
+    MatCardModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatSortModule,
+    TableSkeletonComponent,
+    EmptyStateComponent,
+  ],
+  animations: [fadeIn],
   template: `
-    <div>
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-neutral-900">Schedules</h1>
+    <div class="schedules-page">
+      <div class="page-header">
+        <h1 class="page-title">Schedules</h1>
         <button
-          (click)="openCreateModal()"
-          class="btn btn-primary"
-          [disabled]="!selectedStop()">
-          + New Schedule Entry
+          mat-flat-button
+          color="primary"
+          (click)="openCreateDialog()"
+          [disabled]="!selectedStop()"
+        >
+          <mat-icon>add</mat-icon>
+          New Schedule Entry
         </button>
       </div>
 
-      <!-- Stop Selector -->
-      <div class="card p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1">Line</label>
-            <select [(ngModel)]="selectedLineId" (ngModelChange)="onLineChange()" class="input">
-              <option value="">Select a line</option>
-              @for (line of lines(); track line.id) {
-                <option [value]="line.id">{{ line.code }} - {{ line.name }}</option>
-              }
-            </select>
+      <mat-card class="selector-card">
+        <mat-card-content>
+          <div class="selector-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Line</mat-label>
+              <mat-select [(ngModel)]="selectedLineId" (selectionChange)="onLineChange()">
+                <mat-option value="">Select a line</mat-option>
+                @for (line of lines(); track line.id) {
+                  <mat-option [value]="line.id">
+                    {{ line.code }} - {{ line.name }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Stop</mat-label>
+              <mat-select
+                [(ngModel)]="selectedStopId"
+                (selectionChange)="loadSchedules()"
+                [disabled]="!selectedLineId"
+              >
+                <mat-option value="">Select a stop</mat-option>
+                @for (stop of stops(); track stop.id) {
+                  <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1">Stop</label>
-            <select [(ngModel)]="selectedStopId" (ngModelChange)="loadSchedules()" class="input" [disabled]="!selectedLineId">
-              <option value="">Select a stop</option>
-              @for (stop of stops(); track stop.id) {
-                <option [value]="stop.id">{{ stop.name }}</option>
-              }
-            </select>
-          </div>
-        </div>
-      </div>
+        </mat-card-content>
+      </mat-card>
 
       @if (selectedStop()) {
-        <div class="card">
-          <div class="px-6 py-4 border-b border-neutral-200">
-            <h2 class="text-lg font-semibold text-neutral-900">
-              Schedule for {{ selectedStop()!.name }}
-            </h2>
-          </div>
-          <table class="w-full">
-            <thead class="bg-neutral-50 border-b border-neutral-200">
-              <tr>
-                <th class="text-left px-6 py-3 text-sm font-semibold text-neutral-700">Time</th>
-                <th class="text-right px-6 py-3 text-sm font-semibold text-neutral-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (entry of schedules(); track entry.id) {
-                <tr class="border-b border-neutral-100 hover:bg-neutral-50">
-                  <td class="px-6 py-4 font-mono text-lg font-medium text-neutral-900">
-                    {{ entry.time }}
-                  </td>
-                  <td class="px-6 py-4 text-right">
-                    <button (click)="openEditModal(entry)" class="text-primary-600 hover:text-primary-800 mr-4">
-                      Edit
-                    </button>
-                    <button (click)="deleteSchedule(entry)" class="text-red-600 hover:text-red-800">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="2" class="px-6 py-8 text-center text-neutral-500">
-                    No schedule entries for this stop. Add your first departure.
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      } @else {
-        <div class="card p-8 text-center text-neutral-500">
-          Select a line and stop to view and manage schedules.
-        </div>
-      }
+        @if (loading()) {
+          <app-table-skeleton
+            [rows]="6"
+            [columns]="[{ width: '100px' }, { width: '80px' }]"
+          />
+        } @else if (dataSource.data.length === 0) {
+          <mat-card @fadeIn>
+            <mat-card-header>
+              <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
+            </mat-card-header>
+            <app-empty-state
+              icon="schedule"
+              iconColor="primary"
+              title="No schedule entries"
+              description="Add departure times for this stop."
+              actionLabel="Add Entry"
+              actionIcon="add"
+              (action)="openCreateDialog()"
+            />
+          </mat-card>
+        } @else {
+          <mat-card @fadeIn>
+            <mat-card-header>
+              <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
+            </mat-card-header>
+            <table mat-table [dataSource]="dataSource" matSort class="full-width">
+              <ng-container matColumnDef="time">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
+                <td mat-cell *matCellDef="let entry" class="time-cell">
+                  {{ entry.time }}
+                </td>
+              </ng-container>
 
-      <!-- Create/Edit Modal -->
-      @if (showModal()) {
-        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="px-6 py-4 border-b border-neutral-200">
-              <h2 class="text-lg font-semibold text-neutral-900">
-                {{ editingEntry() ? 'Edit Schedule Entry' : 'New Schedule Entry' }}
-              </h2>
-            </div>
-            <form (ngSubmit)="saveSchedule()" class="p-6">
-              <div class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-neutral-700 mb-1">Time</label>
-                  <input
-                    type="time"
-                    [(ngModel)]="form.time"
-                    name="time"
-                    class="input"
-                    required
-                  />
-                </div>
-              </div>
-              <div class="flex justify-end gap-3 mt-6">
-                <button type="button" (click)="closeModal()" class="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" class="btn btn-primary">
-                  {{ editingEntry() ? 'Save Changes' : 'Create Entry' }}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                <td mat-cell *matCellDef="let entry" class="actions-column">
+                  <button mat-icon-button color="primary" (click)="openEditDialog(entry)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="deleteSchedule(entry)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            </table>
+          </mat-card>
+        }
+      } @else {
+        <mat-card>
+          <app-empty-state
+            icon="touch_app"
+            title="Select a stop"
+            description="Choose a line and stop from the selectors above to view and manage schedules."
+          />
+        </mat-card>
       }
     </div>
-  `
+  `,
+  styles: `
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .selector-card {
+      margin-bottom: 28px;
+      border-radius: 12px;
+    }
+
+    .selector-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .selector-row mat-form-field {
+      width: 100%;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    mat-card {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .time-cell {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--app-on-surface);
+    }
+
+    .actions-column {
+      text-align: right;
+      width: 120px;
+    }
+
+    @media (max-width: 600px) {
+      .selector-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  `,
 })
-export class SchedulesComponent implements OnInit {
+export class SchedulesComponent implements OnInit, AfterViewInit {
+  private readonly lineService = inject(LineService);
+  private readonly stopService = inject(StopService);
+  private readonly scheduleService = inject(ScheduleService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+
+  readonly sort = viewChild(MatSort);
+  loading = signal(false);
   lines = signal<Line[]>([]);
   stops = signal<Stop[]>([]);
-  schedules = signal<TimedEntry[]>([]);
+  dataSource = new MatTableDataSource<TimedEntry>([]);
   selectedStop = signal<Stop | null>(null);
-  showModal = signal(false);
-  editingEntry = signal<TimedEntry | null>(null);
 
   selectedLineId = '';
   selectedStopId = '';
-
-  form: CreateTimedEntryRequest = {
-    time: ''
-  };
-
-  constructor(
-    private lineService: LineService,
-    private stopService: StopService,
-    private scheduleService: ScheduleService
-  ) {}
+  displayedColumns = ['time', 'actions'];
 
   ngOnInit(): void {
-    this.lineService.getAll().subscribe(lines => this.lines.set(lines));
+    this.lineService.getAll().subscribe((lines) => this.lines.set(lines));
+  }
+
+  ngAfterViewInit(): void {
+    const sortRef = this.sort();
+    if (sortRef) {
+      this.dataSource.sort = sortRef;
+    }
   }
 
   onLineChange(): void {
     this.selectedStopId = '';
     this.selectedStop.set(null);
-    this.schedules.set([]);
+    this.dataSource.data = [];
     if (this.selectedLineId) {
-      this.stopService.getAll(this.selectedLineId).subscribe(stops => this.stops.set(stops));
+      this.stopService
+        .getAll(this.selectedLineId)
+        .subscribe((stops) => this.stops.set(stops));
     } else {
       this.stops.set([]);
     }
@@ -166,53 +250,85 @@ export class SchedulesComponent implements OnInit {
 
   loadSchedules(): void {
     if (this.selectedStopId) {
-      const stop = this.stops().find(s => s.id === this.selectedStopId);
+      this.loading.set(true);
+      const stop = this.stops().find((s) => s.id === this.selectedStopId);
       this.selectedStop.set(stop || null);
-      this.scheduleService.getForStop(this.selectedStopId).subscribe(schedules => {
-        this.schedules.set(schedules.sort((a, b) => a.time.localeCompare(b.time)));
+      this.scheduleService.getForStop(this.selectedStopId).subscribe({
+        next: (schedules) => {
+          this.dataSource.data = schedules.sort((a, b) => a.time.localeCompare(b.time));
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+        },
       });
     } else {
       this.selectedStop.set(null);
-      this.schedules.set([]);
+      this.dataSource.data = [];
     }
   }
 
-  openCreateModal(): void {
-    this.editingEntry.set(null);
-    this.form = { time: '' };
-    this.showModal.set(true);
+  openCreateDialog(): void {
+    const dialogRef = this.dialog.open(ScheduleDialogComponent, {
+      data: {} as ScheduleDialogData,
+      width: '400px',
+      ariaLabel: 'Create new schedule entry',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.scheduleService.create(this.selectedStopId, result).subscribe(() => {
+          this.loadSchedules();
+          this.snackBar.open('Schedule entry created', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
   }
 
-  openEditModal(entry: TimedEntry): void {
-    this.editingEntry.set(entry);
-    this.form = { time: entry.time };
-    this.showModal.set(true);
-  }
+  openEditDialog(entry: TimedEntry): void {
+    const dialogRef = this.dialog.open(ScheduleDialogComponent, {
+      data: { entry } as ScheduleDialogData,
+      width: '400px',
+      ariaLabel: `Edit schedule entry at ${entry.time}`,
+    });
 
-  closeModal(): void {
-    this.showModal.set(false);
-    this.editingEntry.set(null);
-  }
-
-  saveSchedule(): void {
-    const editing = this.editingEntry();
-    const stopId = this.selectedStopId;
-    if (editing) {
-      this.scheduleService.update(editing.id, this.form).subscribe(() => {
-        this.loadSchedules();
-        this.closeModal();
-      });
-    } else {
-      this.scheduleService.create(stopId, this.form).subscribe(() => {
-        this.loadSchedules();
-        this.closeModal();
-      });
-    }
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.scheduleService.update(entry.id, result).subscribe(() => {
+          this.loadSchedules();
+          this.snackBar.open('Schedule entry updated', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
   }
 
   deleteSchedule(entry: TimedEntry): void {
-    if (confirm(`Delete schedule entry at ${entry.time}?`)) {
-      this.scheduleService.delete(entry.id).subscribe(() => this.loadSchedules());
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Schedule Entry',
+        message: `Delete schedule entry at ${entry.time}?`,
+        confirmText: 'Delete',
+        confirmColor: 'warn',
+      } as ConfirmDialogData,
+      ariaLabel: `Confirm deletion of schedule entry at ${entry.time}`,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.scheduleService.delete(entry.id).subscribe(() => {
+          this.loadSchedules();
+          this.snackBar.open('Schedule entry deleted', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
   }
 }

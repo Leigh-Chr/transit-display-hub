@@ -11,10 +11,12 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "^21.1.2",
+    "@angular/cdk": "^21.1.2",
     "@angular/common": "^21.1.2",
     "@angular/compiler": "^21.1.2",
     "@angular/core": "^21.1.2",
     "@angular/forms": "^21.1.2",
+    "@angular/material": "^21.1.2",
     "@angular/platform-browser": "^21.1.2",
     "@angular/router": "^21.1.2",
     "@stomp/stompjs": "^7.3.0",
@@ -30,10 +32,9 @@
     "@playwright/test": "^1.58.1",
     "@types/sockjs-client": "^1.5.4",
     "@vitest/browser": "^4.0.18",
-    "@tailwindcss/postcss": "^4.1.18",
     "jsdom": "^27.4.0",
     "playwright": "^1.58.1",
-    "tailwindcss": "^4.1.18",
+    "puppeteer": "^24.36.1",
     "typescript": "~5.9.3",
     "vitest": "^4.0.18"
   }

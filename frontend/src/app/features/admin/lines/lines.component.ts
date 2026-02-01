@@ -1,195 +1,275 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal, viewChild, AfterViewInit } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSortModule, MatSort } from '@angular/material/sort';
 import { LineService } from '@core/api/line.service';
-import { Line, CreateLineRequest } from '@shared/models';
+import { Line } from '@shared/models';
+import { LineDialogComponent } from './line-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { fadeIn } from '@shared/animations';
 
 @Component({
   selector: 'app-lines',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    MatCardModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSortModule,
+    TableSkeletonComponent,
+    EmptyStateComponent,
+  ],
+  animations: [fadeIn],
   template: `
-    <div>
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-neutral-900">Lines</h1>
-        <button (click)="openCreateModal()" class="btn btn-primary">
-          + New Line
+    <div class="lines-page">
+      <div class="page-header">
+        <h1 class="page-title">Lines</h1>
+        <button mat-flat-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          New Line
         </button>
       </div>
 
-      <!-- Lines Table -->
-      <div class="card">
-        <table class="w-full">
-          <thead class="bg-neutral-50 border-b border-neutral-200">
-            <tr>
-              <th class="text-left px-6 py-3 text-sm font-semibold text-neutral-700">Code</th>
-              <th class="text-left px-6 py-3 text-sm font-semibold text-neutral-700">Name</th>
-              <th class="text-left px-6 py-3 text-sm font-semibold text-neutral-700">Color</th>
-              <th class="text-left px-6 py-3 text-sm font-semibold text-neutral-700">Stops</th>
-              <th class="text-right px-6 py-3 text-sm font-semibold text-neutral-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (line of lines(); track line.id) {
-              <tr class="border-b border-neutral-100 hover:bg-neutral-50">
-                <td class="px-6 py-4">
-                  <span
-                    class="inline-block px-3 py-1 rounded-full text-white text-sm font-medium"
-                    [style.backgroundColor]="line.color">
-                    {{ line.code }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 font-medium text-neutral-900">{{ line.name }}</td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded" [style.backgroundColor]="line.color"></div>
-                    <span class="text-neutral-600 text-sm">{{ line.color }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-neutral-600">{{ line.stopCount }} stops</td>
-                <td class="px-6 py-4 text-right">
-                  <button (click)="openEditModal(line)" class="text-primary-600 hover:text-primary-800 mr-4">
-                    Edit
-                  </button>
-                  <button (click)="deleteLine(line)" class="text-red-600 hover:text-red-800">
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="px-6 py-8 text-center text-neutral-500">
-                  No lines configured. Create your first line to get started.
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      @if (loading()) {
+        <app-table-skeleton
+          [rows]="4"
+          [columns]="[
+            { width: '60px', height: '32px' },
+            { width: '150px' },
+            { width: '120px' },
+            { width: '80px' },
+            { width: '80px' }
+          ]"
+        />
+      } @else if (dataSource.data.length === 0) {
+        <mat-card @fadeIn>
+          <app-empty-state
+            icon="subway"
+            iconColor="primary"
+            title="No lines configured"
+            description="Create your first line to start building your transit network."
+            actionLabel="Create Line"
+            actionIcon="add"
+            (action)="openCreateDialog()"
+          />
+        </mat-card>
+      } @else {
+        <mat-card @fadeIn>
+          <table mat-table [dataSource]="dataSource" matSort class="full-width">
+            <ng-container matColumnDef="code">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th>
+              <td mat-cell *matCellDef="let line">
+                <span class="line-badge" [style.backgroundColor]="line.color">
+                  {{ line.code }}
+                </span>
+              </td>
+            </ng-container>
 
-      <!-- Create/Edit Modal -->
-      @if (showModal()) {
-        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="px-6 py-4 border-b border-neutral-200">
-              <h2 class="text-lg font-semibold text-neutral-900">
-                {{ editingLine() ? 'Edit Line' : 'New Line' }}
-              </h2>
-            </div>
-            <form (ngSubmit)="saveLine()" class="p-6">
-              <div class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-neutral-700 mb-1">Code</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="form.code"
-                    name="code"
-                    class="input"
-                    placeholder="e.g., L1, M2, T3"
-                    required
-                  />
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+              <td mat-cell *matCellDef="let line">{{ line.name }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="color">
+              <th mat-header-cell *matHeaderCellDef class="hide-mobile">Color</th>
+              <td mat-cell *matCellDef="let line" class="hide-mobile">
+                <div class="color-display">
+                  <div class="color-swatch" [style.backgroundColor]="line.color"></div>
+                  <span class="color-code">{{ line.color }}</span>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-neutral-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="form.name"
-                    name="name"
-                    class="input"
-                    placeholder="e.g., Line 1 - Downtown Express"
-                    required
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-neutral-700 mb-1">Color</label>
-                  <div class="flex gap-2">
-                    <input
-                      type="color"
-                      [(ngModel)]="form.color"
-                      name="color"
-                      class="w-12 h-10 rounded border border-neutral-300 cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      [(ngModel)]="form.color"
-                      name="colorText"
-                      class="input flex-1"
-                      placeholder="#3B82F6"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div class="flex justify-end gap-3 mt-6">
-                <button type="button" (click)="closeModal()" class="btn btn-secondary">
-                  Cancel
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="stops">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="stopCount">Stops</th>
+              <td mat-cell *matCellDef="let line">{{ line.stopCount }} stops</td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+              <td mat-cell *matCellDef="let line" class="actions-column">
+                <button mat-icon-button color="primary" (click)="openEditDialog(line)">
+                  <mat-icon>edit</mat-icon>
                 </button>
-                <button type="submit" class="btn btn-primary">
-                  {{ editingLine() ? 'Save Changes' : 'Create Line' }}
+                <button mat-icon-button color="warn" (click)="deleteLine(line)">
+                  <mat-icon>delete</mat-icon>
                 </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </mat-card>
       }
     </div>
-  `
+  `,
+  styles: `
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .line-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .color-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--app-outline);
+    }
+
+    .color-code {
+      color: var(--app-on-surface-variant);
+      font-size: 13px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+    }
+
+    .actions-column {
+      text-align: right;
+      width: 120px;
+    }
+
+    .hide-mobile {
+      @media (max-width: 600px) {
+        display: none !important;
+      }
+    }
+  `,
 })
-export class LinesComponent implements OnInit {
-  lines = signal<Line[]>([]);
-  showModal = signal(false);
-  editingLine = signal<Line | null>(null);
+export class LinesComponent implements OnInit, AfterViewInit {
+  private readonly lineService = inject(LineService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
-  form: CreateLineRequest = {
-    code: '',
-    name: '',
-    color: '#3B82F6'
-  };
-
-  constructor(private lineService: LineService) {}
+  readonly sort = viewChild(MatSort);
+  loading = signal(true);
+  dataSource = new MatTableDataSource<Line>([]);
+  displayedColumns = ['code', 'name', 'color', 'stops', 'actions'];
 
   ngOnInit(): void {
     this.loadLines();
   }
 
-  loadLines(): void {
-    this.lineService.getAll().subscribe(lines => this.lines.set(lines));
-  }
-
-  openCreateModal(): void {
-    this.editingLine.set(null);
-    this.form = { code: '', name: '', color: '#3B82F6' };
-    this.showModal.set(true);
-  }
-
-  openEditModal(line: Line): void {
-    this.editingLine.set(line);
-    this.form = { code: line.code, name: line.name, color: line.color };
-    this.showModal.set(true);
-  }
-
-  closeModal(): void {
-    this.showModal.set(false);
-    this.editingLine.set(null);
-  }
-
-  saveLine(): void {
-    const editing = this.editingLine();
-    if (editing) {
-      this.lineService.update(editing.id, this.form).subscribe(() => {
-        this.loadLines();
-        this.closeModal();
-      });
-    } else {
-      this.lineService.create(this.form).subscribe(() => {
-        this.loadLines();
-        this.closeModal();
-      });
+  ngAfterViewInit(): void {
+    const sortRef = this.sort();
+    if (sortRef) {
+      this.dataSource.sort = sortRef;
     }
+  }
+
+  loadLines(): void {
+    this.loading.set(true);
+    this.lineService.getAll().subscribe({
+      next: (lines) => {
+        this.dataSource.data = lines;
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
+    });
+  }
+
+  openCreateDialog(): void {
+    const dialogRef = this.dialog.open(LineDialogComponent, {
+      data: {},
+      width: '450px',
+      ariaLabel: 'Create new line',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.lineService.create(result).subscribe(() => {
+          this.loadLines();
+          this.snackBar.open('Line created', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
+  }
+
+  openEditDialog(line: Line): void {
+    const dialogRef = this.dialog.open(LineDialogComponent, {
+      data: { line },
+      width: '450px',
+      ariaLabel: `Edit line ${line.name}`,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.lineService.update(line.id, result).subscribe(() => {
+          this.loadLines();
+          this.snackBar.open('Line updated', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
   }
 
   deleteLine(line: Line): void {
-    if (confirm(`Delete line "${line.name}"? This will also delete all associated stops and schedules.`)) {
-      this.lineService.delete(line.id).subscribe(() => this.loadLines());
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Line',
+        message: `Delete line "${line.name}"? This will also delete all associated stops and schedules.`,
+        confirmText: 'Delete',
+        confirmColor: 'warn',
+      } as ConfirmDialogData,
+      ariaLabel: `Confirm deletion of line ${line.name}`,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.lineService.delete(line.id).subscribe(() => {
+          this.loadLines();
+          this.snackBar.open('Line deleted', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
   }
 }

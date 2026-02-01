@@ -1,215 +1,357 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DatePipe } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { LineService } from '@core/api/line.service';
-import { StopService } from '@core/api/stop.service';
 import { DeviceService } from '@core/api/device.service';
-import { Line, Stop, Device, DeviceStatus } from '@shared/models';
+import { Line, Device, DeviceStatus } from '@shared/models';
+import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { gridStagger } from '@shared/animations';
 
 @Component({
   selector: 'app-devices',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    FormsModule,
+    DatePipe,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    CardSkeletonComponent,
+    EmptyStateComponent,
+  ],
+  animations: [gridStagger],
   template: `
-    <div>
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-neutral-900">Devices</h1>
-        <button (click)="openCreateModal()" class="btn btn-primary">
-          + Register Device
+    <div class="devices-page">
+      <div class="page-header">
+        <h1 class="page-title">Devices</h1>
+        <button mat-flat-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Register Device
         </button>
       </div>
 
-      <!-- Status Filter -->
-      <div class="mb-4">
-        <select [(ngModel)]="statusFilter" (ngModelChange)="loadDevices()" class="input w-48">
-          <option value="">All Statuses</option>
-          <option value="ONLINE">Online</option>
-          <option value="OFFLINE">Offline</option>
-        </select>
-      </div>
+      <mat-form-field appearance="outline" class="status-filter">
+        <mat-label>Status</mat-label>
+        <mat-select [(ngModel)]="statusFilter" (selectionChange)="loadDevices()">
+          <mat-option value="">All Statuses</mat-option>
+          <mat-option value="ONLINE">Online</mat-option>
+          <mat-option value="OFFLINE">Offline</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-      <!-- Devices Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        @for (device of devices(); track device.id) {
-          <div class="card p-4">
-            <div class="flex items-start justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-2xl">📺</span>
-                <div>
-                  <h3 class="font-semibold text-neutral-900">{{ device.stopName }}</h3>
-                  <span class="inline-block px-2 py-0.5 rounded-full bg-neutral-600 text-white text-xs">
-                    {{ device.lineCode }}
+      @if (loading()) {
+        <div class="devices-grid">
+          @for (i of [1, 2, 3]; track i) {
+            <app-card-skeleton [showIcon]="true" />
+          }
+        </div>
+      } @else if (devices().length === 0) {
+        <mat-card>
+          <app-empty-state
+            icon="tv"
+            iconColor="primary"
+            title="No devices registered"
+            description="Register a device to connect your transit displays."
+            actionLabel="Register Device"
+            actionIcon="add"
+            (action)="openCreateDialog()"
+          />
+        </mat-card>
+      } @else {
+        <div class="devices-grid" [@gridStagger]="devices().length">
+          @for (device of devices(); track device.id) {
+            <mat-card class="device-card">
+              <mat-card-content>
+                <div class="device-header">
+                  <div class="device-info">
+                    <mat-icon class="device-icon">tv</mat-icon>
+                    <div>
+                      <h3 class="device-stop">{{ device.stopName }}</h3>
+                      <span class="line-badge">{{ device.lineCode }}</span>
+                    </div>
+                  </div>
+                  <span
+                    class="status-badge"
+                    [class.status-online]="device.status === 'ONLINE'"
+                    [class.status-offline]="device.status === 'OFFLINE'"
+                  >
+                    {{ device.status }}
                   </span>
                 </div>
-              </div>
-              <div
-                class="px-2 py-1 rounded text-xs font-medium"
-                [class.bg-green-100]="device.status === 'ONLINE'"
-                [class.text-green-700]="device.status === 'ONLINE'"
-                [class.bg-red-100]="device.status === 'OFFLINE'"
-                [class.text-red-700]="device.status === 'OFFLINE'">
-                {{ device.status }}
-              </div>
-            </div>
 
-            <div class="text-sm text-neutral-500 space-y-1">
-              @if (device.lastHeartbeat) {
-                <div>Last seen: {{ device.lastHeartbeat | date:'short' }}</div>
-              }
-              <div class="font-mono text-xs bg-neutral-50 p-2 rounded break-all">
-                ID: {{ device.id.substring(0, 20) }}...
-              </div>
-            </div>
-
-            <div class="flex gap-2 mt-4 pt-3 border-t border-neutral-100">
-              <button
-                (click)="deleteDevice(device)"
-                class="flex-1 text-sm text-red-600 hover:text-red-800">
-                Remove
-              </button>
-            </div>
-          </div>
-        } @empty {
-          <div class="col-span-full card p-8 text-center text-neutral-500">
-            No devices registered. Register a device to connect displays.
-          </div>
-        }
-      </div>
-
-      <!-- Register Modal -->
-      @if (showModal()) {
-        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="px-6 py-4 border-b border-neutral-200">
-              <h2 class="text-lg font-semibold text-neutral-900">Register New Device</h2>
-            </div>
-            <form (ngSubmit)="registerDevice()" class="p-6">
-              <div class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-neutral-700 mb-1">Line</label>
-                  <select
-                    [(ngModel)]="form.lineId"
-                    name="lineId"
-                    class="input"
-                    required
-                    (ngModelChange)="onLineChange()">
-                    <option value="">Select a line</option>
-                    @for (line of lines(); track line.id) {
-                      <option [value]="line.id">{{ line.code }} - {{ line.name }}</option>
-                    }
-                  </select>
+                <div class="device-meta">
+                  @if (device.lastHeartbeat) {
+                    <div class="meta-item">
+                      <span class="meta-label">Last seen:</span>
+                      {{ device.lastHeartbeat | date : 'short' }}
+                    </div>
+                  }
+                  <div class="device-id">
+                    ID: {{ device.id.substring(0, 20) }}...
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-neutral-700 mb-1">Stop</label>
-                  <select
-                    [(ngModel)]="form.stopId"
-                    name="stopId"
-                    class="input"
-                    required
-                    [disabled]="!form.lineId">
-                    <option value="">Select a stop</option>
-                    @for (stop of stops(); track stop.id) {
-                      <option [value]="stop.id">{{ stop.name }}</option>
-                    }
-                  </select>
-                </div>
-              </div>
-              <div class="flex justify-end gap-3 mt-6">
-                <button type="button" (click)="closeModal()" class="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" class="btn btn-primary">
-                  Register Device
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      }
+              </mat-card-content>
 
-      <!-- Token Display Modal -->
-      @if (newDeviceToken()) {
-        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="px-6 py-4 border-b border-neutral-200">
-              <h2 class="text-lg font-semibold text-neutral-900">Device Registered</h2>
-            </div>
-            <div class="p-6">
-              <p class="text-neutral-600 mb-4">
-                Copy this token and configure it on your display device. This token is shown only once.
-              </p>
-              <div class="bg-neutral-50 p-4 rounded-lg">
-                <div class="font-mono text-sm break-all select-all">{{ newDeviceToken() }}</div>
-              </div>
-              <div class="mt-4">
-                <button (click)="copyNewToken()" class="btn btn-primary w-full">
-                  Copy Token to Clipboard
+              <mat-card-actions align="end">
+                <button mat-button color="warn" (click)="deleteDevice(device)">
+                  <mat-icon>delete</mat-icon>
+                  Remove
                 </button>
-              </div>
-            </div>
-            <div class="px-6 py-4 border-t border-neutral-200">
-              <button (click)="closeTokenModal()" class="btn btn-secondary w-full">
-                Done
-              </button>
-            </div>
-          </div>
+              </mat-card-actions>
+            </mat-card>
+          }
         </div>
       }
     </div>
-  `
+
+    @if (newDeviceToken()) {
+      <div class="token-overlay">
+        <mat-card class="token-card">
+          <mat-card-header>
+            <mat-card-title>Device Registered</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p class="token-instructions">
+              Copy this token and configure it on your display device.
+              This token is shown only once.
+            </p>
+            <div class="token-display">
+              {{ newDeviceToken() }}
+            </div>
+            <button
+              mat-flat-button
+              color="primary"
+              class="full-width"
+              (click)="copyToken()"
+            >
+              <mat-icon>content_copy</mat-icon>
+              Copy Token to Clipboard
+            </button>
+          </mat-card-content>
+          <mat-card-actions>
+            <button mat-stroked-button class="full-width" (click)="closeTokenModal()">
+              Done
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+    }
+  `,
+  styles: `
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .status-filter {
+      margin-bottom: 20px;
+      width: 220px;
+    }
+
+    .devices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    .device-card {
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+    }
+
+    .device-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .device-info {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .device-icon {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+      color: var(--app-on-surface-variant);
+    }
+
+    .device-stop {
+      margin: 0 0 6px;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--app-on-surface);
+    }
+
+    .line-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 16px;
+      background-color: var(--app-on-surface-variant);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-online {
+      background-color: var(--app-success-container);
+      color: var(--app-on-success-container);
+    }
+
+    .status-offline {
+      background-color: var(--app-critical-container);
+      color: var(--app-on-critical-container);
+    }
+
+    .device-meta {
+      font-size: 14px;
+      color: var(--app-on-surface-variant);
+    }
+
+    .meta-item {
+      margin-bottom: 6px;
+    }
+
+    .meta-label {
+      font-weight: 600;
+    }
+
+    .device-id {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 11px;
+      background-color: var(--app-surface-variant);
+      padding: 10px 12px;
+      border-radius: 6px;
+      word-break: break-all;
+      margin-top: 10px;
+      color: var(--app-on-surface-variant);
+    }
+
+    .token-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .token-card {
+      width: 100%;
+      max-width: 480px;
+      margin: 16px;
+      border-radius: 16px;
+    }
+
+    .token-instructions {
+      color: var(--app-on-surface-variant);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .token-display {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 13px;
+      background-color: var(--app-surface-variant);
+      padding: 16px;
+      border-radius: 8px;
+      word-break: break-all;
+      margin-bottom: 20px;
+      user-select: all;
+      border: 1px solid var(--app-outline);
+    }
+
+    .full-width {
+      width: 100%;
+    }
+  `,
 })
 export class DevicesComponent implements OnInit {
+  private readonly deviceService = inject(DeviceService);
+  private readonly lineService = inject(LineService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
+
+  loading = signal(true);
   devices = signal<Device[]>([]);
   lines = signal<Line[]>([]);
-  stops = signal<Stop[]>([]);
-  showModal = signal(false);
   newDeviceToken = signal<string | null>(null);
   statusFilter: DeviceStatus | '' = '';
 
-  form = {
-    stopId: '',
-    lineId: ''  // Used for UI only - to filter stops by line
-  };
-
-  constructor(
-    private deviceService: DeviceService,
-    private lineService: LineService,
-    private stopService: StopService
-  ) {}
-
   ngOnInit(): void {
     this.loadDevices();
-    this.lineService.getAll().subscribe(lines => this.lines.set(lines));
+    this.lineService.getAll().subscribe((lines) => this.lines.set(lines));
   }
 
   loadDevices(): void {
+    this.loading.set(true);
     const status = this.statusFilter || undefined;
-    this.deviceService.getAll(status).subscribe(devices => this.devices.set(devices));
+    this.deviceService.getAll(status).subscribe({
+      next: (devices) => {
+        this.devices.set(devices);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
+    });
   }
 
-  onLineChange(): void {
-    this.form.stopId = '';
-    if (this.form.lineId) {
-      this.stopService.getAll(this.form.lineId).subscribe(stops => this.stops.set(stops));
-    } else {
-      this.stops.set([]);
-    }
-  }
+  openCreateDialog(): void {
+    const dialogRef = this.dialog.open(DeviceDialogComponent, {
+      data: { lines: this.lines() } as DeviceDialogData,
+      width: '450px',
+      ariaLabel: 'Register new device',
+    });
 
-  openCreateModal(): void {
-    this.form = { stopId: '', lineId: '' };
-    this.showModal.set(true);
-  }
-
-  closeModal(): void {
-    this.showModal.set(false);
-  }
-
-  registerDevice(): void {
-    this.deviceService.register({ stopId: this.form.stopId }).subscribe(registration => {
-      this.newDeviceToken.set(registration.token);
-      this.loadDevices();
-      this.closeModal();
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.deviceService.register(result).subscribe((registration) => {
+          this.newDeviceToken.set(registration.token);
+          this.loadDevices();
+        });
+      }
     });
   }
 
@@ -217,18 +359,39 @@ export class DevicesComponent implements OnInit {
     this.newDeviceToken.set(null);
   }
 
-  copyNewToken(): void {
+  copyToken(): void {
     const token = this.newDeviceToken();
     if (token) {
       navigator.clipboard.writeText(token).then(() => {
-        alert('Token copied to clipboard');
+        this.snackBar.open('Token copied to clipboard', 'Close', {
+          duration: 3000,
+          panelClass: 'success-snackbar',
+        });
       });
     }
   }
 
   deleteDevice(device: Device): void {
-    if (confirm(`Remove device at "${device.stopName}"?`)) {
-      this.deviceService.delete(device.id).subscribe(() => this.loadDevices());
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Remove Device',
+        message: `Remove device at "${device.stopName}"?`,
+        confirmText: 'Remove',
+        confirmColor: 'warn',
+      } as ConfirmDialogData,
+      ariaLabel: `Confirm removal of device at ${device.stopName}`,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.deviceService.delete(device.id).subscribe(() => {
+          this.loadDevices();
+          this.snackBar.open('Device removed', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        });
+      }
+    });
   }
 }

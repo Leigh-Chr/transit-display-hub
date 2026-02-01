@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { LoginComponent } from './login.component';
 import { AuthService } from '@core/auth/auth.service';
 import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
@@ -17,7 +18,7 @@ describe('LoginComponent', () => {
     routerSpy = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
-      imports: [LoginComponent],
+      imports: [LoginComponent, NoopAnimationsModule],
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Router, useValue: routerSpy }
@@ -54,14 +55,14 @@ describe('LoginComponent', () => {
   describe('form rendering', () => {
     it('should render username input', () => {
       const compiled = fixture.nativeElement;
-      const usernameInput = compiled.querySelector('input#username');
+      const usernameInput = compiled.querySelector('input[name="username"]');
       expect(usernameInput).toBeTruthy();
       expect(usernameInput.type).toBe('text');
     });
 
     it('should render password input', () => {
       const compiled = fixture.nativeElement;
-      const passwordInput = compiled.querySelector('input#password');
+      const passwordInput = compiled.querySelector('input[name="password"]');
       expect(passwordInput).toBeTruthy();
       expect(passwordInput.type).toBe('password');
     });
@@ -236,12 +237,12 @@ describe('LoginComponent', () => {
   });
 
   describe('loading state UI', () => {
-    it('should show loading text when loading', () => {
+    it('should show spinner when loading', () => {
       component.loading.set(true);
       fixture.detectChanges();
 
-      const button = fixture.nativeElement.querySelector('button[type="submit"]');
-      expect(button.textContent).toContain('Logging in...');
+      const spinner = fixture.nativeElement.querySelector('mat-spinner');
+      expect(spinner).toBeTruthy();
     });
 
     it('should disable button when loading', () => {
@@ -266,7 +267,7 @@ describe('LoginComponent', () => {
       component.error.set('Invalid credentials');
       fixture.detectChanges();
 
-      const errorElement = fixture.nativeElement.querySelector('.bg-red-50');
+      const errorElement = fixture.nativeElement.querySelector('.error-message');
       expect(errorElement).toBeTruthy();
       expect(errorElement.textContent).toContain('Invalid credentials');
     });
@@ -275,7 +276,7 @@ describe('LoginComponent', () => {
       component.error.set(null);
       fixture.detectChanges();
 
-      const errorElement = fixture.nativeElement.querySelector('.bg-red-50');
+      const errorElement = fixture.nativeElement.querySelector('.error-message');
       expect(errorElement).toBeFalsy();
     });
   });
