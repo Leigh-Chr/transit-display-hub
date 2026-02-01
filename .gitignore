@@ -12,6 +12,7 @@ Thumbs.db
 # Backend - Gradle
 backend/.gradle/
 backend/build/
+backend/bin/
 backend/out/
 backend/*.log
 
@@ -21,6 +22,7 @@ frontend/.angular/
 frontend/dist/
 frontend/.env
 frontend/*.log
+frontend/screenshots/
 
 # Test coverage
 coverage/
