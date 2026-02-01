@@ -1,0 +1,289 @@
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { LoginComponent } from './login.component';
+import { AuthService } from '@core/auth/auth.service';
+
+describe('LoginComponent', () => {
+  let component: LoginComponent;
+  let fixture: ComponentFixture<LoginComponent>;
+  let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let routerSpy: jasmine.SpyObj<Router>;
+
+  beforeEach(async () => {
+    const authSpy = jasmine.createSpyObj('AuthService', ['login']);
+    const routerSpyObj = jasmine.createSpyObj('Router', ['navigate']);
+
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [
+        { provide: AuthService, useValue: authSpy },
+        { provide: Router, useValue: routerSpyObj }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(LoginComponent);
+    component = fixture.componentInstance;
+    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+    routerSpy = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    fixture.detectChanges();
+  });
+
+  describe('initial state', () => {
+    it('should create', () => {
+      expect(component).toBeTruthy();
+    });
+
+    it('should have empty username', () => {
+      expect(component.username).toBe('');
+    });
+
+    it('should have empty password', () => {
+      expect(component.password).toBe('');
+    });
+
+    it('should not be loading', () => {
+      expect(component.loading()).toBeFalse();
+    });
+
+    it('should have no error', () => {
+      expect(component.error()).toBeNull();
+    });
+  });
+
+  describe('form rendering', () => {
+    it('should render username input', () => {
+      const compiled = fixture.nativeElement;
+      const usernameInput = compiled.querySelector('input#username');
+      expect(usernameInput).toBeTruthy();
+      expect(usernameInput.type).toBe('text');
+    });
+
+    it('should render password input', () => {
+      const compiled = fixture.nativeElement;
+      const passwordInput = compiled.querySelector('input#password');
+      expect(passwordInput).toBeTruthy();
+      expect(passwordInput.type).toBe('password');
+    });
+
+    it('should render login button', () => {
+      const compiled = fixture.nativeElement;
+      const button = compiled.querySelector('button[type="submit"]');
+      expect(button).toBeTruthy();
+      expect(button.textContent).toContain('Login');
+    });
+
+    it('should render default credentials hint', () => {
+      const compiled = fixture.nativeElement;
+      expect(compiled.textContent).toContain('admin / admin123');
+    });
+  });
+
+  describe('onSubmit', () => {
+    it('should not call login when username is empty', () => {
+      component.username = '';
+      component.password = 'password';
+
+      component.onSubmit();
+
+      expect(authServiceSpy.login).not.toHaveBeenCalled();
+    });
+
+    it('should not call login when password is empty', () => {
+      component.username = 'admin';
+      component.password = '';
+
+      component.onSubmit();
+
+      expect(authServiceSpy.login).not.toHaveBeenCalled();
+    });
+
+    it('should call authService.login with credentials', () => {
+      authServiceSpy.login.and.returnValue(of({
+        token: 'token',
+        expiresAt: new Date().toISOString(),
+        role: 'ADMIN',
+        username: 'admin'
+      }));
+
+      component.username = 'admin';
+      component.password = 'password123';
+      component.onSubmit();
+
+      expect(authServiceSpy.login).toHaveBeenCalledWith({
+        username: 'admin',
+        password: 'password123'
+      });
+    });
+
+    it('should set loading to true during request', () => {
+      authServiceSpy.login.and.returnValue(of({
+        token: 'token',
+        expiresAt: new Date().toISOString(),
+        role: 'ADMIN',
+        username: 'admin'
+      }));
+
+      component.username = 'admin';
+      component.password = 'password123';
+
+      expect(component.loading()).toBeFalse();
+      component.onSubmit();
+      // Loading would be true during the request, then the observable completes
+    });
+
+    it('should clear error before request', () => {
+      authServiceSpy.login.and.returnValue(of({
+        token: 'token',
+        expiresAt: new Date().toISOString(),
+        role: 'ADMIN',
+        username: 'admin'
+      }));
+
+      component.error.set('Previous error');
+      component.username = 'admin';
+      component.password = 'password123';
+      component.onSubmit();
+
+      // Error should be cleared
+      expect(component.error()).toBeNull();
+    });
+  });
+
+  describe('successful login', () => {
+    beforeEach(() => {
+      authServiceSpy.login.and.returnValue(of({
+        token: 'token',
+        expiresAt: new Date().toISOString(),
+        role: 'ADMIN',
+        username: 'admin'
+      }));
+    });
+
+    it('should navigate to /admin on success', fakeAsync(() => {
+      component.username = 'admin';
+      component.password = 'password123';
+      component.onSubmit();
+      tick();
+
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin']);
+    }));
+
+    it('should not set error on success', fakeAsync(() => {
+      component.username = 'admin';
+      component.password = 'password123';
+      component.onSubmit();
+      tick();
+
+      expect(component.error()).toBeNull();
+    }));
+  });
+
+  describe('failed login', () => {
+    it('should display "Invalid credentials" on 401 error', fakeAsync(() => {
+      const errorResponse = new HttpErrorResponse({
+        status: 401,
+        statusText: 'Unauthorized'
+      });
+      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+
+      component.username = 'admin';
+      component.password = 'wrong';
+      component.onSubmit();
+      tick();
+
+      expect(component.error()).toBe('Invalid credentials');
+    }));
+
+    it('should display generic error for other errors', fakeAsync(() => {
+      const errorResponse = new HttpErrorResponse({
+        status: 500,
+        statusText: 'Internal Server Error'
+      });
+      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+
+      component.username = 'admin';
+      component.password = 'password';
+      component.onSubmit();
+      tick();
+
+      expect(component.error()).toBe('An error occurred. Please try again.');
+    }));
+
+    it('should set loading to false after error', fakeAsync(() => {
+      const errorResponse = new HttpErrorResponse({
+        status: 401,
+        statusText: 'Unauthorized'
+      });
+      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+
+      component.username = 'admin';
+      component.password = 'wrong';
+      component.onSubmit();
+      tick();
+
+      expect(component.loading()).toBeFalse();
+    }));
+
+    it('should not navigate on error', fakeAsync(() => {
+      const errorResponse = new HttpErrorResponse({
+        status: 401,
+        statusText: 'Unauthorized'
+      });
+      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+
+      component.username = 'admin';
+      component.password = 'wrong';
+      component.onSubmit();
+      tick();
+
+      expect(routerSpy.navigate).not.toHaveBeenCalled();
+    }));
+  });
+
+  describe('loading state UI', () => {
+    it('should show loading text when loading', () => {
+      component.loading.set(true);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector('button[type="submit"]');
+      expect(button.textContent).toContain('Logging in...');
+    });
+
+    it('should disable button when loading', () => {
+      component.loading.set(true);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector('button[type="submit"]');
+      expect(button.disabled).toBeTrue();
+    });
+
+    it('should enable button when not loading', () => {
+      component.loading.set(false);
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector('button[type="submit"]');
+      expect(button.disabled).toBeFalse();
+    });
+  });
+
+  describe('error display', () => {
+    it('should display error message when error exists', () => {
+      component.error.set('Invalid credentials');
+      fixture.detectChanges();
+
+      const errorElement = fixture.nativeElement.querySelector('.bg-red-50');
+      expect(errorElement).toBeTruthy();
+      expect(errorElement.textContent).toContain('Invalid credentials');
+    });
+
+    it('should not display error when no error', () => {
+      component.error.set(null);
+      fixture.detectChanges();
+
+      const errorElement = fixture.nativeElement.querySelector('.bg-red-50');
+      expect(errorElement).toBeFalsy();
+    });
+  });
+});

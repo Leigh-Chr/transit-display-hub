@@ -1,0 +1,579 @@
+package com.transit.hub.application.service;
+
+import com.transit.hub.application.dto.request.CreateMessageRequest;
+import com.transit.hub.application.dto.response.MessageResponse;
+import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.domain.event.MessageChangedEvent;
+import com.transit.hub.domain.model.BroadcastMessage;
+import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.domain.model.enums.MessageSeverity;
+import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.testutil.TestDataFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("MessageService")
+class MessageServiceTest {
+
+    @Mock
+    private BroadcastMessageRepository messageRepository;
+
+    @Mock
+    private LineRepository lineRepository;
+
+    @Mock
+    private StopRepository stopRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @InjectMocks
+    private MessageService messageService;
+
+    private Line testLine;
+    private Stop testStop;
+    private UUID testLineId;
+    private UUID testStopId;
+    private UUID testMessageId;
+    private Instant now;
+    private Instant futureTime;
+
+    @BeforeEach
+    void setUp() {
+        testLineId = UUID.randomUUID();
+        testStopId = UUID.randomUUID();
+        testMessageId = UUID.randomUUID();
+        testLine = TestDataFactory.createLineWithId(testLineId, "L1", "Metro Line 1", "#FF5733");
+        testStop = TestDataFactory.createStopWithId(testStopId, "Central Station", testLine);
+        now = Instant.now();
+        futureTime = now.plus(1, ChronoUnit.HOURS);
+    }
+
+    @Nested
+    @DisplayName("createMessage - Scope Validation")
+    class CreateMessageScopeValidation {
+
+        @Test
+        @DisplayName("creates NETWORK scope message with null scopeId")
+        void networkScope_SavesWithNullScopeId() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Network Alert",
+                    "System-wide maintenance",
+                    MessageSeverity.INFO,
+                    now,
+                    futureTime,
+                    MessageScope.NETWORK,
+                    null
+            );
+            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            MessageResponse result = messageService.createMessage(request);
+
+            assertThat(result.scopeType()).isEqualTo(MessageScope.NETWORK);
+            assertThat(result.scopeId()).isNull();
+
+            ArgumentCaptor<BroadcastMessage> captor = ArgumentCaptor.forClass(BroadcastMessage.class);
+            verify(messageRepository).save(captor.capture());
+            assertThat(captor.getValue().getScopeType()).isEqualTo(MessageScope.NETWORK);
+            assertThat(captor.getValue().getScopeId()).isNull();
+        }
+
+        @Test
+        @DisplayName("throws ValidationException for NETWORK scope with scopeId")
+        void networkScopeWithScopeId_ThrowsValidation() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Network Alert",
+                    "Invalid scope",
+                    MessageSeverity.INFO,
+                    now,
+                    futureTime,
+                    MessageScope.NETWORK,
+                    UUID.randomUUID()
+            );
+
+            assertThatThrownBy(() -> messageService.createMessage(request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("NETWORK")
+                    .hasMessageContaining("null");
+
+            verify(messageRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("creates LINE scope message with valid lineId")
+        void lineScope_RequiresScopeId() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Line Alert",
+                    "Line-specific message",
+                    MessageSeverity.WARNING,
+                    now,
+                    futureTime,
+                    MessageScope.LINE,
+                    testLineId
+            );
+            when(lineRepository.existsById(testLineId)).thenReturn(true);
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            MessageResponse result = messageService.createMessage(request);
+
+            assertThat(result.scopeType()).isEqualTo(MessageScope.LINE);
+            assertThat(result.scopeId()).isEqualTo(testLineId);
+        }
+
+        @Test
+        @DisplayName("throws ValidationException for LINE scope without scopeId")
+        void lineScopeWithoutScopeId_ThrowsValidation() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Line Alert",
+                    "Missing scope",
+                    MessageSeverity.INFO,
+                    now,
+                    futureTime,
+                    MessageScope.LINE,
+                    null
+            );
+
+            assertThatThrownBy(() -> messageService.createMessage(request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("LINE")
+                    .hasMessageContaining("required");
+
+            verify(messageRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException for LINE scope with non-existent line")
+        void lineScopeWithNonExistentLine_ThrowsNotFound() {
+            UUID nonExistentLineId = UUID.randomUUID();
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Line Alert",
+                    "Non-existent line",
+                    MessageSeverity.INFO,
+                    now,
+                    futureTime,
+                    MessageScope.LINE,
+                    nonExistentLineId
+            );
+            when(lineRepository.existsById(nonExistentLineId)).thenReturn(false);
+
+            assertThatThrownBy(() -> messageService.createMessage(request))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Line");
+
+            verify(messageRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("creates STOP scope message with valid stopId")
+        void stopScope_RequiresScopeId() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Stop Alert",
+                    "Stop-specific message",
+                    MessageSeverity.CRITICAL,
+                    now,
+                    futureTime,
+                    MessageScope.STOP,
+                    testStopId
+            );
+            when(stopRepository.existsById(testStopId)).thenReturn(true);
+            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            MessageResponse result = messageService.createMessage(request);
+
+            assertThat(result.scopeType()).isEqualTo(MessageScope.STOP);
+            assertThat(result.scopeId()).isEqualTo(testStopId);
+        }
+
+        @Test
+        @DisplayName("throws ValidationException for STOP scope without scopeId")
+        void stopScopeWithoutScopeId_ThrowsValidation() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Stop Alert",
+                    "Missing scope",
+                    MessageSeverity.INFO,
+                    now,
+                    futureTime,
+                    MessageScope.STOP,
+                    null
+            );
+
+            assertThatThrownBy(() -> messageService.createMessage(request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("STOP")
+                    .hasMessageContaining("required");
+
+            verify(messageRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException for STOP scope with non-existent stop")
+        void stopScopeWithNonExistentStop_ThrowsNotFound() {
+            UUID nonExistentStopId = UUID.randomUUID();
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Stop Alert",
+                    "Non-existent stop",
+                    MessageSeverity.INFO,
+                    now,
+                    futureTime,
+                    MessageScope.STOP,
+                    nonExistentStopId
+            );
+            when(stopRepository.existsById(nonExistentStopId)).thenReturn(false);
+
+            assertThatThrownBy(() -> messageService.createMessage(request))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Stop");
+
+            verify(messageRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("createMessage - Time Validation")
+    class CreateMessageTimeValidation {
+
+        @Test
+        @DisplayName("throws ValidationException when startTime is after endTime")
+        void startTimeAfterEndTime_ThrowsValidation() {
+            Instant startTime = now.plus(2, ChronoUnit.HOURS);
+            Instant endTime = now.plus(1, ChronoUnit.HOURS);
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Invalid Time",
+                    "Start after end",
+                    MessageSeverity.INFO,
+                    startTime,
+                    endTime,
+                    MessageScope.NETWORK,
+                    null
+            );
+
+            assertThatThrownBy(() -> messageService.createMessage(request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("Start time")
+                    .hasMessageContaining("before");
+
+            verify(messageRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("allows startTime equal to endTime")
+        void startTimeEqualToEndTime_Succeeds() {
+            Instant sameTime = now.plus(1, ChronoUnit.HOURS);
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Instant Message",
+                    "Same start and end",
+                    MessageSeverity.INFO,
+                    sameTime,
+                    sameTime.plusMillis(1), // Must be at least slightly after
+                    MessageScope.NETWORK,
+                    null
+            );
+            when(stopRepository.findAll()).thenReturn(List.of());
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            // Should not throw
+            assertThatCode(() -> messageService.createMessage(request)).doesNotThrowAnyException();
+        }
+    }
+
+    @Nested
+    @DisplayName("createMessage - Event Publishing")
+    class CreateMessageEventPublishing {
+
+        @Test
+        @DisplayName("publishes MessageChangedEvent for active NETWORK message")
+        void activeNetworkMessage_PublishesEventForAllStops() {
+            Stop stop2 = TestDataFactory.createStop("Station 2", testLine);
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Network Alert",
+                    "Active message",
+                    MessageSeverity.INFO,
+                    now.minus(1, ChronoUnit.HOURS),
+                    now.plus(1, ChronoUnit.HOURS),
+                    MessageScope.NETWORK,
+                    null
+            );
+            when(stopRepository.findAll()).thenReturn(List.of(testStop, stop2));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            messageService.createMessage(request);
+
+            ArgumentCaptor<MessageChangedEvent> eventCaptor = ArgumentCaptor.forClass(MessageChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("publishes MessageChangedEvent for active LINE message")
+        void activeLineMessage_PublishesEventForLineStops() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Line Alert",
+                    "Active message",
+                    MessageSeverity.INFO,
+                    now.minus(1, ChronoUnit.HOURS),
+                    now.plus(1, ChronoUnit.HOURS),
+                    MessageScope.LINE,
+                    testLineId
+            );
+            when(lineRepository.existsById(testLineId)).thenReturn(true);
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            messageService.createMessage(request);
+
+            ArgumentCaptor<MessageChangedEvent> eventCaptor = ArgumentCaptor.forClass(MessageChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).contains(testStopId);
+        }
+
+        @Test
+        @DisplayName("publishes MessageChangedEvent for active STOP message")
+        void activeStopMessage_PublishesEventForSingleStop() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Stop Alert",
+                    "Active message",
+                    MessageSeverity.INFO,
+                    now.minus(1, ChronoUnit.HOURS),
+                    now.plus(1, ChronoUnit.HOURS),
+                    MessageScope.STOP,
+                    testStopId
+            );
+            when(stopRepository.existsById(testStopId)).thenReturn(true);
+            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            messageService.createMessage(request);
+
+            ArgumentCaptor<MessageChangedEvent> eventCaptor = ArgumentCaptor.forClass(MessageChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).containsExactly(testStopId);
+        }
+
+        @Test
+        @DisplayName("does not publish event for future message")
+        void futureMessage_DoesNotPublishEvent() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Future Alert",
+                    "Not yet active",
+                    MessageSeverity.INFO,
+                    now.plus(1, ChronoUnit.HOURS),
+                    now.plus(2, ChronoUnit.HOURS),
+                    MessageScope.NETWORK,
+                    null
+            );
+            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            messageService.createMessage(request);
+
+            verify(eventPublisher, never()).publishEvent(any(MessageChangedEvent.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllMessages")
+    class GetAllMessages {
+
+        @Test
+        @DisplayName("returns all messages")
+        void returnsAllMessages() {
+            BroadcastMessage msg1 = TestDataFactory.createNetworkMessage();
+            BroadcastMessage msg2 = TestDataFactory.createLineMessage(testLineId);
+            when(messageRepository.findAll()).thenReturn(List.of(msg1, msg2));
+
+            List<MessageResponse> result = messageService.getAllMessages();
+
+            assertThat(result).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("returns empty list when no messages")
+        void returnsEmptyWhenNoMessages() {
+            when(messageRepository.findAll()).thenReturn(List.of());
+
+            List<MessageResponse> result = messageService.getAllMessages();
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getActiveMessages")
+    class GetActiveMessages {
+
+        @Test
+        @DisplayName("returns only active messages")
+        void returnsOnlyActiveMessages() {
+            BroadcastMessage activeMsg = TestDataFactory.createNetworkMessage();
+            when(messageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of(activeMsg));
+
+            List<MessageResponse> result = messageService.getActiveMessages();
+
+            assertThat(result).hasSize(1);
+            verify(messageRepository).findActiveMessages(any(Instant.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("getMessage")
+    class GetMessage {
+
+        @Test
+        @DisplayName("returns message when found")
+        void returnsMessageWhenFound() {
+            BroadcastMessage message = TestDataFactory.createNetworkMessage();
+            message.setId(testMessageId);
+            when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(message));
+
+            MessageResponse result = messageService.getMessage(testMessageId);
+
+            assertThat(result.id()).isEqualTo(testMessageId);
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException when not found")
+        void throwsWhenNotFound() {
+            UUID unknownId = UUID.randomUUID();
+            when(messageRepository.findById(unknownId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> messageService.getMessage(unknownId))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Message");
+        }
+    }
+
+    @Nested
+    @DisplayName("updateMessage")
+    class UpdateMessage {
+
+        @Test
+        @DisplayName("updates message and publishes event")
+        void updatesAndPublishesEvent() {
+            BroadcastMessage existing = TestDataFactory.createNetworkMessage();
+            existing.setId(testMessageId);
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Updated Title",
+                    "Updated content",
+                    MessageSeverity.WARNING,
+                    now,
+                    futureTime,
+                    MessageScope.NETWORK,
+                    null
+            );
+            when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
+            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenReturn(existing);
+
+            MessageResponse result = messageService.updateMessage(testMessageId, request);
+
+            verify(messageRepository).save(any(BroadcastMessage.class));
+            verify(eventPublisher).publishEvent(any(MessageChangedEvent.class));
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException when message not found")
+        void throwsWhenNotFound() {
+            UUID unknownId = UUID.randomUUID();
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Title", "Content", MessageSeverity.INFO, now, futureTime, MessageScope.NETWORK, null
+            );
+            when(messageRepository.findById(unknownId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> messageService.updateMessage(unknownId, request))
+                    .isInstanceOf(EntityNotFoundException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteMessage")
+    class DeleteMessage {
+
+        @Test
+        @DisplayName("deletes message and publishes event")
+        void deletesAndPublishesEvent() {
+            BroadcastMessage existing = TestDataFactory.createNetworkMessage();
+            existing.setId(testMessageId);
+            when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
+            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+
+            messageService.deleteMessage(testMessageId);
+
+            verify(messageRepository).delete(existing);
+            verify(eventPublisher).publishEvent(any(MessageChangedEvent.class));
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException when message not found")
+        void throwsWhenNotFound() {
+            UUID unknownId = UUID.randomUUID();
+            when(messageRepository.findById(unknownId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> messageService.deleteMessage(unknownId))
+                    .isInstanceOf(EntityNotFoundException.class);
+
+            verify(messageRepository, never()).delete(any());
+        }
+    }
+}
