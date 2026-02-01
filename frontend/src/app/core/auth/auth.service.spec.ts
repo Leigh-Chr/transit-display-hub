@@ -1,13 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { LoginRequest, LoginResponse } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
-  let router: jasmine.SpyObj<Router>;
+  let router: { navigate: MockedFunction<Router['navigate']> };
 
   // Valid JWT token for testing (expires far in the future)
   const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJBRE1JTiIsImV4cCI6OTk5OTk5OTk5OX0.signature';
@@ -17,13 +19,14 @@ describe('AuthService', () => {
   const malformedToken = 'not.a.valid.jwt.token';
 
   beforeEach(() => {
-    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    router = { navigate: vi.fn() };
 
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         AuthService,
-        { provide: Router, useValue: routerSpy }
+        { provide: Router, useValue: router }
       ]
     });
 
@@ -32,7 +35,6 @@ describe('AuthService', () => {
 
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
-    router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
   });
 
   afterEach(() => {
@@ -70,10 +72,10 @@ describe('AuthService', () => {
         username: 'admin'
       };
 
-      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.isAuthenticated()).toBe(false);
 
       service.login(request).subscribe(() => {
-        expect(service.isAuthenticated()).toBeTrue();
+        expect(service.isAuthenticated()).toBe(true);
       });
 
       const req = httpMock.expectOne('/api/auth/login');
@@ -119,13 +121,13 @@ describe('AuthService', () => {
 
       service.logout();
 
-      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.isAuthenticated()).toBe(false);
     });
   });
 
   describe('isAuthenticated', () => {
     it('should return false when no token exists', () => {
-      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.isAuthenticated()).toBe(false);
     });
 
     it('should return true when valid token exists after login', () => {
@@ -142,7 +144,7 @@ describe('AuthService', () => {
       const req = httpMock.expectOne('/api/auth/login');
       req.flush(response);
 
-      expect(service.isAuthenticated()).toBeTrue();
+      expect(service.isAuthenticated()).toBe(true);
     });
 
     it('should return false when token is expired', () => {
@@ -152,16 +154,17 @@ describe('AuthService', () => {
       // Force a new service instance with the stored token
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        imports: [HttpClientTestingModule],
         providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
           AuthService,
-          { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }
+          { provide: Router, useValue: { navigate: vi.fn() } }
         ]
       });
       service = TestBed.inject(AuthService);
       httpMock = TestBed.inject(HttpTestingController);
 
-      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.isAuthenticated()).toBe(false);
     });
   });
 
@@ -210,10 +213,11 @@ describe('AuthService', () => {
       // Reset and recreate to pick up malformed token
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        imports: [HttpClientTestingModule],
         providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
           AuthService,
-          { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }
+          { provide: Router, useValue: { navigate: vi.fn() } }
         ]
       });
       service = TestBed.inject(AuthService);

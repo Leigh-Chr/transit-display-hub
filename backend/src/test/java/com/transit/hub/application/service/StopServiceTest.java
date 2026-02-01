@@ -67,7 +67,7 @@ class StopServiceTest {
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(StopResponse::name).containsExactly("Station 1", "Station 2");
-            assertThat(result).extracting(StopResponse::lineCode).allMatch("L1"::equals);
+            assertThat(result).extracting(r -> r.line().code()).allMatch("L1"::equals);
         }
 
         @Test
@@ -94,7 +94,7 @@ class StopServiceTest {
             List<StopResponse> result = stopService.getStopsByLine(testLineId);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).lineId()).isEqualTo(testLineId);
+            assertThat(result.get(0).line().id()).isEqualTo(testLineId);
         }
 
         @Test
@@ -121,7 +121,7 @@ class StopServiceTest {
 
             assertThat(result.id()).isEqualTo(testStopId);
             assertThat(result.name()).isEqualTo("Central Station");
-            assertThat(result.lineId()).isEqualTo(testLineId);
+            assertThat(result.line().id()).isEqualTo(testLineId);
         }
 
         @Test
@@ -154,8 +154,8 @@ class StopServiceTest {
             StopResponse result = stopService.createStop(request);
 
             assertThat(result.name()).isEqualTo("New Station");
-            assertThat(result.lineId()).isEqualTo(testLineId);
-            assertThat(result.lineCode()).isEqualTo("L1");
+            assertThat(result.line().id()).isEqualTo(testLineId);
+            assertThat(result.line().code()).isEqualTo("L1");
 
             ArgumentCaptor<Stop> captor = ArgumentCaptor.forClass(Stop.class);
             verify(stopRepository).save(captor.capture());

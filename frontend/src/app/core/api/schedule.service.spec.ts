@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ScheduleService } from './schedule.service';
 import { TimedEntry, CreateTimedEntryRequest } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('ScheduleService', () => {
   let service: ScheduleService;
@@ -24,8 +26,11 @@ describe('ScheduleService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [ScheduleService]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        ScheduleService
+      ]
     });
 
     service = TestBed.inject(ScheduleService);

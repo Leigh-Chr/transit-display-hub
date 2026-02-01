@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { DeviceService } from './device.service';
 import { Device, DeviceRegistration, RegisterDeviceRequest } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('DeviceService', () => {
   let service: DeviceService;
@@ -29,8 +31,11 @@ describe('DeviceService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [DeviceService]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        DeviceService
+      ]
     });
 
     service = TestBed.inject(DeviceService);
@@ -50,7 +55,7 @@ describe('DeviceService', () => {
 
       const req = httpMock.expectOne('/api/devices');
       expect(req.request.method).toBe('GET');
-      expect(req.request.params.has('status')).toBeFalse();
+      expect(req.request.params.has('status')).toBe(false);
       req.flush(mockDevices);
     });
 

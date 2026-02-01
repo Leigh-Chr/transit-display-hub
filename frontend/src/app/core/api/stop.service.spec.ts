@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { StopService } from './stop.service';
 import { Stop, CreateStopRequest } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('StopService', () => {
   let service: StopService;
@@ -36,8 +38,11 @@ describe('StopService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [StopService]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        StopService
+      ]
     });
 
     service = TestBed.inject(StopService);
@@ -57,7 +62,7 @@ describe('StopService', () => {
 
       const req = httpMock.expectOne('/api/stops');
       expect(req.request.method).toBe('GET');
-      expect(req.request.params.has('lineId')).toBeFalse();
+      expect(req.request.params.has('lineId')).toBe(false);
       req.flush(mockStops);
     });
 

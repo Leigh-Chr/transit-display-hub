@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { LineService } from './line.service';
 import { Line, CreateLineRequest } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('LineService', () => {
   let service: LineService;
@@ -28,8 +30,11 @@ describe('LineService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [LineService]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        LineService
+      ]
     });
 
     service = TestBed.inject(LineService);

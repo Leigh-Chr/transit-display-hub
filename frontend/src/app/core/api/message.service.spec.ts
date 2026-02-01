@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { MessageService } from './message.service';
 import { BroadcastMessage, CreateMessageRequest } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('MessageService', () => {
   let service: MessageService;
@@ -38,8 +40,11 @@ describe('MessageService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [MessageService]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        MessageService
+      ]
     });
 
     service = TestBed.inject(MessageService);
@@ -59,7 +64,7 @@ describe('MessageService', () => {
 
       const req = httpMock.expectOne('/api/messages');
       expect(req.request.method).toBe('GET');
-      expect(req.request.params.has('active')).toBeFalse();
+      expect(req.request.params.has('active')).toBe(false);
       req.flush(mockMessages);
     });
 
@@ -80,7 +85,7 @@ describe('MessageService', () => {
       });
 
       const req = httpMock.expectOne('/api/messages');
-      expect(req.request.params.has('active')).toBeFalse();
+      expect(req.request.params.has('active')).toBe(false);
       req.flush(mockMessages);
     });
 

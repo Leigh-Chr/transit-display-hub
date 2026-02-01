@@ -1,32 +1,31 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { LoginComponent } from './login.component';
 import { AuthService } from '@core/auth/auth.service';
+import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let routerSpy: jasmine.SpyObj<Router>;
+  let authServiceSpy: { login: MockedFunction<AuthService['login']> };
+  let routerSpy: { navigate: MockedFunction<Router['navigate']> };
 
   beforeEach(async () => {
-    const authSpy = jasmine.createSpyObj('AuthService', ['login']);
-    const routerSpyObj = jasmine.createSpyObj('Router', ['navigate']);
+    authServiceSpy = { login: vi.fn() };
+    routerSpy = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
-        { provide: AuthService, useValue: authSpy },
-        { provide: Router, useValue: routerSpyObj }
+        { provide: AuthService, useValue: authServiceSpy },
+        { provide: Router, useValue: routerSpy }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    routerSpy = TestBed.inject(Router) as jasmine.SpyObj<Router>;
     fixture.detectChanges();
   });
 
@@ -44,7 +43,7 @@ describe('LoginComponent', () => {
     });
 
     it('should not be loading', () => {
-      expect(component.loading()).toBeFalse();
+      expect(component.loading()).toBe(false);
     });
 
     it('should have no error', () => {
@@ -100,7 +99,7 @@ describe('LoginComponent', () => {
     });
 
     it('should call authService.login with credentials', () => {
-      authServiceSpy.login.and.returnValue(of({
+      authServiceSpy.login.mockReturnValue(of({
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
@@ -118,7 +117,7 @@ describe('LoginComponent', () => {
     });
 
     it('should set loading to true during request', () => {
-      authServiceSpy.login.and.returnValue(of({
+      authServiceSpy.login.mockReturnValue(of({
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
@@ -128,13 +127,13 @@ describe('LoginComponent', () => {
       component.username = 'admin';
       component.password = 'password123';
 
-      expect(component.loading()).toBeFalse();
+      expect(component.loading()).toBe(false);
       component.onSubmit();
       // Loading would be true during the request, then the observable completes
     });
 
     it('should clear error before request', () => {
-      authServiceSpy.login.and.returnValue(of({
+      authServiceSpy.login.mockReturnValue(of({
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
@@ -153,7 +152,7 @@ describe('LoginComponent', () => {
 
   describe('successful login', () => {
     beforeEach(() => {
-      authServiceSpy.login.and.returnValue(of({
+      authServiceSpy.login.mockReturnValue(of({
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
@@ -161,85 +160,79 @@ describe('LoginComponent', () => {
       }));
     });
 
-    it('should navigate to /admin on success', fakeAsync(() => {
+    it('should navigate to /admin on success', () => {
       component.username = 'admin';
       component.password = 'password123';
       component.onSubmit();
-      tick();
 
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin']);
-    }));
+    });
 
-    it('should not set error on success', fakeAsync(() => {
+    it('should not set error on success', () => {
       component.username = 'admin';
       component.password = 'password123';
       component.onSubmit();
-      tick();
 
       expect(component.error()).toBeNull();
-    }));
+    });
   });
 
   describe('failed login', () => {
-    it('should display "Invalid credentials" on 401 error', fakeAsync(() => {
+    it('should display "Invalid credentials" on 401 error', () => {
       const errorResponse = new HttpErrorResponse({
         status: 401,
         statusText: 'Unauthorized'
       });
-      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+      authServiceSpy.login.mockReturnValue(throwError(() => errorResponse));
 
       component.username = 'admin';
       component.password = 'wrong';
       component.onSubmit();
-      tick();
 
       expect(component.error()).toBe('Invalid credentials');
-    }));
+    });
 
-    it('should display generic error for other errors', fakeAsync(() => {
+    it('should display generic error for other errors', () => {
       const errorResponse = new HttpErrorResponse({
         status: 500,
         statusText: 'Internal Server Error'
       });
-      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+      authServiceSpy.login.mockReturnValue(throwError(() => errorResponse));
 
       component.username = 'admin';
       component.password = 'password';
       component.onSubmit();
-      tick();
 
       expect(component.error()).toBe('An error occurred. Please try again.');
-    }));
+    });
 
-    it('should set loading to false after error', fakeAsync(() => {
+    it('should set loading to false after error', () => {
       const errorResponse = new HttpErrorResponse({
         status: 401,
         statusText: 'Unauthorized'
       });
-      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+      authServiceSpy.login.mockReturnValue(throwError(() => errorResponse));
 
       component.username = 'admin';
       component.password = 'wrong';
       component.onSubmit();
-      tick();
 
-      expect(component.loading()).toBeFalse();
-    }));
+      expect(component.loading()).toBe(false);
+    });
 
-    it('should not navigate on error', fakeAsync(() => {
+    it('should not navigate on error', () => {
       const errorResponse = new HttpErrorResponse({
         status: 401,
         statusText: 'Unauthorized'
       });
-      authServiceSpy.login.and.returnValue(throwError(() => errorResponse));
+      authServiceSpy.login.mockReturnValue(throwError(() => errorResponse));
 
       component.username = 'admin';
       component.password = 'wrong';
       component.onSubmit();
-      tick();
 
       expect(routerSpy.navigate).not.toHaveBeenCalled();
-    }));
+    });
   });
 
   describe('loading state UI', () => {
@@ -256,7 +249,7 @@ describe('LoginComponent', () => {
       fixture.detectChanges();
 
       const button = fixture.nativeElement.querySelector('button[type="submit"]');
-      expect(button.disabled).toBeTrue();
+      expect(button.disabled).toBe(true);
     });
 
     it('should enable button when not loading', () => {
@@ -264,7 +257,7 @@ describe('LoginComponent', () => {
       fixture.detectChanges();
 
       const button = fixture.nativeElement.querySelector('button[type="submit"]');
-      expect(button.disabled).toBeFalse();
+      expect(button.disabled).toBe(false);
     });
   });
 

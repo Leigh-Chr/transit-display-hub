@@ -79,9 +79,9 @@ class DisplayStateCalculatorTest {
 
             assertThat(result.stopId()).isEqualTo(testStopId);
             assertThat(result.stopName()).isEqualTo("Central Station");
-            assertThat(result.lineInfo().code()).isEqualTo("L1");
-            assertThat(result.lineInfo().name()).isEqualTo("Metro Line 1");
-            assertThat(result.lineInfo().color()).isEqualTo("#FF5733");
+            assertThat(result.line().code()).isEqualTo("L1");
+            assertThat(result.line().name()).isEqualTo("Metro Line 1");
+            assertThat(result.line().color()).isEqualTo("#FF5733");
         }
 
         @Test
@@ -124,7 +124,7 @@ class DisplayStateCalculatorTest {
             DisplayState result = calculator.calculateForStop(testStopId);
             Instant after = Instant.now();
 
-            assertThat(result.timestamp()).isBetween(before, after);
+            assertThat(result.generatedAt()).isBetween(before, after);
         }
     }
 
@@ -203,7 +203,7 @@ class DisplayStateCalculatorTest {
             DisplayState result = calculator.calculateForStop(testStopId);
 
             assertThat(result.arrivals()).hasSize(1);
-            assertThat(result.arrivals().get(0).time()).isEqualTo(arrivalTime);
+            assertThat(result.arrivals().get(0).scheduledTime()).isEqualTo(arrivalTime);
         }
 
         @Test
@@ -220,8 +220,8 @@ class DisplayStateCalculatorTest {
             DisplayState result = calculator.calculateForStop(testStopId);
 
             DisplayState.ArrivalInfo arrival = result.arrivals().get(0);
-            assertThat(arrival.lineInfo().code()).isEqualTo("L1");
-            assertThat(arrival.lineInfo().name()).isEqualTo("Metro Line 1");
+            assertThat(arrival.line().code()).isEqualTo("L1");
+            assertThat(arrival.line().name()).isEqualTo("Metro Line 1");
         }
     }
 

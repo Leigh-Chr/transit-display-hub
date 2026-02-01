@@ -1,6 +1,6 @@
 package com.transit.hub.api.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.transit.hub.application.dto.request.CreateLineRequest;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.User;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -104,10 +104,10 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             mockMvc.perform(get("/api/lines"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -147,15 +147,15 @@ class LineControllerIntegrationTest {
     class CreateLine {
 
         @Test
-        @DisplayName("returns 200 with created line for ADMIN")
-        void withAdminRole_Returns200() throws Exception {
+        @DisplayName("returns 201 with created line for ADMIN")
+        void withAdminRole_Returns201() throws Exception {
             CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00");
 
             mockMvc.perform(post("/api/lines")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id", notNullValue()))
                     .andExpect(jsonPath("$.code", is("L2")))
                     .andExpect(jsonPath("$.name", is("New Line")))
@@ -163,14 +163,14 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00");
 
             mockMvc.perform(post("/api/lines")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -301,10 +301,10 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             mockMvc.perform(delete("/api/lines/" + testLine.getId()))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test

@@ -16,3 +16,5 @@ app:
   jwt:
     secret: test-secret-key-for-jwt-token-generation-must-be-at-least-256-bits-long
     expiration-hours: 24
+  data-loader:
+    enabled: false

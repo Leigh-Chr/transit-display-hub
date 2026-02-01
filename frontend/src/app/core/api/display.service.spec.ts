@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { DisplayService } from './display.service';
 import { DisplayState } from '@shared/models';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('DisplayService', () => {
   let service: DisplayService;
@@ -48,8 +50,11 @@ describe('DisplayService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [DisplayService]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        DisplayService
+      ]
     });
 
     service = TestBed.inject(DisplayService);
@@ -128,7 +133,7 @@ describe('DisplayService', () => {
       service.getStateByToken(token).subscribe();
 
       const req = httpMock.expectOne('/api/display');
-      expect(req.request.headers.has('X-Device-Token')).toBeTrue();
+      expect(req.request.headers.has('X-Device-Token')).toBe(true);
       expect(req.request.headers.get('X-Device-Token')).toBe('my-secret-token');
       req.flush(mockDisplayState);
     });

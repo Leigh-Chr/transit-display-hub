@@ -70,7 +70,8 @@ class JwtServiceTest {
             String token = jwtService.generateToken(user);
 
             Instant expiration = jwtService.extractExpiration(token);
-            Instant expectedMin = beforeGeneration.plus(EXPIRATION_HOURS, ChronoUnit.HOURS);
+            // Allow 1 second tolerance for truncation to second precision
+            Instant expectedMin = beforeGeneration.plus(EXPIRATION_HOURS, ChronoUnit.HOURS).minusSeconds(1);
             Instant expectedMax = beforeGeneration.plus(EXPIRATION_HOURS, ChronoUnit.HOURS).plusSeconds(5);
 
             assertThat(expiration).isBetween(expectedMin, expectedMax);

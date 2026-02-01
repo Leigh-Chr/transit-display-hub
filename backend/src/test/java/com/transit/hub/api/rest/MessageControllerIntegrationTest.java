@@ -1,6 +1,6 @@
 package com.transit.hub.api.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.transit.hub.application.dto.request.CreateMessageRequest;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -151,10 +151,10 @@ class MessageControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             mockMvc.perform(get("/api/messages"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -185,8 +185,8 @@ class MessageControllerIntegrationTest {
     class CreateMessage {
 
         @Test
-        @DisplayName("returns 200 with NETWORK scope message for ADMIN")
-        void withNetworkScope_Returns200() throws Exception {
+        @DisplayName("returns 201 with NETWORK scope message for ADMIN")
+        void withNetworkScope_Returns201() throws Exception {
             CreateMessageRequest request = new CreateMessageRequest(
                     "New Alert",
                     "New content",
@@ -201,15 +201,15 @@ class MessageControllerIntegrationTest {
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.title", is("New Alert")))
                     .andExpect(jsonPath("$.scopeType", is("NETWORK")))
                     .andExpect(jsonPath("$.scopeId", nullValue()));
         }
 
         @Test
-        @DisplayName("returns 200 with LINE scope message for AGENT")
-        void withLineScopeAndAgent_Returns200() throws Exception {
+        @DisplayName("returns 201 with LINE scope message for AGENT")
+        void withLineScopeAndAgent_Returns201() throws Exception {
             CreateMessageRequest request = new CreateMessageRequest(
                     "Line Alert",
                     "Line content",
@@ -224,14 +224,14 @@ class MessageControllerIntegrationTest {
                             .header("Authorization", "Bearer " + agentToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.scopeType", is("LINE")))
                     .andExpect(jsonPath("$.scopeId", is(testLine.getId().toString())));
         }
 
         @Test
-        @DisplayName("returns 200 with STOP scope message")
-        void withStopScope_Returns200() throws Exception {
+        @DisplayName("returns 201 with STOP scope message")
+        void withStopScope_Returns201() throws Exception {
             CreateMessageRequest request = new CreateMessageRequest(
                     "Stop Alert",
                     "Stop content",
@@ -246,7 +246,7 @@ class MessageControllerIntegrationTest {
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.scopeType", is("STOP")))
                     .andExpect(jsonPath("$.scopeId", is(testStop.getId().toString())));
         }
@@ -372,8 +372,8 @@ class MessageControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             CreateMessageRequest request = new CreateMessageRequest(
                     "Alert", "Content", MessageSeverity.INFO, now, futureTime, MessageScope.NETWORK, null
             );
@@ -381,7 +381,7 @@ class MessageControllerIntegrationTest {
             mockMvc.perform(post("/api/messages")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
     }
 

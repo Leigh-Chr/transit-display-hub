@@ -1,6 +1,6 @@
 package com.transit.hub.api.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.transit.hub.application.dto.request.DeviceAuthRequest;
 import com.transit.hub.application.dto.request.RegisterDeviceRequest;
 import com.transit.hub.domain.model.Device;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -132,24 +132,22 @@ class DeviceControllerIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)))
+                    .andExpect(jsonPath("$.valid", is(true)))
                     .andExpect(jsonPath("$.stopId", is(testStop.getId().toString())))
                     .andExpect(jsonPath("$.stopName", is("Central Station")))
                     .andExpect(jsonPath("$.lineCode", is("L1")));
         }
 
         @Test
-        @DisplayName("returns failure for invalid token")
-        void withInvalidToken_ReturnsFailure() throws Exception {
+        @DisplayName("returns 401 for invalid token")
+        void withInvalidToken_Returns401() throws Exception {
             DeviceAuthRequest request = new DeviceAuthRequest("invalid_token");
 
             mockMvc.perform(post("/api/device/authenticate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(false)))
-                    .andExpect(jsonPath("$.stopId", nullValue()))
-                    .andExpect(jsonPath("$.stopName", nullValue()));
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.valid", is(false)));
         }
 
         @Test
@@ -161,7 +159,7 @@ class DeviceControllerIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)));
+                    .andExpect(jsonPath("$.valid", is(true)));
 
             Device updated = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(updated.getStatus()).isEqualTo(DeviceStatus.ONLINE);
@@ -184,10 +182,10 @@ class DeviceControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             mockMvc.perform(get("/api/devices"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -243,37 +241,37 @@ class DeviceControllerIntegrationTest {
     class RegisterDevice {
 
         @Test
-        @DisplayName("returns 200 with device and plain token for ADMIN")
-        void withAdminRole_Returns200() throws Exception {
+        @DisplayName("returns 201 with device and token for ADMIN")
+        void withAdminRole_Returns201() throws Exception {
             RegisterDeviceRequest request = new RegisterDeviceRequest(testStop.getId());
 
             MvcResult result = mockMvc.perform(post("/api/devices")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id", notNullValue()))
-                    .andExpect(jsonPath("$.plainToken", notNullValue()))
-                    .andExpect(jsonPath("$.plainToken", not(emptyString())))
+                    .andExpect(jsonPath("$.token", notNullValue()))
+                    .andExpect(jsonPath("$.token", not(emptyString())))
                     .andExpect(jsonPath("$.stopId", is(testStop.getId().toString())))
                     .andExpect(jsonPath("$.stopName", is("Central Station")))
                     .andReturn();
 
             // Verify the token is 43 chars (Base64 encoded 32 bytes without padding)
             String responseJson = result.getResponse().getContentAsString();
-            String plainToken = objectMapper.readTree(responseJson).get("plainToken").asText();
-            assertThat(plainToken).hasSize(43);
+            String token = objectMapper.readTree(responseJson).get("token").asText();
+            assertThat(token).hasSize(43);
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             RegisterDeviceRequest request = new RegisterDeviceRequest(testStop.getId());
 
             mockMvc.perform(post("/api/devices")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -309,20 +307,20 @@ class DeviceControllerIntegrationTest {
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(registerRequest)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andReturn();
 
             String responseJson = registerResult.getResponse().getContentAsString();
-            String newPlainToken = objectMapper.readTree(responseJson).get("plainToken").asText();
+            String newToken = objectMapper.readTree(responseJson).get("token").asText();
 
             // Now authenticate with the new token
-            DeviceAuthRequest authRequest = new DeviceAuthRequest(newPlainToken);
+            DeviceAuthRequest authRequest = new DeviceAuthRequest(newToken);
 
             mockMvc.perform(post("/api/device/authenticate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(authRequest)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)));
+                    .andExpect(jsonPath("$.valid", is(true)));
         }
     }
 
@@ -398,10 +396,10 @@ class DeviceControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 401 without authentication")
-        void withoutAuth_Returns401() throws Exception {
+        @DisplayName("returns 403 without authentication")
+        void withoutAuth_Returns403() throws Exception {
             mockMvc.perform(delete("/api/devices/" + testDevice.getId()))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test

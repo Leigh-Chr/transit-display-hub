@@ -3,29 +3,35 @@ import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } fr
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
+import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 
 describe('authInterceptor', () => {
   let httpClient: HttpClient;
   let httpMock: HttpTestingController;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let authServiceSpy: {
+    getToken: MockedFunction<() => string | null>;
+    logout: MockedFunction<() => void>;
+  };
 
   const testUrl = '/api/test';
   const loginUrl = '/api/auth/login';
 
   beforeEach(() => {
-    const spy = jasmine.createSpyObj('AuthService', ['getToken', 'logout']);
+    authServiceSpy = {
+      getToken: vi.fn(),
+      logout: vi.fn()
+    };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: spy }
+        { provide: AuthService, useValue: authServiceSpy }
       ]
     });
 
     httpClient = TestBed.inject(HttpClient);
     httpMock = TestBed.inject(HttpTestingController);
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
   });
 
   afterEach(() => {
@@ -34,7 +40,7 @@ describe('authInterceptor', () => {
 
   describe('Authorization header', () => {
     it('should add Authorization header when token exists', () => {
-      authServiceSpy.getToken.and.returnValue('test-token');
+      authServiceSpy.getToken.mockReturnValue('test-token');
 
       httpClient.get(testUrl).subscribe();
 
@@ -44,17 +50,17 @@ describe('authInterceptor', () => {
     });
 
     it('should not add Authorization header when no token exists', () => {
-      authServiceSpy.getToken.and.returnValue(null);
+      authServiceSpy.getToken.mockReturnValue(null);
 
       httpClient.get(testUrl).subscribe();
 
       const req = httpMock.expectOne(testUrl);
-      expect(req.request.headers.has('Authorization')).toBeFalse();
+      expect(req.request.headers.has('Authorization')).toBe(false);
       req.flush({});
     });
 
     it('should format token as Bearer token', () => {
-      authServiceSpy.getToken.and.returnValue('my-jwt-token');
+      authServiceSpy.getToken.mockReturnValue('my-jwt-token');
 
       httpClient.get(testUrl).subscribe();
 
@@ -66,7 +72,7 @@ describe('authInterceptor', () => {
 
   describe('401 error handling', () => {
     it('should call logout on 401 error', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: () => {
@@ -79,7 +85,7 @@ describe('authInterceptor', () => {
     });
 
     it('should not call logout for 401 on login endpoint', () => {
-      authServiceSpy.getToken.and.returnValue(null);
+      authServiceSpy.getToken.mockReturnValue(null);
 
       httpClient.post(loginUrl, {}).subscribe({
         error: () => {
@@ -92,7 +98,7 @@ describe('authInterceptor', () => {
     });
 
     it('should re-throw the error after handling', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: (err: HttpErrorResponse) => {
@@ -105,7 +111,7 @@ describe('authInterceptor', () => {
     });
 
     it('should not call logout for other error statuses', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: () => {
@@ -118,7 +124,7 @@ describe('authInterceptor', () => {
     });
 
     it('should not call logout for 403 errors', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: () => {
@@ -133,7 +139,7 @@ describe('authInterceptor', () => {
 
   describe('request passthrough', () => {
     it('should pass through successful requests', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
       const responseData = { data: 'test' };
 
       httpClient.get(testUrl).subscribe(response => {
@@ -145,7 +151,7 @@ describe('authInterceptor', () => {
     });
 
     it('should preserve original request method', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.post(testUrl, { data: 'test' }).subscribe();
 
@@ -155,7 +161,7 @@ describe('authInterceptor', () => {
     });
 
     it('should preserve original request body', () => {
-      authServiceSpy.getToken.and.returnValue('token');
+      authServiceSpy.getToken.mockReturnValue('token');
       const requestBody = { username: 'test', password: 'password' };
 
       httpClient.post(testUrl, requestBody).subscribe();
