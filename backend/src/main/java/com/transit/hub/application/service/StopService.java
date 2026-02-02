@@ -9,9 +9,10 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
-import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +30,8 @@ public class StopService {
 
     private final StopRepository stopRepository;
     private final LineRepository lineRepository;
-    private final TimedEntryRepository timedEntryRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final ItineraryStopRepository itineraryStopRepository;
     private final DeviceRepository deviceRepository;
     private final BroadcastMessageRepository messageRepository;
 
@@ -79,6 +81,8 @@ public class StopService {
 
         Stop stop = Stop.builder()
                 .name(request.name())
+                .latitude(request.latitude())
+                .longitude(request.longitude())
                 .lines(lines)
                 .build();
 
@@ -94,6 +98,8 @@ public class StopService {
         Set<Line> lines = findAndValidateLines(request.lineIds());
 
         stop.setName(request.name());
+        stop.setLatitude(request.latitude());
+        stop.setLongitude(request.longitude());
         stop.getLines().clear();
         stop.getLines().addAll(lines);
 
@@ -107,7 +113,9 @@ public class StopService {
             throw new EntityNotFoundException("Stop", id);
         }
         // Delete related entities in correct order
-        timedEntryRepository.deleteByStopId(id);
+        scheduleRepository.deleteByStopId(id);
+        itineraryStopRepository.deleteByStopId(id);
+        // Devices and messages
         deviceRepository.deleteByStopId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.STOP, id);
         stopRepository.deleteById(id);

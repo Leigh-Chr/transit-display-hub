@@ -9,11 +9,11 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { TimedEntry, CreateTimedEntryRequest, LineInfo, Route } from '@shared/models';
-import { RouteService } from '@core/api/route.service';
+import { Schedule, CreateScheduleRequest, LineInfo, Itinerary } from '@shared/models';
+import { ItineraryService } from '@core/api/itinerary.service';
 
 export interface ScheduleDialogData {
-  entry?: TimedEntry;
+  entry?: Schedule;
   lines: LineInfo[];
 }
 
@@ -35,21 +35,21 @@ export interface ScheduleDialogData {
     <mat-dialog-content>
       <form #scheduleForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Route</mat-label>
+          <mat-label>Itinerary</mat-label>
           <mat-select
-            [(ngModel)]="form.routeId"
-            name="routeId"
+            [(ngModel)]="form.itineraryId"
+            name="itineraryId"
             required
           >
             @for (line of data.lines; track line.id) {
               <mat-optgroup [label]="line.code + ' - ' + line.name">
-                @for (route of getRoutesForLine(line.id!); track route.id) {
-                  <mat-option [value]="route.id">
-                    <span class="route-option">
+                @for (itinerary of getItinerariesForLine(line.id!); track itinerary.id) {
+                  <mat-option [value]="itinerary.id">
+                    <span class="itinerary-option">
                       <span class="line-badge-small" [style.backgroundColor]="line.color">
                         {{ line.code }}
                       </span>
-                      {{ route.terminusName }}
+                      {{ itinerary.terminusName || itinerary.name }}
                     </span>
                   </mat-option>
                 }
@@ -75,7 +75,7 @@ export interface ScheduleDialogData {
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!scheduleForm.valid || !form.routeId"
+        [disabled]="!scheduleForm.valid || !form.itineraryId"
         (click)="save()"
       >
         {{ data.entry ? 'Save Changes' : 'Create Entry' }}
@@ -95,7 +95,7 @@ export interface ScheduleDialogData {
       width: 100%;
     }
 
-    .route-option {
+    .itinerary-option {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -114,33 +114,33 @@ export interface ScheduleDialogData {
 export class ScheduleDialogComponent implements OnInit {
   readonly dialogRef = inject(MatDialogRef<ScheduleDialogComponent>);
   readonly data = inject<ScheduleDialogData>(MAT_DIALOG_DATA);
-  private readonly routeService = inject(RouteService);
+  private readonly itineraryService = inject(ItineraryService);
 
-  routes = signal<Route[]>([]);
+  itineraries = signal<Itinerary[]>([]);
 
-  form: CreateTimedEntryRequest = {
+  form: CreateScheduleRequest = {
     time: this.data.entry?.time ?? '',
-    routeId: this.data.entry?.route?.id ?? '',
+    itineraryId: this.data.entry?.itinerary?.id ?? '',
   };
 
   ngOnInit(): void {
-    this.loadRoutes();
+    this.loadItineraries();
   }
 
-  private loadRoutes(): void {
-    this.routeService.getAll().subscribe(routes => {
-      this.routes.set(routes);
+  private loadItineraries(): void {
+    this.itineraryService.getAll().subscribe(itineraries => {
+      this.itineraries.set(itineraries);
 
-      // If we have lines but no routeId selected yet, and there's only one route total,
+      // If we have lines but no itineraryId selected yet, and there's only one itinerary total,
       // auto-select it
-      if (!this.form.routeId && routes.length === 1) {
-        this.form.routeId = routes[0].id;
+      if (!this.form.itineraryId && itineraries.length === 1) {
+        this.form.itineraryId = itineraries[0].id;
       }
     });
   }
 
-  getRoutesForLine(lineId: string): Route[] {
-    return this.routes().filter(r => r.line.id === lineId);
+  getItinerariesForLine(lineId: string): Itinerary[] {
+    return this.itineraries().filter(i => i.line.id === lineId);
   }
 
   save(): void {

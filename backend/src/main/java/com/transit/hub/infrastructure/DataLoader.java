@@ -26,8 +26,8 @@ public class DataLoader implements CommandLineRunner {
     private final UserRepository userRepository;
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
-    private final RouteRepository routeRepository;
-    private final TimedEntryRepository timedEntryRepository;
+    private final ItineraryRepository itineraryRepository;
+    private final ScheduleRepository scheduleRepository;
     private final DeviceRepository deviceRepository;
     private final BroadcastMessageRepository messageRepository;
     private final PasswordEncoder passwordEncoder;
@@ -42,9 +42,9 @@ public class DataLoader implements CommandLineRunner {
 
             createUsers();
             Map<String, Line> lines = createLines();
-            Map<String, Route> routes = createRoutes(lines);
             Map<String, Stop> stops = createStops(lines);
-            createSchedules(stops, routes);
+            Map<String, Itinerary> itineraries = createItineraries(lines, stops);
+            createSchedules(stops, itineraries);
             createDevices(stops);
             createMessages(lines, stops);
 
@@ -114,24 +114,28 @@ public class DataLoader implements CommandLineRunner {
                 .code("M1")
                 .name("Red Line - East-West Express")
                 .color("#E53935")
+                .type(LineType.METRO)
                 .build()));
 
         lines.put("M2", lineRepository.save(Line.builder()
                 .code("M2")
                 .name("Blue Line - North-South")
                 .color("#1E88E5")
+                .type(LineType.METRO)
                 .build()));
 
         lines.put("M3", lineRepository.save(Line.builder()
                 .code("M3")
                 .name("Green Line - Ring")
                 .color("#43A047")
+                .type(LineType.METRO)
                 .build()));
 
         lines.put("M4", lineRepository.save(Line.builder()
                 .code("M4")
                 .name("Orange Line - Downtown Express")
                 .color("#FB8C00")
+                .type(LineType.METRO)
                 .build()));
 
         // Airport Express
@@ -139,6 +143,7 @@ public class DataLoader implements CommandLineRunner {
                 .code("A1")
                 .name("Airport Express")
                 .color("#8E24AA")
+                .type(LineType.TRAIN)
                 .build()));
 
         // Tram Lines
@@ -146,109 +151,18 @@ public class DataLoader implements CommandLineRunner {
                 .code("T1")
                 .name("Tram - Riverside")
                 .color("#00ACC1")
+                .type(LineType.TRAM)
                 .build()));
 
         lines.put("T2", lineRepository.save(Line.builder()
                 .code("T2")
                 .name("Tram - University District")
                 .color("#7CB342")
+                .type(LineType.TRAM)
                 .build()));
 
         log.info("Created {} lines", lines.size());
         return lines;
-    }
-
-    private Map<String, Route> createRoutes(Map<String, Line> lines) {
-        log.info("Creating routes...");
-
-        Map<String, Route> routes = new LinkedHashMap<>();
-
-        // M1 - Red Line (East-West) - two directions
-        routes.put("M1-E", routeRepository.save(Route.builder()
-                .line(lines.get("M1"))
-                .name("Direction Eastern Terminal")
-                .terminusName("Eastern Terminal")
-                .build()));
-        routes.put("M1-W", routeRepository.save(Route.builder()
-                .line(lines.get("M1"))
-                .name("Direction Western Terminal")
-                .terminusName("Western Terminal")
-                .build()));
-
-        // M2 - Blue Line (North-South) - two directions
-        routes.put("M2-N", routeRepository.save(Route.builder()
-                .line(lines.get("M2"))
-                .name("Direction North Station")
-                .terminusName("North Station")
-                .build()));
-        routes.put("M2-S", routeRepository.save(Route.builder()
-                .line(lines.get("M2"))
-                .name("Direction South Terminal")
-                .terminusName("South Terminal")
-                .build()));
-
-        // M3 - Green Line (Ring) - two directions (clockwise/counter-clockwise)
-        routes.put("M3-CW", routeRepository.save(Route.builder()
-                .line(lines.get("M3"))
-                .name("Clockwise")
-                .terminusName("Clockwise")
-                .build()));
-        routes.put("M3-CCW", routeRepository.save(Route.builder()
-                .line(lines.get("M3"))
-                .name("Counter-clockwise")
-                .terminusName("Counter-clockwise")
-                .build()));
-
-        // M4 - Orange Line (Downtown Express) - two directions
-        routes.put("M4-BP", routeRepository.save(Route.builder()
-                .line(lines.get("M4"))
-                .name("Direction Business Park")
-                .terminusName("Business Park")
-                .build()));
-        routes.put("M4-ID", routeRepository.save(Route.builder()
-                .line(lines.get("M4"))
-                .name("Direction International District")
-                .terminusName("International District")
-                .build()));
-
-        // A1 - Airport Express - two directions
-        routes.put("A1-AIR", routeRepository.save(Route.builder()
-                .line(lines.get("A1"))
-                .name("Direction Airport Terminal 1")
-                .terminusName("Airport Terminal 1")
-                .build()));
-        routes.put("A1-CTR", routeRepository.save(Route.builder()
-                .line(lines.get("A1"))
-                .name("Direction Central Station")
-                .terminusName("Central Station")
-                .build()));
-
-        // T1 - Riverside Tram - two directions
-        routes.put("T1-RS", routeRepository.save(Route.builder()
-                .line(lines.get("T1"))
-                .name("Direction Riverside Station")
-                .terminusName("Riverside Station")
-                .build()));
-        routes.put("T1-AG", routeRepository.save(Route.builder()
-                .line(lines.get("T1"))
-                .name("Direction Art Gallery")
-                .terminusName("Art Gallery")
-                .build()));
-
-        // T2 - University Tram - two directions
-        routes.put("T2-SC", routeRepository.save(Route.builder()
-                .line(lines.get("T2"))
-                .name("Direction Science Campus")
-                .terminusName("Science Campus")
-                .build()));
-        routes.put("T2-HP", routeRepository.save(Route.builder()
-                .line(lines.get("T2"))
-                .name("Direction Hospital")
-                .terminusName("Hospital")
-                .build()));
-
-        log.info("Created {} routes", routes.size());
-        return routes;
     }
 
     private Map<String, Stop> createStops(Map<String, Line> lines) {
@@ -348,7 +262,112 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void createSchedules(Map<String, Stop> stops, Map<String, Route> routes) {
+    private Map<String, Itinerary> createItineraries(Map<String, Line> lines, Map<String, Stop> stops) {
+        log.info("Creating itineraries with ordered stops...");
+
+        Map<String, Itinerary> itineraries = new LinkedHashMap<>();
+
+        // M1 - Red Line - two directions with ordered stops
+        itineraries.put("M1-E", createItineraryWithStops(lines.get("M1"), "Direction Eastern Terminal",
+                stops, "M1-Western Terminal", "M1-Technology Park", "M1-Medical Center", "M1-Museum District",
+                "Central Station", "Convention Center", "University", "M1-City Hall",
+                "M1-Industrial Park", "M1-Eastern Terminal"));
+
+        itineraries.put("M1-W", createItineraryWithStops(lines.get("M1"), "Direction Western Terminal",
+                stops, "M1-Eastern Terminal", "M1-Industrial Park", "M1-City Hall",
+                "University", "Convention Center", "Central Station",
+                "M1-Museum District", "M1-Medical Center", "M1-Technology Park", "M1-Western Terminal"));
+
+        // M2 - Blue Line - two directions
+        itineraries.put("M2-N", createItineraryWithStops(lines.get("M2"), "Direction North Station",
+                stops, "M2-South Terminal", "M2-Residential Area", "M2-South Park", "M2-Opera House",
+                "M2-Financial District", "Central Station", "M2-Shopping Mall",
+                "M2-Sports Complex", "M2-North Station"));
+
+        itineraries.put("M2-S", createItineraryWithStops(lines.get("M2"), "Direction South Terminal",
+                stops, "M2-North Station", "M2-Sports Complex", "M2-Shopping Mall",
+                "Central Station", "M2-Financial District", "M2-Opera House",
+                "M2-South Park", "M2-Residential Area", "M2-South Terminal"));
+
+        // M3 - Green Line (Ring) - two directions
+        itineraries.put("M3-CW", createItineraryWithStops(lines.get("M3"), "Clockwise",
+                stops, "Central Station", "Convention Center", "M3-Old Town", "M3-Market Square",
+                "M3-Harbor", "M3-Beach", "M3-Marina", "M3-Lighthouse Point",
+                "M3-Aquarium", "M3-Botanical Garden", "M3-Zoo", "M3-Stadium"));
+
+        itineraries.put("M3-CCW", createItineraryWithStops(lines.get("M3"), "Counter-clockwise",
+                stops, "M3-Stadium", "M3-Zoo", "M3-Botanical Garden", "M3-Aquarium",
+                "M3-Lighthouse Point", "M3-Marina", "M3-Beach", "M3-Harbor",
+                "M3-Market Square", "M3-Old Town", "Convention Center", "Central Station"));
+
+        // M4 - Orange Line
+        itineraries.put("M4-BP", createItineraryWithStops(lines.get("M4"), "Direction Business Park",
+                stops, "M4-International District", "M4-Embassy Row", "Central Station",
+                "M4-Government Center", "M4-Tech Hub", "M4-Business Park"));
+
+        itineraries.put("M4-ID", createItineraryWithStops(lines.get("M4"), "Direction International District",
+                stops, "M4-Business Park", "M4-Tech Hub", "M4-Government Center",
+                "Central Station", "M4-Embassy Row", "M4-International District"));
+
+        // A1 - Airport Express
+        itineraries.put("A1-AIR", createItineraryWithStops(lines.get("A1"), "Direction Airport Terminal 1",
+                stops, "Central Station", "A1-Downtown Express", "A1-Airport City",
+                "A1-Airport Terminal 2", "A1-Airport Terminal 1"));
+
+        itineraries.put("A1-CTR", createItineraryWithStops(lines.get("A1"), "Direction Central Station",
+                stops, "A1-Airport Terminal 1", "A1-Airport Terminal 2", "A1-Airport City",
+                "A1-Downtown Express", "Central Station"));
+
+        // T1 - Riverside Tram
+        itineraries.put("T1-RS", createItineraryWithStops(lines.get("T1"), "Direction Riverside Station",
+                stops, "T1-Art Gallery", "T1-Concert Hall", "T1-Promenade",
+                "Central Station", "T1-Fish Market", "T1-Ferry Terminal",
+                "T1-Waterfront", "T1-Riverside Station"));
+
+        itineraries.put("T1-AG", createItineraryWithStops(lines.get("T1"), "Direction Art Gallery",
+                stops, "T1-Riverside Station", "T1-Waterfront", "T1-Ferry Terminal",
+                "T1-Fish Market", "Central Station", "T1-Promenade",
+                "T1-Concert Hall", "T1-Art Gallery"));
+
+        // T2 - University Tram
+        itineraries.put("T2-SC", createItineraryWithStops(lines.get("T2"), "Direction Science Campus",
+                stops, "T2-Hospital", "T2-Research Park", "University",
+                "Central Station", "T2-Student Center", "T2-Library", "T2-Science Campus"));
+
+        itineraries.put("T2-HP", createItineraryWithStops(lines.get("T2"), "Direction Hospital",
+                stops, "T2-Science Campus", "T2-Library", "T2-Student Center",
+                "Central Station", "University", "T2-Research Park", "T2-Hospital"));
+
+        log.info("Created {} itineraries", itineraries.size());
+        return itineraries;
+    }
+
+    private Itinerary createItineraryWithStops(Line line, String name, Map<String, Stop> stops, String... stopKeys) {
+        Itinerary itinerary = Itinerary.builder()
+                .line(line)
+                .name(name)
+                .itineraryStops(new ArrayList<>())
+                .build();
+
+        itinerary = itineraryRepository.save(itinerary);
+
+        int position = 0;
+        for (String key : stopKeys) {
+            Stop stop = stops.get(key);
+            if (stop != null) {
+                ItineraryStop itineraryStop = ItineraryStop.builder()
+                        .itinerary(itinerary)
+                        .stop(stop)
+                        .position(position++)
+                        .build();
+                itinerary.getItineraryStops().add(itineraryStop);
+            }
+        }
+
+        return itineraryRepository.save(itinerary);
+    }
+
+    private void createSchedules(Map<String, Stop> stops, Map<String, Itinerary> itineraries) {
         log.info("Creating schedules...");
 
         int totalEntries = 0;
@@ -356,33 +375,33 @@ public class DataLoader implements CommandLineRunner {
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
             Stop stop = entry.getValue();
 
-            // For each line this stop serves, create schedule entries for all routes of that line
+            // For each line this stop serves, create schedule entries for all itineraries of that line
             for (Line line : stop.getLines()) {
                 String lineCode = line.getCode();
                 List<LocalTime> times = generateScheduleTimes(lineCode);
 
-                // Get routes for this line
-                List<Route> lineRoutes = routes.entrySet().stream()
+                // Get itineraries for this line
+                List<Itinerary> lineItineraries = itineraries.entrySet().stream()
                         .filter(e -> e.getKey().startsWith(lineCode + "-"))
                         .map(Map.Entry::getValue)
                         .toList();
 
-                // Alternate between routes for each stop
-                int routeIndex = 0;
+                // Alternate between itineraries for each stop
+                int itineraryIndex = 0;
                 for (LocalTime time : times) {
-                    Route route = lineRoutes.get(routeIndex % lineRoutes.size());
-                    timedEntryRepository.save(TimedEntry.builder()
+                    Itinerary itinerary = lineItineraries.get(itineraryIndex % lineItineraries.size());
+                    scheduleRepository.save(Schedule.builder()
                             .time(time)
                             .stop(stop)
-                            .route(route)
+                            .itinerary(itinerary)
                             .build());
                     totalEntries++;
-                    routeIndex++;
+                    itineraryIndex++;
                 }
             }
         }
 
-        log.info("Created {} timed entries", totalEntries);
+        log.info("Created {} schedules", totalEntries);
     }
 
     private List<LocalTime> generateScheduleTimes(String lineCode) {
@@ -684,9 +703,9 @@ public class DataLoader implements CommandLineRunner {
         log.info("========================================");
         log.info("Users:          {}", userRepository.count());
         log.info("Lines:          {}", lineRepository.count());
-        log.info("Routes:         {}", routeRepository.count());
+        log.info("Itineraries:    {}", itineraryRepository.count());
         log.info("Stops:          {}", stopRepository.count());
-        log.info("Timed Entries:  {}", timedEntryRepository.count());
+        log.info("Schedules:      {}", scheduleRepository.count());
         log.info("Devices:        {}", deviceRepository.count());
         log.info("Messages:       {}", messageRepository.count());
         log.info("========================================");

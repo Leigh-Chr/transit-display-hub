@@ -8,10 +8,18 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Line, CreateLineRequest } from '@shared/models';
+import { MatSelectModule } from '@angular/material/select';
+import { Line, CreateLineRequest, LineType } from '@shared/models';
 
 export interface LineDialogData {
   line?: Line;
+}
+
+interface LineForm {
+  code: string;
+  name: string;
+  color: string;
+  type: LineType | null;
 }
 
 @Component({
@@ -23,6 +31,7 @@ export interface LineDialogData {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
   ],
   template: `
     <h2 mat-dialog-title>{{ data.line ? 'Edit Line' : 'New Line' }}</h2>
@@ -48,6 +57,16 @@ export interface LineDialogData {
             placeholder="e.g., Line 1 - Downtown Express"
             required
           />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Type</mat-label>
+          <mat-select [(ngModel)]="form.type" name="type">
+            <mat-option [value]="null">Not specified</mat-option>
+            @for (type of lineTypes; track type) {
+              <mat-option [value]="type">{{ type }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
 
         <div class="color-field">
@@ -130,13 +149,22 @@ export class LineDialogComponent {
   readonly dialogRef = inject(MatDialogRef<LineDialogComponent>);
   readonly data = inject<LineDialogData>(MAT_DIALOG_DATA);
 
-  form: CreateLineRequest = {
+  readonly lineTypes: LineType[] = ['METRO', 'BUS', 'TRAM', 'TRAIN'];
+
+  form: LineForm = {
     code: this.data.line?.code ?? '',
     name: this.data.line?.name ?? '',
     color: this.data.line?.color ?? '#3B82F6',
+    type: this.data.line?.type ?? null,
   };
 
   save(): void {
-    this.dialogRef.close(this.form);
+    const request: CreateLineRequest = {
+      code: this.form.code,
+      name: this.form.name,
+      color: this.form.color,
+      type: this.form.type ?? undefined,
+    };
+    this.dialogRef.close(request);
   }
 }

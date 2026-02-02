@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.enums.LineType;
 
 import java.util.UUID;
 
@@ -9,8 +10,9 @@ public record LineResponse(
         String code,
         String name,
         String color,
+        LineType type,
         int stopCount,
-        int routeCount
+        int itineraryCount
 ) {
     public static LineResponse from(Line line) {
         return new LineResponse(
@@ -18,8 +20,9 @@ public record LineResponse(
                 line.getCode(),
                 line.getName(),
                 line.getColor(),
+                line.getType(),
                 line.getStops() != null ? line.getStops().size() : 0,
-                line.getRoutes() != null ? line.getRoutes().size() : 0
+                line.getItineraries() != null ? line.getItineraries().size() : 0
         );
     }
 }

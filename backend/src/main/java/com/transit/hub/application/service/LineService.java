@@ -8,9 +8,9 @@ import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
-import com.transit.hub.infrastructure.persistence.RouteRepository;
-import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,8 +25,8 @@ import java.util.UUID;
 public class LineService {
 
     private final LineRepository lineRepository;
-    private final RouteRepository routeRepository;
-    private final TimedEntryRepository timedEntryRepository;
+    private final ItineraryRepository itineraryRepository;
+    private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
 
     @Transactional(readOnly = true)
@@ -64,6 +64,7 @@ public class LineService {
                 .code(request.code())
                 .name(request.name())
                 .color(request.color())
+                .type(request.type())
                 .build();
 
         Line saved = lineRepository.save(line);
@@ -83,6 +84,7 @@ public class LineService {
         line.setCode(request.code());
         line.setName(request.name());
         line.setColor(request.color());
+        line.setType(request.type());
 
         Line saved = lineRepository.save(line);
         return LineResponse.from(saved);
@@ -94,8 +96,8 @@ public class LineService {
             throw new EntityNotFoundException("Line", id);
         }
         // Delete related entities in correct order
-        timedEntryRepository.deleteByRouteLineId(id);
-        routeRepository.deleteByLineId(id);
+        scheduleRepository.deleteByItineraryLineId(id);
+        itineraryRepository.deleteByLineId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.LINE, id);
         lineRepository.deleteById(id);
     }

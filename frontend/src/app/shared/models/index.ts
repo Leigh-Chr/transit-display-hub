@@ -3,6 +3,7 @@ export type MessageSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 export type MessageScope = 'NETWORK' | 'LINE' | 'STOP';
 export type DeviceStatus = 'ONLINE' | 'OFFLINE';
 export type UserRole = 'ADMIN' | 'AGENT';
+export type LineType = 'METRO' | 'BUS' | 'TRAM' | 'TRAIN';
 
 // Pagination
 export interface PageResponse<T> {
@@ -37,41 +38,54 @@ export interface Line {
   code: string;
   name: string;
   color: string;
+  type: LineType | null;
   stopCount: number;
-  routeCount: number;
+  itineraryCount: number;
 }
 
 export interface CreateLineRequest {
   code: string;
   name: string;
   color: string;
+  type?: LineType;
 }
 
-// Route
-export interface Route {
+// Itinerary
+export interface ItineraryStopInfo {
   id: string;
   name: string;
-  terminusName: string;
-  line: LineInfo;
+  position: number;
 }
 
-export interface RouteInfo {
+export interface Itinerary {
   id: string;
   name: string;
-  terminusName: string;
+  terminusName: string | null;
   line: LineInfo;
+  stops: ItineraryStopInfo[];
 }
 
-export interface CreateRouteRequest {
+export interface CreateItineraryRequest {
   lineId: string;
   name: string;
-  terminusName: string;
+  stopIds?: string[];
+}
+
+export interface UpdateItineraryStopsRequest {
+  stopIds: string[];
+}
+
+export interface AddItineraryStopRequest {
+  stopId: string;
+  position?: number;
 }
 
 // Stop
 export interface Stop {
   id: string;
   name: string;
+  latitude: number | null;
+  longitude: number | null;
   lines: LineInfo[];
   scheduleCount: number;
   hasDevice: boolean;
@@ -80,19 +94,28 @@ export interface Stop {
 export interface CreateStopRequest {
   name: string;
   lineIds: string[];
+  latitude?: number;
+  longitude?: number;
 }
 
-// Schedule / TimedEntry
-export interface TimedEntry {
+// Schedule
+export interface ItineraryInfo {
+  id: string;
+  name: string;
+  terminusName: string | null;
+  line: LineInfo;
+}
+
+export interface Schedule {
   id: string;
   time: string;
   stopId: string;
-  route: RouteInfo;
+  itinerary: ItineraryInfo;
 }
 
-export interface CreateTimedEntryRequest {
+export interface CreateScheduleRequest {
   time: string;
-  routeId: string;
+  itineraryId: string;
 }
 
 // Message

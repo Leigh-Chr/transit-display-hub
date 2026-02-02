@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { TimedEntry, CreateTimedEntryRequest } from '@shared/models';
+import { Schedule, CreateScheduleRequest } from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -9,19 +9,19 @@ import { TimedEntry, CreateTimedEntryRequest } from '@shared/models';
 export class ScheduleService {
   constructor(private http: HttpClient) {}
 
-  getForStop(stopId: string): Observable<TimedEntry[]> {
-    return this.http.get<TimedEntry[]>(`/api/stops/${stopId}/schedules`);
+  getForStop(stopId: string): Observable<Schedule[]> {
+    return this.http.get<Schedule[]>(`/api/v2/stops/${stopId}/schedules`);
   }
 
-  create(stopId: string, request: CreateTimedEntryRequest): Observable<TimedEntry> {
-    return this.http.post<TimedEntry>(`/api/stops/${stopId}/schedules`, request);
+  create(stopId: string, request: CreateScheduleRequest): Observable<Schedule> {
+    return this.http.post<Schedule>(`/api/v2/stops/${stopId}/schedules`, request);
   }
 
-  update(id: string, request: CreateTimedEntryRequest): Observable<TimedEntry> {
-    return this.http.put<TimedEntry>(`/api/schedules/${id}`, request);
+  update(id: string, request: CreateScheduleRequest): Observable<Schedule> {
+    return this.http.put<Schedule>(`/api/v2/schedules/${id}`, request);
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/schedules/${id}`);
+    return this.http.delete<void>(`/api/v2/schedules/${id}`);
   }
 }

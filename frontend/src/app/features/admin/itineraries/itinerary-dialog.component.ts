@@ -7,39 +7,46 @@ import {
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Route, Line, CreateRouteRequest } from '@shared/models';
+import { Itinerary, Line, CreateItineraryRequest } from '@shared/models';
 
-export interface RouteDialogData {
-  route?: Route;
+export interface ItineraryDialogData {
+  itinerary?: Itinerary;
   lines: Line[];
 }
 
+interface ItineraryForm {
+  lineId: string;
+  name: string;
+}
+
 @Component({
-  selector: 'app-route-dialog',
+  selector: 'app-itinerary-dialog',
   standalone: true,
   imports: [
     FormsModule,
     MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSelectModule,
   ],
   template: `
     <h2 mat-dialog-title>
-      {{ data.route ? 'Edit Route' : 'New Route' }}
+      {{ data.itinerary ? 'Edit Itinerary' : 'New Itinerary' }}
     </h2>
     <mat-dialog-content>
-      <form #routeForm="ngForm" class="form-container">
+      <form #itineraryForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Line</mat-label>
           <mat-select
             [(ngModel)]="form.lineId"
             name="lineId"
             required
-            [disabled]="!!data.route"
+            [disabled]="!!data.itinerary"
           >
             @for (line of data.lines; track line.id) {
               <mat-option [value]="line.id">
@@ -55,7 +62,7 @@ export interface RouteDialogData {
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Route Name</mat-label>
+          <mat-label>Itinerary Name</mat-label>
           <input
             matInput
             [(ngModel)]="form.name"
@@ -64,21 +71,21 @@ export interface RouteDialogData {
             maxlength="100"
             placeholder="e.g., Direction Eastern Terminal"
           />
-          <mat-hint>Internal name for this route direction</mat-hint>
+          <mat-hint>Name for this direction/itinerary</mat-hint>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Terminus Name</mat-label>
-          <input
-            matInput
-            [(ngModel)]="form.terminusName"
-            name="terminusName"
-            required
-            maxlength="100"
-            placeholder="e.g., Eastern Terminal"
-          />
-          <mat-hint>Destination displayed on kiosks</mat-hint>
-        </mat-form-field>
+        @if (!data.itinerary) {
+          <p class="info-text">
+            <mat-icon class="info-icon">info</mat-icon>
+            After creating the itinerary, you can add stops to define the terminus.
+          </p>
+        } @else if (data.itinerary.terminusName) {
+          <p class="terminus-info">
+            <strong>Terminus:</strong> {{ data.itinerary.terminusName }}
+            <br />
+            <span class="muted">The terminus is automatically derived from the last stop.</span>
+          </p>
+        }
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -86,10 +93,10 @@ export interface RouteDialogData {
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!routeForm.valid"
+        [disabled]="!itineraryForm.valid"
         (click)="save()"
       >
-        {{ data.route ? 'Save Changes' : 'Create Route' }}
+        {{ data.itinerary ? 'Save Changes' : 'Create Itinerary' }}
       </button>
     </mat-dialog-actions>
   `,
@@ -120,19 +127,54 @@ export interface RouteDialogData {
       font-size: 12px;
       font-weight: 600;
     }
+
+    .info-text {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--app-on-surface-muted);
+      font-size: 13px;
+      margin: 8px 0 0;
+      padding: 12px;
+      background: var(--app-surface-variant);
+      border-radius: 8px;
+    }
+
+    .info-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--app-primary);
+    }
+
+    .terminus-info {
+      font-size: 14px;
+      margin: 8px 0 0;
+      padding: 12px;
+      background: var(--app-surface-variant);
+      border-radius: 8px;
+    }
+
+    .muted {
+      color: var(--app-on-surface-muted);
+      font-size: 12px;
+    }
   `,
 })
-export class RouteDialogComponent {
-  readonly dialogRef = inject(MatDialogRef<RouteDialogComponent>);
-  readonly data = inject<RouteDialogData>(MAT_DIALOG_DATA);
+export class ItineraryDialogComponent {
+  readonly dialogRef = inject(MatDialogRef<ItineraryDialogComponent>);
+  readonly data = inject<ItineraryDialogData>(MAT_DIALOG_DATA);
 
-  form: CreateRouteRequest = {
-    lineId: this.data.route?.line?.id ?? '',
-    name: this.data.route?.name ?? '',
-    terminusName: this.data.route?.terminusName ?? '',
+  form: ItineraryForm = {
+    lineId: this.data.itinerary?.line?.id ?? '',
+    name: this.data.itinerary?.name ?? '',
   };
 
   save(): void {
-    this.dialogRef.close(this.form);
+    const request: CreateItineraryRequest = {
+      lineId: this.form.lineId,
+      name: this.form.name,
+    };
+    this.dialogRef.close(request);
   }
 }

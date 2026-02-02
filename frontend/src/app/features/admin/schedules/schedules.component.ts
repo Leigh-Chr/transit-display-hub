@@ -13,7 +13,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
-import { Line, Stop, TimedEntry } from '@shared/models';
+import { Line, Stop, Schedule } from '@shared/models';
 import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -116,8 +116,8 @@ import { fadeIn } from '@shared/animations';
               <ng-container matColumnDef="line">
                 <th mat-header-cell *matHeaderCellDef>Line</th>
                 <td mat-cell *matCellDef="let entry">
-                  <span class="line-badge" [style.backgroundColor]="entry.route.line.color">
-                    {{ entry.route.line.code }}
+                  <span class="line-badge" [style.backgroundColor]="entry.itinerary.line.color">
+                    {{ entry.itinerary.line.code }}
                   </span>
                 </td>
               </ng-container>
@@ -125,7 +125,7 @@ import { fadeIn } from '@shared/animations';
               <ng-container matColumnDef="destination">
                 <th mat-header-cell *matHeaderCellDef>Destination</th>
                 <td mat-cell *matCellDef="let entry" class="destination-cell">
-                  {{ entry.route.terminusName }}
+                  {{ entry.itinerary.terminusName || '(no terminus)' }}
                 </td>
               </ng-container>
 
@@ -249,7 +249,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(false);
   lines = signal<Line[]>([]);
   stops = signal<Stop[]>([]);
-  dataSource = new MatTableDataSource<TimedEntry>([]);
+  dataSource = new MatTableDataSource<Schedule>([]);
   selectedStop = signal<Stop | null>(null);
 
   selectedLineId = '';
@@ -337,7 +337,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  openEditDialog(entry: TimedEntry): void {
+  openEditDialog(entry: Schedule): void {
     const stop = this.selectedStop();
     if (!stop) return;
 
@@ -366,11 +366,12 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  deleteSchedule(entry: TimedEntry): void {
+  deleteSchedule(entry: Schedule): void {
+    const terminusName = entry.itinerary.terminusName || 'unknown';
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete Schedule Entry',
-        message: `Delete schedule entry at ${this.formatTime(entry.time)} to ${entry.route.terminusName}?`,
+        message: `Delete schedule entry at ${this.formatTime(entry.time)} to ${terminusName}?`,
         confirmText: 'Delete',
         confirmColor: 'warn',
       } as ConfirmDialogData,

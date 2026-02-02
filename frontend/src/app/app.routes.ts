@@ -34,8 +34,8 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/stops/stops.component').then(m => m.StopsComponent)
       },
       {
-        path: 'routes',
-        loadComponent: () => import('./features/admin/routes/routes.component').then(m => m.RoutesComponent)
+        path: 'itineraries',
+        loadComponent: () => import('./features/admin/itineraries/itineraries.component').then(m => m.ItinerariesComponent)
       },
       {
         path: 'schedules',

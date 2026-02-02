@@ -3,13 +3,13 @@ package com.transit.hub.domain.service;
 import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.BroadcastMessage;
+import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
-import com.transit.hub.domain.model.Route;
+import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.model.TimedEntry;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
-import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 public class DisplayStateCalculator {
 
     private final StopRepository stopRepository;
-    private final TimedEntryRepository timedEntryRepository;
+    private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
 
     private static final int MAX_MESSAGES = 3;
@@ -59,12 +59,12 @@ public class DisplayStateCalculator {
         // Get upcoming arrivals within 30-minute window, one per line (next departure only)
         LocalTime now = LocalTime.now();
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
-        List<DisplayState.ArrivalInfo> arrivals = timedEntryRepository
-                .findByStopIdAndTimeWindowWithRoute(stopId, now, windowEnd)
+        List<DisplayState.ArrivalInfo> arrivals = scheduleRepository
+                .findByStopIdAndTimeWindowWithItinerary(stopId, now, windowEnd)
                 .stream()
                 // Group by line code, keeping only the first (earliest) departure per line
                 .collect(Collectors.toMap(
-                        entry -> entry.getRoute().getLine().getCode(),
+                        schedule -> schedule.getItinerary().getLine().getCode(),
                         Function.identity(),
                         (existing, replacement) -> existing, // Keep first occurrence (earliest time)
                         LinkedHashMap::new // Preserve insertion order
@@ -72,7 +72,7 @@ public class DisplayStateCalculator {
                 .values()
                 .stream()
                 // Sort by departure time
-                .sorted(Comparator.comparing(TimedEntry::getTime))
+                .sorted(Comparator.comparing(Schedule::getTime))
                 .map(this::toArrivalInfo)
                 .toList();
 
@@ -104,17 +104,17 @@ public class DisplayStateCalculator {
         );
     }
 
-    private DisplayState.ArrivalInfo toArrivalInfo(TimedEntry entry) {
-        Route route = entry.getRoute();
-        Line line = route.getLine();
+    private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule) {
+        Itinerary itinerary = schedule.getItinerary();
+        Line line = itinerary.getLine();
         DisplayState.LineInfo lineInfo = new DisplayState.LineInfo(
                 line.getCode(),
                 line.getName(),
                 line.getColor()
         );
         return new DisplayState.ArrivalInfo(
-                entry.getTime(),
-                route.getTerminusName(),
+                schedule.getTime(),
+                itinerary.getTerminusName(),
                 lineInfo
         );
     }

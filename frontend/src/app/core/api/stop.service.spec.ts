@@ -19,6 +19,8 @@ describe('StopService', () => {
   const mockStop: Stop = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Central Station',
+    latitude: 48.8566,
+    longitude: 2.3522,
     lines: [mockLine],
     scheduleCount: 10,
     hasDevice: true
@@ -29,6 +31,8 @@ describe('StopService', () => {
     {
       id: '223e4567-e89b-12d3-a456-426614174000',
       name: 'North Station',
+      latitude: null,
+      longitude: null,
       lines: [mockLine],
       scheduleCount: 8,
       hasDevice: false
@@ -122,6 +126,8 @@ describe('StopService', () => {
       const createdStop: Stop = {
         id: '333e4567-e89b-12d3-a456-426614174000',
         name: request.name,
+        latitude: null,
+        longitude: null,
         lines: [mockLine],
         scheduleCount: 0,
         hasDevice: false

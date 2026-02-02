@@ -8,21 +8,21 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "timed_entries",
+@Table(name = "schedules",
        uniqueConstraints = @UniqueConstraint(
-           name = "uk_timed_entry_stop_route_time",
-           columnNames = {"stop_id", "route_id", "time"}
+           name = "uk_schedule_stop_itinerary_time",
+           columnNames = {"stop_id", "itinerary_id", "time"}
        ),
        indexes = {
-           @Index(name = "idx_timed_entry_stop_time", columnList = "stop_id, time"),
-           @Index(name = "idx_timed_entry_route", columnList = "route_id")
+           @Index(name = "idx_schedule_stop_time", columnList = "stop_id, time"),
+           @Index(name = "idx_schedule_itinerary", columnList = "itinerary_id")
        })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TimedEntry {
+public class Schedule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,8 +37,8 @@ public class TimedEntry {
     @JoinColumn(name = "stop_id", nullable = false)
     private Stop stop;
 
-    @NotNull(message = "Route is required")
+    @NotNull(message = "Itinerary is required")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "route_id", nullable = false)
-    private Route route;
+    @JoinColumn(name = "itinerary_id", nullable = false)
+    private Itinerary itinerary;
 }

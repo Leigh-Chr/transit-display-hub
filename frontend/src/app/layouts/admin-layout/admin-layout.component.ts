@@ -79,12 +79,12 @@ import { routeSlide } from '@shared/animations';
 
           <a
             mat-list-item
-            routerLink="/admin/routes"
+            routerLink="/admin/itineraries"
             routerLinkActive="active-link"
             (click)="closeSidenavOnMobile()"
           >
-            <mat-icon matListItemIcon>alt_route</mat-icon>
-            <span matListItemTitle>Routes</span>
+            <mat-icon matListItemIcon>route</mat-icon>
+            <span matListItemTitle>Itineraries</span>
           </a>
 
           <a

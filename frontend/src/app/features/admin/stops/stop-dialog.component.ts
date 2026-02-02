@@ -17,6 +17,13 @@ export interface StopDialogData {
   selectedLineId?: string;
 }
 
+interface StopForm {
+  lineIds: string[];
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 @Component({
   selector: 'app-stop-dialog',
   standalone: true,
@@ -59,6 +66,32 @@ export interface StopDialogData {
             required
           />
         </mat-form-field>
+
+        <div class="coordinates-row">
+          <mat-form-field appearance="outline" class="coordinate-field">
+            <mat-label>Latitude</mat-label>
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="form.latitude"
+              name="latitude"
+              placeholder="e.g., 48.8566"
+              step="0.0001"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="coordinate-field">
+            <mat-label>Longitude</mat-label>
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="form.longitude"
+              name="longitude"
+              placeholder="e.g., 2.3522"
+              step="0.0001"
+            />
+          </mat-form-field>
+        </div>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -85,19 +118,36 @@ export interface StopDialogData {
     .full-width {
       width: 100%;
     }
+
+    .coordinates-row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .coordinate-field {
+      flex: 1;
+    }
   `,
 })
 export class StopDialogComponent {
   readonly dialogRef = inject(MatDialogRef<StopDialogComponent>);
   readonly data = inject<StopDialogData>(MAT_DIALOG_DATA);
 
-  form: CreateStopRequest = {
+  form: StopForm = {
     lineIds: this.data.stop?.lines.map(l => l.id!).filter(Boolean) ??
              (this.data.selectedLineId ? [this.data.selectedLineId] : []),
     name: this.data.stop?.name ?? '',
+    latitude: this.data.stop?.latitude ?? null,
+    longitude: this.data.stop?.longitude ?? null,
   };
 
   save(): void {
-    this.dialogRef.close(this.form);
+    const request: CreateStopRequest = {
+      lineIds: this.form.lineIds,
+      name: this.form.name,
+      latitude: this.form.latitude ?? undefined,
+      longitude: this.form.longitude ?? undefined,
+    };
+    this.dialogRef.close(request);
   }
 }

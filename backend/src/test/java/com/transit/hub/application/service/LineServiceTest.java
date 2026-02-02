@@ -7,9 +7,9 @@ import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
-import com.transit.hub.infrastructure.persistence.RouteRepository;
-import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,10 +38,10 @@ class LineServiceTest {
     private LineRepository lineRepository;
 
     @Mock
-    private RouteRepository routeRepository;
+    private ItineraryRepository itineraryRepository;
 
     @Mock
-    private TimedEntryRepository timedEntryRepository;
+    private ScheduleRepository scheduleRepository;
 
     @Mock
     private BroadcastMessageRepository messageRepository;
@@ -122,7 +122,7 @@ class LineServiceTest {
         @Test
         @DisplayName("creates line with valid request")
         void withValidRequest_Succeeds() {
-            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00");
+            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", null);
             when(lineRepository.existsByCode("L2")).thenReturn(false);
             when(lineRepository.save(any(Line.class))).thenAnswer(invocation -> {
                 Line saved = invocation.getArgument(0);
@@ -144,7 +144,7 @@ class LineServiceTest {
         @Test
         @DisplayName("throws ValidationException when code already exists")
         void withDuplicateCode_ThrowsValidation() {
-            CreateLineRequest request = new CreateLineRequest("L1", "Duplicate Line", "#FF0000");
+            CreateLineRequest request = new CreateLineRequest("L1", "Duplicate Line", "#FF0000", null);
             when(lineRepository.existsByCode("L1")).thenReturn(true);
 
             assertThatThrownBy(() -> lineService.createLine(request))
@@ -163,7 +163,7 @@ class LineServiceTest {
         @Test
         @DisplayName("updates line with valid request")
         void withValidRequest_Succeeds() {
-            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated Line", "#0000FF");
+            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated Line", "#0000FF", null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(lineRepository.existsByCode("L1-NEW")).thenReturn(false);
             when(lineRepository.save(any(Line.class))).thenReturn(testLine);
@@ -176,7 +176,7 @@ class LineServiceTest {
         @Test
         @DisplayName("succeeds when keeping same code")
         void keepingSameCode_Succeeds() {
-            CreateLineRequest request = new CreateLineRequest("L1", "Updated Name", "#0000FF");
+            CreateLineRequest request = new CreateLineRequest("L1", "Updated Name", "#0000FF", null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(lineRepository.save(any(Line.class))).thenReturn(testLine);
 
@@ -189,7 +189,7 @@ class LineServiceTest {
         @Test
         @DisplayName("throws ValidationException when changing to existing code")
         void changingToExistingCode_ThrowsValidation() {
-            CreateLineRequest request = new CreateLineRequest("L2", "New Name", "#0000FF");
+            CreateLineRequest request = new CreateLineRequest("L2", "New Name", "#0000FF", null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(lineRepository.existsByCode("L2")).thenReturn(true);
 
@@ -205,7 +205,7 @@ class LineServiceTest {
         @DisplayName("throws EntityNotFoundException when line not found")
         void withNonExistentId_ThrowsNotFound() {
             UUID unknownId = UUID.randomUUID();
-            CreateLineRequest request = new CreateLineRequest("L1", "Name", "#FF0000");
+            CreateLineRequest request = new CreateLineRequest("L1", "Name", "#FF0000", null);
             when(lineRepository.findById(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> lineService.updateLine(unknownId, request))
@@ -225,8 +225,8 @@ class LineServiceTest {
 
             lineService.deleteLine(testLineId);
 
-            verify(timedEntryRepository).deleteByRouteLineId(testLineId);
-            verify(routeRepository).deleteByLineId(testLineId);
+            verify(scheduleRepository).deleteByItineraryLineId(testLineId);
+            verify(itineraryRepository).deleteByLineId(testLineId);
             verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.LINE, testLineId);
             verify(lineRepository).deleteById(testLineId);
         }

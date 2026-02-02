@@ -1,5 +1,6 @@
 package com.transit.hub.domain.model;
 
+import com.transit.hub.domain.model.enums.LineType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -38,11 +39,15 @@ public class Line {
     @Column(nullable = false)
     private String color;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private LineType type;
+
     @ManyToMany(mappedBy = "lines")
     @Builder.Default
     private Set<Stop> stops = new HashSet<>();
 
     @OneToMany(mappedBy = "line", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<Route> routes = new HashSet<>();
+    private Set<Itinerary> itineraries = new HashSet<>();
 }

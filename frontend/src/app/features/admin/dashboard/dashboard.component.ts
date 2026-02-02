@@ -9,10 +9,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
-import { RouteService } from '@core/api/route.service';
+import { ItineraryService } from '@core/api/itinerary.service';
 import { MessageService } from '@core/api/message.service';
 import { DeviceService } from '@core/api/device.service';
-import { Line, Stop, Route, BroadcastMessage, Device } from '@shared/models';
+import { Line, Stop, Itinerary, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { gridStagger, fadeIn } from '@shared/animations';
 
@@ -69,8 +69,8 @@ import { gridStagger, fadeIn } from '@shared/animations';
                 <mat-icon>alt_route</mat-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-value">{{ routes().length }}</div>
-                <div class="stat-label">Routes</div>
+                <div class="stat-value">{{ itineraries().length }}</div>
+                <div class="stat-label">Itineraries</div>
               </div>
             </mat-card-content>
           </mat-card>
@@ -129,7 +129,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
                       [routerLink]="['/admin/stops']"
                       [queryParams]="{ lineId: line.id }"
                       class="line-item"
-                      [matTooltip]="line.name + ' - ' + line.stopCount + ' stops, ' + line.routeCount + ' routes'"
+                      [matTooltip]="line.name + ' - ' + line.stopCount + ' stops, ' + line.itineraryCount + ' itineraries'"
                     >
                       <span class="line-badge" [style.backgroundColor]="line.color">
                         {{ line.code }}
@@ -864,14 +864,14 @@ import { gridStagger, fadeIn } from '@shared/animations';
 export class DashboardComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly stopService = inject(StopService);
-  private readonly routeService = inject(RouteService);
+  private readonly itineraryService = inject(ItineraryService);
   private readonly messageService = inject(MessageService);
   private readonly deviceService = inject(DeviceService);
 
   loading = signal(true);
   lines = signal<Line[]>([]);
   stops = signal<Stop[]>([]);
-  routes = signal<Route[]>([]);
+  itineraries = signal<Itinerary[]>([]);
   activeMessages = signal<BroadcastMessage[]>([]);
   allMessages = signal<BroadcastMessage[]>([]);
   devices = signal<Device[]>([]);
@@ -926,15 +926,15 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       lines: this.lineService.getAll(),
       stops: this.stopService.getAll(),
-      routes: this.routeService.getAll(),
+      itineraries: this.itineraryService.getAll(),
       activeMessages: this.messageService.getAll(true),
       allMessages: this.messageService.getAll(),
       devices: this.deviceService.getAll(),
     }).subscribe({
-      next: ({ lines, stops, routes, activeMessages, allMessages, devices }) => {
+      next: ({ lines, stops, itineraries, activeMessages, allMessages, devices }) => {
         this.lines.set(lines);
         this.stops.set(stops);
-        this.routes.set(routes);
+        this.itineraries.set(itineraries);
         this.activeMessages.set(activeMessages);
         this.allMessages.set(allMessages);
         this.devices.set(devices);

@@ -65,8 +65,8 @@ import { gridStagger } from '@shared/animations';
             <mat-option value="name:desc">Name (Z-A)</mat-option>
             <mat-option value="stopCount:desc">Most Stops</mat-option>
             <mat-option value="stopCount">Fewest Stops</mat-option>
-            <mat-option value="routeCount:desc">Most Routes</mat-option>
-            <mat-option value="routeCount">Fewest Routes</mat-option>
+            <mat-option value="itineraryCount:desc">Most Itineraries</mat-option>
+            <mat-option value="itineraryCount">Fewest Itineraries</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -123,7 +123,7 @@ import { gridStagger } from '@shared/animations';
                   </div>
                   <div class="stat">
                     <mat-icon>directions</mat-icon>
-                    <span>{{ line.routeCount }} routes</span>
+                    <span>{{ line.itineraryCount }} itineraries</span>
                   </div>
                 </div>
               </mat-card-content>

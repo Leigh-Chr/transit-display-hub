@@ -44,30 +44,6 @@ public final class TestDataFactory {
                 .build();
     }
 
-    // ============== ROUTE ==============
-
-    public static Route createRoute(Line line, String name, String terminusName) {
-        return Route.builder()
-                .id(UUID.randomUUID())
-                .line(line)
-                .name(name)
-                .terminusName(terminusName)
-                .build();
-    }
-
-    public static Route createRoute(Line line) {
-        return createRoute(line, "Direction Central", "Central Station");
-    }
-
-    public static Route createRouteWithId(UUID id, Line line, String name, String terminusName) {
-        return Route.builder()
-                .id(id)
-                .line(line)
-                .name(name)
-                .terminusName(terminusName)
-                .build();
-    }
-
     // ============== STOP ==============
 
     public static Stop createStop(String name, Line... lines) {
@@ -98,27 +74,59 @@ public final class TestDataFactory {
                 .build();
     }
 
-    // ============== TIMED ENTRY ==============
+    // ============== ITINERARY ==============
 
-    public static TimedEntry createTimedEntry(LocalTime time, Stop stop, Route route) {
-        return TimedEntry.builder()
+    public static Itinerary createItinerary(Line line, String name) {
+        Itinerary itinerary = Itinerary.builder()
+                .id(UUID.randomUUID())
+                .line(line)
+                .name(name)
+                .build();
+        return itinerary;
+    }
+
+    public static Itinerary createItineraryWithId(UUID id, Line line, String name) {
+        Itinerary itinerary = Itinerary.builder()
+                .id(id)
+                .line(line)
+                .name(name)
+                .build();
+        return itinerary;
+    }
+
+    public static Itinerary createItineraryWithStops(Line line, String name, Stop... stops) {
+        Itinerary itinerary = Itinerary.builder()
+                .id(UUID.randomUUID())
+                .line(line)
+                .name(name)
+                .build();
+        for (int i = 0; i < stops.length; i++) {
+            itinerary.addStop(stops[i], i);
+        }
+        return itinerary;
+    }
+
+    // ============== SCHEDULE ==============
+
+    public static Schedule createSchedule(LocalTime time, Stop stop, Itinerary itinerary) {
+        return Schedule.builder()
                 .id(UUID.randomUUID())
                 .time(time)
                 .stop(stop)
-                .route(route)
+                .itinerary(itinerary)
                 .build();
     }
 
-    public static TimedEntry createTimedEntry(Stop stop, Route route) {
-        return createTimedEntry(LocalTime.of(8, 30), stop, route);
+    public static Schedule createSchedule(Stop stop, Itinerary itinerary) {
+        return createSchedule(LocalTime.of(8, 30), stop, itinerary);
     }
 
-    public static TimedEntry createTimedEntryWithId(UUID id, LocalTime time, Stop stop, Route route) {
-        return TimedEntry.builder()
+    public static Schedule createScheduleWithId(UUID id, LocalTime time, Stop stop, Itinerary itinerary) {
+        return Schedule.builder()
                 .id(id)
                 .time(time)
                 .stop(stop)
-                .route(route)
+                .itinerary(itinerary)
                 .build();
     }
 

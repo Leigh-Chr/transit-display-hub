@@ -11,12 +11,15 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, MatSort, Sort } from '@angular/material/sort';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, takeUntil } from 'rxjs';
-import { RouteService } from '@core/api/route.service';
+import { ItineraryService } from '@core/api/itinerary.service';
 import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
-import { Route, Line, PageResponse } from '@shared/models';
-import { RouteDialogComponent, RouteDialogData } from './route-dialog.component';
+import { Itinerary, Line, PageResponse, UpdateItineraryStopsRequest } from '@shared/models';
+import { ItineraryDialogComponent, ItineraryDialogData } from './itinerary-dialog.component';
+import { ItineraryStopsDialogComponent, ItineraryStopsDialogData } from './itinerary-stops-dialog.component';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -27,7 +30,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { fadeIn } from '@shared/animations';
 
 @Component({
-  selector: 'app-routes',
+  selector: 'app-itineraries',
   standalone: true,
   imports: [
     FormsModule,
@@ -39,15 +42,17 @@ import { fadeIn } from '@shared/animations';
     MatFormFieldModule,
     MatSortModule,
     MatPaginatorModule,
+    MatChipsModule,
+    MatTooltipModule,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
   ],
   animations: [fadeIn],
   template: `
-    <div class="routes-page">
+    <div class="itineraries-page">
       <div class="page-header">
-        <h1 class="page-title">Routes</h1>
+        <h1 class="page-title">Itineraries</h1>
         @if (isAdmin()) {
           <button
             mat-flat-button
@@ -56,7 +61,7 @@ import { fadeIn } from '@shared/animations';
             [disabled]="lines().length === 0"
           >
             <mat-icon>add</mat-icon>
-            New Route
+            New Itinerary
           </button>
         }
       </div>
@@ -75,7 +80,7 @@ import { fadeIn } from '@shared/animations';
         </mat-form-field>
 
         <app-search-input
-          placeholder="Search routes..."
+          placeholder="Search itineraries..."
           [initialValue]="search"
           (searchChange)="onSearchChange($event)"
         />
@@ -84,25 +89,25 @@ import { fadeIn } from '@shared/animations';
       @if (loading()) {
         <app-table-skeleton
           [rows]="5"
-          [columns]="[{ width: '80px' }, { width: '200px' }, { width: '200px' }, { width: '80px' }]"
+          [columns]="[{ width: '80px' }, { width: '200px' }, { width: '150px' }, { width: '200px' }, { width: '80px' }]"
         />
       } @else if (lines().length === 0) {
         <mat-card @fadeIn>
           <app-empty-state
-            icon="alt_route"
+            icon="route"
             iconColor="primary"
             title="No lines configured"
-            description="Create lines first before adding routes."
+            description="Create lines first before adding itineraries."
           />
         </mat-card>
       } @else if (dataSource.data.length === 0 && !search && !lineId) {
         <mat-card @fadeIn>
           <app-empty-state
-            icon="alt_route"
+            icon="route"
             iconColor="primary"
-            title="No routes configured"
-            description="Routes define directions on a line (e.g., 'Direction Eastern Terminal')."
-            [actionLabel]="isAdmin() ? 'Create Route' : ''"
+            title="No itineraries configured"
+            description="Itineraries define ordered sequences of stops for each direction on a line."
+            [actionLabel]="isAdmin() ? 'Create Itinerary' : ''"
             [actionIcon]="isAdmin() ? 'add' : ''"
             (action)="openCreateDialog()"
           />
@@ -120,33 +125,43 @@ import { fadeIn } from '@shared/animations';
           <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Line</th>
-              <td mat-cell *matCellDef="let route">
-                <span class="line-badge" [style.backgroundColor]="route.line.color">
-                  {{ route.line.code }}
+              <td mat-cell *matCellDef="let itinerary">
+                <span class="line-badge" [style.backgroundColor]="itinerary.line.color">
+                  {{ itinerary.line.code }}
                 </span>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Route Name</th>
-              <td mat-cell *matCellDef="let route">{{ route.name }}</td>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Itinerary Name</th>
+              <td mat-cell *matCellDef="let itinerary">{{ itinerary.name }}</td>
             </ng-container>
 
             <ng-container matColumnDef="terminusName">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Terminus</th>
-              <td mat-cell *matCellDef="let route" class="terminus-cell">
-                {{ route.terminusName }}
+              <td mat-cell *matCellDef="let itinerary" class="terminus-cell">
+                {{ itinerary.terminusName || '(no stops)' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="stops">
+              <th mat-header-cell *matHeaderCellDef>Stops</th>
+              <td mat-cell *matCellDef="let itinerary">
+                <span class="stop-count">{{ itinerary.stops?.length || 0 }} stops</span>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-              <td mat-cell *matCellDef="let route" class="actions-column">
+              <td mat-cell *matCellDef="let itinerary" class="actions-column">
                 @if (isAdmin()) {
-                  <button mat-icon-button color="primary" (click)="openEditDialog(route)">
+                  <button mat-icon-button color="primary" (click)="openEditDialog(itinerary)" matTooltip="Edit itinerary">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteRoute(route)">
+                  <button mat-icon-button color="accent" (click)="openStopsDialog(itinerary)" matTooltip="Manage stops">
+                    <mat-icon>reorder</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="deleteItinerary(itinerary)" matTooltip="Delete">
                     <mat-icon>delete</mat-icon>
                   </button>
                 }
@@ -219,9 +234,14 @@ import { fadeIn } from '@shared/animations';
       color: var(--app-on-surface);
     }
 
+    .stop-count {
+      color: var(--app-on-surface-muted);
+      font-size: 13px;
+    }
+
     .actions-column {
       text-align: right;
-      width: 120px;
+      width: 150px;
     }
 
     @media (max-width: 600px) {
@@ -235,8 +255,8 @@ import { fadeIn } from '@shared/animations';
     }
   `,
 })
-export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
-  private readonly routeService = inject(RouteService);
+export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly itineraryService = inject(ItineraryService);
   private readonly lineService = inject(LineService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
@@ -250,7 +270,7 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly sort = viewChild(MatSort);
   loading = signal(true);
   lines = signal<Line[]>([]);
-  dataSource = new MatTableDataSource<Route>([]);
+  dataSource = new MatTableDataSource<Itinerary>([]);
 
   // Pagination state
   page = 0;
@@ -262,7 +282,7 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
   totalElements = 0;
 
   get displayedColumns(): string[] {
-    const columns = ['line', 'name', 'terminusName'];
+    const columns = ['line', 'name', 'terminusName', 'stops'];
     if (this.isAdmin()) {
       columns.push('actions');
     }
@@ -281,7 +301,7 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
       this.sortDir = params['sortDir'] === 'desc' ? 'desc' : 'asc';
       this.search = params['search'] || '';
       this.lineId = params['lineId'] || '';
-      this.loadRoutes();
+      this.loadItineraries();
     });
   }
 
@@ -298,9 +318,9 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadRoutes(): void {
+  loadItineraries(): void {
     this.loading.set(true);
-    this.routeService
+    this.itineraryService
       .getAllPaginated({
         page: this.page,
         size: this.size,
@@ -310,14 +330,14 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
         lineId: this.lineId || undefined,
       })
       .subscribe({
-        next: (response: PageResponse<Route>) => {
+        next: (response: PageResponse<Itinerary>) => {
           this.dataSource.data = response.content;
           this.totalElements = response.totalElements;
           this.loading.set(false);
         },
         error: (err) => {
           this.loading.set(false);
-          const message = err.error?.message || 'Failed to load routes';
+          const message = err.error?.message || 'Failed to load itineraries';
           this.snackBar.open(message, 'Close', { duration: 5000 });
         },
       });
@@ -365,24 +385,24 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openCreateDialog(): void {
-    const dialogRef = this.dialog.open(RouteDialogComponent, {
-      data: { lines: this.lines() } as RouteDialogData,
+    const dialogRef = this.dialog.open(ItineraryDialogComponent, {
+      data: { lines: this.lines() } as ItineraryDialogData,
       width: '450px',
-      ariaLabel: 'Create new route',
+      ariaLabel: 'Create new itinerary',
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.routeService.create(result).subscribe({
+        this.itineraryService.create(result).subscribe({
           next: () => {
-            this.loadRoutes();
-            this.snackBar.open('Route created', 'Close', {
+            this.loadItineraries();
+            this.snackBar.open('Itinerary created', 'Close', {
               duration: 3000,
               panelClass: 'success-snackbar',
             });
           },
           error: (err) => {
-            const message = err.error?.message || 'Failed to create route';
+            const message = err.error?.message || 'Failed to create itinerary';
             this.snackBar.open(message, 'Close', { duration: 5000 });
           },
         });
@@ -390,25 +410,25 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  openEditDialog(route: Route): void {
-    const dialogRef = this.dialog.open(RouteDialogComponent, {
-      data: { route, lines: this.lines() } as RouteDialogData,
+  openEditDialog(itinerary: Itinerary): void {
+    const dialogRef = this.dialog.open(ItineraryDialogComponent, {
+      data: { itinerary, lines: this.lines() } as ItineraryDialogData,
       width: '450px',
-      ariaLabel: `Edit route ${route.name}`,
+      ariaLabel: `Edit itinerary ${itinerary.name}`,
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.routeService.update(route.id, result).subscribe({
+        this.itineraryService.update(itinerary.id, result).subscribe({
           next: () => {
-            this.loadRoutes();
-            this.snackBar.open('Route updated', 'Close', {
+            this.loadItineraries();
+            this.snackBar.open('Itinerary updated', 'Close', {
               duration: 3000,
               panelClass: 'success-snackbar',
             });
           },
           error: (err) => {
-            const message = err.error?.message || 'Failed to update route';
+            const message = err.error?.message || 'Failed to update itinerary';
             this.snackBar.open(message, 'Close', { duration: 5000 });
           },
         });
@@ -416,29 +436,55 @@ export class RoutesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  deleteRoute(route: Route): void {
+  openStopsDialog(itinerary: Itinerary): void {
+    const dialogRef = this.dialog.open(ItineraryStopsDialogComponent, {
+      data: { itinerary } as ItineraryStopsDialogData,
+      width: '500px',
+      ariaLabel: `Manage stops for itinerary ${itinerary.name}`,
+    });
+
+    dialogRef.afterClosed().subscribe((result: UpdateItineraryStopsRequest | undefined) => {
+      if (result) {
+        this.itineraryService.updateStops(itinerary.id, result).subscribe({
+          next: () => {
+            this.loadItineraries();
+            this.snackBar.open('Stops updated', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to update stops';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
+        });
+      }
+    });
+  }
+
+  deleteItinerary(itinerary: Itinerary): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete Route',
-        message: `Delete route "${route.name}" (${route.terminusName})? This will also delete all associated schedule entries.`,
+        title: 'Delete Itinerary',
+        message: `Delete itinerary "${itinerary.name}"? This will also delete all associated schedules.`,
         confirmText: 'Delete',
         confirmColor: 'warn',
       } as ConfirmDialogData,
-      ariaLabel: `Confirm deletion of route ${route.name}`,
+      ariaLabel: `Confirm deletion of itinerary ${itinerary.name}`,
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
-        this.routeService.delete(route.id).subscribe({
+        this.itineraryService.delete(itinerary.id).subscribe({
           next: () => {
-            this.loadRoutes();
-            this.snackBar.open('Route deleted', 'Close', {
+            this.loadItineraries();
+            this.snackBar.open('Itinerary deleted', 'Close', {
               duration: 3000,
               panelClass: 'success-snackbar',
             });
           },
           error: (err) => {
-            const message = err.error?.message || 'Failed to delete route';
+            const message = err.error?.message || 'Failed to delete itinerary';
             this.snackBar.open(message, 'Close', { duration: 5000 });
           },
         });

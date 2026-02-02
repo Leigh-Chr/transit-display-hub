@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ScheduleService } from './schedule.service';
-import { TimedEntry, CreateTimedEntryRequest } from '@shared/models';
+import { Schedule, CreateScheduleRequest } from '@shared/models';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('ScheduleService', () => {
@@ -16,27 +16,27 @@ describe('ScheduleService', () => {
     color: '#FF5733'
   };
 
-  const mockRoute = {
-    id: 'route-123',
+  const mockItinerary = {
+    id: 'itinerary-123',
     name: 'Direction Eastern Terminal',
     terminusName: 'Eastern Terminal',
     line: mockLine
   };
 
-  const mockEntry: TimedEntry = {
+  const mockSchedule: Schedule = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     stopId: 'stop-123',
     time: '08:30:00',
-    route: mockRoute
+    itinerary: mockItinerary
   };
 
-  const mockEntries: TimedEntry[] = [
-    mockEntry,
+  const mockSchedules: Schedule[] = [
+    mockSchedule,
     {
       id: '223e4567-e89b-12d3-a456-426614174000',
       stopId: 'stop-123',
       time: '09:00:00',
-      route: mockRoute
+      itinerary: mockItinerary
     }
   ];
 
@@ -61,24 +61,24 @@ describe('ScheduleService', () => {
     it('should return schedule entries for a stop', () => {
       const stopId = 'stop-123';
 
-      service.getForStop(stopId).subscribe(entries => {
-        expect(entries).toEqual(mockEntries);
-        expect(entries.length).toBe(2);
+      service.getForStop(stopId).subscribe(schedules => {
+        expect(schedules).toEqual(mockSchedules);
+        expect(schedules.length).toBe(2);
       });
 
-      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
       expect(req.request.method).toBe('GET');
-      req.flush(mockEntries);
+      req.flush(mockSchedules);
     });
 
     it('should return empty array when no entries', () => {
       const stopId = 'stop-123';
 
-      service.getForStop(stopId).subscribe(entries => {
-        expect(entries).toEqual([]);
+      service.getForStop(stopId).subscribe(schedules => {
+        expect(schedules).toEqual([]);
       });
 
-      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
       req.flush([]);
     });
 
@@ -91,7 +91,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
       req.flush({ message: 'Stop not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -99,33 +99,33 @@ describe('ScheduleService', () => {
   describe('create', () => {
     it('should create a new schedule entry', () => {
       const stopId = 'stop-123';
-      const request: CreateTimedEntryRequest = {
+      const request: CreateScheduleRequest = {
         time: '10:00',
-        routeId: 'route-123'
+        itineraryId: 'itinerary-123'
       };
-      const createdEntry: TimedEntry = {
+      const createdSchedule: Schedule = {
         id: '333e4567-e89b-12d3-a456-426614174000',
         stopId,
         time: '10:00:00',
-        route: mockRoute
+        itinerary: mockItinerary
       };
 
-      service.create(stopId, request).subscribe(entry => {
-        expect(entry).toEqual(createdEntry);
-        expect(entry.time).toBe('10:00:00');
+      service.create(stopId, request).subscribe(schedule => {
+        expect(schedule).toEqual(createdSchedule);
+        expect(schedule.time).toBe('10:00:00');
       });
 
-      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(request);
-      req.flush(createdEntry);
+      req.flush(createdSchedule);
     });
 
     it('should propagate 404 error for non-existent stop', () => {
       const stopId = 'non-existent-stop';
-      const request: CreateTimedEntryRequest = {
+      const request: CreateScheduleRequest = {
         time: '10:00',
-        routeId: 'route-123'
+        itineraryId: 'itinerary-123'
       };
 
       service.create(stopId, request).subscribe({
@@ -134,7 +134,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
       req.flush({ message: 'Stop not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -142,31 +142,31 @@ describe('ScheduleService', () => {
   describe('update', () => {
     it('should update an existing schedule entry', () => {
       const id = '123e4567-e89b-12d3-a456-426614174000';
-      const request: CreateTimedEntryRequest = {
+      const request: CreateScheduleRequest = {
         time: '08:45',
-        routeId: 'route-123'
+        itineraryId: 'itinerary-123'
       };
-      const updatedEntry: TimedEntry = {
-        ...mockEntry,
+      const updatedSchedule: Schedule = {
+        ...mockSchedule,
         time: '08:45:00'
       };
 
-      service.update(id, request).subscribe(entry => {
-        expect(entry).toEqual(updatedEntry);
-        expect(entry.time).toBe('08:45:00');
+      service.update(id, request).subscribe(schedule => {
+        expect(schedule).toEqual(updatedSchedule);
+        expect(schedule.time).toBe('08:45:00');
       });
 
-      const req = httpMock.expectOne(`/api/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(request);
-      req.flush(updatedEntry);
+      req.flush(updatedSchedule);
     });
 
     it('should propagate 404 error for non-existent entry', () => {
       const id = 'non-existent-id';
-      const request: CreateTimedEntryRequest = {
+      const request: CreateScheduleRequest = {
         time: '10:00',
-        routeId: 'route-123'
+        itineraryId: 'itinerary-123'
       };
 
       service.update(id, request).subscribe({
@@ -175,7 +175,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
       req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -188,7 +188,7 @@ describe('ScheduleService', () => {
         // Success - no response body expected
       });
 
-      const req = httpMock.expectOne(`/api/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -202,7 +202,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
       req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });

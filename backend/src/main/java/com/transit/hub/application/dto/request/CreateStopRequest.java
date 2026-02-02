@@ -13,5 +13,9 @@ public record CreateStopRequest(
         String name,
 
         @NotEmpty(message = "At least one line ID is required")
-        Set<UUID> lineIds
+        Set<UUID> lineIds,
+
+        Double latitude,
+
+        Double longitude
 ) {}

@@ -29,6 +29,12 @@ public class Stop {
     @Column(nullable = false)
     private String name;
 
+    @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",
             joinColumns = @JoinColumn(name = "stop_id"),
@@ -38,7 +44,7 @@ public class Stop {
 
     @OneToMany(mappedBy = "stop", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<TimedEntry> timedEntries = new ArrayList<>();
+    private List<Schedule> schedules = new ArrayList<>();
 
     @OneToMany(mappedBy = "stop")
     @Builder.Default
@@ -52,15 +58,5 @@ public class Stop {
     public void removeLine(Line line) {
         lines.remove(line);
         line.getStops().remove(this);
-    }
-
-    public void addTimedEntry(TimedEntry entry) {
-        timedEntries.add(entry);
-        entry.setStop(this);
-    }
-
-    public void removeTimedEntry(TimedEntry entry) {
-        timedEntries.remove(entry);
-        entry.setStop(null);
     }
 }

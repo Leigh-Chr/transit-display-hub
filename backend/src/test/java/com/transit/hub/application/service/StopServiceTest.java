@@ -8,9 +8,10 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
-import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +43,10 @@ class StopServiceTest {
     private LineRepository lineRepository;
 
     @Mock
-    private TimedEntryRepository timedEntryRepository;
+    private ScheduleRepository scheduleRepository;
+
+    @Mock
+    private ItineraryStopRepository itineraryStopRepository;
 
     @Mock
     private DeviceRepository deviceRepository;
@@ -157,7 +161,7 @@ class StopServiceTest {
         @Test
         @DisplayName("creates stop with valid request")
         void withValidRequest_Succeeds() {
-            CreateStopRequest request = new CreateStopRequest("New Station", Set.of(testLineId));
+            CreateStopRequest request = new CreateStopRequest("New Station", Set.of(testLineId), null, null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(stopRepository.save(any(Stop.class))).thenAnswer(invocation -> {
                 Stop saved = invocation.getArgument(0);
@@ -181,7 +185,7 @@ class StopServiceTest {
         @DisplayName("throws EntityNotFoundException when line not found")
         void withNonExistentLine_ThrowsNotFound() {
             UUID unknownLineId = UUID.randomUUID();
-            CreateStopRequest request = new CreateStopRequest("Station", Set.of(unknownLineId));
+            CreateStopRequest request = new CreateStopRequest("Station", Set.of(unknownLineId), null, null);
             when(lineRepository.findById(unknownLineId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> stopService.createStop(request))
@@ -199,7 +203,7 @@ class StopServiceTest {
         @Test
         @DisplayName("updates stop with valid request")
         void withValidRequest_Succeeds() {
-            CreateStopRequest request = new CreateStopRequest("Updated Station", Set.of(testLineId));
+            CreateStopRequest request = new CreateStopRequest("Updated Station", Set.of(testLineId), null, null);
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(stopRepository.save(any(Stop.class))).thenReturn(testStop);
@@ -214,7 +218,7 @@ class StopServiceTest {
         void changingLines_Succeeds() {
             UUID newLineId = UUID.randomUUID();
             Line newLine = TestDataFactory.createLineWithId(newLineId, "L2", "Line 2", "#00FF00");
-            CreateStopRequest request = new CreateStopRequest("Station", Set.of(newLineId));
+            CreateStopRequest request = new CreateStopRequest("Station", Set.of(newLineId), null, null);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(lineRepository.findById(newLineId)).thenReturn(Optional.of(newLine));
@@ -231,7 +235,7 @@ class StopServiceTest {
         @DisplayName("throws EntityNotFoundException when stop not found")
         void withNonExistentStop_ThrowsNotFound() {
             UUID unknownId = UUID.randomUUID();
-            CreateStopRequest request = new CreateStopRequest("Station", Set.of(testLineId));
+            CreateStopRequest request = new CreateStopRequest("Station", Set.of(testLineId), null, null);
             when(stopRepository.findByIdWithLines(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> stopService.updateStop(unknownId, request))
@@ -243,7 +247,7 @@ class StopServiceTest {
         @DisplayName("throws EntityNotFoundException when new line not found")
         void withNonExistentLine_ThrowsNotFound() {
             UUID unknownLineId = UUID.randomUUID();
-            CreateStopRequest request = new CreateStopRequest("Station", Set.of(unknownLineId));
+            CreateStopRequest request = new CreateStopRequest("Station", Set.of(unknownLineId), null, null);
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(lineRepository.findById(unknownLineId)).thenReturn(Optional.empty());
 
@@ -264,7 +268,8 @@ class StopServiceTest {
 
             stopService.deleteStop(testStopId);
 
-            verify(timedEntryRepository).deleteByStopId(testStopId);
+            verify(scheduleRepository).deleteByStopId(testStopId);
+            verify(itineraryStopRepository).deleteByStopId(testStopId);
             verify(deviceRepository).deleteByStopId(testStopId);
             verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.STOP, testStopId);
             verify(stopRepository).deleteById(testStopId);

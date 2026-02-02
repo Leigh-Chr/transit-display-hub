@@ -14,8 +14,9 @@ describe('LineService', () => {
     code: 'L1',
     name: 'Metro Line 1',
     color: '#FF5733',
+    type: 'METRO',
     stopCount: 5,
-    routeCount: 2
+    itineraryCount: 2
   };
 
   const mockLines: Line[] = [
@@ -25,8 +26,9 @@ describe('LineService', () => {
       code: 'L2',
       name: 'Metro Line 2',
       color: '#33FF57',
+      type: 'METRO',
       stopCount: 8,
-      routeCount: 3
+      itineraryCount: 3
     }
   ];
 
@@ -108,8 +110,9 @@ describe('LineService', () => {
       const createdLine: Line = {
         id: '333e4567-e89b-12d3-a456-426614174000',
         ...request,
+        type: null,
         stopCount: 0,
-        routeCount: 0
+        itineraryCount: 0
       };
 
       service.create(request).subscribe(line => {
@@ -152,8 +155,9 @@ describe('LineService', () => {
       const updatedLine: Line = {
         id,
         ...request,
+        type: null,
         stopCount: 5,
-        routeCount: 2
+        itineraryCount: 2
       };
 
       service.update(id, request).subscribe(line => {

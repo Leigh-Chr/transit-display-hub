@@ -10,6 +10,8 @@ import java.util.UUID;
 public record StopResponse(
         UUID id,
         String name,
+        Double latitude,
+        Double longitude,
         List<LineInfo> lines,
         int scheduleCount,
         boolean hasDevice
@@ -30,8 +32,10 @@ public record StopResponse(
         return new StopResponse(
                 stop.getId(),
                 stop.getName(),
+                stop.getLatitude(),
+                stop.getLongitude(),
                 lineInfos,
-                stop.getTimedEntries() != null ? stop.getTimedEntries().size() : 0,
+                stop.getSchedules() != null ? stop.getSchedules().size() : 0,
                 stop.getDevices() != null && !stop.getDevices().isEmpty()
         );
     }
