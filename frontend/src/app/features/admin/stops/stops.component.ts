@@ -161,10 +161,13 @@ import { fadeIn } from '@shared/animations';
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
               <td mat-cell *matCellDef="let stop" class="actions-column">
-                <button mat-icon-button color="primary" (click)="openEditDialog(stop)">
+                <button mat-icon-button (click)="openKioskPreview(stop.id)" matTooltip="Preview kiosk display">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button mat-icon-button color="primary" (click)="openEditDialog(stop)" matTooltip="Edit stop">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteStop(stop)">
+                <button mat-icon-button color="warn" (click)="deleteStop(stop)" matTooltip="Delete stop">
                   <mat-icon>delete</mat-icon>
                 </button>
               </td>
@@ -239,7 +242,7 @@ import { fadeIn } from '@shared/animations';
 
     .actions-column {
       text-align: right;
-      width: 120px;
+      width: 160px;
     }
 
     .device-column {
@@ -481,5 +484,9 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
     });
+  }
+
+  openKioskPreview(stopId: string): void {
+    window.open(`/display/${stopId}`, '_blank');
   }
 }

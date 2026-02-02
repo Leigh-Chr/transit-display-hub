@@ -112,6 +112,10 @@ import { gridStagger } from '@shared/animations';
               </mat-card-content>
 
               <mat-card-actions align="end">
+                <button mat-button (click)="openKioskPreview(device.stopId)">
+                  <mat-icon>visibility</mat-icon>
+                  View Display
+                </button>
                 <button mat-button color="warn" (click)="deleteDevice(device)">
                   <mat-icon>delete</mat-icon>
                   Remove
@@ -411,5 +415,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  openKioskPreview(stopId: string): void {
+    window.open(`/display/${stopId}`, '_blank');
   }
 }
