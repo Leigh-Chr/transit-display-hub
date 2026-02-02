@@ -56,6 +56,13 @@ public class ScheduleService {
 
         LocalTime time = LocalTime.parse(request.time(), TIME_FORMATTER);
 
+        // Check for duplicate entry
+        if (timedEntryRepository.existsByStopIdAndLineIdAndTime(stopId, line.getId(), time)) {
+            throw new IllegalArgumentException(
+                "A schedule entry already exists for line " + line.getCode() +
+                " at " + time.format(TIME_FORMATTER) + " at this stop");
+        }
+
         TimedEntry entry = TimedEntry.builder()
                 .time(time)
                 .stop(stop)
@@ -84,6 +91,15 @@ public class ScheduleService {
         }
 
         LocalTime time = LocalTime.parse(request.time(), TIME_FORMATTER);
+
+        // Check for duplicate entry (excluding the current one)
+        if (timedEntryRepository.existsByStopIdAndLineIdAndTimeExcludingId(
+                stop.getId(), line.getId(), time, entry.getId())) {
+            throw new IllegalArgumentException(
+                "A schedule entry already exists for line " + line.getCode() +
+                " at " + time.format(TIME_FORMATTER) + " at this stop");
+        }
+
         entry.setTime(time);
         entry.setLine(line);
 

@@ -8,7 +8,11 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "timed_entries")
+@Table(name = "timed_entries",
+       uniqueConstraints = @UniqueConstraint(
+           name = "uk_timed_entry_stop_line_time",
+           columnNames = {"stop_id", "line_id", "time"}
+       ))
 @Getter
 @Setter
 @NoArgsConstructor

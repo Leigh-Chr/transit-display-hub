@@ -19,4 +19,10 @@ public interface TimedEntryRepository extends JpaRepository<TimedEntry, UUID> {
     List<TimedEntry> findByStopIdAndTimeAfterWithLine(UUID stopId, LocalTime time);
 
     void deleteByStopId(UUID stopId);
+
+    boolean existsByStopIdAndLineIdAndTime(UUID stopId, UUID lineId, LocalTime time);
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM TimedEntry t " +
+           "WHERE t.stop.id = :stopId AND t.line.id = :lineId AND t.time = :time AND t.id != :excludeId")
+    boolean existsByStopIdAndLineIdAndTimeExcludingId(UUID stopId, UUID lineId, LocalTime time, UUID excludeId);
 }
