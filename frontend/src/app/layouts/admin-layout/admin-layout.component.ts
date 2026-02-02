@@ -1,4 +1,4 @@
-import { Component, inject, viewChild } from '@angular/core';
+import { Component, inject, signal, viewChild } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
 import { RouterModule, RouterLink, RouterLinkActive, ChildrenOutletContexts } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -34,7 +34,7 @@ import { routeSlide } from '@shared/animations';
       <mat-sidenav
         #sidenav
         [mode]="breakpointService.isSmallScreen() ? 'over' : 'side'"
-        [opened]="!breakpointService.isSmallScreen()"
+        [opened]="sidenavOpen()"
         class="admin-sidenav"
         role="navigation"
         aria-label="Main navigation"
@@ -139,15 +139,14 @@ import { routeSlide } from '@shared/animations';
 
       <mat-sidenav-content role="main">
         <mat-toolbar color="primary">
-          @if (breakpointService.isSmallScreen()) {
-            <button
-              mat-icon-button
-              (click)="sidenavRef()?.toggle()"
-              aria-label="Toggle navigation menu"
-            >
-              <mat-icon>menu</mat-icon>
-            </button>
-          }
+          <button
+            mat-icon-button
+            (click)="toggleSidenav()"
+            aria-label="Toggle navigation menu"
+            matTooltip="Toggle sidebar"
+          >
+            <mat-icon>{{ sidenavOpen() ? 'menu_open' : 'menu' }}</mat-icon>
+          </button>
           <span class="toolbar-spacer"></span>
           <button
             mat-icon-button
@@ -241,20 +240,34 @@ import { routeSlide } from '@shared/animations';
   `,
 })
 export class AdminLayoutComponent {
+  private static readonly SIDENAV_STORAGE_KEY = 'sidenav-open';
+
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
   readonly breakpointService = inject(BreakpointService);
   private readonly contexts = inject(ChildrenOutletContexts);
 
   readonly sidenavRef = viewChild<MatSidenav>('sidenav');
+  readonly sidenavOpen = signal(this.loadSidenavState());
 
   getRouteAnimationData() {
     return this.contexts.getContext('primary')?.route?.snapshot?.url.toString() || '';
   }
 
+  private loadSidenavState(): boolean {
+    const stored = localStorage.getItem(AdminLayoutComponent.SIDENAV_STORAGE_KEY);
+    return stored !== 'false';
+  }
+
+  toggleSidenav(): void {
+    const newState = !this.sidenavOpen();
+    this.sidenavOpen.set(newState);
+    localStorage.setItem(AdminLayoutComponent.SIDENAV_STORAGE_KEY, String(newState));
+  }
+
   closeSidenavOnMobile(): void {
     if (this.breakpointService.isSmallScreen()) {
-      this.sidenavRef()?.close();
+      this.sidenavOpen.set(false);
     }
   }
 
