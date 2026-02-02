@@ -8,6 +8,7 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Route;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.RouteRepository;
+import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class RouteService {
 
     private final RouteRepository routeRepository;
     private final LineRepository lineRepository;
+    private final TimedEntryRepository timedEntryRepository;
 
     @Transactional(readOnly = true)
     public List<RouteResponse> getAllRoutes() {
@@ -91,6 +93,8 @@ public class RouteService {
         if (!routeRepository.existsById(id)) {
             throw new EntityNotFoundException("Route", id);
         }
+        // Delete related timed entries first
+        timedEntryRepository.deleteByRouteId(id);
         routeRepository.deleteById(id);
     }
 

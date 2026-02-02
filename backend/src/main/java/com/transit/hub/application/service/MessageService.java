@@ -157,9 +157,7 @@ public class MessageService {
 
     private Set<UUID> getAffectedStopIds(BroadcastMessage message) {
         return switch (message.getScopeType()) {
-            case NETWORK -> stopRepository.findAll().stream()
-                    .map(Stop::getId)
-                    .collect(Collectors.toSet());
+            case NETWORK -> stopRepository.findAllIds();
             case LINE -> stopRepository.findByLineId(message.getScopeId()).stream()
                     .map(Stop::getId)
                     .collect(Collectors.toSet());
@@ -171,10 +169,6 @@ public class MessageService {
         MessageResponse.ScopeInfo scopeInfo = null;
 
         if (message.getScopeType() == MessageScope.LINE && message.getScopeId() != null) {
-            lineRepository.findById(message.getScopeId()).ifPresent(line ->
-                    // Note: We can't reassign scopeInfo here, so we'll return inline
-                    {}
-            );
             Line line = lineRepository.findById(message.getScopeId()).orElse(null);
             if (line != null) {
                 scopeInfo = new MessageResponse.ScopeInfo(line.getName(), line.getCode(), line.getColor());

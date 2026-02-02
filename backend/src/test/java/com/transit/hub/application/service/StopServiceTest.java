@@ -5,8 +5,12 @@ import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +40,15 @@ class StopServiceTest {
 
     @Mock
     private LineRepository lineRepository;
+
+    @Mock
+    private TimedEntryRepository timedEntryRepository;
+
+    @Mock
+    private DeviceRepository deviceRepository;
+
+    @Mock
+    private BroadcastMessageRepository messageRepository;
 
     @InjectMocks
     private StopService stopService;
@@ -245,12 +258,15 @@ class StopServiceTest {
     class DeleteStop {
 
         @Test
-        @DisplayName("deletes existing stop")
+        @DisplayName("deletes existing stop and related entities")
         void withExistingId_Succeeds() {
             when(stopRepository.existsById(testStopId)).thenReturn(true);
 
             stopService.deleteStop(testStopId);
 
+            verify(timedEntryRepository).deleteByStopId(testStopId);
+            verify(deviceRepository).deleteByStopId(testStopId);
+            verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.STOP, testStopId);
             verify(stopRepository).deleteById(testStopId);
         }
 

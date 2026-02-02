@@ -451,6 +451,7 @@ public class DataLoader implements CommandLineRunner {
             for (int i = 0; i < numDevices; i++) {
                 // Generate a token (in production this would be secure random)
                 String token = generateDeviceToken();
+                String tokenLookup = token.substring(0, 8);
                 String tokenHash = passwordEncoder.encode(token);
 
                 DeviceStatus status = random.nextDouble() < 0.85 ? DeviceStatus.ONLINE : DeviceStatus.OFFLINE;
@@ -459,6 +460,7 @@ public class DataLoader implements CommandLineRunner {
                     : Instant.now().minus(random.nextInt(24 * 60) + 5, ChronoUnit.MINUTES);
 
                 deviceRepository.save(Device.builder()
+                        .tokenLookup(tokenLookup)
                         .tokenHash(tokenHash)
                         .stop(stop)
                         .status(status)

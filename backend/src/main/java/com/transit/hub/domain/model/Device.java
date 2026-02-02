@@ -10,7 +10,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "devices")
+@Table(name = "devices",
+       indexes = {
+           @Index(name = "idx_device_token_lookup", columnList = "token_lookup"),
+           @Index(name = "idx_device_status", columnList = "status"),
+           @Index(name = "idx_device_last_heartbeat", columnList = "last_heartbeat")
+       })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,8 +27,16 @@ public class Device {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * First 8 characters of the plain token for fast lookup.
+     * Not secure alone, but allows filtering before BCrypt verification.
+     */
+    @NotBlank(message = "Token lookup is required")
+    @Column(name = "token_lookup", nullable = false, length = 8)
+    private String tokenLookup;
+
     @NotBlank(message = "Token is required")
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 60)
     private String tokenHash;
 
     @NotNull(message = "Stop is required")

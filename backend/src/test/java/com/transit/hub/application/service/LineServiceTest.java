@@ -5,7 +5,11 @@ import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.RouteRepository;
+import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +36,15 @@ class LineServiceTest {
 
     @Mock
     private LineRepository lineRepository;
+
+    @Mock
+    private RouteRepository routeRepository;
+
+    @Mock
+    private TimedEntryRepository timedEntryRepository;
+
+    @Mock
+    private BroadcastMessageRepository messageRepository;
 
     @InjectMocks
     private LineService lineService;
@@ -205,12 +219,15 @@ class LineServiceTest {
     class DeleteLine {
 
         @Test
-        @DisplayName("deletes existing line")
+        @DisplayName("deletes existing line and related entities")
         void withExistingId_Succeeds() {
             when(lineRepository.existsById(testLineId)).thenReturn(true);
 
             lineService.deleteLine(testLineId);
 
+            verify(timedEntryRepository).deleteByRouteLineId(testLineId);
+            verify(routeRepository).deleteByLineId(testLineId);
+            verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.LINE, testLineId);
             verify(lineRepository).deleteById(testLineId);
         }
 

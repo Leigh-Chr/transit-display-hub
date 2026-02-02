@@ -27,4 +27,6 @@ public interface BroadcastMessageRepository extends JpaRepository<BroadcastMessa
             "(m.scopeType = 'STOP' AND m.scopeId = :stopId)) " +
             "ORDER BY CASE m.severity WHEN 'CRITICAL' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END, m.startTime DESC")
     List<BroadcastMessage> findActiveMessagesForStop(Instant now, Set<UUID> lineIds, UUID stopId);
+
+    void deleteByScopeTypeAndScopeId(MessageScope scopeType, UUID scopeId);
 }

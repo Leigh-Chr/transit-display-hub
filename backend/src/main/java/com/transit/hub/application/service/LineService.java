@@ -5,7 +5,11 @@ import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.RouteRepository;
+import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +22,9 @@ import java.util.UUID;
 public class LineService {
 
     private final LineRepository lineRepository;
+    private final RouteRepository routeRepository;
+    private final TimedEntryRepository timedEntryRepository;
+    private final BroadcastMessageRepository messageRepository;
 
     @Transactional(readOnly = true)
     public List<LineResponse> getAllLines() {
@@ -72,6 +79,10 @@ public class LineService {
         if (!lineRepository.existsById(id)) {
             throw new EntityNotFoundException("Line", id);
         }
+        // Delete related entities in correct order
+        timedEntryRepository.deleteByRouteLineId(id);
+        routeRepository.deleteByLineId(id);
+        messageRepository.deleteByScopeTypeAndScopeId(MessageScope.LINE, id);
         lineRepository.deleteById(id);
     }
 

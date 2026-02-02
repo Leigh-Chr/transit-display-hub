@@ -12,7 +12,11 @@ import java.util.UUID;
        uniqueConstraints = @UniqueConstraint(
            name = "uk_timed_entry_stop_route_time",
            columnNames = {"stop_id", "route_id", "time"}
-       ))
+       ),
+       indexes = {
+           @Index(name = "idx_timed_entry_stop_time", columnList = "stop_id, time"),
+           @Index(name = "idx_timed_entry_route", columnList = "route_id")
+       })
 @Getter
 @Setter
 @NoArgsConstructor

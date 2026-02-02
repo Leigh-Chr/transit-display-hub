@@ -12,7 +12,10 @@ import java.util.UUID;
 @Table(name = "routes",
        uniqueConstraints = @UniqueConstraint(
            name = "uk_route_line_name",
-           columnNames = {"line_id", "name"}))
+           columnNames = {"line_id", "name"}),
+       indexes = {
+           @Index(name = "idx_route_line", columnList = "line_id")
+       })
 @Getter
 @Setter
 @NoArgsConstructor

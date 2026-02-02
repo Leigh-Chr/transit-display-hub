@@ -5,8 +5,12 @@ import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +26,9 @@ public class StopService {
 
     private final StopRepository stopRepository;
     private final LineRepository lineRepository;
+    private final TimedEntryRepository timedEntryRepository;
+    private final DeviceRepository deviceRepository;
+    private final BroadcastMessageRepository messageRepository;
 
     @Transactional(readOnly = true)
     public List<StopResponse> getAllStops() {
@@ -77,6 +84,10 @@ public class StopService {
         if (!stopRepository.existsById(id)) {
             throw new EntityNotFoundException("Stop", id);
         }
+        // Delete related entities in correct order
+        timedEntryRepository.deleteByStopId(id);
+        deviceRepository.deleteByStopId(id);
+        messageRepository.deleteByScopeTypeAndScopeId(MessageScope.STOP, id);
         stopRepository.deleteById(id);
     }
 

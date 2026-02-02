@@ -25,4 +25,8 @@ public interface TimedEntryRepository extends JpaRepository<TimedEntry, UUID> {
     @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM TimedEntry t " +
            "WHERE t.stop.id = :stopId AND t.route.id = :routeId AND t.time = :time AND t.id != :excludeId")
     boolean existsByStopIdAndRouteIdAndTimeExcludingId(UUID stopId, UUID routeId, LocalTime time, UUID excludeId);
+
+    void deleteByRouteId(UUID routeId);
+
+    void deleteByRouteLineId(UUID lineId);
 }

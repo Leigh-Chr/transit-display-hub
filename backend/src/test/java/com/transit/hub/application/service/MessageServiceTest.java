@@ -90,7 +90,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -309,7 +309,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAll()).thenReturn(List.of());
+            when(stopRepository.findAllIds()).thenReturn(Set.of());
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -328,7 +328,7 @@ class MessageServiceTest {
         @Test
         @DisplayName("publishes MessageChangedEvent for active NETWORK message")
         void activeNetworkMessage_PublishesEventForAllStops() {
-            Stop stop2 = TestDataFactory.createStop("Station 2", testLine);
+            UUID stop2Id = UUID.randomUUID();
             CreateMessageRequest request = new CreateMessageRequest(
                     "Network Alert",
                     "Active message",
@@ -338,7 +338,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAll()).thenReturn(List.of(testStop, stop2));
+            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId, stop2Id));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -419,7 +419,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -523,7 +523,7 @@ class MessageServiceTest {
                     null
             );
             when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
-            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
             when(messageRepository.save(any(BroadcastMessage.class))).thenReturn(existing);
 
             MessageResponse result = messageService.updateMessage(testMessageId, request);
@@ -556,7 +556,7 @@ class MessageServiceTest {
             BroadcastMessage existing = TestDataFactory.createNetworkMessage();
             existing.setId(testMessageId);
             when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
-            when(stopRepository.findAll()).thenReturn(List.of(testStop));
+            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
 
             messageService.deleteMessage(testMessageId);
 

@@ -112,6 +112,7 @@ class DeviceControllerIntegrationTest {
         stopRepository.save(testStop);
 
         testDevice = Device.builder()
+                .tokenLookup(plainDeviceToken.substring(0, 8))
                 .tokenHash(passwordEncoder.encode(plainDeviceToken))
                 .stop(testStop)
                 .status(DeviceStatus.OFFLINE)

@@ -173,8 +173,10 @@ class DeviceServiceTest {
         @Test
         @DisplayName("returns success with valid token")
         void withValidToken_ReturnsSuccess() {
-            String plainToken = "valid_token";
-            when(deviceRepository.findAll()).thenReturn(List.of(testDevice));
+            String plainToken = "valid_token_12345678"; // Must be at least 8 chars
+            String tokenLookup = plainToken.substring(0, 8);
+            testDevice.setTokenLookup(tokenLookup);
+            when(deviceRepository.findByTokenLookup(tokenLookup)).thenReturn(List.of(testDevice));
             when(passwordEncoder.matches(plainToken, "hashed_token")).thenReturn(true);
             when(deviceRepository.save(any(Device.class))).thenReturn(testDevice);
 
@@ -189,8 +191,10 @@ class DeviceServiceTest {
         @Test
         @DisplayName("records heartbeat on successful authentication")
         void recordsHeartbeatOnSuccess() {
-            String plainToken = "valid_token";
-            when(deviceRepository.findAll()).thenReturn(List.of(testDevice));
+            String plainToken = "valid_token_12345678";
+            String tokenLookup = plainToken.substring(0, 8);
+            testDevice.setTokenLookup(tokenLookup);
+            when(deviceRepository.findByTokenLookup(tokenLookup)).thenReturn(List.of(testDevice));
             when(passwordEncoder.matches(plainToken, "hashed_token")).thenReturn(true);
             when(deviceRepository.save(any(Device.class))).thenReturn(testDevice);
 
@@ -205,8 +209,10 @@ class DeviceServiceTest {
         @Test
         @DisplayName("returns failure with invalid token")
         void withInvalidToken_ReturnsFailure() {
-            String invalidToken = "invalid_token";
-            when(deviceRepository.findAll()).thenReturn(List.of(testDevice));
+            String invalidToken = "invalid_token_xyz";
+            String tokenLookup = invalidToken.substring(0, 8);
+            testDevice.setTokenLookup(tokenLookup);
+            when(deviceRepository.findByTokenLookup(tokenLookup)).thenReturn(List.of(testDevice));
             when(passwordEncoder.matches(invalidToken, "hashed_token")).thenReturn(false);
 
             DeviceAuthResponse result = deviceService.authenticateDevice(invalidToken);
@@ -222,25 +228,38 @@ class DeviceServiceTest {
         @Test
         @DisplayName("returns failure when no devices exist")
         void withNoDevices_ReturnsFailure() {
-            when(deviceRepository.findAll()).thenReturn(List.of());
+            String token = "any_token_12345678";
+            String tokenLookup = token.substring(0, 8);
+            when(deviceRepository.findByTokenLookup(tokenLookup)).thenReturn(List.of());
 
-            DeviceAuthResponse result = deviceService.authenticateDevice("any_token");
+            DeviceAuthResponse result = deviceService.authenticateDevice(token);
 
             assertThat(result.valid()).isFalse();
         }
 
         @Test
+        @DisplayName("returns failure when token is too short")
+        void withShortToken_ReturnsFailure() {
+            DeviceAuthResponse result = deviceService.authenticateDevice("short");
+
+            assertThat(result.valid()).isFalse();
+            verify(deviceRepository, never()).findByTokenLookup(anyString());
+        }
+
+        @Test
         @DisplayName("checks devices to find matching token")
         void checksDevices() {
-            Device device1 = TestDataFactory.createDevice(testStop);
-            Device device2 = TestDataFactory.createDevice(testStop);
-            when(deviceRepository.findAll()).thenReturn(List.of(device1, device2));
+            String plainToken = "valid_for_device2";
+            String tokenLookup = plainToken.substring(0, 8);
+            Device device1 = TestDataFactory.createDeviceWithLookup(testStop, tokenLookup, "hash1");
+            Device device2 = TestDataFactory.createDeviceWithLookup(testStop, tokenLookup, "hash2");
+            when(deviceRepository.findByTokenLookup(tokenLookup)).thenReturn(List.of(device1, device2));
             // Use lenient stubbing since the implementation short-circuits on first match
-            lenient().when(passwordEncoder.matches(anyString(), eq(device1.getTokenHash()))).thenReturn(false);
-            lenient().when(passwordEncoder.matches(anyString(), eq(device2.getTokenHash()))).thenReturn(true);
+            lenient().when(passwordEncoder.matches(plainToken, "hash1")).thenReturn(false);
+            lenient().when(passwordEncoder.matches(plainToken, "hash2")).thenReturn(true);
             when(deviceRepository.save(any(Device.class))).thenReturn(device2);
 
-            DeviceAuthResponse result = deviceService.authenticateDevice("valid_for_device2");
+            DeviceAuthResponse result = deviceService.authenticateDevice(plainToken);
 
             assertThat(result.valid()).isTrue();
             // Verifies that passwordEncoder.matches was called (at least once for the matching device)

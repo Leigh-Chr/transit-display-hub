@@ -184,9 +184,12 @@ public final class TestDataFactory {
 
     // ============== DEVICE ==============
 
+    private static final String DEFAULT_TOKEN_LOOKUP = "testlook";
+
     public static Device createDevice(Stop stop) {
         return Device.builder()
                 .id(UUID.randomUUID())
+                .tokenLookup(DEFAULT_TOKEN_LOOKUP)
                 .tokenHash("hashed_token_value")
                 .stop(stop)
                 .status(DeviceStatus.OFFLINE)
@@ -197,6 +200,7 @@ public final class TestDataFactory {
     public static Device createOnlineDevice(Stop stop) {
         return Device.builder()
                 .id(UUID.randomUUID())
+                .tokenLookup(DEFAULT_TOKEN_LOOKUP)
                 .tokenHash("hashed_token_value")
                 .stop(stop)
                 .status(DeviceStatus.ONLINE)
@@ -207,10 +211,22 @@ public final class TestDataFactory {
     public static Device createDeviceWithId(UUID id, String tokenHash, Stop stop, DeviceStatus status) {
         return Device.builder()
                 .id(id)
+                .tokenLookup(DEFAULT_TOKEN_LOOKUP)
                 .tokenHash(tokenHash)
                 .stop(stop)
                 .status(status)
                 .lastHeartbeat(status == DeviceStatus.ONLINE ? Instant.now() : null)
+                .build();
+    }
+
+    public static Device createDeviceWithLookup(Stop stop, String tokenLookup, String tokenHash) {
+        return Device.builder()
+                .id(UUID.randomUUID())
+                .tokenLookup(tokenLookup)
+                .tokenHash(tokenHash)
+                .stop(stop)
+                .status(DeviceStatus.OFFLINE)
+                .lastHeartbeat(null)
                 .build();
     }
 

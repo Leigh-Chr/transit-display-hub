@@ -15,6 +15,8 @@ import java.util.UUID;
 public interface DeviceRepository extends JpaRepository<Device, UUID> {
     Optional<Device> findByTokenHash(String tokenHash);
 
+    List<Device> findByTokenLookup(String tokenLookup);
+
     List<Device> findByStatus(DeviceStatus status);
 
     List<Device> findByStopId(UUID stopId);
@@ -24,4 +26,6 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
 
     @Query("SELECT DISTINCT d FROM Device d JOIN FETCH d.stop s LEFT JOIN FETCH s.lines")
     List<Device> findAllWithStopAndLine();
+
+    void deleteByStopId(UUID stopId);
 }

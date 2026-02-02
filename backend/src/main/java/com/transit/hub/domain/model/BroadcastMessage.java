@@ -3,6 +3,7 @@ package com.transit.hub.domain.model;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -12,7 +13,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "broadcast_messages")
+@Table(name = "broadcast_messages",
+       indexes = {
+           @Index(name = "idx_message_time_range", columnList = "startTime, endTime"),
+           @Index(name = "idx_message_scope", columnList = "scopeType, scope_id")
+       })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -54,6 +59,14 @@ public class BroadcastMessage {
 
     @Column(name = "scope_id")
     private UUID scopeId;
+
+    @AssertTrue(message = "End time must be after start time")
+    public boolean isValidTimeRange() {
+        if (startTime == null || endTime == null) {
+            return true; // Let @NotNull handle null validation
+        }
+        return endTime.isAfter(startTime);
+    }
 
     public boolean isActive() {
         Instant now = Instant.now();

@@ -55,6 +55,8 @@ public class DeviceService {
                 .orElseThrow(() -> new EntityNotFoundException("Device", id));
     }
 
+    private static final int TOKEN_LOOKUP_LENGTH = 8;
+
     @Transactional
     public DeviceRegistrationResponse registerDevice(RegisterDeviceRequest request) {
         Stop stop = stopRepository.findById(request.stopId())
@@ -62,9 +64,11 @@ public class DeviceService {
 
         // Generate a secure token
         String plainToken = generateSecureToken();
+        String tokenLookup = plainToken.substring(0, TOKEN_LOOKUP_LENGTH);
         String tokenHash = passwordEncoder.encode(plainToken);
 
         Device device = Device.builder()
+                .tokenLookup(tokenLookup)
                 .tokenHash(tokenHash)
                 .stop(stop)
                 .status(DeviceStatus.OFFLINE)
@@ -103,10 +107,15 @@ public class DeviceService {
 
     @Transactional
     public DeviceAuthResponse authenticateDevice(String token) {
-        // We need to check all devices since we can't reverse the hash
-        List<Device> allDevices = deviceRepository.findAll();
+        if (token == null || token.length() < TOKEN_LOOKUP_LENGTH) {
+            return new DeviceAuthResponse(false, null, null, null);
+        }
 
-        for (Device device : allDevices) {
+        // Use token prefix for fast lookup, then verify with BCrypt
+        String tokenLookup = token.substring(0, TOKEN_LOOKUP_LENGTH);
+        List<Device> candidates = deviceRepository.findByTokenLookup(tokenLookup);
+
+        for (Device device : candidates) {
             if (passwordEncoder.matches(token, device.getTokenHash())) {
                 device.recordHeartbeat();
                 deviceRepository.save(device);
