@@ -83,8 +83,10 @@ import { gridStagger } from '@shared/animations';
                     <div>
                       <h3 class="device-stop">{{ device.stopName }}</h3>
                       <div class="line-badges">
-                        @for (lineCode of device.lineCodes; track lineCode) {
-                          <span class="line-badge">{{ lineCode }}</span>
+                        @for (line of device.lines; track line.code) {
+                          <span class="line-badge" [style.backgroundColor]="line.color">
+                            {{ line.code }}
+                          </span>
                         }
                       </div>
                     </div>
@@ -226,7 +228,6 @@ import { gridStagger } from '@shared/animations';
       display: inline-block;
       padding: 4px 12px;
       border-radius: 16px;
-      background-color: var(--app-on-surface-variant);
       color: white;
       font-size: 12px;
       font-weight: 600;

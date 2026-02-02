@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/stops/**").hasRole("ADMIN")
                         .requestMatchers("/api/schedules/**").hasRole("ADMIN")
                         .requestMatchers("/api/devices/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
 
                         // Admin + Agent
                         .requestMatchers("/api/messages/**").hasAnyRole("ADMIN", "AGENT")

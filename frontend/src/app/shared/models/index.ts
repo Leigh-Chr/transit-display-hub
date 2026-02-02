@@ -109,7 +109,7 @@ export interface Device {
   id: string;
   stopId: string;
   stopName: string;
-  lineCodes: string[];
+  lines: LineInfo[];
   status: DeviceStatus;
   lastHeartbeat?: string;
 }
@@ -149,9 +149,30 @@ export interface LoginResponse {
   username: string;
 }
 
-export interface User {
+// Authenticated user (from JWT token)
+export interface AuthUser {
   username: string;
   role: UserRole;
+}
+
+// User Management (full entity from API)
+export interface User {
+  id: string;
+  username: string;
+  role: UserRole;
+  enabled: boolean;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  role: UserRole;
+}
+
+export interface UpdateUserRequest {
+  password?: string;
+  role: UserRole;
+  enabled: boolean;
 }
 
 // Display State

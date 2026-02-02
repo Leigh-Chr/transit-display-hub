@@ -86,6 +86,7 @@ export interface LineDialogData {
     .form-container {
       display: flex;
       flex-direction: column;
+      gap: 8px;
       min-width: 380px;
       padding-top: 12px;
     }

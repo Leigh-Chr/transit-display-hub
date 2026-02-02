@@ -13,7 +13,7 @@ describe('DeviceService', () => {
     id: '123e4567-e89b-12d3-a456-426614174000',
     stopId: 'stop-123',
     stopName: 'Central Station',
-    lineCodes: ['L1'],
+    lines: [{ code: 'L1', name: 'Line 1', color: '#FF0000' }],
     status: 'OFFLINE',
     lastHeartbeat: undefined
   };
@@ -22,7 +22,10 @@ describe('DeviceService', () => {
     id: '223e4567-e89b-12d3-a456-426614174000',
     stopId: 'stop-456',
     stopName: 'North Station',
-    lineCodes: ['L1', 'L2'],
+    lines: [
+      { code: 'L1', name: 'Line 1', color: '#FF0000' },
+      { code: 'L2', name: 'Line 2', color: '#00FF00' }
+    ],
     status: 'ONLINE',
     lastHeartbeat: '2024-01-15T10:30:00Z'
   };

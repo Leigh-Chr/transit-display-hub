@@ -79,6 +79,16 @@ import { routeSlide } from '@shared/animations';
 
           <a
             mat-list-item
+            routerLink="/admin/routes"
+            routerLinkActive="active-link"
+            (click)="closeSidenavOnMobile()"
+          >
+            <mat-icon matListItemIcon>alt_route</mat-icon>
+            <span matListItemTitle>Routes</span>
+          </a>
+
+          <a
+            mat-list-item
             routerLink="/admin/schedules"
             routerLinkActive="active-link"
             (click)="closeSidenavOnMobile()"
@@ -109,6 +119,21 @@ import { routeSlide } from '@shared/animations';
             <mat-icon matListItemIcon>tv</mat-icon>
             <span matListItemTitle>Devices</span>
           </a>
+
+          @if (authService.isAdmin()) {
+            <mat-divider></mat-divider>
+            <div class="nav-section-title">Administration</div>
+
+            <a
+              mat-list-item
+              routerLink="/admin/users"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>people</mat-icon>
+              <span matListItemTitle>Users</span>
+            </a>
+          }
         </mat-nav-list>
       </mat-sidenav>
 

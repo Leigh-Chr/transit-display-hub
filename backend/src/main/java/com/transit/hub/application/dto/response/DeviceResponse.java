@@ -13,21 +13,23 @@ public record DeviceResponse(
         UUID id,
         UUID stopId,
         String stopName,
-        List<String> lineCodes,
+        List<LineInfo> lines,
         DeviceStatus status,
         Instant lastHeartbeat
 ) {
+    public record LineInfo(String code, String name, String color) {}
+
     public static DeviceResponse from(Device device) {
-        List<String> lineCodes = device.getStop().getLines().stream()
+        List<LineInfo> lines = device.getStop().getLines().stream()
                 .sorted(Comparator.comparing(Line::getCode))
-                .map(Line::getCode)
+                .map(line -> new LineInfo(line.getCode(), line.getName(), line.getColor()))
                 .toList();
 
         return new DeviceResponse(
                 device.getId(),
                 device.getStop().getId(),
                 device.getStop().getName(),
-                lineCodes,
+                lines,
                 device.getStatus(),
                 device.getLastHeartbeat()
         );

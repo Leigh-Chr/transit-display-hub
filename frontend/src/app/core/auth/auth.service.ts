@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
-import { LoginRequest, LoginResponse, UserRole } from '@shared/models';
+import { LoginRequest, LoginResponse, UserRole, AuthUser } from '@shared/models';
 
 interface JwtPayload {
   sub: string;
@@ -25,7 +25,7 @@ export class AuthService {
     return !this.isTokenExpired(token);
   });
 
-  currentUser = computed(() => {
+  currentUser = computed<AuthUser | null>(() => {
     const token = this.tokenSignal();
     if (!token) return null;
     try {
@@ -37,6 +37,10 @@ export class AuthService {
     } catch {
       return null;
     }
+  });
+
+  isAdmin = computed(() => {
+    return this.currentUser()?.role === 'ADMIN';
   });
 
   constructor(

@@ -131,7 +131,7 @@ import { fadeIn } from '@shared/animations';
               <ng-container matColumnDef="time">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
                 <td mat-cell *matCellDef="let entry" class="time-cell">
-                  {{ entry.time }}
+                  {{ formatTime(entry.time) }}
                 </td>
               </ng-container>
 
@@ -329,7 +329,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
       data: { entry, lines: stop.lines } as ScheduleDialogData,
       width: '450px',
-      ariaLabel: `Edit schedule entry at ${entry.time}`,
+      ariaLabel: `Edit schedule entry at ${this.formatTime(entry.time)}`,
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -349,11 +349,11 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete Schedule Entry',
-        message: `Delete schedule entry at ${entry.time} to ${entry.route.terminusName}?`,
+        message: `Delete schedule entry at ${this.formatTime(entry.time)} to ${entry.route.terminusName}?`,
         confirmText: 'Delete',
         confirmColor: 'warn',
       } as ConfirmDialogData,
-      ariaLabel: `Confirm deletion of schedule entry at ${entry.time}`,
+      ariaLabel: `Confirm deletion of schedule entry at ${this.formatTime(entry.time)}`,
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
@@ -367,5 +367,11 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         });
       }
     });
+  }
+
+  formatTime(time: string): string {
+    // Time comes as "HH:MM:SS" - show only HH:MM
+    const parts = time.split(':');
+    return `${parts[0]}:${parts[1]}`;
   }
 }

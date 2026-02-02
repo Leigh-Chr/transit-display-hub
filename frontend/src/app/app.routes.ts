@@ -34,6 +34,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/stops/stops.component').then(m => m.StopsComponent)
       },
       {
+        path: 'routes',
+        loadComponent: () => import('./features/admin/routes/routes.component').then(m => m.RoutesComponent)
+      },
+      {
         path: 'schedules',
         loadComponent: () => import('./features/admin/schedules/schedules.component').then(m => m.SchedulesComponent)
       },
@@ -44,6 +48,10 @@ export const routes: Routes = [
       {
         path: 'devices',
         loadComponent: () => import('./features/admin/devices/devices.component').then(m => m.DevicesComponent)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
       }
     ]
   },
