@@ -17,12 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,8 +35,8 @@ public class DisplayStateCalculator {
     private final TimedEntryRepository timedEntryRepository;
     private final BroadcastMessageRepository messageRepository;
 
-    private static final int MAX_ARRIVALS = 5;
     private static final int MAX_MESSAGES = 3;
+    private static final int WINDOW_MINUTES = 30;
 
     // Version tracking per stop
     private final Map<UUID, AtomicLong> versionMap = new ConcurrentHashMap<>();
@@ -54,12 +56,23 @@ public class DisplayStateCalculator {
                 ))
                 .toList();
 
-        // Get upcoming arrivals with route info (filter past times, limit to MAX_ARRIVALS)
+        // Get upcoming arrivals within 30-minute window, one per line (next departure only)
         LocalTime now = LocalTime.now();
+        LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
         List<DisplayState.ArrivalInfo> arrivals = timedEntryRepository
-                .findByStopIdAndTimeAfterWithRoute(stopId, now)
+                .findByStopIdAndTimeWindowWithRoute(stopId, now, windowEnd)
                 .stream()
-                .limit(MAX_ARRIVALS)
+                // Group by line code, keeping only the first (earliest) departure per line
+                .collect(Collectors.toMap(
+                        entry -> entry.getRoute().getLine().getCode(),
+                        Function.identity(),
+                        (existing, replacement) -> existing, // Keep first occurrence (earliest time)
+                        LinkedHashMap::new // Preserve insertion order
+                ))
+                .values()
+                .stream()
+                // Sort by departure time
+                .sorted(Comparator.comparing(TimedEntry::getTime))
                 .map(this::toArrivalInfo)
                 .toList();
 

@@ -32,7 +32,10 @@ import { DisplayState } from '@shared/models';
               }
             </div>
           </div>
-          <div class="clock">{{ currentTime() }}</div>
+          <div class="clock-container">
+            <div class="date">{{ currentDate() }}</div>
+            <div class="clock">{{ currentTime() }}</div>
+          </div>
         </header>
 
         <!-- Critical alert (scrolling banner) -->
@@ -73,26 +76,58 @@ import { DisplayState } from '@shared/models';
         <!-- Main departures board -->
         <main class="departures">
           <div class="departures-header">
-            <span class="col-line">Ligne</span>
+            <span class="col-line">Line</span>
             <span class="col-destination">Destination</span>
-            <span class="col-time">Départ</span>
+            <span class="col-time">Next departure</span>
           </div>
-          @for (arrival of displayedArrivals(); track $index; let i = $index) {
-              <div class="departure-row" [class.next-departure]="i === 0">
-                <span
-                  class="line-badge"
-                  [style.backgroundColor]="arrival.line.color"
-                >
-                  {{ arrival.line.code }}
-                </span>
-                <span class="destination">{{ arrival.destinationName }}</span>
-                <span class="time">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+          <div class="departures-viewport">
+            <div class="departures-track"
+                 [class.scrolling]="needsScrolling()"
+                 [style.animationDuration]="scrollDuration()">
+              <div class="departures-list">
+                @for (arrival of allArrivals(); track arrival.line.code) {
+                  <div class="departure-row">
+                    <span
+                      class="line-badge"
+                      [style.backgroundColor]="arrival.line.color"
+                    >
+                      {{ arrival.line.code }}
+                    </span>
+                    <span class="destination">{{ arrival.destinationName }}</span>
+                    <span class="time-info">
+                      <span class="time-relative">{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                      <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+                    </span>
+                  </div>
+                } @empty {
+                  <div class="no-departures">
+                    No scheduled departures
+                  </div>
+                }
               </div>
-            } @empty {
-              <div class="no-departures">
-                No scheduled departures
-              </div>
-            }
+              <!-- Duplicate for seamless loop when scrolling -->
+              @if (needsScrolling()) {
+                <div class="list-divider"></div>
+                <div class="departures-list">
+                  @for (arrival of allArrivals(); track arrival.line.code) {
+                    <div class="departure-row">
+                      <span
+                        class="line-badge"
+                        [style.backgroundColor]="arrival.line.color"
+                      >
+                        {{ arrival.line.code }}
+                      </span>
+                      <span class="destination">{{ arrival.destinationName }}</span>
+                      <span class="time-info">
+                        <span class="time-relative">{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                        <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
         </main>
 
         <!-- Info/Warning messages ticker -->
@@ -132,7 +167,7 @@ import { DisplayState } from '@shared/models';
         @if (!connected()) {
           <div class="connection-warning">
             <mat-icon>wifi_off</mat-icon>
-            Reconnexion...
+            Reconnecting...
           </div>
         }
       } @else if (error()) {
@@ -178,7 +213,7 @@ import { DisplayState } from '@shared/models';
       justify-content: space-between;
       align-items: center;
       padding-bottom: 1.5vh;
-      border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+      border-bottom: 0.4vh solid rgba(255, 255, 255, 0.25);
       margin-bottom: 1.5vh;
     }
 
@@ -197,11 +232,22 @@ import { DisplayState } from '@shared/models';
 
     .header-line-badge {
       padding: 0.5vh 1vw;
-      border-radius: 0.4vh;
+      border-radius: 0.5vh;
       font-size: 3vh;
       font-weight: 700;
       color: #fff;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .clock-container {
+      text-align: right;
+    }
+
+    .date {
+      font-size: 3vh;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 0.5vh;
     }
 
     .clock {
@@ -295,8 +341,8 @@ import { DisplayState } from '@shared/models';
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: rgba(255, 255, 255, 0.4);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      border-bottom: 0.1vh solid rgba(255, 255, 255, 0.15);
       flex-shrink: 0;
     }
 
@@ -311,22 +357,15 @@ import { DisplayState } from '@shared/models';
     }
 
     .col-time {
-      width: 16vw;
+      min-width: 22vw;
       text-align: right;
     }
 
     .departure-row {
       display: flex;
       align-items: center;
-      padding: 0 1vw;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      flex: 1;
-      min-height: 0;
-    }
-
-    .next-departure {
-      background: rgba(255, 255, 255, 0.06);
-      flex: 1.5;
+      padding: 1.5vh 1vw;
+      border-bottom: 0.1vh solid rgba(255, 255, 255, 0.1);
     }
 
     .line-badge {
@@ -335,15 +374,10 @@ import { DisplayState } from '@shared/models';
       font-size: clamp(3vh, 4vh, 5vh);
       font-weight: 700;
       padding: 1vh 0;
-      border-radius: 0.6vh;
+      border-radius: 0.5vh;
       color: #fff;
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
       flex-shrink: 0;
-    }
-
-    .next-departure .line-badge {
-      font-size: clamp(3vh, 5vh, 6vh);
-      padding: 1.2vh 0;
     }
 
     .destination {
@@ -356,21 +390,58 @@ import { DisplayState } from '@shared/models';
       white-space: nowrap;
     }
 
-    .next-departure .destination {
-      font-size: clamp(3.5vh, 5.5vh, 7vh);
-      font-weight: 600;
-    }
-
-    .time {
-      width: 16vw;
-      font-size: clamp(4vh, 6vh, 8vh);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+    .time-info {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 1.5vw;
+      min-width: 22vw;
       text-align: right;
     }
 
-    .next-departure .time {
-      font-size: clamp(5vh, 7.5vh, 10vh);
+    .time-relative {
+      font-size: clamp(3.5vh, 5vh, 7vh);
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .time-absolute {
+      font-size: clamp(2.5vh, 3.5vh, 5vh);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* --- Departures Viewport (scrolling container) --- */
+    .departures-viewport {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .departures-track {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .departures-track.scrolling {
+      animation: vertical-scroll linear infinite;
+    }
+
+    @keyframes vertical-scroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+
+    .departures-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .list-divider {
+      height: 0.3vh;
+      margin: 2vh 5vw;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
     }
 
     .no-departures {
@@ -379,7 +450,8 @@ import { DisplayState } from '@shared/models';
       align-items: center;
       justify-content: center;
       font-size: 4vh;
-      color: rgba(255, 255, 255, 0.4);
+      color: rgba(255, 255, 255, 0.5);
+      min-height: 20vh;
     }
 
     /* --- Info Ticker --- */
@@ -388,8 +460,8 @@ import { DisplayState } from '@shared/models';
       padding-top: 1.5vh;
       overflow: hidden;
       background: linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 50%, rgba(33, 150, 243, 0.1) 100%);
-      border-radius: 0.6vh;
-      border-top: 2px solid rgba(33, 150, 243, 0.3);
+      border-radius: 0.5vh;
+      border-top: 0.3vh solid rgba(33, 150, 243, 0.3);
     }
 
     .ticker-track {
@@ -441,7 +513,7 @@ import { DisplayState } from '@shared/models';
 
     .ticker-separator {
       margin: 0 3vw;
-      color: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.5);
       font-size: 3vh;
     }
 
@@ -500,7 +572,7 @@ import { DisplayState } from '@shared/models';
 
     .error-state p {
       font-size: 3vh;
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(255, 255, 255, 0.5);
       max-width: 60vw;
     }
 
@@ -519,9 +591,10 @@ import { DisplayState } from '@shared/models';
     /* Portrait mode optimization */
     @media (orientation: portrait) {
       .header { flex-direction: column; align-items: flex-start; gap: 1vh; }
-      .clock { align-self: flex-end; font-size: 6vh; }
+      .clock-container { align-self: flex-end; }
+      .clock { font-size: 6vh; }
       .line-badge { width: 12vw; }
-      .time { width: 22vw; }
+      .time-info { min-width: 28vw; }
     }
   `,
 })
@@ -533,22 +606,51 @@ export class KioskComponent implements OnInit, OnDestroy {
   displayState = signal<DisplayState | null>(null);
   error = signal<string | null>(null);
   currentTime = signal(this.formatTime(new Date()));
+  currentDate = signal(this.formatDate(new Date()));
 
   private token: string | null = null;
   private stopId: string | null = null;
   private timeInterval: ReturnType<typeof setInterval> | null = null;
 
-  // Dynamic arrivals count based on available space (more if no critical messages)
-  maxArrivals = computed(() => {
-    const criticalCount = this.criticalMessages().length;
-    const hasInfoMessages = this.infoMessages().length > 0;
-    // Base: 5 arrivals, reduce by 1 for each critical message, add 1 if no info ticker
-    return Math.max(3, Math.min(6, 5 - criticalCount + (hasInfoMessages ? 0 : 1)));
+  // Maximum arrivals that fit on screen without scrolling
+  private static readonly MAX_VISIBLE_ARRIVALS = 5;
+  // Seconds to display each arrival during scroll
+  private static readonly SECONDS_PER_ARRIVAL = 3;
+
+  // All arrivals from display state, filtered to exclude past departures
+  allArrivals = computed(() => {
+    // Re-evaluate when time changes
+    this.currentTime();
+
+    const arrivals = this.displayState()?.arrivals || [];
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return arrivals.filter(arrival => {
+      const parts = arrival.scheduledTime.split(':');
+      const arrivalMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      // Keep arrivals that are in the future (with 1 min buffer for "Imminent")
+      return arrivalMinutes >= currentMinutes;
+    });
   });
 
-  displayedArrivals = computed(() =>
-    (this.displayState()?.arrivals || []).slice(0, this.maxArrivals())
-  );
+  // Whether we need vertical scrolling (more arrivals than fit on screen)
+  needsScrolling = computed(() => {
+    const arrivals = this.allArrivals();
+    const criticalCount = this.criticalMessages().length;
+    const hasInfoMessages = this.infoMessages().length > 0;
+    // Adjust visible count based on messages (same logic as before)
+    const maxVisible = Math.max(3, Math.min(6, KioskComponent.MAX_VISIBLE_ARRIVALS - criticalCount + (hasInfoMessages ? 0 : 1)));
+    return arrivals.length > maxVisible;
+  });
+
+  // Duration for one complete scroll cycle
+  scrollDuration = computed(() => {
+    const arrivals = this.allArrivals();
+    // Time proportional to number of arrivals
+    const duration = arrivals.length * KioskComponent.SECONDS_PER_ARRIVAL;
+    return `${Math.max(10, duration)}s`;
+  });
 
   criticalMessages = computed(() =>
     (this.displayState()?.messages || []).filter(
@@ -614,7 +716,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
 
     this.timeInterval = setInterval(() => {
-      this.currentTime.set(this.formatTime(new Date()));
+      const now = new Date();
+      this.currentTime.set(this.formatTime(now));
+      this.currentDate.set(this.formatDate(now));
     }, 1000);
   }
 
@@ -667,9 +771,42 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
   }
 
+  private formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
   formatDepartureTime(time: string): string {
     // Time comes as "HH:MM:SS" or "HH:MM" - show only HH:MM
     const parts = time.split(':');
     return `${parts[0]}:${parts[1]}`;
+  }
+
+  getMinutesUntil(time: string): number {
+    // Trigger recalculation when currentTime changes
+    this.currentTime();
+
+    const parts = time.split(':');
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const departureMinutes = hours * 60 + minutes;
+
+    // Simple minute-based difference (arrivals are already filtered to be in the future)
+    return Math.max(0, departureMinutes - nowMinutes);
+  }
+
+  formatRelativeTime(time: string): string {
+    const minutes = this.getMinutesUntil(time);
+    if (minutes === 0) {
+      return 'Imminent';
+    }
+    return `${minutes} min`;
   }
 }

@@ -5,9 +5,11 @@ import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
 import com.transit.hub.domain.service.DisplayStateCalculator;
+import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -22,6 +24,7 @@ public class DisplayStateService {
 
     private final DisplayStateCalculator displayStateCalculator;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ActiveDisplayTracker activeDisplayTracker;
 
     public DisplayState getDisplayState(UUID stopId) {
         return displayStateCalculator.calculateForStop(stopId);
@@ -60,5 +63,14 @@ public class DisplayStateService {
     public void onNetworkChanged(NetworkChangedEvent event) {
         log.info("Network changed, affecting {} stops", event.getAffectedStopIds().size());
         recalculateAndPushAll(event.getAffectedStopIds());
+    }
+
+    @Scheduled(fixedRate = 60000) // Every minute
+    public void refreshActiveDisplays() {
+        Set<UUID> activeStopIds = activeDisplayTracker.getActiveStopIds();
+        if (!activeStopIds.isEmpty()) {
+            log.debug("Refreshing {} active displays", activeStopIds.size());
+            recalculateAndPushAll(activeStopIds);
+        }
     }
 }

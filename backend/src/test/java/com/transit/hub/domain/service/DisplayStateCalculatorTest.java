@@ -75,7 +75,7 @@ class DisplayStateCalculatorTest {
         @DisplayName("returns display state with stop and lines info")
         void returnsDisplayStateWithStopInfo() {
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -105,7 +105,7 @@ class DisplayStateCalculatorTest {
         @DisplayName("includes version number that increments")
         void includesIncrementingVersion() {
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -121,7 +121,7 @@ class DisplayStateCalculatorTest {
         @DisplayName("includes timestamp")
         void includesTimestamp() {
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -145,7 +145,7 @@ class DisplayStateCalculatorTest {
             TimedEntry futureEntry = TestDataFactory.createTimedEntry(LocalTime.now().plusHours(1), testStop, testRoute);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(futureEntry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -156,35 +156,63 @@ class DisplayStateCalculatorTest {
         }
 
         @Test
-        @DisplayName("limits to five arrivals maximum")
-        void limitsToFiveArrivals() {
-            // Create more than 5 entries
-            List<TimedEntry> manyEntries = List.of(
+        @DisplayName("returns one arrival per line only")
+        void returnsOneArrivalPerLine() {
+            // Create multiple entries for the same line - only the first should be returned
+            List<TimedEntry> multipleEntriesSameLine = List.of(
                     TestDataFactory.createTimedEntry(LocalTime.of(8, 0), testStop, testRoute),
                     TestDataFactory.createTimedEntry(LocalTime.of(8, 15), testStop, testRoute),
-                    TestDataFactory.createTimedEntry(LocalTime.of(8, 30), testStop, testRoute),
-                    TestDataFactory.createTimedEntry(LocalTime.of(8, 45), testStop, testRoute),
-                    TestDataFactory.createTimedEntry(LocalTime.of(9, 0), testStop, testRoute),
-                    TestDataFactory.createTimedEntry(LocalTime.of(9, 15), testStop, testRoute),
-                    TestDataFactory.createTimedEntry(LocalTime.of(9, 30), testStop, testRoute)
+                    TestDataFactory.createTimedEntry(LocalTime.of(8, 30), testStop, testRoute)
             );
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
-                    .thenReturn(manyEntries);
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(multipleEntriesSameLine);
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
 
             DisplayState result = calculator.calculateForStop(testStopId);
 
-            assertThat(result.arrivals()).hasSize(5);
+            // Only one arrival per line (the earliest)
+            assertThat(result.arrivals()).hasSize(1);
+            assertThat(result.arrivals().get(0).scheduledTime()).isEqualTo(LocalTime.of(8, 0));
+        }
+
+        @Test
+        @DisplayName("returns multiple arrivals for different lines")
+        void returnsMultipleArrivalsForDifferentLines() {
+            // Create entries for different lines
+            Line line2 = TestDataFactory.createLineWithId(UUID.randomUUID(), "L2", "Metro Line 2", "#33FF57");
+            Route route2 = TestDataFactory.createRouteWithId(UUID.randomUUID(), line2, "Direction West", "Western Terminal");
+
+            List<TimedEntry> entriesFromDifferentLines = List.of(
+                    TestDataFactory.createTimedEntry(LocalTime.of(8, 0), testStop, testRoute),
+                    TestDataFactory.createTimedEntry(LocalTime.of(8, 10), testStop, route2),
+                    TestDataFactory.createTimedEntry(LocalTime.of(8, 15), testStop, testRoute), // Should be ignored (same line as first)
+                    TestDataFactory.createTimedEntry(LocalTime.of(8, 20), testStop, route2)     // Should be ignored (same line as second)
+            );
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(entriesFromDifferentLines);
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            DisplayState result = calculator.calculateForStop(testStopId);
+
+            // Two arrivals: one for L1 (8:00), one for L2 (8:10)
+            assertThat(result.arrivals()).hasSize(2);
+            assertThat(result.arrivals().get(0).scheduledTime()).isEqualTo(LocalTime.of(8, 0));
+            assertThat(result.arrivals().get(0).line().code()).isEqualTo("L1");
+            assertThat(result.arrivals().get(1).scheduledTime()).isEqualTo(LocalTime.of(8, 10));
+            assertThat(result.arrivals().get(1).line().code()).isEqualTo("L2");
         }
 
         @Test
         @DisplayName("returns empty list when no upcoming arrivals")
         void returnsEmptyWhenNoArrivals() {
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -201,7 +229,7 @@ class DisplayStateCalculatorTest {
             TimedEntry entry = TestDataFactory.createTimedEntry(arrivalTime, testStop, testRoute);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -218,7 +246,7 @@ class DisplayStateCalculatorTest {
             TimedEntry entry = TestDataFactory.createTimedEntry(LocalTime.of(14, 30), testStop, testRoute);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -236,7 +264,7 @@ class DisplayStateCalculatorTest {
             TimedEntry entry = TestDataFactory.createTimedEntry(LocalTime.of(14, 30), testStop, testRoute);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -258,7 +286,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage activeMessage = TestDataFactory.createNetworkMessage();
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(activeMessage));
@@ -275,7 +303,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage networkMessage = TestDataFactory.createNetworkMessage();
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(networkMessage));
@@ -291,7 +319,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage lineMessage = TestDataFactory.createLineMessage(testLineId);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(lineMessage));
@@ -307,7 +335,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage stopMessage = TestDataFactory.createStopMessage(testStopId);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(stopMessage));
@@ -329,7 +357,7 @@ class DisplayStateCalculatorTest {
             );
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(manyMessages);
@@ -343,7 +371,7 @@ class DisplayStateCalculatorTest {
         @DisplayName("returns empty list when no active messages")
         void returnsEmptyWhenNoMessages() {
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
@@ -359,7 +387,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage criticalMessage = TestDataFactory.createCriticalMessage(MessageScope.NETWORK, null);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(criticalMessage));
@@ -378,7 +406,7 @@ class DisplayStateCalculatorTest {
             message.setContent("Service disruption expected");
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(message));
@@ -402,7 +430,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage message = TestDataFactory.createNetworkMessage();
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(timedEntryRepository.findByStopIdAndTimeAfterWithRoute(eq(testStopId), any(LocalTime.class)))
+            when(timedEntryRepository.findByStopIdAndTimeWindowWithRoute(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of(message));

@@ -18,6 +18,9 @@ public interface TimedEntryRepository extends JpaRepository<TimedEntry, UUID> {
     @Query("SELECT t FROM TimedEntry t JOIN FETCH t.route r JOIN FETCH r.line WHERE t.stop.id = :stopId AND t.time > :time ORDER BY t.time")
     List<TimedEntry> findByStopIdAndTimeAfterWithRoute(UUID stopId, LocalTime time);
 
+    @Query("SELECT t FROM TimedEntry t JOIN FETCH t.route r JOIN FETCH r.line WHERE t.stop.id = :stopId AND t.time > :startTime AND t.time <= :endTime ORDER BY t.time")
+    List<TimedEntry> findByStopIdAndTimeWindowWithRoute(UUID stopId, LocalTime startTime, LocalTime endTime);
+
     void deleteByStopId(UUID stopId);
 
     boolean existsByStopIdAndRouteIdAndTime(UUID stopId, UUID routeId, LocalTime time);
