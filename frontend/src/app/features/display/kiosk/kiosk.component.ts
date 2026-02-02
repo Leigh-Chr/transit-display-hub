@@ -35,21 +35,38 @@ import { DisplayState } from '@shared/models';
           <div class="clock">{{ currentTime() }}</div>
         </header>
 
-        <!-- Critical alert (single banner, rotates if multiple) -->
-        @if (currentCriticalMessage(); as message) {
+        <!-- Critical alert (scrolling banner) -->
+        @if (criticalMessages().length > 0) {
           <div class="alert-banner">
-            <mat-icon>warning</mat-icon>
-            <span class="alert-text">
-              <strong>{{ message.title }}</strong>
-              @if (message.content) {
-                <span class="alert-detail">— {{ message.content }}</span>
-              }
-            </span>
-            @if (criticalMessages().length > 1) {
-              <span class="alert-counter">
-                {{ (currentAlertIndex() % criticalMessages().length) + 1 }}/{{ criticalMessages().length }}
-              </span>
-            }
+            <div class="alert-icon">
+              <mat-icon>warning</mat-icon>
+            </div>
+            <div class="alert-wrapper">
+              <div class="alert-track" [style.animationDuration]="alertDuration()">
+                <div class="alert-content">
+                  @for (message of criticalMessages(); track $index) {
+                    <span class="alert-item">
+                      <strong>{{ message.title }}</strong>
+                      @if (message.content) {
+                        <span class="alert-detail">— {{ message.content }}</span>
+                      }
+                    </span>
+                    <span class="alert-separator">•</span>
+                  }
+                </div>
+                <div class="alert-content">
+                  @for (message of criticalMessages(); track $index) {
+                    <span class="alert-item">
+                      <strong>{{ message.title }}</strong>
+                      @if (message.content) {
+                        <span class="alert-detail">— {{ message.content }}</span>
+                      }
+                    </span>
+                    <span class="alert-separator">•</span>
+                  }
+                </div>
+              </div>
+            </div>
           </div>
         }
 
@@ -81,9 +98,8 @@ import { DisplayState } from '@shared/models';
         <!-- Info/Warning messages ticker -->
         @if (infoMessages().length > 0) {
           <aside class="info-ticker">
-            <div class="ticker-track">
-              <div class="ticker-content" [style.animationDuration]="tickerDuration()">
-                <span class="ticker-spacer"></span>
+            <div class="ticker-track" [style.animationDuration]="tickerDuration()">
+              <div class="ticker-content">
                 @for (message of infoMessages(); track $index) {
                   <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
                     <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
@@ -94,7 +110,9 @@ import { DisplayState } from '@shared/models';
                   </span>
                   <span class="ticker-separator">•</span>
                 }
-                <!-- Duplicate for seamless loop -->
+              </div>
+              <!-- Duplicate for seamless loop -->
+              <div class="ticker-content">
                 @for (message of infoMessages(); track $index) {
                   <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
                     <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
@@ -180,7 +198,7 @@ import { DisplayState } from '@shared/models';
     .header-line-badge {
       padding: 0.5vh 1vw;
       border-radius: 0.4vh;
-      font-size: 2.5vh;
+      font-size: 3vh;
       font-weight: 700;
       color: #fff;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -193,31 +211,55 @@ import { DisplayState } from '@shared/models';
       letter-spacing: 0.02em;
     }
 
-    /* --- Alert Banner (compact) --- */
+    /* --- Alert Banner (scrolling) --- */
     .alert-banner {
       display: flex;
       align-items: center;
-      gap: 1.5vw;
       background: #C62828;
-      padding: 1.2vh 2vw;
       margin-bottom: 1vh;
       border-radius: 0.5vh;
-      animation: pulse-alert 2s ease-in-out infinite;
     }
 
-    .alert-banner mat-icon {
-      font-size: 3vh;
-      width: 3vh;
-      height: 3vh;
+    .alert-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2vh 1.5vw;
       flex-shrink: 0;
     }
 
-    .alert-text {
+    .alert-icon mat-icon {
+      font-size: 3vh;
+      width: 3vh;
+      height: 3vh;
+    }
+
+    .alert-wrapper {
+      flex: 1;
+      overflow: hidden;
+      padding: 1.2vh 0;
+      padding-right: 2vw;
+    }
+
+    .alert-track {
+      display: flex;
+      animation: alert-scroll linear infinite;
+      width: max-content;
+    }
+
+    .alert-content {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .alert-item {
       font-size: 3vh;
       line-height: 1.3;
     }
 
-    .alert-text strong {
+    .alert-item strong {
       font-weight: 700;
     }
 
@@ -226,19 +268,14 @@ import { DisplayState } from '@shared/models';
       margin-left: 0.5vw;
     }
 
-    .alert-counter {
-      margin-left: auto;
-      padding: 0.3vh 0.8vw;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 0.4vh;
-      font-size: 2.5vh;
-      font-weight: 600;
-      flex-shrink: 0;
+    .alert-separator {
+      margin: 0 2vw;
+      opacity: 0.5;
     }
 
-    @keyframes pulse-alert {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.85; }
+    @keyframes alert-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
 
     /* --- Departures Board --- */
@@ -254,7 +291,7 @@ import { DisplayState } from '@shared/models';
       display: flex;
       align-items: center;
       padding: 1vh 1vw;
-      font-size: 2.5vh;
+      font-size: 3vh;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.1em;
@@ -295,7 +332,7 @@ import { DisplayState } from '@shared/models';
     .line-badge {
       width: 8vw;
       text-align: center;
-      font-size: clamp(2.5vh, 4vh, 5vh);
+      font-size: clamp(3vh, 4vh, 5vh);
       font-weight: 700;
       padding: 1vh 0;
       border-radius: 0.6vh;
@@ -356,16 +393,18 @@ import { DisplayState } from '@shared/models';
     }
 
     .ticker-track {
+      display: flex;
       overflow: hidden;
       padding: 1.5vh 0;
+      animation: ticker-scroll linear infinite;
+      width: max-content;
     }
 
     .ticker-content {
       display: flex;
       align-items: center;
       white-space: nowrap;
-      animation: ticker-scroll linear infinite;
-      width: max-content;
+      flex-shrink: 0;
     }
 
     @keyframes ticker-scroll {
@@ -403,12 +442,7 @@ import { DisplayState } from '@shared/models';
     .ticker-separator {
       margin: 0 3vw;
       color: rgba(255, 255, 255, 0.3);
-      font-size: 2.5vh;
-    }
-
-    .ticker-spacer {
-      display: inline-block;
-      width: 100vw;
+      font-size: 3vh;
     }
 
     /* --- Connection Warning (only shown when disconnected) --- */
@@ -422,15 +456,15 @@ import { DisplayState } from '@shared/models';
       background: rgba(244, 67, 54, 0.9);
       padding: 0.8vh 1.5vw;
       border-radius: 0.5vh;
-      font-size: 2.5vh;
+      font-size: 3vh;
       font-weight: 500;
       animation: blink 1s ease-in-out infinite;
     }
 
     .connection-warning mat-icon {
-      font-size: 2.5vh;
-      width: 2.5vh;
-      height: 2.5vh;
+      font-size: 3vh;
+      width: 3vh;
+      height: 3vh;
     }
 
     @keyframes blink {
@@ -478,8 +512,8 @@ import { DisplayState } from '@shared/models';
     @media (max-height: 800px) {
       .stop-name { font-size: 5vh; }
       .clock { font-size: 6vh; }
-      .ticker-item { font-size: 2.5vh; }
-      .ticker-item mat-icon { font-size: 2.5vh; width: 2.5vh; height: 2.5vh; }
+      .ticker-item { font-size: 3vh; }
+      .ticker-item mat-icon { font-size: 3vh; width: 3vh; height: 3vh; }
     }
 
     /* Portrait mode optimization */
@@ -503,10 +537,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   private token: string | null = null;
   private stopId: string | null = null;
   private timeInterval: ReturnType<typeof setInterval> | null = null;
-  private alertRotationInterval: ReturnType<typeof setInterval> | null = null;
-
-  // Current critical alert index for rotation
-  currentAlertIndex = signal(0);
 
   // Dynamic arrivals count based on available space (more if no critical messages)
   maxArrivals = computed(() => {
@@ -526,14 +556,6 @@ export class KioskComponent implements OnInit, OnDestroy {
     )
   );
 
-  // Current critical message to display (rotates if multiple)
-  currentCriticalMessage = computed(() => {
-    const messages = this.criticalMessages();
-    if (messages.length === 0) return null;
-    const index = this.currentAlertIndex() % messages.length;
-    return messages[index];
-  });
-
   infoMessages = computed(() =>
     (this.displayState()?.messages || []).filter(
       (m) => m.severity !== 'CRITICAL'
@@ -548,6 +570,17 @@ export class KioskComponent implements OnInit, OnDestroy {
     );
     // Base: 20s, add 2s per 50 characters for readability
     const duration = Math.max(15, 20 + Math.floor(totalLength / 50) * 2);
+    return `${duration}s`;
+  });
+
+  // Calculate alert scroll duration (slower than info ticker for critical messages)
+  alertDuration = computed(() => {
+    const messages = this.criticalMessages();
+    const totalLength = messages.reduce((acc, m) =>
+      acc + (m.title?.length || 0) + (m.content?.length || 0), 0
+    );
+    // Slower pace for critical messages: 15s base, add 3s per 50 chars
+    const duration = Math.max(12, 15 + Math.floor(totalLength / 50) * 3);
     return `${duration}s`;
   });
 
@@ -583,22 +616,11 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.timeInterval = setInterval(() => {
       this.currentTime.set(this.formatTime(new Date()));
     }, 1000);
-
-    // Rotate critical alerts every 5 seconds
-    this.alertRotationInterval = setInterval(() => {
-      const count = this.criticalMessages().length;
-      if (count > 1) {
-        this.currentAlertIndex.update(i => (i + 1) % count);
-      }
-    }, 5000);
   }
 
   ngOnDestroy(): void {
     if (this.timeInterval) {
       clearInterval(this.timeInterval);
-    }
-    if (this.alertRotationInterval) {
-      clearInterval(this.alertRotationInterval);
     }
     this.wsService.disconnect();
   }
