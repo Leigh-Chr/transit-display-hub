@@ -1,6 +1,8 @@
 package com.transit.hub.infrastructure.persistence;
 
 import com.transit.hub.domain.model.Route;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -30,4 +32,28 @@ public interface RouteRepository extends JpaRepository<Route, UUID> {
     List<Route> findByLineId(UUID lineId);
 
     void deleteByLineId(UUID lineId);
+
+    @Query(value = "SELECT r FROM Route r JOIN FETCH r.line",
+           countQuery = "SELECT COUNT(r) FROM Route r")
+    Page<Route> findAllWithLine(Pageable pageable);
+
+    @Query(value = "SELECT r FROM Route r JOIN FETCH r.line WHERE r.line.id = :lineId",
+           countQuery = "SELECT COUNT(r) FROM Route r WHERE r.line.id = :lineId")
+    Page<Route> findByLineIdWithLine(UUID lineId, Pageable pageable);
+
+    @Query(value = "SELECT r FROM Route r JOIN FETCH r.line WHERE " +
+           "LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(r.terminusName) LIKE LOWER(CONCAT('%', :search, '%'))",
+           countQuery = "SELECT COUNT(r) FROM Route r WHERE " +
+           "LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(r.terminusName) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<Route> findBySearchWithLine(String search, Pageable pageable);
+
+    @Query(value = "SELECT r FROM Route r JOIN FETCH r.line WHERE r.line.id = :lineId AND " +
+           "(LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(r.terminusName) LIKE LOWER(CONCAT('%', :search, '%')))",
+           countQuery = "SELECT COUNT(r) FROM Route r WHERE r.line.id = :lineId AND " +
+           "(LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(r.terminusName) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Route> findByLineIdAndSearchWithLine(UUID lineId, String search, Pageable pageable);
 }

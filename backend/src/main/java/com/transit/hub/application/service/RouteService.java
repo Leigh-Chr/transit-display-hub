@@ -1,6 +1,7 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.request.CreateRouteRequest;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.RouteResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
@@ -10,6 +11,8 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.RouteRepository;
 import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +49,25 @@ public class RouteService {
         return routeRepository.findByLineIdWithLine(lineId).stream()
                 .map(RouteResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<RouteResponse> getAllRoutes(UUID lineId, String search, Pageable pageable) {
+        Page<Route> page;
+        boolean hasLineId = lineId != null;
+        boolean hasSearch = search != null && !search.isBlank();
+        String trimmedSearch = hasSearch ? search.trim() : null;
+
+        if (hasLineId && hasSearch) {
+            page = routeRepository.findByLineIdAndSearchWithLine(lineId, trimmedSearch, pageable);
+        } else if (hasLineId) {
+            page = routeRepository.findByLineIdWithLine(lineId, pageable);
+        } else if (hasSearch) {
+            page = routeRepository.findBySearchWithLine(trimmedSearch, pageable);
+        } else {
+            page = routeRepository.findAllWithLine(pageable);
+        }
+        return PageResponse.from(page, RouteResponse::from);
     }
 
     @Transactional

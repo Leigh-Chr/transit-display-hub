@@ -2,12 +2,15 @@ package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.request.CreateUserRequest;
 import com.transit.hub.application.dto.request.UpdateUserRequest;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.UserResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,17 @@ public class UserService {
         return userRepository.findAll().stream()
                 .map(UserResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UserResponse> getAll(String search, Pageable pageable) {
+        Page<User> page;
+        if (search != null && !search.isBlank()) {
+            page = userRepository.findBySearch(search.trim(), pageable);
+        } else {
+            page = userRepository.findAll(pageable);
+        }
+        return PageResponse.from(page, UserResponse::from);
     }
 
     @Transactional(readOnly = true)

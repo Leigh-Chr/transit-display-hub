@@ -2,6 +2,9 @@ package com.transit.hub.infrastructure.persistence;
 
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.domain.model.enums.MessageSeverity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -29,4 +32,36 @@ public interface BroadcastMessageRepository extends JpaRepository<BroadcastMessa
     List<BroadcastMessage> findActiveMessagesForStop(Instant now, Set<UUID> lineIds, UUID stopId);
 
     void deleteByScopeTypeAndScopeId(MessageScope scopeType, UUID scopeId);
+
+    Page<BroadcastMessage> findAll(Pageable pageable);
+
+    @Query("SELECT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now")
+    Page<BroadcastMessage> findActiveMessages(Instant now, Pageable pageable);
+
+    @Query("SELECT m FROM BroadcastMessage m WHERE " +
+           "LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<BroadcastMessage> findBySearch(String search, Pageable pageable);
+
+    @Query("SELECT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now AND " +
+           "(LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<BroadcastMessage> findActiveBySearch(Instant now, String search, Pageable pageable);
+
+    Page<BroadcastMessage> findBySeverity(MessageSeverity severity, Pageable pageable);
+
+    @Query("SELECT m FROM BroadcastMessage m WHERE m.severity = :severity AND " +
+           "(LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<BroadcastMessage> findBySeverityAndSearch(MessageSeverity severity, String search, Pageable pageable);
+
+    @Query("SELECT m FROM BroadcastMessage m WHERE m.severity = :severity AND " +
+           "m.startTime <= :now AND m.endTime > :now")
+    Page<BroadcastMessage> findActiveBySeverity(Instant now, MessageSeverity severity, Pageable pageable);
+
+    @Query("SELECT m FROM BroadcastMessage m WHERE m.severity = :severity AND " +
+           "m.startTime <= :now AND m.endTime > :now AND " +
+           "(LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<BroadcastMessage> findActiveBySeverityAndSearch(Instant now, MessageSeverity severity, String search, Pageable pageable);
 }

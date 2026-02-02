@@ -1,6 +1,7 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.request.CreateStopRequest;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.Line;
@@ -12,6 +13,8 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,25 @@ public class StopService {
         return stopRepository.findByLineIdWithLines(lineId).stream()
                 .map(StopResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<StopResponse> getAllStops(UUID lineId, String search, Pageable pageable) {
+        Page<Stop> page;
+        boolean hasLineId = lineId != null;
+        boolean hasSearch = search != null && !search.isBlank();
+        String trimmedSearch = hasSearch ? search.trim() : null;
+
+        if (hasLineId && hasSearch) {
+            page = stopRepository.findByLineIdAndSearchWithLines(lineId, trimmedSearch, pageable);
+        } else if (hasLineId) {
+            page = stopRepository.findByLineIdWithLines(lineId, pageable);
+        } else if (hasSearch) {
+            page = stopRepository.findBySearchWithLines(trimmedSearch, pageable);
+        } else {
+            page = stopRepository.findAllWithLines(pageable);
+        }
+        return PageResponse.from(page, StopResponse::from);
     }
 
     @Transactional(readOnly = true)

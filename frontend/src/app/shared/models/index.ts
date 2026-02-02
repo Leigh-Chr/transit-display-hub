@@ -4,6 +4,25 @@ export type MessageScope = 'NETWORK' | 'LINE' | 'STOP';
 export type DeviceStatus = 'ONLINE' | 'OFFLINE';
 export type UserRole = 'ADMIN' | 'AGENT';
 
+// Pagination
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+export interface PageRequest {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+  search?: string;
+}
+
 // Common nested types
 export interface LineInfo {
   id?: string;

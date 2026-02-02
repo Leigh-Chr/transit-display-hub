@@ -289,8 +289,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
           this.dataSource.data = schedules.sort((a, b) => a.time.localeCompare(b.time));
           this.loading.set(false);
         },
-        error: () => {
+        error: (err) => {
           this.loading.set(false);
+          const message = err.error?.message || 'Failed to load schedules';
+          this.snackBar.open(message, 'Close', { duration: 5000 });
         },
       });
     } else {
@@ -311,12 +313,18 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.scheduleService.create(this.selectedStopId, result).subscribe(() => {
-          this.loadSchedules();
-          this.snackBar.open('Schedule entry created', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.scheduleService.create(this.selectedStopId, result).subscribe({
+          next: () => {
+            this.loadSchedules();
+            this.snackBar.open('Schedule entry created', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to create schedule entry';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
         });
       }
     });
@@ -334,12 +342,18 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.scheduleService.update(entry.id, result).subscribe(() => {
-          this.loadSchedules();
-          this.snackBar.open('Schedule entry updated', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.scheduleService.update(entry.id, result).subscribe({
+          next: () => {
+            this.loadSchedules();
+            this.snackBar.open('Schedule entry updated', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to update schedule entry';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
         });
       }
     });
@@ -358,12 +372,18 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
-        this.scheduleService.delete(entry.id).subscribe(() => {
-          this.loadSchedules();
-          this.snackBar.open('Schedule entry deleted', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.scheduleService.delete(entry.id).subscribe({
+          next: () => {
+            this.loadSchedules();
+            this.snackBar.open('Schedule entry deleted', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to delete schedule entry';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
         });
       }
     });

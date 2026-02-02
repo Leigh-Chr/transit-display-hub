@@ -2,6 +2,7 @@ package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.request.CreateLineRequest;
 import com.transit.hub.application.dto.response.LineResponse;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.Line;
@@ -11,6 +12,8 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.RouteRepository;
 import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,17 @@ public class LineService {
         return lineRepository.findAll().stream()
                 .map(LineResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<LineResponse> getAllLines(String search, Pageable pageable) {
+        Page<Line> page;
+        if (search != null && !search.isBlank()) {
+            page = lineRepository.findBySearch(search.trim(), pageable);
+        } else {
+            page = lineRepository.findAll(pageable);
+        }
+        return PageResponse.from(page, LineResponse::from);
     }
 
     @Transactional(readOnly = true)

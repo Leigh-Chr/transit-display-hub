@@ -343,8 +343,10 @@ export class DevicesComponent implements OnInit {
         this.devices.set(devices);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
+        const message = err.error?.message || 'Failed to load devices';
+        this.snackBar.open(message, 'Close', { duration: 5000 });
       },
     });
   }
@@ -358,9 +360,15 @@ export class DevicesComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.deviceService.register(result).subscribe((registration) => {
-          this.newDeviceToken.set(registration.token);
-          this.loadDevices();
+        this.deviceService.register(result).subscribe({
+          next: (registration) => {
+            this.newDeviceToken.set(registration.token);
+            this.loadDevices();
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to register device';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
         });
       }
     });
@@ -395,12 +403,18 @@ export class DevicesComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
-        this.deviceService.delete(device.id).subscribe(() => {
-          this.loadDevices();
-          this.snackBar.open('Device removed', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.deviceService.delete(device.id).subscribe({
+          next: () => {
+            this.loadDevices();
+            this.snackBar.open('Device removed', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to remove device';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
         });
       }
     });

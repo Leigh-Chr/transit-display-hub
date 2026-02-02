@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Line, CreateLineRequest } from '@shared/models';
+import { Line, CreateLineRequest, PageRequest, PageResponse } from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +13,15 @@ export class LineService {
 
   getAll(): Observable<Line[]> {
     return this.http.get<Line[]>(this.baseUrl);
+  }
+
+  getAllPaginated(request: PageRequest = {}): Observable<PageResponse<Line>> {
+    let params = new HttpParams().set('page', String(request.page ?? 0));
+    if (request.size) params = params.set('size', String(request.size));
+    if (request.sortBy) params = params.set('sortBy', request.sortBy);
+    if (request.sortDir) params = params.set('sortDir', request.sortDir);
+    if (request.search) params = params.set('search', request.search);
+    return this.http.get<PageResponse<Line>>(this.baseUrl, { params });
   }
 
   get(id: string): Observable<Line> {

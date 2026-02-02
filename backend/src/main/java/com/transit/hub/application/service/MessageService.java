@@ -2,6 +2,7 @@ package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.request.CreateMessageRequest;
 import com.transit.hub.application.dto.response.MessageResponse;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.event.MessageChangedEvent;
@@ -9,11 +10,14 @@ import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +49,35 @@ public class MessageService {
         return messageRepository.findActiveMessages(Instant.now()).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MessageResponse> getAllMessages(Boolean active, MessageSeverity severity, String search, Pageable pageable) {
+        Page<BroadcastMessage> page;
+        Instant now = Instant.now();
+        boolean hasActive = active != null && active;
+        boolean hasSeverity = severity != null;
+        boolean hasSearch = search != null && !search.isBlank();
+        String trimmedSearch = hasSearch ? search.trim() : null;
+
+        if (hasActive && hasSeverity && hasSearch) {
+            page = messageRepository.findActiveBySeverityAndSearch(now, severity, trimmedSearch, pageable);
+        } else if (hasActive && hasSeverity) {
+            page = messageRepository.findActiveBySeverity(now, severity, pageable);
+        } else if (hasActive && hasSearch) {
+            page = messageRepository.findActiveBySearch(now, trimmedSearch, pageable);
+        } else if (hasActive) {
+            page = messageRepository.findActiveMessages(now, pageable);
+        } else if (hasSeverity && hasSearch) {
+            page = messageRepository.findBySeverityAndSearch(severity, trimmedSearch, pageable);
+        } else if (hasSeverity) {
+            page = messageRepository.findBySeverity(severity, pageable);
+        } else if (hasSearch) {
+            page = messageRepository.findBySearch(trimmedSearch, pageable);
+        } else {
+            page = messageRepository.findAll(pageable);
+        }
+        return PageResponse.from(page, this::toResponse);
     }
 
     @Transactional(readOnly = true)

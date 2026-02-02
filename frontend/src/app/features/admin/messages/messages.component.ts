@@ -1,15 +1,20 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
-import { Line, BroadcastMessage } from '@shared/models';
+import { Line, BroadcastMessage, MessageSeverity, PageResponse } from '@shared/models';
 import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -17,6 +22,7 @@ import {
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { listStagger } from '@shared/animations';
 
 @Component({
@@ -29,8 +35,12 @@ import { listStagger } from '@shared/animations';
     MatButtonModule,
     MatIconModule,
     MatCheckboxModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatPaginatorModule,
     CardSkeletonComponent,
     EmptyStateComponent,
+    SearchInputComponent,
   ],
   animations: [listStagger],
   template: `
@@ -43,8 +53,28 @@ import { listStagger } from '@shared/animations';
         </button>
       </div>
 
-      <div class="filter-row">
-        <mat-checkbox [(ngModel)]="showActiveOnly" (change)="loadMessages()">
+      <div class="toolbar">
+        <app-search-input
+          placeholder="Search messages..."
+          [initialValue]="search"
+          (searchChange)="onSearchChange($event)"
+        />
+
+        <mat-form-field appearance="outline" class="severity-filter">
+          <mat-label>Severity</mat-label>
+          <mat-select [value]="severity" (selectionChange)="onSeverityChange($event.value)">
+            <mat-option value="">All severities</mat-option>
+            <mat-option value="CRITICAL">Critical</mat-option>
+            <mat-option value="WARNING">Warning</mat-option>
+            <mat-option value="INFO">Info</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-checkbox
+          [checked]="showActiveOnly"
+          (change)="onActiveChange($event.checked)"
+          class="active-checkbox"
+        >
           Active only
         </mat-checkbox>
       </div>
@@ -55,7 +85,7 @@ import { listStagger } from '@shared/animations';
             <app-card-skeleton [showIcon]="true" />
           }
         </div>
-      } @else if (messages().length === 0) {
+      } @else if (messages().length === 0 && !search && !severity && !showActiveOnly) {
         <mat-card>
           <app-empty-state
             icon="campaign"
@@ -65,6 +95,14 @@ import { listStagger } from '@shared/animations';
             actionLabel="Create Message"
             actionIcon="add"
             (action)="openCreateDialog()"
+          />
+        </mat-card>
+      } @else if (messages().length === 0) {
+        <mat-card>
+          <app-empty-state
+            icon="search_off"
+            title="No results found"
+            description="Try adjusting your search terms or filters."
           />
         </mat-card>
       } @else {
@@ -144,6 +182,15 @@ import { listStagger } from '@shared/animations';
             </mat-card>
           }
         </div>
+
+        <mat-paginator
+          [length]="totalElements"
+          [pageIndex]="page"
+          [pageSize]="size"
+          [pageSizeOptions]="[5, 10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        />
       }
     </div>
   `,
@@ -163,8 +210,20 @@ import { listStagger } from '@shared/animations';
       letter-spacing: -0.5px;
     }
 
-    .filter-row {
+    .toolbar {
+      display: flex;
+      gap: 16px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .severity-filter {
+      width: 180px;
+    }
+
+    .active-checkbox {
+      margin-left: auto;
     }
 
     .messages-list {
@@ -303,7 +362,25 @@ import { listStagger } from '@shared/animations';
       }
     }
 
+    mat-paginator {
+      margin-top: 16px;
+      border-radius: 12px;
+    }
+
     @media (max-width: 600px) {
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .severity-filter {
+        width: 100%;
+      }
+
+      .active-checkbox {
+        margin-left: 0;
+      }
+
       .message-content {
         flex-wrap: wrap;
       }
@@ -316,33 +393,108 @@ import { listStagger } from '@shared/animations';
     }
   `,
 })
-export class MessagesComponent implements OnInit {
+export class MessagesComponent implements OnInit, OnDestroy {
   private readonly messageService = inject(MessageService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroy$ = new Subject<void>();
 
   loading = signal(true);
   messages = signal<BroadcastMessage[]>([]);
   lines = signal<Line[]>([]);
-  showActiveOnly = true;
+
+  // Pagination and filter state
+  page = 0;
+  size = 10;
+  search = '';
+  severity: MessageSeverity | '' = '';
+  showActiveOnly = false;
+  totalElements = 0;
 
   ngOnInit(): void {
-    this.loadMessages();
     this.lineService.getAll().subscribe((lines) => this.lines.set(lines));
+
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      this.page = params['page'] ? +params['page'] : 0;
+      this.size = params['size'] ? +params['size'] : 10;
+      this.search = params['search'] || '';
+      this.severity = (params['severity'] as MessageSeverity) || '';
+      this.showActiveOnly = params['active'] === 'true';
+      this.loadMessages();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadMessages(): void {
     this.loading.set(true);
-    this.messageService.getAll(this.showActiveOnly).subscribe({
-      next: (messages) => {
-        this.messages.set(messages);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      },
+    this.messageService
+      .getAllPaginated({
+        page: this.page,
+        size: this.size,
+        search: this.search || undefined,
+        severity: this.severity || undefined,
+        active: this.showActiveOnly || undefined,
+        sortBy: 'startTime',
+        sortDir: 'desc',
+      })
+      .subscribe({
+        next: (response: PageResponse<BroadcastMessage>) => {
+          this.messages.set(response.content);
+          this.totalElements = response.totalElements;
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.loading.set(false);
+          const message = err.error?.message || 'Failed to load messages';
+          this.snackBar.open(message, 'Close', { duration: 5000 });
+        },
+      });
+  }
+
+  updateUrl(): void {
+    const queryParams: Record<string, string | number | boolean> = {};
+    if (this.page > 0) queryParams['page'] = this.page;
+    if (this.size !== 10) queryParams['size'] = this.size;
+    if (this.search) queryParams['search'] = this.search;
+    if (this.severity) queryParams['severity'] = this.severity;
+    if (this.showActiveOnly) queryParams['active'] = 'true';
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
     });
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.page = event.pageIndex;
+    this.size = event.pageSize;
+    this.updateUrl();
+  }
+
+  onSearchChange(search: string): void {
+    this.search = search;
+    this.page = 0;
+    this.updateUrl();
+  }
+
+  onSeverityChange(severity: MessageSeverity | ''): void {
+    this.severity = severity;
+    this.page = 0;
+    this.updateUrl();
+  }
+
+  onActiveChange(active: boolean): void {
+    this.showActiveOnly = active;
+    this.page = 0;
+    this.updateUrl();
   }
 
   isActive(message: BroadcastMessage): boolean {
@@ -359,12 +511,18 @@ export class MessagesComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.messageService.create(result).subscribe(() => {
-          this.loadMessages();
-          this.snackBar.open('Message created', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.messageService.create(result).subscribe({
+          next: () => {
+            this.loadMessages();
+            this.snackBar.open('Message created', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const message = err.error?.message || 'Failed to create message';
+            this.snackBar.open(message, 'Close', { duration: 5000 });
+          },
         });
       }
     });
@@ -379,12 +537,18 @@ export class MessagesComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.messageService.update(message.id, result).subscribe(() => {
-          this.loadMessages();
-          this.snackBar.open('Message updated', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.messageService.update(message.id, result).subscribe({
+          next: () => {
+            this.loadMessages();
+            this.snackBar.open('Message updated', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const msg = err.error?.message || 'Failed to update message';
+            this.snackBar.open(msg, 'Close', { duration: 5000 });
+          },
         });
       }
     });
@@ -403,12 +567,18 @@ export class MessagesComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
-        this.messageService.delete(message.id).subscribe(() => {
-          this.loadMessages();
-          this.snackBar.open('Message deleted', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+        this.messageService.delete(message.id).subscribe({
+          next: () => {
+            this.loadMessages();
+            this.snackBar.open('Message deleted', 'Close', {
+              duration: 3000,
+              panelClass: 'success-snackbar',
+            });
+          },
+          error: (err) => {
+            const msg = err.error?.message || 'Failed to delete message';
+            this.snackBar.open(msg, 'Close', { duration: 5000 });
+          },
         });
       }
     });
