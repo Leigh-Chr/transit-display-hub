@@ -111,11 +111,18 @@ public class DeviceService {
                 device.recordHeartbeat();
                 deviceRepository.save(device);
 
+                // Get first line code for backward compatibility
+                String firstLineCode = device.getStop().getLines().stream()
+                        .map(line -> line.getCode())
+                        .sorted()
+                        .findFirst()
+                        .orElse(null);
+
                 return new DeviceAuthResponse(
                         true,
                         device.getStop().getId(),
                         device.getStop().getName(),
-                        device.getStop().getLine().getCode()
+                        firstLineCode
                 );
             }
         }

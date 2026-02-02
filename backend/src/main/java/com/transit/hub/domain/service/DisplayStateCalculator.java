@@ -3,6 +3,7 @@ package com.transit.hub.domain.service;
 import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.BroadcastMessage;
+import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.TimedEntry;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
@@ -14,11 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,29 +40,35 @@ public class DisplayStateCalculator {
 
     @Transactional(readOnly = true)
     public DisplayState calculateForStop(UUID stopId) {
-        Stop stop = stopRepository.findById(stopId)
+        Stop stop = stopRepository.findByIdWithLines(stopId)
                 .orElseThrow(() -> new EntityNotFoundException("Stop", stopId));
 
-        // Get line info
-        DisplayState.LineInfo lineInfo = new DisplayState.LineInfo(
-                stop.getLine().getCode(),
-                stop.getLine().getName(),
-                stop.getLine().getColor()
-        );
-
-        // Get upcoming arrivals (filter past times, limit to MAX_ARRIVALS)
-        LocalTime now = LocalTime.now();
-        List<DisplayState.ArrivalInfo> arrivals = timedEntryRepository
-                .findByStopIdAndTimeAfter(stopId, now)
-                .stream()
-                .limit(MAX_ARRIVALS)
-                .map(entry -> toArrivalInfo(entry, lineInfo))
+        // Get all lines info for this stop
+        List<DisplayState.LineInfo> lineInfos = stop.getLines().stream()
+                .sorted(Comparator.comparing(Line::getCode))
+                .map(line -> new DisplayState.LineInfo(
+                        line.getCode(),
+                        line.getName(),
+                        line.getColor()
+                ))
                 .toList();
 
-        // Get active messages for this stop
+        // Get upcoming arrivals with line info (filter past times, limit to MAX_ARRIVALS)
+        LocalTime now = LocalTime.now();
+        List<DisplayState.ArrivalInfo> arrivals = timedEntryRepository
+                .findByStopIdAndTimeAfterWithLine(stopId, now)
+                .stream()
+                .limit(MAX_ARRIVALS)
+                .map(this::toArrivalInfo)
+                .toList();
+
+        // Get active messages for this stop (for all its lines)
         Instant instant = Instant.now();
+        Set<UUID> lineIds = stop.getLines().stream()
+                .map(Line::getId)
+                .collect(Collectors.toSet());
         List<DisplayState.MessageInfo> messages = messageRepository
-                .findActiveMessagesForStop(instant, stop.getLine().getId(), stopId)
+                .findActiveMessagesForStop(instant, lineIds, stopId)
                 .stream()
                 .limit(MAX_MESSAGES)
                 .map(this::toMessageInfo)
@@ -72,7 +82,7 @@ public class DisplayStateCalculator {
         return new DisplayState(
                 stopId,
                 stop.getName(),
-                lineInfo,
+                lineInfos,
                 arrivals,
                 messages,
                 version,
@@ -80,12 +90,16 @@ public class DisplayStateCalculator {
         );
     }
 
-    private DisplayState.ArrivalInfo toArrivalInfo(TimedEntry entry, DisplayState.LineInfo lineInfo) {
-        // For MVP, all arrivals are for the same line as the stop
-        // Destination could be derived from line name or a future field
+    private DisplayState.ArrivalInfo toArrivalInfo(TimedEntry entry) {
+        Line line = entry.getLine();
+        DisplayState.LineInfo lineInfo = new DisplayState.LineInfo(
+                line.getCode(),
+                line.getName(),
+                line.getColor()
+        );
         return new DisplayState.ArrivalInfo(
                 entry.getTime(),
-                lineInfo.name(), // Using line name as destination for now
+                line.getName(),
                 lineInfo
         );
     }

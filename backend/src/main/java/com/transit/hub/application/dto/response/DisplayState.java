@@ -10,7 +10,7 @@ import java.util.UUID;
 public record DisplayState(
         UUID stopId,
         String stopName,
-        LineInfo line,
+        List<LineInfo> lines,
         List<ArrivalInfo> arrivals,
         List<MessageInfo> messages,
         long version,

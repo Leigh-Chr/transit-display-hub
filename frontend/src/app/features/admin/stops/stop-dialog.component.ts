@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -10,7 +10,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Stop, Line, CreateStopRequest } from '@shared/models';
-import { LineService } from '@core/api/line.service';
 
 export interface StopDialogData {
   stop?: Stop;
@@ -34,12 +33,12 @@ export interface StopDialogData {
     <mat-dialog-content>
       <form #stopForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Line</mat-label>
+          <mat-label>Lines</mat-label>
           <mat-select
-            [(ngModel)]="form.lineId"
-            name="lineId"
+            [(ngModel)]="form.lineIds"
+            name="lineIds"
             required
-            [disabled]="!!data.stop"
+            multiple
           >
             @for (line of data.lines; track line.id) {
               <mat-option [value]="line.id">
@@ -47,6 +46,7 @@ export interface StopDialogData {
               </mat-option>
             }
           </mat-select>
+          <mat-hint>Select one or more lines this stop serves</mat-hint>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -66,7 +66,7 @@ export interface StopDialogData {
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!stopForm.valid"
+        [disabled]="!stopForm.valid || form.lineIds.length === 0"
         (click)="save()"
       >
         {{ data.stop ? 'Save Changes' : 'Create Stop' }}
@@ -91,7 +91,8 @@ export class StopDialogComponent {
   readonly data = inject<StopDialogData>(MAT_DIALOG_DATA);
 
   form: CreateStopRequest = {
-    lineId: this.data.stop?.line.id ?? this.data.selectedLineId ?? '',
+    lineIds: this.data.stop?.lines.map(l => l.id!).filter(Boolean) ??
+             (this.data.selectedLineId ? [this.data.selectedLineId] : []),
     name: this.data.stop?.name ?? '',
   };
 

@@ -98,11 +98,15 @@ import { fadeIn } from '@shared/animations';
         <mat-card @fadeIn>
           <table mat-table [dataSource]="dataSource" matSort class="full-width">
             <ng-container matColumnDef="line">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header="line.code">Line</th>
+              <th mat-header-cell *matHeaderCellDef>Lines</th>
               <td mat-cell *matCellDef="let stop">
-                <span class="line-badge" [style.backgroundColor]="stop.line.color">
-                  {{ stop.line.code }}
-                </span>
+                <div class="line-badges">
+                  @for (line of stop.lines; track line.id) {
+                    <span class="line-badge" [style.backgroundColor]="line.color">
+                      {{ line.code }}
+                    </span>
+                  }
+                </div>
               </td>
             </ng-container>
 
@@ -167,12 +171,18 @@ import { fadeIn } from '@shared/animations';
       overflow: hidden;
     }
 
+    .line-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
     .line-badge {
       display: inline-block;
-      padding: 6px 14px;
-      border-radius: 20px;
+      padding: 4px 10px;
+      border-radius: 16px;
       color: white;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.3px;
     }
@@ -219,8 +229,6 @@ export class StopsComponent implements OnInit, AfterViewInit {
       this.dataSource.sort = sortRef;
       this.dataSource.sortingDataAccessor = (item, property) => {
         switch (property) {
-          case 'line.code':
-            return item.line?.code || '';
           case 'name':
             return item.name;
           case 'scheduleCount':

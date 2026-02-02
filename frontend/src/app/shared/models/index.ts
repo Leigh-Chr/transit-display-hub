@@ -31,13 +31,13 @@ export interface CreateLineRequest {
 export interface Stop {
   id: string;
   name: string;
-  line: LineInfo;
+  lines: LineInfo[];
   scheduleCount: number;
 }
 
 export interface CreateStopRequest {
   name: string;
-  lineId: string;
+  lineIds: string[];
 }
 
 // Schedule / TimedEntry
@@ -45,10 +45,12 @@ export interface TimedEntry {
   id: string;
   time: string;
   stopId: string;
+  line: LineInfo;
 }
 
 export interface CreateTimedEntryRequest {
   time: string;
+  lineId: string;
 }
 
 // Message
@@ -86,7 +88,7 @@ export interface Device {
   id: string;
   stopId: string;
   stopName: string;
-  lineCode: string;
+  lineCodes: string[];
   status: DeviceStatus;
   lastHeartbeat?: string;
 }
@@ -135,7 +137,7 @@ export interface User {
 export interface DisplayState {
   stopId: string;
   stopName: string;
-  line: LineInfo;
+  lines: LineInfo[];
   arrivals: ArrivalInfo[];
   messages: MessageInfo[];
   version: number;

@@ -112,6 +112,15 @@ import { fadeIn } from '@shared/animations';
               <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
             </mat-card-header>
             <table mat-table [dataSource]="dataSource" matSort class="full-width">
+              <ng-container matColumnDef="line">
+                <th mat-header-cell *matHeaderCellDef>Line</th>
+                <td mat-cell *matCellDef="let entry">
+                  <span class="line-badge" [style.backgroundColor]="entry.line.color">
+                    {{ entry.line.code }}
+                  </span>
+                </td>
+              </ng-container>
+
               <ng-container matColumnDef="time">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
                 <td mat-cell *matCellDef="let entry" class="time-cell">
@@ -194,6 +203,16 @@ import { fadeIn } from '@shared/animations';
       color: var(--app-on-surface);
     }
 
+    .line-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
     .actions-column {
       text-align: right;
       width: 120px;
@@ -222,7 +241,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
   selectedLineId = '';
   selectedStopId = '';
-  displayedColumns = ['time', 'actions'];
+  displayedColumns = ['line', 'time', 'actions'];
 
   ngOnInit(): void {
     this.lineService.getAll().subscribe((lines) => this.lines.set(lines));
@@ -269,9 +288,12 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   }
 
   openCreateDialog(): void {
+    const stop = this.selectedStop();
+    if (!stop) return;
+
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: {} as ScheduleDialogData,
-      width: '400px',
+      data: { lines: stop.lines } as ScheduleDialogData,
+      width: '450px',
       ariaLabel: 'Create new schedule entry',
     });
 
@@ -289,9 +311,12 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   }
 
   openEditDialog(entry: TimedEntry): void {
+    const stop = this.selectedStop();
+    if (!stop) return;
+
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: { entry } as ScheduleDialogData,
-      width: '400px',
+      data: { entry, lines: stop.lines } as ScheduleDialogData,
+      width: '450px',
       ariaLabel: `Edit schedule entry at ${entry.time}`,
     });
 

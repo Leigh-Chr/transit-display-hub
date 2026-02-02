@@ -180,13 +180,21 @@ public class MessageService {
                 scopeInfo = new MessageResponse.ScopeInfo(line.getName(), line.getCode(), line.getColor());
             }
         } else if (message.getScopeType() == MessageScope.STOP && message.getScopeId() != null) {
-            Stop stop = stopRepository.findById(message.getScopeId()).orElse(null);
+            Stop stop = stopRepository.findByIdWithLines(message.getScopeId()).orElse(null);
             if (stop != null) {
-                scopeInfo = new MessageResponse.ScopeInfo(
-                        stop.getName(),
-                        stop.getLine().getCode(),
-                        stop.getLine().getColor()
-                );
+                // Use first line for display purposes
+                Line firstLine = stop.getLines().stream()
+                        .min(java.util.Comparator.comparing(Line::getCode))
+                        .orElse(null);
+                if (firstLine != null) {
+                    scopeInfo = new MessageResponse.ScopeInfo(
+                            stop.getName(),
+                            firstLine.getCode(),
+                            firstLine.getColor()
+                    );
+                } else {
+                    scopeInfo = new MessageResponse.ScopeInfo(stop.getName(), null, null);
+                }
             }
         }
 

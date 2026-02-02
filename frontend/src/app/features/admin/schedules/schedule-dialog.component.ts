@@ -8,10 +8,12 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { TimedEntry, CreateTimedEntryRequest } from '@shared/models';
+import { MatSelectModule } from '@angular/material/select';
+import { TimedEntry, CreateTimedEntryRequest, LineInfo } from '@shared/models';
 
 export interface ScheduleDialogData {
   entry?: TimedEntry;
+  lines: LineInfo[];
 }
 
 @Component({
@@ -23,6 +25,7 @@ export interface ScheduleDialogData {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
   ],
   template: `
     <h2 mat-dialog-title>
@@ -30,6 +33,26 @@ export interface ScheduleDialogData {
     </h2>
     <mat-dialog-content>
       <form #scheduleForm="ngForm" class="form-container">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Line</mat-label>
+          <mat-select
+            [(ngModel)]="form.lineId"
+            name="lineId"
+            required
+          >
+            @for (line of data.lines; track line.id) {
+              <mat-option [value]="line.id">
+                <span class="line-option">
+                  <span class="line-badge-small" [style.backgroundColor]="line.color">
+                    {{ line.code }}
+                  </span>
+                  {{ line.name }}
+                </span>
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Time</mat-label>
           <input
@@ -47,7 +70,7 @@ export interface ScheduleDialogData {
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!scheduleForm.valid"
+        [disabled]="!scheduleForm.valid || !form.lineId"
         (click)="save()"
       >
         {{ data.entry ? 'Save Changes' : 'Create Entry' }}
@@ -58,12 +81,27 @@ export interface ScheduleDialogData {
     .form-container {
       display: flex;
       flex-direction: column;
-      min-width: 300px;
+      min-width: 350px;
       padding-top: 8px;
     }
 
     .full-width {
       width: 100%;
+    }
+
+    .line-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .line-badge-small {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
     }
   `,
 })
@@ -73,6 +111,7 @@ export class ScheduleDialogComponent {
 
   form: CreateTimedEntryRequest = {
     time: this.data.entry?.time ?? '',
+    lineId: this.data.entry?.line?.id ?? (this.data.lines.length === 1 ? this.data.lines[0].id! : ''),
   };
 
   save(): void {

@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -38,17 +38,7 @@ public class Line {
     @Column(nullable = false)
     private String color;
 
-    @OneToMany(mappedBy = "line", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(mappedBy = "lines")
     @Builder.Default
-    private List<Stop> stops = new ArrayList<>();
-
-    public void addStop(Stop stop) {
-        stops.add(stop);
-        stop.setLine(this);
-    }
-
-    public void removeStop(Stop stop) {
-        stops.remove(stop);
-        stop.setLine(null);
-    }
+    private Set<Stop> stops = new HashSet<>();
 }

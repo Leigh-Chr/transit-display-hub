@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -20,10 +21,10 @@ public interface BroadcastMessageRepository extends JpaRepository<BroadcastMessa
 
     List<BroadcastMessage> findByScopeTypeAndScopeId(MessageScope scopeType, UUID scopeId);
 
-    @Query("SELECT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now AND " +
+    @Query("SELECT DISTINCT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now AND " +
             "(m.scopeType = 'NETWORK' OR " +
-            "(m.scopeType = 'LINE' AND m.scopeId = :lineId) OR " +
+            "(m.scopeType = 'LINE' AND m.scopeId IN :lineIds) OR " +
             "(m.scopeType = 'STOP' AND m.scopeId = :stopId)) " +
             "ORDER BY CASE m.severity WHEN 'CRITICAL' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END, m.startTime DESC")
-    List<BroadcastMessage> findActiveMessagesForStop(Instant now, UUID lineId, UUID stopId);
+    List<BroadcastMessage> findActiveMessagesForStop(Instant now, Set<UUID> lineIds, UUID stopId);
 }

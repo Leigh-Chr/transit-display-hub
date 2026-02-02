@@ -11,10 +11,12 @@ import java.util.UUID;
 
 @Repository
 public interface TimedEntryRepository extends JpaRepository<TimedEntry, UUID> {
-    List<TimedEntry> findByStopIdOrderByTime(UUID stopId);
 
-    @Query("SELECT t FROM TimedEntry t WHERE t.stop.id = :stopId AND t.time > :time ORDER BY t.time")
-    List<TimedEntry> findByStopIdAndTimeAfter(UUID stopId, LocalTime time);
+    @Query("SELECT t FROM TimedEntry t JOIN FETCH t.line WHERE t.stop.id = :stopId ORDER BY t.time")
+    List<TimedEntry> findByStopIdWithLineOrderByTime(UUID stopId);
+
+    @Query("SELECT t FROM TimedEntry t JOIN FETCH t.line WHERE t.stop.id = :stopId AND t.time > :time ORDER BY t.time")
+    List<TimedEntry> findByStopIdAndTimeAfterWithLine(UUID stopId, LocalTime time);
 
     void deleteByStopId(UUID stopId);
 }

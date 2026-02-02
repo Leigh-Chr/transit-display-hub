@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -160,60 +161,85 @@ public class DataLoader implements CommandLineRunner {
 
         Map<String, Stop> stops = new LinkedHashMap<>();
 
-        // M1 - Red Line (East to West) - 10 stops
-        String[] m1Stops = {
-            "Eastern Terminal", "Industrial Park", "Convention Center",
-            "Central Station", "City Hall", "Museum District",
-            "University", "Medical Center", "Technology Park", "Western Terminal"
-        };
-        createStopsForLine(lines.get("M1"), m1Stops, stops);
+        // Create shared multi-line stops first
+        // Central Station is a major hub served by M1, M2, M3, M4, A1, T1, T2
+        Stop centralStation = createStop("Central Station",
+                lines.get("M1"), lines.get("M2"), lines.get("M3"),
+                lines.get("M4"), lines.get("A1"), lines.get("T1"), lines.get("T2"));
+        stops.put("Central Station", centralStation);
 
-        // M2 - Blue Line (North to South) - 9 stops
-        String[] m2Stops = {
+        // Convention Center is served by M1 and M3
+        Stop conventionCenter = createStop("Convention Center",
+                lines.get("M1"), lines.get("M3"));
+        stops.put("Convention Center", conventionCenter);
+
+        // University area is served by M1 and T2
+        Stop university = createStop("University", lines.get("M1"), lines.get("T2"));
+        stops.put("University", university);
+
+        // M1 - Red Line (East to West) - unique stops
+        String[] m1UniqueStops = {
+            "Eastern Terminal", "Industrial Park",
+            "City Hall", "Museum District",
+            "Medical Center", "Technology Park", "Western Terminal"
+        };
+        createStopsForLine(lines.get("M1"), m1UniqueStops, stops);
+
+        // M2 - Blue Line (North to South) - unique stops
+        String[] m2UniqueStops = {
             "North Station", "Sports Complex", "Shopping Mall",
-            "Central Station", "Financial District", "Opera House",
+            "Financial District", "Opera House",
             "South Park", "Residential Area", "South Terminal"
         };
-        createStopsForLine(lines.get("M2"), m2Stops, stops);
+        createStopsForLine(lines.get("M2"), m2UniqueStops, stops);
 
-        // M3 - Green Line (Ring) - 12 stops
-        String[] m3Stops = {
-            "Central Station", "Old Town", "Market Square", "Harbor",
+        // M3 - Green Line (Ring) - unique stops
+        String[] m3UniqueStops = {
+            "Old Town", "Market Square", "Harbor",
             "Beach", "Marina", "Lighthouse Point", "Aquarium",
-            "Botanical Garden", "Zoo", "Stadium", "Convention Center"
+            "Botanical Garden", "Zoo", "Stadium"
         };
-        createStopsForLine(lines.get("M3"), m3Stops, stops);
+        createStopsForLine(lines.get("M3"), m3UniqueStops, stops);
 
-        // M4 - Orange Line (Downtown Express) - 6 stops
-        String[] m4Stops = {
-            "Business Park", "Tech Hub", "Central Station",
+        // M4 - Orange Line (Downtown Express) - unique stops
+        String[] m4UniqueStops = {
+            "Business Park", "Tech Hub",
             "Government Center", "Embassy Row", "International District"
         };
-        createStopsForLine(lines.get("M4"), m4Stops, stops);
+        createStopsForLine(lines.get("M4"), m4UniqueStops, stops);
 
-        // A1 - Airport Express - 5 stops
-        String[] a1Stops = {
+        // A1 - Airport Express - unique stops
+        String[] a1UniqueStops = {
             "Airport Terminal 1", "Airport Terminal 2", "Airport City",
-            "Central Station", "Downtown Express"
+            "Downtown Express"
         };
-        createStopsForLine(lines.get("A1"), a1Stops, stops);
+        createStopsForLine(lines.get("A1"), a1UniqueStops, stops);
 
-        // T1 - Riverside Tram - 8 stops
-        String[] t1Stops = {
+        // T1 - Riverside Tram - unique stops
+        String[] t1UniqueStops = {
             "Riverside Station", "Waterfront", "Ferry Terminal", "Fish Market",
-            "Promenade", "Concert Hall", "Art Gallery", "Central Station"
+            "Promenade", "Concert Hall", "Art Gallery"
         };
-        createStopsForLine(lines.get("T1"), t1Stops, stops);
+        createStopsForLine(lines.get("T1"), t1UniqueStops, stops);
 
-        // T2 - University Tram - 7 stops
-        String[] t2Stops = {
-            "University Main", "Science Campus", "Library", "Student Center",
-            "Research Park", "Hospital", "Central Station"
+        // T2 - University Tram - unique stops
+        String[] t2UniqueStops = {
+            "Science Campus", "Library", "Student Center",
+            "Research Park", "Hospital"
         };
-        createStopsForLine(lines.get("T2"), t2Stops, stops);
+        createStopsForLine(lines.get("T2"), t2UniqueStops, stops);
 
         log.info("Created {} stops across {} lines", stops.size(), lines.size());
         return stops;
+    }
+
+    private Stop createStop(String name, Line... lines) {
+        Set<Line> lineSet = new HashSet<>(Arrays.asList(lines));
+        Stop stop = Stop.builder()
+                .name(name)
+                .lines(lineSet)
+                .build();
+        return stopRepository.save(stop);
     }
 
     private void createStopsForLine(Line line, String[] stopNames, Map<String, Stop> stops) {
@@ -221,7 +247,7 @@ public class DataLoader implements CommandLineRunner {
             String key = line.getCode() + "-" + name;
             Stop stop = Stop.builder()
                     .name(name)
-                    .line(line)
+                    .lines(new HashSet<>(Set.of(line)))
                     .build();
             stops.put(key, stopRepository.save(stop));
         }
@@ -234,16 +260,20 @@ public class DataLoader implements CommandLineRunner {
 
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
             Stop stop = entry.getValue();
-            String lineCode = stop.getLine().getCode();
 
-            List<LocalTime> times = generateScheduleTimes(lineCode);
+            // For each line this stop serves, create schedule entries
+            for (Line line : stop.getLines()) {
+                String lineCode = line.getCode();
+                List<LocalTime> times = generateScheduleTimes(lineCode);
 
-            for (LocalTime time : times) {
-                timedEntryRepository.save(TimedEntry.builder()
-                        .time(time)
-                        .stop(stop)
-                        .build());
-                totalEntries++;
+                for (LocalTime time : times) {
+                    timedEntryRepository.save(TimedEntry.builder()
+                            .time(time)
+                            .stop(stop)
+                            .line(line)
+                            .build());
+                    totalEntries++;
+                }
             }
         }
 
@@ -334,8 +364,12 @@ public class DataLoader implements CommandLineRunner {
 
                 // Log a few sample tokens for testing
                 if (deviceCount <= 3) {
+                    String lineCodes = stop.getLines().stream()
+                            .map(Line::getCode)
+                            .sorted()
+                            .collect(Collectors.joining(", "));
                     log.info("Sample device token for {} ({}): {}",
-                            stop.getName(), stop.getLine().getCode(), token);
+                            stop.getName(), lineCodes, token);
                 }
             }
         }
@@ -445,14 +479,14 @@ public class DataLoader implements CommandLineRunner {
                 .build());
 
         // STOP-specific messages
-        Stop centralM1 = stops.get("M1-Central Station");
-        if (centralM1 != null) {
+        Stop centralStation = stops.get("Central Station");
+        if (centralStation != null) {
             messageRepository.save(BroadcastMessage.builder()
                     .title("Elevator Out of Service")
                     .content("The elevator at Platform 2 is temporarily out of service. Please use Platform 1 elevator or escalators.")
                     .severity(MessageSeverity.WARNING)
                     .scopeType(MessageScope.STOP)
-                    .scopeId(centralM1.getId())
+                    .scopeId(centralStation.getId())
                     .startTime(now.minus(4, ChronoUnit.HOURS))
                     .endTime(now.plus(48, ChronoUnit.HOURS))
                     .build());
@@ -484,7 +518,7 @@ public class DataLoader implements CommandLineRunner {
                     .build());
         }
 
-        Stop university = stops.get("M1-University");
+        Stop university = stops.get("University");
         if (university != null) {
             messageRepository.save(BroadcastMessage.builder()
                     .title("Graduation Ceremony")

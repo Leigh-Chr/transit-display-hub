@@ -22,6 +22,6 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
     @Query("SELECT d FROM Device d WHERE d.status = 'ONLINE' AND d.lastHeartbeat < :threshold")
     List<Device> findStaleOnlineDevices(Instant threshold);
 
-    @Query("SELECT d FROM Device d JOIN FETCH d.stop s JOIN FETCH s.line")
+    @Query("SELECT DISTINCT d FROM Device d JOIN FETCH d.stop s LEFT JOIN FETCH s.lines")
     List<Device> findAllWithStopAndLine();
 }

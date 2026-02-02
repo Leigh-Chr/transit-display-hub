@@ -107,7 +107,7 @@ class DeviceControllerIntegrationTest {
 
         testStop = Stop.builder()
                 .name("Central Station")
-                .line(testLine)
+                .lines(java.util.Set.of(testLine))
                 .build();
         stopRepository.save(testStop);
 
@@ -333,7 +333,7 @@ class DeviceControllerIntegrationTest {
         void withValidRequest_Returns200() throws Exception {
             Stop newStop = Stop.builder()
                     .name("New Station")
-                    .line(testLine)
+                    .lines(java.util.Set.of(testLine))
                     .build();
             stopRepository.save(newStop);
 

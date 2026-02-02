@@ -6,6 +6,9 @@ import com.transit.hub.domain.model.enums.*;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -43,14 +46,17 @@ public final class TestDataFactory {
 
     // ============== STOP ==============
 
-    public static Stop createStop(String name, Line line) {
+    public static Stop createStop(String name, Line... lines) {
+        Set<Line> lineSet = new HashSet<>(Arrays.asList(lines));
         Stop stop = Stop.builder()
                 .id(UUID.randomUUID())
                 .name(name)
-                .line(line)
+                .lines(lineSet)
                 .build();
-        if (line != null) {
-            line.getStops().add(stop);
+        for (Line line : lines) {
+            if (line != null) {
+                line.getStops().add(stop);
+            }
         }
         return stop;
     }
@@ -59,33 +65,41 @@ public final class TestDataFactory {
         return createStop("Central Station", line);
     }
 
-    public static Stop createStopWithId(UUID id, String name, Line line) {
+    public static Stop createStopWithId(UUID id, String name, Line... lines) {
+        Set<Line> lineSet = new HashSet<>(Arrays.asList(lines));
         return Stop.builder()
                 .id(id)
                 .name(name)
-                .line(line)
+                .lines(lineSet)
                 .build();
     }
 
     // ============== TIMED ENTRY ==============
 
-    public static TimedEntry createTimedEntry(LocalTime time, Stop stop) {
+    public static TimedEntry createTimedEntry(LocalTime time, Stop stop, Line line) {
         return TimedEntry.builder()
                 .id(UUID.randomUUID())
                 .time(time)
                 .stop(stop)
+                .line(line)
                 .build();
     }
 
     public static TimedEntry createTimedEntry(Stop stop) {
-        return createTimedEntry(LocalTime.of(8, 30), stop);
+        Line line = stop.getLines().stream().findFirst().orElse(null);
+        return createTimedEntry(LocalTime.of(8, 30), stop, line);
     }
 
-    public static TimedEntry createTimedEntryWithId(UUID id, LocalTime time, Stop stop) {
+    public static TimedEntry createTimedEntry(Stop stop, Line line) {
+        return createTimedEntry(LocalTime.of(8, 30), stop, line);
+    }
+
+    public static TimedEntry createTimedEntryWithId(UUID id, LocalTime time, Stop stop, Line line) {
         return TimedEntry.builder()
                 .id(id)
                 .time(time)
                 .stop(stop)
+                .line(line)
                 .build();
     }
 

@@ -82,7 +82,11 @@ import { gridStagger } from '@shared/animations';
                     <mat-icon class="device-icon">tv</mat-icon>
                     <div>
                       <h3 class="device-stop">{{ device.stopName }}</h3>
-                      <span class="line-badge">{{ device.lineCode }}</span>
+                      <div class="line-badges">
+                        @for (lineCode of device.lineCodes; track lineCode) {
+                          <span class="line-badge">{{ lineCode }}</span>
+                        }
+                      </div>
                     </div>
                   </div>
                   <span
@@ -210,6 +214,12 @@ import { gridStagger } from '@shared/animations';
       font-size: 17px;
       font-weight: 600;
       color: var(--app-on-surface);
+    }
+
+    .line-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
     }
 
     .line-badge {

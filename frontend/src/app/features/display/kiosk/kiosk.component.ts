@@ -20,10 +20,17 @@ import { DisplayState } from '@shared/models';
   template: `
     <div class="kiosk">
       @if (displayState()) {
-        <!-- Header: Stop name + Current time -->
+        <!-- Header: Stop name with line badges + Current time -->
         <header class="header">
           <div class="stop-info">
             <h1 class="stop-name">{{ displayState()!.stopName }}</h1>
+            <div class="header-lines">
+              @for (line of displayState()!.lines; track line.code) {
+                <span class="header-line-badge" [style.backgroundColor]="line.color">
+                  {{ line.code }}
+                </span>
+              }
+            </div>
           </div>
           <div class="clock">{{ currentTime() }}</div>
         </header>
@@ -144,6 +151,21 @@ import { DisplayState } from '@shared/models';
       font-weight: 700;
       margin: 0;
       letter-spacing: -0.02em;
+    }
+
+    .header-lines {
+      display: flex;
+      gap: 1vw;
+      margin-top: 1vh;
+    }
+
+    .header-line-badge {
+      padding: 0.8vh 1.5vw;
+      border-radius: 0.5vh;
+      font-size: 2.5vh;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
 
     .clock {

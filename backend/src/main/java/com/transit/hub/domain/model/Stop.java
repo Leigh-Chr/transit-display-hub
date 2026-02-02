@@ -2,12 +2,13 @@ package com.transit.hub.domain.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -28,10 +29,12 @@ public class Stop {
     @Column(nullable = false)
     private String name;
 
-    @NotNull(message = "Line is required")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "line_id", nullable = false)
-    private Line line;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "stop_lines",
+            joinColumns = @JoinColumn(name = "stop_id"),
+            inverseJoinColumns = @JoinColumn(name = "line_id"))
+    @Builder.Default
+    private Set<Line> lines = new HashSet<>();
 
     @OneToMany(mappedBy = "stop", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -40,6 +43,16 @@ public class Stop {
     @OneToMany(mappedBy = "stop")
     @Builder.Default
     private List<Device> devices = new ArrayList<>();
+
+    public void addLine(Line line) {
+        lines.add(line);
+        line.getStops().add(this);
+    }
+
+    public void removeLine(Line line) {
+        lines.remove(line);
+        line.getStops().remove(this);
+    }
 
     public void addTimedEntry(TimedEntry entry) {
         timedEntries.add(entry);

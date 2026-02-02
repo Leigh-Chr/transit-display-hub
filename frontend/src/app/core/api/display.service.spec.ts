@@ -12,11 +12,13 @@ describe('DisplayService', () => {
   const mockDisplayState: DisplayState = {
     stopId: 'stop-123',
     stopName: 'Central Station',
-    line: {
-      code: 'L1',
-      name: 'Metro Line 1',
-      color: '#FF5733'
-    },
+    lines: [
+      {
+        code: 'L1',
+        name: 'Metro Line 1',
+        color: '#FF5733'
+      }
+    ],
     arrivals: [
       {
         scheduledTime: '08:30',

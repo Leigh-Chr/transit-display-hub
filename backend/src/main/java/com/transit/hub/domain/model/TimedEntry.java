@@ -28,4 +28,9 @@ public class TimedEntry {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stop_id", nullable = false)
     private Stop stop;
+
+    @NotNull(message = "Line is required")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "line_id", nullable = false)
+    private Line line;
 }

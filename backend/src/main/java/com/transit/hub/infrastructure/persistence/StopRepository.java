@@ -6,15 +6,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface StopRepository extends JpaRepository<Stop, UUID> {
+
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines")
+    List<Stop> findAllWithLines();
+
+    @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s.id = :id")
+    Optional<Stop> findByIdWithLines(UUID id);
+
+    @Query("SELECT DISTINCT s FROM Stop s JOIN s.lines l WHERE l.id = :lineId")
     List<Stop> findByLineId(UUID lineId);
 
-    @Query("SELECT s FROM Stop s JOIN FETCH s.line")
-    List<Stop> findAllWithLine();
-
-    @Query("SELECT s FROM Stop s JOIN FETCH s.line WHERE s.line.id = :lineId")
-    List<Stop> findByLineIdWithLine(UUID lineId);
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s IN " +
+           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)")
+    List<Stop> findByLineIdWithLines(UUID lineId);
 }

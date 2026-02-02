@@ -13,7 +13,7 @@ describe('DeviceService', () => {
     id: '123e4567-e89b-12d3-a456-426614174000',
     stopId: 'stop-123',
     stopName: 'Central Station',
-    lineCode: 'L1',
+    lineCodes: ['L1'],
     status: 'OFFLINE',
     lastHeartbeat: undefined
   };
@@ -22,7 +22,7 @@ describe('DeviceService', () => {
     id: '223e4567-e89b-12d3-a456-426614174000',
     stopId: 'stop-456',
     stopName: 'North Station',
-    lineCode: 'L2',
+    lineCodes: ['L1', 'L2'],
     status: 'ONLINE',
     lastHeartbeat: '2024-01-15T10:30:00Z'
   };

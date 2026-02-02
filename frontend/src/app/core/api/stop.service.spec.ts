@@ -9,15 +9,17 @@ describe('StopService', () => {
   let service: StopService;
   let httpMock: HttpTestingController;
 
+  const mockLine = {
+    id: 'line-123',
+    code: 'L1',
+    name: 'Metro Line 1',
+    color: '#FF5733'
+  };
+
   const mockStop: Stop = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Central Station',
-    line: {
-      id: 'line-123',
-      code: 'L1',
-      name: 'Metro Line 1',
-      color: '#FF5733'
-    },
+    lines: [mockLine],
     scheduleCount: 10
   };
 
@@ -26,12 +28,7 @@ describe('StopService', () => {
     {
       id: '223e4567-e89b-12d3-a456-426614174000',
       name: 'North Station',
-      line: {
-        id: 'line-123',
-        code: 'L1',
-        name: 'Metro Line 1',
-        color: '#FF5733'
-      },
+      lines: [mockLine],
       scheduleCount: 8
     }
   ];
@@ -118,17 +115,12 @@ describe('StopService', () => {
     it('should create a new stop', () => {
       const request: CreateStopRequest = {
         name: 'New Station',
-        lineId: 'line-123'
+        lineIds: ['line-123']
       };
       const createdStop: Stop = {
         id: '333e4567-e89b-12d3-a456-426614174000',
         name: request.name,
-        line: {
-          id: 'line-123',
-          code: 'L1',
-          name: 'Metro Line 1',
-          color: '#FF5733'
-        },
+        lines: [mockLine],
         scheduleCount: 0
       };
 
@@ -146,7 +138,7 @@ describe('StopService', () => {
     it('should propagate 404 error for non-existent line', () => {
       const request: CreateStopRequest = {
         name: 'Station',
-        lineId: 'non-existent-line'
+        lineIds: ['non-existent-line']
       };
 
       service.create(request).subscribe({
@@ -165,7 +157,7 @@ describe('StopService', () => {
       const id = '123e4567-e89b-12d3-a456-426614174000';
       const request: CreateStopRequest = {
         name: 'Updated Station',
-        lineId: 'line-123'
+        lineIds: ['line-123']
       };
       const updatedStop: Stop = {
         ...mockStop,
@@ -187,7 +179,7 @@ describe('StopService', () => {
       const id = 'non-existent-id';
       const request: CreateStopRequest = {
         name: 'Station',
-        lineId: 'line-123'
+        lineIds: ['line-123']
       };
 
       service.update(id, request).subscribe({

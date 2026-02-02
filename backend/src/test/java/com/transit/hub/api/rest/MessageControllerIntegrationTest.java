@@ -108,7 +108,7 @@ class MessageControllerIntegrationTest {
 
         testStop = Stop.builder()
                 .name("Central Station")
-                .line(testLine)
+                .lines(java.util.Set.of(testLine))
                 .build();
         stopRepository.save(testStop);
 
