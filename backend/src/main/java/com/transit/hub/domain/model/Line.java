@@ -41,4 +41,8 @@ public class Line {
     @ManyToMany(mappedBy = "lines")
     @Builder.Default
     private Set<Stop> stops = new HashSet<>();
+
+    @OneToMany(mappedBy = "line", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Route> routes = new HashSet<>();
 }

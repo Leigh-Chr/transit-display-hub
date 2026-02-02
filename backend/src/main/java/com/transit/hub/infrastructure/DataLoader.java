@@ -26,6 +26,7 @@ public class DataLoader implements CommandLineRunner {
     private final UserRepository userRepository;
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
+    private final RouteRepository routeRepository;
     private final TimedEntryRepository timedEntryRepository;
     private final DeviceRepository deviceRepository;
     private final BroadcastMessageRepository messageRepository;
@@ -41,8 +42,9 @@ public class DataLoader implements CommandLineRunner {
 
             createUsers();
             Map<String, Line> lines = createLines();
+            Map<String, Route> routes = createRoutes(lines);
             Map<String, Stop> stops = createStops(lines);
-            createSchedules(stops);
+            createSchedules(stops, routes);
             createDevices(stops);
             createMessages(lines, stops);
 
@@ -156,6 +158,99 @@ public class DataLoader implements CommandLineRunner {
         return lines;
     }
 
+    private Map<String, Route> createRoutes(Map<String, Line> lines) {
+        log.info("Creating routes...");
+
+        Map<String, Route> routes = new LinkedHashMap<>();
+
+        // M1 - Red Line (East-West) - two directions
+        routes.put("M1-E", routeRepository.save(Route.builder()
+                .line(lines.get("M1"))
+                .name("Direction Eastern Terminal")
+                .terminusName("Eastern Terminal")
+                .build()));
+        routes.put("M1-W", routeRepository.save(Route.builder()
+                .line(lines.get("M1"))
+                .name("Direction Western Terminal")
+                .terminusName("Western Terminal")
+                .build()));
+
+        // M2 - Blue Line (North-South) - two directions
+        routes.put("M2-N", routeRepository.save(Route.builder()
+                .line(lines.get("M2"))
+                .name("Direction North Station")
+                .terminusName("North Station")
+                .build()));
+        routes.put("M2-S", routeRepository.save(Route.builder()
+                .line(lines.get("M2"))
+                .name("Direction South Terminal")
+                .terminusName("South Terminal")
+                .build()));
+
+        // M3 - Green Line (Ring) - two directions (clockwise/counter-clockwise)
+        routes.put("M3-CW", routeRepository.save(Route.builder()
+                .line(lines.get("M3"))
+                .name("Clockwise")
+                .terminusName("Clockwise")
+                .build()));
+        routes.put("M3-CCW", routeRepository.save(Route.builder()
+                .line(lines.get("M3"))
+                .name("Counter-clockwise")
+                .terminusName("Counter-clockwise")
+                .build()));
+
+        // M4 - Orange Line (Downtown Express) - two directions
+        routes.put("M4-BP", routeRepository.save(Route.builder()
+                .line(lines.get("M4"))
+                .name("Direction Business Park")
+                .terminusName("Business Park")
+                .build()));
+        routes.put("M4-ID", routeRepository.save(Route.builder()
+                .line(lines.get("M4"))
+                .name("Direction International District")
+                .terminusName("International District")
+                .build()));
+
+        // A1 - Airport Express - two directions
+        routes.put("A1-AIR", routeRepository.save(Route.builder()
+                .line(lines.get("A1"))
+                .name("Direction Airport Terminal 1")
+                .terminusName("Airport Terminal 1")
+                .build()));
+        routes.put("A1-CTR", routeRepository.save(Route.builder()
+                .line(lines.get("A1"))
+                .name("Direction Central Station")
+                .terminusName("Central Station")
+                .build()));
+
+        // T1 - Riverside Tram - two directions
+        routes.put("T1-RS", routeRepository.save(Route.builder()
+                .line(lines.get("T1"))
+                .name("Direction Riverside Station")
+                .terminusName("Riverside Station")
+                .build()));
+        routes.put("T1-AG", routeRepository.save(Route.builder()
+                .line(lines.get("T1"))
+                .name("Direction Art Gallery")
+                .terminusName("Art Gallery")
+                .build()));
+
+        // T2 - University Tram - two directions
+        routes.put("T2-SC", routeRepository.save(Route.builder()
+                .line(lines.get("T2"))
+                .name("Direction Science Campus")
+                .terminusName("Science Campus")
+                .build()));
+        routes.put("T2-HP", routeRepository.save(Route.builder()
+                .line(lines.get("T2"))
+                .name("Direction Hospital")
+                .terminusName("Hospital")
+                .build()));
+
+        log.info("Created {} routes", routes.size());
+        return routes;
+    }
+
     private Map<String, Stop> createStops(Map<String, Line> lines) {
         log.info("Creating stops...");
 
@@ -253,7 +348,7 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void createSchedules(Map<String, Stop> stops) {
+    private void createSchedules(Map<String, Stop> stops, Map<String, Route> routes) {
         log.info("Creating schedules...");
 
         int totalEntries = 0;
@@ -261,18 +356,28 @@ public class DataLoader implements CommandLineRunner {
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
             Stop stop = entry.getValue();
 
-            // For each line this stop serves, create schedule entries
+            // For each line this stop serves, create schedule entries for all routes of that line
             for (Line line : stop.getLines()) {
                 String lineCode = line.getCode();
                 List<LocalTime> times = generateScheduleTimes(lineCode);
 
+                // Get routes for this line
+                List<Route> lineRoutes = routes.entrySet().stream()
+                        .filter(e -> e.getKey().startsWith(lineCode + "-"))
+                        .map(Map.Entry::getValue)
+                        .toList();
+
+                // Alternate between routes for each stop
+                int routeIndex = 0;
                 for (LocalTime time : times) {
+                    Route route = lineRoutes.get(routeIndex % lineRoutes.size());
                     timedEntryRepository.save(TimedEntry.builder()
                             .time(time)
                             .stop(stop)
-                            .line(line)
+                            .route(route)
                             .build());
                     totalEntries++;
+                    routeIndex++;
                 }
             }
         }
@@ -577,6 +682,7 @@ public class DataLoader implements CommandLineRunner {
         log.info("========================================");
         log.info("Users:          {}", userRepository.count());
         log.info("Lines:          {}", lineRepository.count());
+        log.info("Routes:         {}", routeRepository.count());
         log.info("Stops:          {}", stopRepository.count());
         log.info("Timed Entries:  {}", timedEntryRepository.count());
         log.info("Devices:        {}", deviceRepository.count());

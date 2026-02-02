@@ -44,7 +44,11 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
 
+                        // Read-only public access to routes (for schedule dialog)
+                        .requestMatchers(HttpMethod.GET, "/api/routes/**").permitAll()
+
                         // Admin only endpoints
+                        .requestMatchers("/api/routes/**").hasRole("ADMIN")
                         .requestMatchers("/api/lines/**").hasRole("ADMIN")
                         .requestMatchers("/api/stops/**").hasRole("ADMIN")
                         .requestMatchers("/api/schedules/**").hasRole("ADMIN")

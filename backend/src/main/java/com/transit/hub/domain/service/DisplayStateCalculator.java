@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Route;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.TimedEntry;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
@@ -53,10 +54,10 @@ public class DisplayStateCalculator {
                 ))
                 .toList();
 
-        // Get upcoming arrivals with line info (filter past times, limit to MAX_ARRIVALS)
+        // Get upcoming arrivals with route info (filter past times, limit to MAX_ARRIVALS)
         LocalTime now = LocalTime.now();
         List<DisplayState.ArrivalInfo> arrivals = timedEntryRepository
-                .findByStopIdAndTimeAfterWithLine(stopId, now)
+                .findByStopIdAndTimeAfterWithRoute(stopId, now)
                 .stream()
                 .limit(MAX_ARRIVALS)
                 .map(this::toArrivalInfo)
@@ -91,7 +92,8 @@ public class DisplayStateCalculator {
     }
 
     private DisplayState.ArrivalInfo toArrivalInfo(TimedEntry entry) {
-        Line line = entry.getLine();
+        Route route = entry.getRoute();
+        Line line = route.getLine();
         DisplayState.LineInfo lineInfo = new DisplayState.LineInfo(
                 line.getCode(),
                 line.getName(),
@@ -99,7 +101,7 @@ public class DisplayStateCalculator {
         );
         return new DisplayState.ArrivalInfo(
                 entry.getTime(),
-                line.getName(),
+                route.getTerminusName(),
                 lineInfo
         );
     }

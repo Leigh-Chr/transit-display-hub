@@ -27,6 +27,27 @@ export interface CreateLineRequest {
   color: string;
 }
 
+// Route
+export interface Route {
+  id: string;
+  name: string;
+  terminusName: string;
+  line: LineInfo;
+}
+
+export interface RouteInfo {
+  id: string;
+  name: string;
+  terminusName: string;
+  line: LineInfo;
+}
+
+export interface CreateRouteRequest {
+  lineId: string;
+  name: string;
+  terminusName: string;
+}
+
 // Stop
 export interface Stop {
   id: string;
@@ -45,12 +66,12 @@ export interface TimedEntry {
   id: string;
   time: string;
   stopId: string;
-  line: LineInfo;
+  route: RouteInfo;
 }
 
 export interface CreateTimedEntryRequest {
   time: string;
-  lineId: string;
+  routeId: string;
 }
 
 // Message

@@ -89,7 +89,7 @@ import { fadeIn } from '@shared/animations';
         @if (loading()) {
           <app-table-skeleton
             [rows]="6"
-            [columns]="[{ width: '100px' }, { width: '80px' }]"
+            [columns]="[{ width: '100px' }, { width: '150px' }, { width: '80px' }]"
           />
         } @else if (dataSource.data.length === 0) {
           <mat-card @fadeIn>
@@ -115,9 +115,16 @@ import { fadeIn } from '@shared/animations';
               <ng-container matColumnDef="line">
                 <th mat-header-cell *matHeaderCellDef>Line</th>
                 <td mat-cell *matCellDef="let entry">
-                  <span class="line-badge" [style.backgroundColor]="entry.line.color">
-                    {{ entry.line.code }}
+                  <span class="line-badge" [style.backgroundColor]="entry.route.line.color">
+                    {{ entry.route.line.code }}
                   </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="destination">
+                <th mat-header-cell *matHeaderCellDef>Destination</th>
+                <td mat-cell *matCellDef="let entry" class="destination-cell">
+                  {{ entry.route.terminusName }}
                 </td>
               </ng-container>
 
@@ -203,6 +210,11 @@ import { fadeIn } from '@shared/animations';
       color: var(--app-on-surface);
     }
 
+    .destination-cell {
+      font-size: 14px;
+      color: var(--app-on-surface-variant);
+    }
+
     .line-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -241,7 +253,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
   selectedLineId = '';
   selectedStopId = '';
-  displayedColumns = ['line', 'time', 'actions'];
+  displayedColumns = ['line', 'destination', 'time', 'actions'];
 
   ngOnInit(): void {
     this.lineService.getAll().subscribe((lines) => this.lines.set(lines));
@@ -337,7 +349,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete Schedule Entry',
-        message: `Delete schedule entry at ${entry.time}?`,
+        message: `Delete schedule entry at ${entry.time} to ${entry.route.terminusName}?`,
         confirmText: 'Delete',
         confirmColor: 'warn',
       } as ConfirmDialogData,

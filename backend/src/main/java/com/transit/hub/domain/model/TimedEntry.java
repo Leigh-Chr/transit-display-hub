@@ -10,8 +10,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "timed_entries",
        uniqueConstraints = @UniqueConstraint(
-           name = "uk_timed_entry_stop_line_time",
-           columnNames = {"stop_id", "line_id", "time"}
+           name = "uk_timed_entry_stop_route_time",
+           columnNames = {"stop_id", "route_id", "time"}
        ))
 @Getter
 @Setter
@@ -33,8 +33,8 @@ public class TimedEntry {
     @JoinColumn(name = "stop_id", nullable = false)
     private Stop stop;
 
-    @NotNull(message = "Line is required")
+    @NotNull(message = "Route is required")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "line_id", nullable = false)
-    private Line line;
+    @JoinColumn(name = "route_id", nullable = false)
+    private Route route;
 }

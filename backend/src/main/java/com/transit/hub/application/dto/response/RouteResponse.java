@@ -2,22 +2,18 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Route;
-import com.transit.hub.domain.model.TimedEntry;
 
-import java.time.LocalTime;
 import java.util.UUID;
 
-public record TimedEntryResponse(
+public record RouteResponse(
         UUID id,
-        LocalTime time,
-        UUID stopId,
-        RouteInfo route
+        String name,
+        String terminusName,
+        LineInfo line
 ) {
     public record LineInfo(UUID id, String code, String name, String color) {}
-    public record RouteInfo(UUID id, String name, String terminusName, LineInfo line) {}
 
-    public static TimedEntryResponse from(TimedEntry entry) {
-        Route route = entry.getRoute();
+    public static RouteResponse from(Route route) {
         Line line = route.getLine();
         LineInfo lineInfo = new LineInfo(
                 line.getId(),
@@ -25,17 +21,11 @@ public record TimedEntryResponse(
                 line.getName(),
                 line.getColor()
         );
-        RouteInfo routeInfo = new RouteInfo(
+        return new RouteResponse(
                 route.getId(),
                 route.getName(),
                 route.getTerminusName(),
                 lineInfo
-        );
-        return new TimedEntryResponse(
-                entry.getId(),
-                entry.getTime(),
-                entry.getStop().getId(),
-                routeInfo
         );
     }
 }

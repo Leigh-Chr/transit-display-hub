@@ -10,6 +10,6 @@ public record CreateTimedEntryRequest(
         @Pattern(regexp = "^([01]?[0-9]|2[0-3]):[0-5][0-9]$", message = "Time must be in HH:mm format")
         String time,
 
-        @NotNull(message = "Line ID is required")
-        UUID lineId
+        @NotNull(message = "Route ID is required")
+        UUID routeId
 ) {}

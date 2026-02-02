@@ -10,16 +10,24 @@ describe('ScheduleService', () => {
   let httpMock: HttpTestingController;
 
   const mockLine = {
+    id: 'line-123',
     code: 'L1',
     name: 'Metro Line 1',
     color: '#FF5733'
+  };
+
+  const mockRoute = {
+    id: 'route-123',
+    name: 'Direction Eastern Terminal',
+    terminusName: 'Eastern Terminal',
+    line: mockLine
   };
 
   const mockEntry: TimedEntry = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     stopId: 'stop-123',
     time: '08:30:00',
-    line: mockLine
+    route: mockRoute
   };
 
   const mockEntries: TimedEntry[] = [
@@ -28,7 +36,7 @@ describe('ScheduleService', () => {
       id: '223e4567-e89b-12d3-a456-426614174000',
       stopId: 'stop-123',
       time: '09:00:00',
-      line: mockLine
+      route: mockRoute
     }
   ];
 
@@ -93,13 +101,13 @@ describe('ScheduleService', () => {
       const stopId = 'stop-123';
       const request: CreateTimedEntryRequest = {
         time: '10:00',
-        lineId: 'line-123'
+        routeId: 'route-123'
       };
       const createdEntry: TimedEntry = {
         id: '333e4567-e89b-12d3-a456-426614174000',
         stopId,
         time: '10:00:00',
-        line: mockLine
+        route: mockRoute
       };
 
       service.create(stopId, request).subscribe(entry => {
@@ -117,7 +125,7 @@ describe('ScheduleService', () => {
       const stopId = 'non-existent-stop';
       const request: CreateTimedEntryRequest = {
         time: '10:00',
-        lineId: 'line-123'
+        routeId: 'route-123'
       };
 
       service.create(stopId, request).subscribe({
@@ -136,7 +144,7 @@ describe('ScheduleService', () => {
       const id = '123e4567-e89b-12d3-a456-426614174000';
       const request: CreateTimedEntryRequest = {
         time: '08:45',
-        lineId: 'line-123'
+        routeId: 'route-123'
       };
       const updatedEntry: TimedEntry = {
         ...mockEntry,
@@ -158,7 +166,7 @@ describe('ScheduleService', () => {
       const id = 'non-existent-id';
       const request: CreateTimedEntryRequest = {
         time: '10:00',
-        lineId: 'line-123'
+        routeId: 'route-123'
       };
 
       service.update(id, request).subscribe({

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -9,7 +9,8 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { TimedEntry, CreateTimedEntryRequest, LineInfo } from '@shared/models';
+import { TimedEntry, CreateTimedEntryRequest, LineInfo, Route } from '@shared/models';
+import { RouteService } from '@core/api/route.service';
 
 export interface ScheduleDialogData {
   entry?: TimedEntry;
@@ -34,21 +35,25 @@ export interface ScheduleDialogData {
     <mat-dialog-content>
       <form #scheduleForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Line</mat-label>
+          <mat-label>Route</mat-label>
           <mat-select
-            [(ngModel)]="form.lineId"
-            name="lineId"
+            [(ngModel)]="form.routeId"
+            name="routeId"
             required
           >
             @for (line of data.lines; track line.id) {
-              <mat-option [value]="line.id">
-                <span class="line-option">
-                  <span class="line-badge-small" [style.backgroundColor]="line.color">
-                    {{ line.code }}
-                  </span>
-                  {{ line.name }}
-                </span>
-              </mat-option>
+              <mat-optgroup [label]="line.code + ' - ' + line.name">
+                @for (route of getRoutesForLine(line.id!); track route.id) {
+                  <mat-option [value]="route.id">
+                    <span class="route-option">
+                      <span class="line-badge-small" [style.backgroundColor]="line.color">
+                        {{ line.code }}
+                      </span>
+                      {{ route.terminusName }}
+                    </span>
+                  </mat-option>
+                }
+              </mat-optgroup>
             }
           </mat-select>
         </mat-form-field>
@@ -70,7 +75,7 @@ export interface ScheduleDialogData {
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!scheduleForm.valid || !form.lineId"
+        [disabled]="!scheduleForm.valid || !form.routeId"
         (click)="save()"
       >
         {{ data.entry ? 'Save Changes' : 'Create Entry' }}
@@ -89,7 +94,7 @@ export interface ScheduleDialogData {
       width: 100%;
     }
 
-    .line-option {
+    .route-option {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -105,14 +110,37 @@ export interface ScheduleDialogData {
     }
   `,
 })
-export class ScheduleDialogComponent {
+export class ScheduleDialogComponent implements OnInit {
   readonly dialogRef = inject(MatDialogRef<ScheduleDialogComponent>);
   readonly data = inject<ScheduleDialogData>(MAT_DIALOG_DATA);
+  private readonly routeService = inject(RouteService);
+
+  routes = signal<Route[]>([]);
 
   form: CreateTimedEntryRequest = {
     time: this.data.entry?.time ?? '',
-    lineId: this.data.entry?.line?.id ?? (this.data.lines.length === 1 ? this.data.lines[0].id! : ''),
+    routeId: this.data.entry?.route?.id ?? '',
   };
+
+  ngOnInit(): void {
+    this.loadRoutes();
+  }
+
+  private loadRoutes(): void {
+    this.routeService.getAll().subscribe(routes => {
+      this.routes.set(routes);
+
+      // If we have lines but no routeId selected yet, and there's only one route total,
+      // auto-select it
+      if (!this.form.routeId && routes.length === 1) {
+        this.form.routeId = routes[0].id;
+      }
+    });
+  }
+
+  getRoutesForLine(lineId: string): Route[] {
+    return this.routes().filter(r => r.line.id === lineId);
+  }
 
   save(): void {
     this.dialogRef.close(this.form);

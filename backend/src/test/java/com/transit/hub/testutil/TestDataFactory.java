@@ -44,6 +44,30 @@ public final class TestDataFactory {
                 .build();
     }
 
+    // ============== ROUTE ==============
+
+    public static Route createRoute(Line line, String name, String terminusName) {
+        return Route.builder()
+                .id(UUID.randomUUID())
+                .line(line)
+                .name(name)
+                .terminusName(terminusName)
+                .build();
+    }
+
+    public static Route createRoute(Line line) {
+        return createRoute(line, "Direction Central", "Central Station");
+    }
+
+    public static Route createRouteWithId(UUID id, Line line, String name, String terminusName) {
+        return Route.builder()
+                .id(id)
+                .line(line)
+                .name(name)
+                .terminusName(terminusName)
+                .build();
+    }
+
     // ============== STOP ==============
 
     public static Stop createStop(String name, Line... lines) {
@@ -76,30 +100,25 @@ public final class TestDataFactory {
 
     // ============== TIMED ENTRY ==============
 
-    public static TimedEntry createTimedEntry(LocalTime time, Stop stop, Line line) {
+    public static TimedEntry createTimedEntry(LocalTime time, Stop stop, Route route) {
         return TimedEntry.builder()
                 .id(UUID.randomUUID())
                 .time(time)
                 .stop(stop)
-                .line(line)
+                .route(route)
                 .build();
     }
 
-    public static TimedEntry createTimedEntry(Stop stop) {
-        Line line = stop.getLines().stream().findFirst().orElse(null);
-        return createTimedEntry(LocalTime.of(8, 30), stop, line);
+    public static TimedEntry createTimedEntry(Stop stop, Route route) {
+        return createTimedEntry(LocalTime.of(8, 30), stop, route);
     }
 
-    public static TimedEntry createTimedEntry(Stop stop, Line line) {
-        return createTimedEntry(LocalTime.of(8, 30), stop, line);
-    }
-
-    public static TimedEntry createTimedEntryWithId(UUID id, LocalTime time, Stop stop, Line line) {
+    public static TimedEntry createTimedEntryWithId(UUID id, LocalTime time, Stop stop, Route route) {
         return TimedEntry.builder()
                 .id(id)
                 .time(time)
                 .stop(stop)
-                .line(line)
+                .route(route)
                 .build();
     }
 

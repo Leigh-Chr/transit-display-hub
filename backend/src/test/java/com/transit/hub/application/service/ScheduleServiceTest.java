@@ -5,9 +5,10 @@ import com.transit.hub.application.dto.response.TimedEntryResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Route;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.TimedEntry;
-import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.RouteRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TimedEntryRepository;
 import com.transit.hub.testutil.TestDataFactory;
@@ -42,7 +43,7 @@ class ScheduleServiceTest {
     private StopRepository stopRepository;
 
     @Mock
-    private LineRepository lineRepository;
+    private RouteRepository routeRepository;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -51,9 +52,11 @@ class ScheduleServiceTest {
     private ScheduleService scheduleService;
 
     private Line testLine;
+    private Route testRoute;
     private Stop testStop;
     private TimedEntry testEntry;
     private UUID testLineId;
+    private UUID testRouteId;
     private UUID testStopId;
     private UUID testEntryId;
 
@@ -61,10 +64,12 @@ class ScheduleServiceTest {
     void setUp() {
         testLineId = UUID.randomUUID();
         testLine = TestDataFactory.createLineWithId(testLineId, "L1", "Metro Line 1", "#FF5733");
+        testRouteId = UUID.randomUUID();
+        testRoute = TestDataFactory.createRouteWithId(testRouteId, testLine, "Direction Central", "Central Station");
         testStopId = UUID.randomUUID();
         testStop = TestDataFactory.createStopWithId(testStopId, "Central Station", testLine);
         testEntryId = UUID.randomUUID();
-        testEntry = TestDataFactory.createTimedEntryWithId(testEntryId, LocalTime.of(8, 30), testStop, testLine);
+        testEntry = TestDataFactory.createTimedEntryWithId(testEntryId, LocalTime.of(8, 30), testStop, testRoute);
     }
 
     @Nested
@@ -74,10 +79,10 @@ class ScheduleServiceTest {
         @Test
         @DisplayName("returns schedule entries for stop")
         void returnsEntriesForStop() {
-            TimedEntry entry1 = TestDataFactory.createTimedEntry(LocalTime.of(8, 0), testStop, testLine);
-            TimedEntry entry2 = TestDataFactory.createTimedEntry(LocalTime.of(8, 30), testStop, testLine);
+            TimedEntry entry1 = TestDataFactory.createTimedEntry(LocalTime.of(8, 0), testStop, testRoute);
+            TimedEntry entry2 = TestDataFactory.createTimedEntry(LocalTime.of(8, 30), testStop, testRoute);
             when(stopRepository.existsById(testStopId)).thenReturn(true);
-            when(timedEntryRepository.findByStopIdWithLineOrderByTime(testStopId)).thenReturn(List.of(entry1, entry2));
+            when(timedEntryRepository.findByStopIdWithRouteOrderByTime(testStopId)).thenReturn(List.of(entry1, entry2));
 
             List<TimedEntryResponse> result = scheduleService.getScheduleForStop(testStopId);
 
@@ -90,7 +95,7 @@ class ScheduleServiceTest {
         @DisplayName("returns empty list when no entries")
         void returnsEmptyWhenNoEntries() {
             when(stopRepository.existsById(testStopId)).thenReturn(true);
-            when(timedEntryRepository.findByStopIdWithLineOrderByTime(testStopId)).thenReturn(List.of());
+            when(timedEntryRepository.findByStopIdWithRouteOrderByTime(testStopId)).thenReturn(List.of());
 
             List<TimedEntryResponse> result = scheduleService.getScheduleForStop(testStopId);
 
@@ -116,9 +121,9 @@ class ScheduleServiceTest {
         @Test
         @DisplayName("creates entry with valid request")
         void withValidRequest_Succeeds() {
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", testRouteId);
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(routeRepository.findByIdWithLine(testRouteId)).thenReturn(Optional.of(testRoute));
             when(timedEntryRepository.save(any(TimedEntry.class))).thenAnswer(invocation -> {
                 TimedEntry saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -129,21 +134,22 @@ class ScheduleServiceTest {
 
             assertThat(result.time()).isEqualTo(LocalTime.of(9, 15));
             assertThat(result.stopId()).isEqualTo(testStopId);
-            assertThat(result.line().id()).isEqualTo(testLineId);
+            assertThat(result.route().id()).isEqualTo(testRouteId);
+            assertThat(result.route().terminusName()).isEqualTo("Central Station");
 
             ArgumentCaptor<TimedEntry> captor = ArgumentCaptor.forClass(TimedEntry.class);
             verify(timedEntryRepository).save(captor.capture());
             assertThat(captor.getValue().getTime()).isEqualTo(LocalTime.of(9, 15));
             assertThat(captor.getValue().getStop()).isEqualTo(testStop);
-            assertThat(captor.getValue().getLine()).isEqualTo(testLine);
+            assertThat(captor.getValue().getRoute()).isEqualTo(testRoute);
         }
 
         @Test
         @DisplayName("publishes ScheduleChangedEvent after creation")
         void publishesEvent() {
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", testRouteId);
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(routeRepository.findByIdWithLine(testRouteId)).thenReturn(Optional.of(testRoute));
             when(timedEntryRepository.save(any(TimedEntry.class))).thenAnswer(invocation -> {
                 TimedEntry saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -161,7 +167,7 @@ class ScheduleServiceTest {
         @DisplayName("throws EntityNotFoundException when stop not found")
         void withNonExistentStop_ThrowsNotFound() {
             UUID unknownId = UUID.randomUUID();
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", testRouteId);
             when(stopRepository.findByIdWithLines(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> scheduleService.createTimedEntry(unknownId, request))
@@ -173,11 +179,27 @@ class ScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("throws EntityNotFoundException when route not found")
+        void withNonExistentRoute_ThrowsNotFound() {
+            UUID unknownRouteId = UUID.randomUUID();
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("09:15", unknownRouteId);
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(routeRepository.findByIdWithLine(unknownRouteId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> scheduleService.createTimedEntry(testStopId, request))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Route");
+
+            verify(timedEntryRepository, never()).save(any());
+            verify(eventPublisher, never()).publishEvent(any());
+        }
+
+        @Test
         @DisplayName("parses different time formats correctly")
         void parsesDifferentTimeFormats() {
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("14:05", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("14:05", testRouteId);
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(routeRepository.findByIdWithLine(testRouteId)).thenReturn(Optional.of(testRoute));
             when(timedEntryRepository.save(any(TimedEntry.class))).thenAnswer(invocation -> {
                 TimedEntry saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -197,10 +219,10 @@ class ScheduleServiceTest {
         @Test
         @DisplayName("updates entry with valid request")
         void withValidRequest_Succeeds() {
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("10:30", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("10:30", testRouteId);
             when(timedEntryRepository.findById(testEntryId)).thenReturn(Optional.of(testEntry));
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(routeRepository.findByIdWithLine(testRouteId)).thenReturn(Optional.of(testRoute));
             when(timedEntryRepository.save(any(TimedEntry.class))).thenReturn(testEntry);
 
             TimedEntryResponse result = scheduleService.updateTimedEntry(testEntryId, request);
@@ -213,10 +235,10 @@ class ScheduleServiceTest {
         @Test
         @DisplayName("publishes ScheduleChangedEvent after update")
         void publishesEvent() {
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("10:30", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("10:30", testRouteId);
             when(timedEntryRepository.findById(testEntryId)).thenReturn(Optional.of(testEntry));
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(routeRepository.findByIdWithLine(testRouteId)).thenReturn(Optional.of(testRoute));
             when(timedEntryRepository.save(any(TimedEntry.class))).thenReturn(testEntry);
 
             scheduleService.updateTimedEntry(testEntryId, request);
@@ -230,7 +252,7 @@ class ScheduleServiceTest {
         @DisplayName("throws EntityNotFoundException when entry not found")
         void withNonExistentEntry_ThrowsNotFound() {
             UUID unknownId = UUID.randomUUID();
-            CreateTimedEntryRequest request = new CreateTimedEntryRequest("10:30", testLineId);
+            CreateTimedEntryRequest request = new CreateTimedEntryRequest("10:30", testRouteId);
             when(timedEntryRepository.findById(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> scheduleService.updateTimedEntry(unknownId, request))
