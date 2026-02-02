@@ -229,7 +229,7 @@ import { listStagger } from '@shared/animations';
     .messages-list {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     }
 
     .message-card {
@@ -363,7 +363,7 @@ import { listStagger } from '@shared/animations';
     }
 
     mat-paginator {
-      margin-top: 16px;
+      margin-top: 24px;
       border-radius: 12px;
     }
 

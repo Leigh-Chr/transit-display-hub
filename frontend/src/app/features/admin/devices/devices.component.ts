@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Device, DeviceStatus } from '@shared/models';
@@ -107,9 +108,6 @@ import { gridStagger } from '@shared/animations';
                       {{ device.lastHeartbeat | date : 'short' }}
                     </div>
                   }
-                  <div class="device-id">
-                    ID: {{ device.id.substring(0, 20) }}...
-                  </div>
                 </div>
               </mat-card-content>
 
@@ -221,12 +219,12 @@ import { gridStagger } from '@shared/animations';
     .line-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
     }
 
     .line-badge {
       display: inline-block;
-      padding: 4px 12px;
+      padding: 4px 10px;
       border-radius: 16px;
       color: white;
       font-size: 12px;
@@ -264,17 +262,6 @@ import { gridStagger } from '@shared/animations';
 
     .meta-label {
       font-weight: 600;
-    }
-
-    .device-id {
-      font-family: 'SF Mono', 'Consolas', monospace;
-      font-size: 11px;
-      background-color: var(--app-surface-variant);
-      padding: 10px 12px;
-      border-radius: 6px;
-      word-break: break-all;
-      margin-top: 10px;
-      color: var(--app-on-surface-variant);
     }
 
     .token-overlay {
@@ -318,11 +305,12 @@ import { gridStagger } from '@shared/animations';
     }
   `,
 })
-export class DevicesComponent implements OnInit {
+export class DevicesComponent implements OnInit, OnDestroy {
   private readonly deviceService = inject(DeviceService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly destroy$ = new Subject<void>();
 
   loading = signal(true);
   devices = signal<Device[]>([]);
@@ -332,13 +320,18 @@ export class DevicesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDevices();
-    this.lineService.getAll().subscribe((lines) => this.lines.set(lines));
+    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe((lines) => this.lines.set(lines));
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadDevices(): void {
     this.loading.set(true);
     const status = this.statusFilter || undefined;
-    this.deviceService.getAll(status).subscribe({
+    this.deviceService.getAll(status).pipe(takeUntil(this.destroy$)).subscribe({
       next: (devices) => {
         this.devices.set(devices);
         this.loading.set(false);

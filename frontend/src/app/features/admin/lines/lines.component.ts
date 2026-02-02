@@ -1,13 +1,15 @@
-import { Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSortModule, MatSort, Sort } from '@angular/material/sort';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { Line, PageResponse } from '@shared/models';
@@ -16,26 +18,28 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
-import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
+import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
-import { fadeIn } from '@shared/animations';
+import { gridStagger } from '@shared/animations';
 
 @Component({
   selector: 'app-lines',
   standalone: true,
   imports: [
+    FormsModule,
     MatCardModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatSortModule,
     MatPaginatorModule,
-    TableSkeletonComponent,
+    MatTooltipModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    CardSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
   ],
-  animations: [fadeIn],
+  animations: [gridStagger],
   template: `
     <div class="lines-page">
       <div class="page-header">
@@ -52,21 +56,29 @@ import { fadeIn } from '@shared/animations';
           [initialValue]="search"
           (searchChange)="onSearchChange($event)"
         />
+        <mat-form-field appearance="outline" class="sort-field">
+          <mat-label>Sort by</mat-label>
+          <mat-select [(ngModel)]="sortBy" (selectionChange)="onSortChange()">
+            <mat-option value="code">Code (A-Z)</mat-option>
+            <mat-option value="code:desc">Code (Z-A)</mat-option>
+            <mat-option value="name">Name (A-Z)</mat-option>
+            <mat-option value="name:desc">Name (Z-A)</mat-option>
+            <mat-option value="stopCount:desc">Most Stops</mat-option>
+            <mat-option value="stopCount">Fewest Stops</mat-option>
+            <mat-option value="routeCount:desc">Most Routes</mat-option>
+            <mat-option value="routeCount">Fewest Routes</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
 
       @if (loading()) {
-        <app-table-skeleton
-          [rows]="4"
-          [columns]="[
-            { width: '60px', height: '32px' },
-            { width: '150px' },
-            { width: '120px' },
-            { width: '80px' },
-            { width: '80px' }
-          ]"
-        />
-      } @else if (dataSource.data.length === 0 && !search) {
-        <mat-card @fadeIn>
+        <div class="lines-grid">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <app-card-skeleton />
+          }
+        </div>
+      } @else if (lines().length === 0 && !search) {
+        <mat-card>
           <app-empty-state
             icon="subway"
             iconColor="primary"
@@ -77,8 +89,8 @@ import { fadeIn } from '@shared/animations';
             (action)="openCreateDialog()"
           />
         </mat-card>
-      } @else if (dataSource.data.length === 0 && search) {
-        <mat-card @fadeIn>
+      } @else if (lines().length === 0 && search) {
+        <mat-card>
           <app-empty-state
             icon="search_off"
             title="No results found"
@@ -86,62 +98,47 @@ import { fadeIn } from '@shared/animations';
           />
         </mat-card>
       } @else {
-        <mat-card @fadeIn>
-          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width">
-            <ng-container matColumnDef="code">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th>
-              <td mat-cell *matCellDef="let line">
-                <span class="line-badge" [style.backgroundColor]="line.color">
-                  {{ line.code }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
-              <td mat-cell *matCellDef="let line">{{ line.name }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="color">
-              <th mat-header-cell *matHeaderCellDef class="hide-mobile">Color</th>
-              <td mat-cell *matCellDef="let line" class="hide-mobile">
-                <div class="color-display">
-                  <div class="color-swatch" [style.backgroundColor]="line.color"></div>
-                  <span class="color-code">{{ line.color }}</span>
+        <div class="lines-grid" [@gridStagger]="lines().length">
+          @for (line of lines(); track line.id) {
+            <mat-card class="line-card">
+              <mat-card-content>
+                <div class="line-header">
+                  <span class="line-code" [style.backgroundColor]="line.color">
+                    {{ line.code }}
+                  </span>
+                  <div class="line-actions">
+                    <button mat-icon-button (click)="openEditDialog(line)" matTooltip="Edit">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deleteLine(line)" matTooltip="Delete">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
                 </div>
-              </td>
-            </ng-container>
+                <h3 class="line-name">{{ line.name }}</h3>
+                <div class="line-stats">
+                  <div class="stat">
+                    <mat-icon>place</mat-icon>
+                    <span>{{ line.stopCount }} stops</span>
+                  </div>
+                  <div class="stat">
+                    <mat-icon>directions</mat-icon>
+                    <span>{{ line.routeCount }} routes</span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
 
-            <ng-container matColumnDef="stops">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header="stopCount">Stops</th>
-              <td mat-cell *matCellDef="let line">{{ line.stopCount }} stops</td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
-              <td mat-cell *matCellDef="let line" class="actions-column">
-                <button mat-icon-button color="primary" (click)="openEditDialog(line)">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" (click)="deleteLine(line)">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-          </table>
-
-          <mat-paginator
-            [length]="totalElements"
-            [pageIndex]="page"
-            [pageSize]="size"
-            [pageSizeOptions]="[5, 10, 25, 50]"
-            (page)="onPageChange($event)"
-            showFirstLastButtons
-          />
-        </mat-card>
+        <mat-paginator
+          [length]="totalElements"
+          [pageIndex]="page"
+          [pageSize]="size"
+          [pageSizeOptions]="[8, 12, 24, 48]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        />
       }
     </div>
   `,
@@ -162,60 +159,92 @@ import { fadeIn } from '@shared/animations';
     }
 
     .toolbar {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
       margin-bottom: 20px;
     }
 
-    .full-width {
-      width: 100%;
+    .toolbar app-search-input {
+      flex: 1;
     }
 
-    .line-badge {
+    .sort-field {
+      min-width: 180px;
+    }
+
+    .lines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .line-card {
+      border-radius: 12px;
+    }
+
+    .line-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .line-code {
       display: inline-block;
-      padding: 6px 14px;
-      border-radius: 20px;
+      padding: 8px 18px;
+      border-radius: 24px;
       color: white;
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }
 
-    .color-display {
+    .line-actions {
+      display: flex;
+      gap: 4px;
+      margin: -8px -8px 0 0;
+    }
+
+    .line-name {
+      margin: 0 0 16px;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--app-on-surface);
+    }
+
+    .line-stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .color-swatch {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      border: 1px solid var(--app-outline);
-    }
-
-    .color-code {
+      gap: 6px;
       color: var(--app-on-surface-variant);
-      font-size: 13px;
-      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 14px;
     }
 
-    .actions-column {
-      text-align: right;
-      width: 120px;
+    .stat mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--app-on-surface-muted);
     }
 
-    .hide-mobile {
-      @media (max-width: 600px) {
-        display: none !important;
-      }
-    }
-
-    mat-card {
+    mat-paginator {
+      margin-top: 24px;
       border-radius: 12px;
-      overflow: hidden;
+    }
+
+    mat-card:not(.line-card) {
+      border-radius: 12px;
     }
   `,
 })
-export class LinesComponent implements OnInit, AfterViewInit, OnDestroy {
+export class LinesComponent implements OnInit, OnDestroy {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
@@ -223,36 +252,24 @@ export class LinesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly destroy$ = new Subject<void>();
 
-  readonly sort = viewChild(MatSort);
   loading = signal(true);
-  dataSource = new MatTableDataSource<Line>([]);
-  displayedColumns = ['code', 'name', 'color', 'stops', 'actions'];
+  lines = signal<Line[]>([]);
 
-  // Pagination state
+  // Pagination and sort state
   page = 0;
-  size = 10;
+  size = 12;
   sortBy = 'code';
-  sortDir: 'asc' | 'desc' = 'asc';
   search = '';
   totalElements = 0;
 
   ngOnInit(): void {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       this.page = params['page'] ? +params['page'] : 0;
-      this.size = params['size'] ? +params['size'] : 10;
+      this.size = params['size'] ? +params['size'] : 12;
       this.sortBy = params['sortBy'] || 'code';
-      this.sortDir = params['sortDir'] === 'desc' ? 'desc' : 'asc';
       this.search = params['search'] || '';
       this.loadLines();
     });
-  }
-
-  ngAfterViewInit(): void {
-    const sortRef = this.sort();
-    if (sortRef) {
-      sortRef.active = this.sortBy;
-      sortRef.direction = this.sortDir;
-    }
   }
 
   ngOnDestroy(): void {
@@ -262,17 +279,21 @@ export class LinesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadLines(): void {
     this.loading.set(true);
+    const [field, direction] = this.sortBy.includes(':')
+      ? this.sortBy.split(':')
+      : [this.sortBy, 'asc'];
+
     this.lineService
       .getAllPaginated({
         page: this.page,
         size: this.size,
-        sortBy: this.sortBy,
-        sortDir: this.sortDir,
+        sortBy: field,
+        sortDir: direction as 'asc' | 'desc',
         search: this.search || undefined,
       })
       .subscribe({
         next: (response: PageResponse<Line>) => {
-          this.dataSource.data = response.content;
+          this.lines.set(response.content);
           this.totalElements = response.totalElements;
           this.loading.set(false);
         },
@@ -287,9 +308,8 @@ export class LinesComponent implements OnInit, AfterViewInit, OnDestroy {
   updateUrl(): void {
     const queryParams: Record<string, string | number> = {};
     if (this.page > 0) queryParams['page'] = this.page;
-    if (this.size !== 10) queryParams['size'] = this.size;
+    if (this.size !== 12) queryParams['size'] = this.size;
     if (this.sortBy !== 'code') queryParams['sortBy'] = this.sortBy;
-    if (this.sortDir !== 'asc') queryParams['sortDir'] = this.sortDir;
     if (this.search) queryParams['search'] = this.search;
 
     this.router.navigate([], {
@@ -305,15 +325,13 @@ export class LinesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateUrl();
   }
 
-  onSortChange(event: Sort): void {
-    this.sortBy = event.active;
-    this.sortDir = event.direction === 'desc' ? 'desc' : 'asc';
+  onSearchChange(search: string): void {
+    this.search = search;
     this.page = 0;
     this.updateUrl();
   }
 
-  onSearchChange(search: string): void {
-    this.search = search;
+  onSortChange(): void {
     this.page = 0;
     this.updateUrl();
   }

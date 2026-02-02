@@ -38,6 +38,7 @@ export interface Line {
   name: string;
   color: string;
   stopCount: number;
+  routeCount: number;
 }
 
 export interface CreateLineRequest {
@@ -73,6 +74,7 @@ export interface Stop {
   name: string;
   lines: LineInfo[];
   scheduleCount: number;
+  hasDevice: boolean;
 }
 
 export interface CreateStopRequest {

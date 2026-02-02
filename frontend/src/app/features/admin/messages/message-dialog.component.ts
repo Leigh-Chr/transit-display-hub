@@ -153,6 +153,9 @@ interface MessageForm {
               name="endTime"
               required
             />
+            @if (form.startTime && form.endTime && !isDateRangeValid()) {
+              <mat-error>End time must be after start time</mat-error>
+            }
           </mat-form-field>
         </div>
       </form>
@@ -162,7 +165,7 @@ interface MessageForm {
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!messageForm.valid"
+        [disabled]="!messageForm.valid || !isDateRangeValid()"
         (click)="save()"
       >
         {{ data.message ? 'Save Changes' : 'Create Message' }}
@@ -257,6 +260,11 @@ export class MessageDialogComponent implements OnInit {
 
   private loadStops(): void {
     this.stopService.getAll(this.form.lineId).subscribe((stops) => this.stops.set(stops));
+  }
+
+  isDateRangeValid(): boolean {
+    if (!this.form.startTime || !this.form.endTime) return true;
+    return new Date(this.form.endTime) > new Date(this.form.startTime);
   }
 
   save(): void {

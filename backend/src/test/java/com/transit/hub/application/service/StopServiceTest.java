@@ -75,7 +75,7 @@ class StopServiceTest {
         void returnsAllStops() {
             Stop stop1 = TestDataFactory.createStop("Station 1", testLine);
             Stop stop2 = TestDataFactory.createStop("Station 2", testLine);
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(stop1, stop2));
+            when(stopRepository.findAllWithLinesAndDevices()).thenReturn(List.of(stop1, stop2));
 
             List<StopResponse> result = stopService.getAllStops();
 
@@ -87,7 +87,7 @@ class StopServiceTest {
         @Test
         @DisplayName("returns empty list when no stops exist")
         void returnsEmptyListWhenNoStops() {
-            when(stopRepository.findAllWithLines()).thenReturn(List.of());
+            when(stopRepository.findAllWithLinesAndDevices()).thenReturn(List.of());
 
             List<StopResponse> result = stopService.getAllStops();
 
@@ -103,7 +103,7 @@ class StopServiceTest {
         @DisplayName("returns stops for specific line")
         void returnsStopsForLine() {
             Stop stop1 = TestDataFactory.createStop("Station 1", testLine);
-            when(stopRepository.findByLineIdWithLines(testLineId)).thenReturn(List.of(stop1));
+            when(stopRepository.findByLineIdWithLinesAndDevices(testLineId)).thenReturn(List.of(stop1));
 
             List<StopResponse> result = stopService.getStopsByLine(testLineId);
 
@@ -114,7 +114,7 @@ class StopServiceTest {
         @Test
         @DisplayName("returns empty list when line has no stops")
         void returnsEmptyWhenNoStops() {
-            when(stopRepository.findByLineIdWithLines(testLineId)).thenReturn(List.of());
+            when(stopRepository.findByLineIdWithLinesAndDevices(testLineId)).thenReturn(List.of());
 
             List<StopResponse> result = stopService.getStopsByLine(testLineId);
 
@@ -129,7 +129,7 @@ class StopServiceTest {
         @Test
         @DisplayName("returns stop when found")
         void returnsStopWhenFound() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdWithLinesAndDevices(testStopId)).thenReturn(Optional.of(testStop));
 
             StopResponse result = stopService.getStop(testStopId);
 
@@ -142,7 +142,7 @@ class StopServiceTest {
         @DisplayName("throws EntityNotFoundException when not found")
         void throwsWhenNotFound() {
             UUID unknownId = UUID.randomUUID();
-            when(stopRepository.findByIdWithLines(unknownId)).thenReturn(Optional.empty());
+            when(stopRepository.findByIdWithLinesAndDevices(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> stopService.getStop(unknownId))
                     .isInstanceOf(EntityNotFoundException.class)

@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, MatSort, Sort } from '@angular/material/sort';
@@ -38,6 +39,7 @@ import { fadeIn } from '@shared/animations';
     MatFormFieldModule,
     MatSortModule,
     MatPaginatorModule,
+    MatTooltipModule,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
@@ -85,6 +87,7 @@ import { fadeIn } from '@shared/animations';
             { width: '60px', height: '32px' },
             { width: '180px' },
             { width: '100px' },
+            { width: '60px' },
             { width: '80px' }
           ]"
         />
@@ -142,6 +145,17 @@ import { fadeIn } from '@shared/animations';
                 Schedules
               </th>
               <td mat-cell *matCellDef="let stop" class="hide-mobile">{{ stop.scheduleCount }} entries</td>
+            </ng-container>
+
+            <ng-container matColumnDef="device">
+              <th mat-header-cell *matHeaderCellDef class="device-column">Display</th>
+              <td mat-cell *matCellDef="let stop" class="device-column">
+                @if (stop.hasDevice) {
+                  <mat-icon class="device-active" matTooltip="Display configured">tv</mat-icon>
+                } @else {
+                  <mat-icon class="device-inactive" matTooltip="No display">tv_off</mat-icon>
+                }
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
@@ -219,14 +233,29 @@ import { fadeIn } from '@shared/animations';
       padding: 4px 10px;
       border-radius: 16px;
       color: white;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.3px;
     }
 
     .actions-column {
       text-align: right;
       width: 120px;
+    }
+
+    .device-column {
+      width: 80px;
+      text-align: center;
+    }
+
+    .device-active {
+      color: var(--app-primary);
+      font-size: 20px;
+    }
+
+    .device-inactive {
+      color: var(--app-outline);
+      font-size: 20px;
+      opacity: 0.5;
     }
 
     .hide-mobile {
@@ -259,7 +288,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(true);
   lines = signal<Line[]>([]);
   dataSource = new MatTableDataSource<Stop>([]);
-  displayedColumns = ['line', 'name', 'schedules', 'actions'];
+  displayedColumns = ['line', 'name', 'schedules', 'device', 'actions'];
 
   // Pagination state
   page = 0;

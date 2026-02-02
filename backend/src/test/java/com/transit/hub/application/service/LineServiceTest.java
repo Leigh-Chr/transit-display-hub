@@ -67,7 +67,7 @@ class LineServiceTest {
         void returnsAllLines() {
             Line line1 = TestDataFactory.createLine("L1", "Line 1", "#FF5733");
             Line line2 = TestDataFactory.createLine("L2", "Line 2", "#33FF57");
-            when(lineRepository.findAll()).thenReturn(List.of(line1, line2));
+            when(lineRepository.findAllWithStopsAndRoutes()).thenReturn(List.of(line1, line2));
 
             List<LineResponse> result = lineService.getAllLines();
 
@@ -78,7 +78,7 @@ class LineServiceTest {
         @Test
         @DisplayName("returns empty list when no lines exist")
         void returnsEmptyListWhenNoLines() {
-            when(lineRepository.findAll()).thenReturn(List.of());
+            when(lineRepository.findAllWithStopsAndRoutes()).thenReturn(List.of());
 
             List<LineResponse> result = lineService.getAllLines();
 
@@ -93,7 +93,7 @@ class LineServiceTest {
         @Test
         @DisplayName("returns line when found")
         void returnsLineWhenFound() {
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(lineRepository.findByIdWithStopsAndRoutes(testLineId)).thenReturn(Optional.of(testLine));
 
             LineResponse result = lineService.getLine(testLineId);
 
@@ -107,7 +107,7 @@ class LineServiceTest {
         @DisplayName("throws EntityNotFoundException when not found")
         void throwsWhenNotFound() {
             UUID unknownId = UUID.randomUUID();
-            when(lineRepository.findById(unknownId)).thenReturn(Optional.empty());
+            when(lineRepository.findByIdWithStopsAndRoutes(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> lineService.getLine(unknownId))
                     .isInstanceOf(EntityNotFoundException.class)

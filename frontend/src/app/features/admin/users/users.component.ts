@@ -87,9 +87,11 @@ import { fadeIn } from '@shared/animations';
           <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width">
             <ng-container matColumnDef="username">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Username</th>
-              <td mat-cell *matCellDef="let user" class="username-cell">
-                <mat-icon class="user-icon">person</mat-icon>
-                {{ user.username }}
+              <td mat-cell *matCellDef="let user">
+                <div class="username-cell">
+                  <mat-icon class="user-icon">person</mat-icon>
+                  {{ user.username }}
+                </div>
               </td>
             </ng-container>
 
@@ -200,8 +202,8 @@ import { fadeIn } from '@shared/animations';
     }
 
     .role-badge.admin {
-      background-color: #e3f2fd;
-      color: #1565c0;
+      background-color: var(--app-info-container);
+      color: var(--app-on-info-container);
     }
 
     .status-badge {
@@ -210,13 +212,13 @@ import { fadeIn } from '@shared/animations';
       border-radius: 16px;
       font-size: 12px;
       font-weight: 600;
-      background-color: #ffebee;
-      color: #c62828;
+      background-color: var(--app-critical-container);
+      color: var(--app-on-critical-container);
     }
 
     .status-badge.active {
-      background-color: #e8f5e9;
-      color: #2e7d32;
+      background-color: var(--app-success-container);
+      color: var(--app-on-success-container);
     }
 
     .actions-column {

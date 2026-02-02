@@ -35,14 +35,14 @@ public class StopService {
 
     @Transactional(readOnly = true)
     public List<StopResponse> getAllStops() {
-        return stopRepository.findAllWithLines().stream()
+        return stopRepository.findAllWithLinesAndDevices().stream()
                 .map(StopResponse::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<StopResponse> getStopsByLine(UUID lineId) {
-        return stopRepository.findByLineIdWithLines(lineId).stream()
+        return stopRepository.findByLineIdWithLinesAndDevices(lineId).stream()
                 .map(StopResponse::from)
                 .toList();
     }
@@ -55,20 +55,20 @@ public class StopService {
         String trimmedSearch = hasSearch ? search.trim() : null;
 
         if (hasLineId && hasSearch) {
-            page = stopRepository.findByLineIdAndSearchWithLines(lineId, trimmedSearch, pageable);
+            page = stopRepository.findByLineIdAndSearchWithLinesAndDevices(lineId, trimmedSearch, pageable);
         } else if (hasLineId) {
-            page = stopRepository.findByLineIdWithLines(lineId, pageable);
+            page = stopRepository.findByLineIdWithLinesAndDevices(lineId, pageable);
         } else if (hasSearch) {
-            page = stopRepository.findBySearchWithLines(trimmedSearch, pageable);
+            page = stopRepository.findBySearchWithLinesAndDevices(trimmedSearch, pageable);
         } else {
-            page = stopRepository.findAllWithLines(pageable);
+            page = stopRepository.findAllWithLinesAndDevices(pageable);
         }
         return PageResponse.from(page, StopResponse::from);
     }
 
     @Transactional(readOnly = true)
     public StopResponse getStop(UUID id) {
-        return stopRepository.findByIdWithLines(id)
+        return stopRepository.findByIdWithLinesAndDevices(id)
                 .map(StopResponse::from)
                 .orElseThrow(() -> new EntityNotFoundException("Stop", id));
     }

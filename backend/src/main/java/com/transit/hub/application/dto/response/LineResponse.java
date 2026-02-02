@@ -9,7 +9,8 @@ public record LineResponse(
         String code,
         String name,
         String color,
-        int stopCount
+        int stopCount,
+        int routeCount
 ) {
     public static LineResponse from(Line line) {
         return new LineResponse(
@@ -17,7 +18,8 @@ public record LineResponse(
                 line.getCode(),
                 line.getName(),
                 line.getColor(),
-                line.getStops() != null ? line.getStops().size() : 0
+                line.getStops() != null ? line.getStops().size() : 0,
+                line.getRoutes() != null ? line.getRoutes().size() : 0
         );
     }
 }

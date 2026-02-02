@@ -210,9 +210,8 @@ import { fadeIn } from '@shared/animations';
       padding: 4px 10px;
       border-radius: 16px;
       color: white;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.3px;
     }
 
     .terminus-cell {

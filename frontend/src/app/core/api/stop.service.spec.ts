@@ -20,7 +20,8 @@ describe('StopService', () => {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Central Station',
     lines: [mockLine],
-    scheduleCount: 10
+    scheduleCount: 10,
+    hasDevice: true
   };
 
   const mockStops: Stop[] = [
@@ -29,7 +30,8 @@ describe('StopService', () => {
       id: '223e4567-e89b-12d3-a456-426614174000',
       name: 'North Station',
       lines: [mockLine],
-      scheduleCount: 8
+      scheduleCount: 8,
+      hasDevice: false
     }
   ];
 
@@ -121,7 +123,8 @@ describe('StopService', () => {
         id: '333e4567-e89b-12d3-a456-426614174000',
         name: request.name,
         lines: [mockLine],
-        scheduleCount: 0
+        scheduleCount: 0,
+        hasDevice: false
       };
 
       service.create(request).subscribe(stop => {

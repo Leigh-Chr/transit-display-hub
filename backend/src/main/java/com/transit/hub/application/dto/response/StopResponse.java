@@ -11,7 +11,8 @@ public record StopResponse(
         UUID id,
         String name,
         List<LineInfo> lines,
-        int scheduleCount
+        int scheduleCount,
+        boolean hasDevice
 ) {
     public record LineInfo(UUID id, String code, String name, String color) {}
 
@@ -30,7 +31,8 @@ public record StopResponse(
                 stop.getId(),
                 stop.getName(),
                 lineInfos,
-                stop.getTimedEntries() != null ? stop.getTimedEntries().size() : 0
+                stop.getTimedEntries() != null ? stop.getTimedEntries().size() : 0,
+                stop.getDevices() != null && !stop.getDevices().isEmpty()
         );
     }
 }

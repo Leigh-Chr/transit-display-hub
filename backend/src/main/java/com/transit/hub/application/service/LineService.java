@@ -31,7 +31,7 @@ public class LineService {
 
     @Transactional(readOnly = true)
     public List<LineResponse> getAllLines() {
-        return lineRepository.findAll().stream()
+        return lineRepository.findAllWithStopsAndRoutes().stream()
                 .map(LineResponse::from)
                 .toList();
     }
@@ -40,16 +40,16 @@ public class LineService {
     public PageResponse<LineResponse> getAllLines(String search, Pageable pageable) {
         Page<Line> page;
         if (search != null && !search.isBlank()) {
-            page = lineRepository.findBySearch(search.trim(), pageable);
+            page = lineRepository.findBySearchWithStopsAndRoutes(search.trim(), pageable);
         } else {
-            page = lineRepository.findAll(pageable);
+            page = lineRepository.findAllWithStopsAndRoutes(pageable);
         }
         return PageResponse.from(page, LineResponse::from);
     }
 
     @Transactional(readOnly = true)
     public LineResponse getLine(UUID id) {
-        return lineRepository.findById(id)
+        return lineRepository.findByIdWithStopsAndRoutes(id)
                 .map(LineResponse::from)
                 .orElseThrow(() -> new EntityNotFoundException("Line", id));
     }
