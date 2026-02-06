@@ -40,12 +40,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/device/authenticate").permitAll()
                         .requestMatchers("/api/display/**").permitAll()  // Public for kiosk displays
+                        .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
 
                         // Read-only public access to itineraries (for schedule dialog)
                         .requestMatchers(HttpMethod.GET, "/api/itineraries/**").permitAll()
+
+                        // Read-only public access to stop schedules (for network map timetable)
+                        .requestMatchers(HttpMethod.GET, "/api/v2/stops/*/schedules").permitAll()
 
                         // Admin only endpoints
                         .requestMatchers("/api/itineraries/**").hasRole("ADMIN")

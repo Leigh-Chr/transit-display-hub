@@ -405,6 +405,17 @@ mat-card {
   }
 }
 
+// Dark autocomplete panel (for overlays rendered outside dark-theme contexts)
+div.mat-mdc-autocomplete-panel.dark-autocomplete {
+  --mat-autocomplete-background-color: #1a1a2e;
+  --mat-option-label-text-color: rgba(255, 255, 255, 0.85);
+  --mat-option-hover-state-layer-color: rgba(255, 255, 255, 0.08);
+  --mat-option-focus-state-layer-color: rgba(255, 255, 255, 0.12);
+  --mat-option-selected-state-layer-color: rgba(255, 255, 255, 0.12);
+  --mat-option-selected-state-label-text-color: #fff;
+  background-color: #1a1a2e;
+}
+
 // Dialogs - consistent appearance
 .mat-mdc-dialog-container {
   --mdc-dialog-container-shape: 16px;

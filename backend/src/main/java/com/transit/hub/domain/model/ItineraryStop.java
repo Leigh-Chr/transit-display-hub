@@ -46,4 +46,5 @@ public class ItineraryStop {
     @Min(value = 0, message = "Position must be non-negative")
     @Column(nullable = false)
     private Integer position;
+
 }

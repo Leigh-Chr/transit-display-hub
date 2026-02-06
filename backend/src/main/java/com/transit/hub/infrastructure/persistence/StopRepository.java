@@ -18,7 +18,7 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices")
     List<Stop> findAllWithLinesAndDevices();
 
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines")
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines ORDER BY s.name")
     List<Stop> findAllWithLines();
 
     @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices WHERE s.id = :id")

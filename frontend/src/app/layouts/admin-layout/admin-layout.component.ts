@@ -97,6 +97,16 @@ import { routeSlide } from '@shared/animations';
             <span matListItemTitle>Schedules</span>
           </a>
 
+          <a
+            mat-list-item
+            routerLink="/map"
+            routerLinkActive="active-link"
+            (click)="closeSidenavOnMobile()"
+          >
+            <mat-icon matListItemIcon>map</mat-icon>
+            <span matListItemTitle>Network Map</span>
+          </a>
+
           <mat-divider></mat-divider>
           <div class="nav-section-title">Communication</div>
 

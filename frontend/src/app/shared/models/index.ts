@@ -241,3 +241,48 @@ export interface MessageInfo {
   content: string;
   severity: MessageSeverity;
 }
+
+// Network Map
+export interface NetworkMap {
+  lines: NetworkLine[];
+  stops: NetworkStop[];
+  bounds: NetworkBounds;
+}
+
+export interface NetworkLine {
+  id: string;
+  code: string;
+  name: string;
+  color: string;
+  type: LineType | null;
+  itineraries: string[][];
+}
+
+export interface NetworkStop {
+  id: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  schematicX: number | null;
+  schematicY: number | null;
+  lineCodes: string[];
+}
+
+export interface NetworkBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+export interface AlertMessage {
+  title: string;
+  content: string;
+  severity: MessageSeverity;
+}
+
+export interface NetworkMapAlerts {
+  networkAlerts: AlertMessage[];
+  lineAlerts: Record<string, AlertMessage[]>;
+  stopAlerts: Record<string, AlertMessage[]>;
+}

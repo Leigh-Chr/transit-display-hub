@@ -38,4 +38,5 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     void deleteByItineraryId(UUID itineraryId);
 
     void deleteByItineraryLineId(UUID lineId);
+
 }

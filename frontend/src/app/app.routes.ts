@@ -56,6 +56,10 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'map',
+    loadComponent: () => import('./features/network-map/network-map.component').then(m => m.NetworkMapComponent)
+  },
+  {
     path: 'display',
     loadComponent: () => import('./features/display/kiosk/kiosk.component').then(m => m.KioskComponent)
   },

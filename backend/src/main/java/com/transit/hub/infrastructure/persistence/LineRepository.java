@@ -19,8 +19,11 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
     @Query("SELECT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE l.id = :id")
     Optional<Line> findByIdWithStopsAndRoutes(UUID id);
 
-    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries")
+    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries ORDER BY l.code")
     List<Line> findAllWithStopsAndRoutes();
+
+    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.itineraries i LEFT JOIN FETCH i.itineraryStops ist LEFT JOIN FETCH ist.stop ORDER BY l.code")
+    List<Line> findAllWithItineraryStops();
 
     @Query(value = "SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE " +
            "LOWER(l.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

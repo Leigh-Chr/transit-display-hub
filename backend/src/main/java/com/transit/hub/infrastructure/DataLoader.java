@@ -44,7 +44,7 @@ public class DataLoader implements CommandLineRunner {
             Map<String, Line> lines = createLines();
             Map<String, Stop> stops = createStops(lines);
             Map<String, Itinerary> itineraries = createItineraries(lines, stops);
-            createSchedules(stops, itineraries);
+            createSchedules(itineraries);
             createDevices(stops);
             createMessages(lines, stops);
 
@@ -358,50 +358,71 @@ public class DataLoader implements CommandLineRunner {
                 ItineraryStop itineraryStop = ItineraryStop.builder()
                         .itinerary(itinerary)
                         .stop(stop)
-                        .position(position++)
+                        .position(position)
                         .build();
                 itinerary.getItineraryStops().add(itineraryStop);
+                position++;
+            } else {
+                log.warn("Stop key '{}' not found for itinerary '{}' (line '{}')", key, name, line.getCode());
             }
         }
 
         return itineraryRepository.save(itinerary);
     }
 
-    private void createSchedules(Map<String, Stop> stops, Map<String, Itinerary> itineraries) {
+    private void createSchedules(Map<String, Itinerary> itineraries) {
         log.info("Creating schedules...");
 
         int totalEntries = 0;
 
-        for (Map.Entry<String, Stop> entry : stops.entrySet()) {
-            Stop stop = entry.getValue();
+        for (Map.Entry<String, Itinerary> entry : itineraries.entrySet()) {
+            Itinerary itinerary = entry.getValue();
+            String lineCode = itinerary.getLine().getCode();
 
-            // For each line this stop serves, create schedule entries for all itineraries of that line
-            for (Line line : stop.getLines()) {
-                String lineCode = line.getCode();
-                List<LocalTime> times = generateScheduleTimes(lineCode);
+            List<ItineraryStop> orderedStops = itinerary.getItineraryStops().stream()
+                    .sorted(Comparator.comparing(ItineraryStop::getPosition))
+                    .toList();
 
-                // Get itineraries for this line
-                List<Itinerary> lineItineraries = itineraries.entrySet().stream()
-                        .filter(e -> e.getKey().startsWith(lineCode + "-"))
-                        .map(Map.Entry::getValue)
-                        .toList();
+            if (orderedStops.isEmpty()) continue;
 
-                // Alternate between itineraries for each stop
-                int itineraryIndex = 0;
-                for (LocalTime time : times) {
-                    Itinerary itinerary = lineItineraries.get(itineraryIndex % lineItineraries.size());
+            // Compute cumulative travel time based on line type
+            int travelTimePerStop = getTravelTimePerStop(itinerary.getLine().getType());
+            int[] cumulativeMinutes = new int[orderedStops.size()];
+            cumulativeMinutes[0] = 0;
+            for (int i = 1; i < orderedStops.size(); i++) {
+                cumulativeMinutes[i] = cumulativeMinutes[i - 1] + travelTimePerStop + random.nextInt(2);
+            }
+
+            // Generate base departure times from the first stop
+            List<LocalTime> baseTimes = generateScheduleTimes(lineCode);
+
+            for (LocalTime baseTime : baseTimes) {
+                for (int i = 0; i < orderedStops.size(); i++) {
+                    LocalTime stopTime = baseTime.plusMinutes(cumulativeMinutes[i]);
+                    // Skip if time wraps past midnight
+                    if (i > 0 && stopTime.isBefore(baseTime)) break;
+
                     scheduleRepository.save(Schedule.builder()
-                            .time(time)
-                            .stop(stop)
+                            .time(stopTime)
+                            .stop(orderedStops.get(i).getStop())
                             .itinerary(itinerary)
                             .build());
                     totalEntries++;
-                    itineraryIndex++;
                 }
             }
         }
 
         log.info("Created {} schedules", totalEntries);
+    }
+
+    private int getTravelTimePerStop(LineType type) {
+        if (type == null) return 3;
+        return switch (type) {
+            case METRO -> 2;
+            case TRAIN -> 4;
+            case TRAM -> 3;
+            case BUS -> 3;
+        };
     }
 
     private List<LocalTime> generateScheduleTimes(String lineCode) {

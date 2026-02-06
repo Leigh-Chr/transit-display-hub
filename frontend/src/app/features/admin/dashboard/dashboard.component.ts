@@ -309,6 +309,10 @@ import { gridStagger, fadeIn } from '@shared/animations';
                 <mat-icon>tv</mat-icon>
                 <span>Register Device</span>
               </a>
+              <a mat-stroked-button routerLink="/map" class="action-btn">
+                <mat-icon>map</mat-icon>
+                <span>Network Map</span>
+              </a>
               <a mat-stroked-button routerLink="/admin/users" class="action-btn">
                 <mat-icon>people</mat-icon>
                 <span>Manage Users</span>

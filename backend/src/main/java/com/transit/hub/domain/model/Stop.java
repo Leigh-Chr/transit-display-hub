@@ -35,6 +35,12 @@ public class Stop {
     @Column
     private Double longitude;
 
+    @Column
+    private Double schematicX;
+
+    @Column
+    private Double schematicY;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",
             joinColumns = @JoinColumn(name = "stop_id"),
