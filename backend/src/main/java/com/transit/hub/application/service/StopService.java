@@ -6,6 +6,7 @@ import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
@@ -14,6 +15,7 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ public class StopService {
     private final ItineraryStopRepository itineraryStopRepository;
     private final DeviceRepository deviceRepository;
     private final BroadcastMessageRepository messageRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<StopResponse> getAllStops() {
@@ -87,6 +90,7 @@ public class StopService {
                 .build();
 
         Stop saved = stopRepository.save(stop);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(saved.getId())));
         return StopResponse.from(saved);
     }
 
@@ -104,6 +108,7 @@ public class StopService {
         stop.getLines().addAll(lines);
 
         Stop saved = stopRepository.save(stop);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(saved.getId())));
         return StopResponse.from(saved);
     }
 
@@ -119,6 +124,7 @@ public class StopService {
         deviceRepository.deleteByStopId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.STOP, id);
         stopRepository.deleteById(id);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(id)));
     }
 
     @Transactional(readOnly = true)

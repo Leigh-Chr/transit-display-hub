@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.request.CreateItineraryRequest;
 import com.transit.hub.application.dto.response.ItineraryResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
@@ -13,6 +14,7 @@ import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.testutil.TestDataFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -56,6 +58,9 @@ class ItineraryServiceTest {
 
     @Mock
     private StopRepository stopRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ItineraryService itineraryService;
@@ -168,7 +173,7 @@ class ItineraryServiceTest {
     class CreateItinerary {
 
         @Test
-        @DisplayName("creates new itinerary")
+        @DisplayName("creates new itinerary and publishes NetworkChangedEvent")
         void createsNewItinerary() {
             CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "New Direction", null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
@@ -188,6 +193,7 @@ class ItineraryServiceTest {
 
             assertThat(result).isNotNull();
             verify(itineraryRepository).save(any(Itinerary.class));
+            verify(eventPublisher).publishEvent(any(NetworkChangedEvent.class));
         }
 
         @Test
@@ -220,21 +226,23 @@ class ItineraryServiceTest {
     class DeleteItinerary {
 
         @Test
-        @DisplayName("deletes existing itinerary")
+        @DisplayName("deletes existing itinerary and publishes NetworkChangedEvent")
         void deletesExistingItinerary() {
-            when(itineraryRepository.existsById(testItineraryId)).thenReturn(true);
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId))
+                    .thenReturn(Optional.of(testItinerary));
 
             itineraryService.deleteItinerary(testItineraryId);
 
             verify(itineraryStopRepository).deleteByItineraryId(testItineraryId);
             verify(itineraryRepository).deleteById(testItineraryId);
+            verify(eventPublisher).publishEvent(any(NetworkChangedEvent.class));
         }
 
         @Test
         @DisplayName("throws EntityNotFoundException when itinerary not found")
         void throwsWhenItineraryNotFound() {
             UUID unknownId = UUID.randomUUID();
-            when(itineraryRepository.existsById(unknownId)).thenReturn(false);
+            when(itineraryRepository.findByIdWithLineAndStops(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> itineraryService.deleteItinerary(unknownId))
                     .isInstanceOf(EntityNotFoundException.class)
@@ -249,7 +257,7 @@ class ItineraryServiceTest {
     class AddStopToItinerary {
 
         @Test
-        @DisplayName("adds stop to itinerary")
+        @DisplayName("adds stop to itinerary and publishes NetworkChangedEvent with added stopId")
         void addsStopToItinerary() {
             AddItineraryStopRequest request = new AddItineraryStopRequest(testStopId, null);
             when(itineraryRepository.findByIdWithLineAndStops(testItineraryId))
@@ -264,6 +272,9 @@ class ItineraryServiceTest {
 
             assertThat(result).isNotNull();
             verify(itineraryRepository).save(any(Itinerary.class));
+            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().getAffectedStopIds()).containsExactly(testStopId);
         }
 
         @Test
@@ -337,7 +348,7 @@ class ItineraryServiceTest {
         }
 
         @Test
-        @DisplayName("successfully removes stop from itinerary")
+        @DisplayName("successfully removes stop from itinerary and publishes NetworkChangedEvent with removed stopId")
         void removesStopFromItinerary() {
             Itinerary itineraryWithStops = TestDataFactory.createItineraryWithStops(testLine, "Direction East", testStop);
             UUID itineraryId = itineraryWithStops.getId();
@@ -352,6 +363,9 @@ class ItineraryServiceTest {
 
             assertThat(result).isNotNull();
             verify(itineraryRepository).save(any(Itinerary.class));
+            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().getAffectedStopIds()).containsExactly(testStopId);
         }
 
         @Test
@@ -375,7 +389,7 @@ class ItineraryServiceTest {
     class UpdateItinerary {
 
         @Test
-        @DisplayName("updates name and line, saves, and returns response")
+        @DisplayName("updates name and line, saves, publishes event, and returns response")
         void updatesNameAndLine() {
             CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "Updated Direction", null);
             when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
@@ -390,6 +404,7 @@ class ItineraryServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.id()).isEqualTo(testItineraryId);
             verify(itineraryRepository).save(any(Itinerary.class));
+            verify(eventPublisher).publishEvent(any(NetworkChangedEvent.class));
         }
 
         @Test
@@ -473,7 +488,7 @@ class ItineraryServiceTest {
     class UpdateItineraryStops {
 
         @Test
-        @DisplayName("deletes old stops, adds new ones, and saves")
+        @DisplayName("deletes old stops, adds new ones, saves, and publishes event")
         void updatesStopsSuccessfully() {
             List<UUID> stopIds = List.of(testStopId);
             UpdateItineraryStopsRequest request = new UpdateItineraryStopsRequest(stopIds);
@@ -487,6 +502,7 @@ class ItineraryServiceTest {
             assertThat(result).isNotNull();
             verify(itineraryStopRepository).deleteByItineraryId(testItineraryId);
             verify(itineraryRepository).save(any(Itinerary.class));
+            verify(eventPublisher).publishEvent(any(NetworkChangedEvent.class));
         }
 
         @Test

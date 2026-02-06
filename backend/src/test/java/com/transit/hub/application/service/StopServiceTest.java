@@ -3,6 +3,7 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.request.CreateStopRequest;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
@@ -13,6 +14,7 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.testutil.TestDataFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +62,9 @@ class StopServiceTest {
 
     @Mock
     private BroadcastMessageRepository messageRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private StopService stopService;
@@ -166,7 +171,7 @@ class StopServiceTest {
     class CreateStop {
 
         @Test
-        @DisplayName("creates stop with valid request")
+        @DisplayName("creates stop with valid request and publishes NetworkChangedEvent with correct stopId")
         void withValidRequest_Succeeds() {
             CreateStopRequest request = new CreateStopRequest("New Station", Set.of(testLineId), null, null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
@@ -182,10 +187,14 @@ class StopServiceTest {
             assertThat(result.lines()).extracting(StopResponse.LineInfo::id).contains(testLineId);
             assertThat(result.lines()).extracting(StopResponse.LineInfo::code).contains("L1");
 
-            ArgumentCaptor<Stop> captor = ArgumentCaptor.forClass(Stop.class);
-            verify(stopRepository).save(captor.capture());
-            assertThat(captor.getValue().getName()).isEqualTo("New Station");
-            assertThat(captor.getValue().getLines()).contains(testLine);
+            ArgumentCaptor<Stop> stopCaptor = ArgumentCaptor.forClass(Stop.class);
+            verify(stopRepository).save(stopCaptor.capture());
+            assertThat(stopCaptor.getValue().getName()).isEqualTo("New Station");
+            assertThat(stopCaptor.getValue().getLines()).contains(testLine);
+
+            ArgumentCaptor<NetworkChangedEvent> eventCaptor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).containsExactly(result.id());
         }
 
         @Test
@@ -208,7 +217,7 @@ class StopServiceTest {
     class UpdateStop {
 
         @Test
-        @DisplayName("updates stop with valid request")
+        @DisplayName("updates stop with valid request and publishes NetworkChangedEvent with correct stopId")
         void withValidRequest_Succeeds() {
             CreateStopRequest request = new CreateStopRequest("Updated Station", Set.of(testLineId), null, null);
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
@@ -218,6 +227,9 @@ class StopServiceTest {
             StopResponse result = stopService.updateStop(testStopId, request);
 
             verify(stopRepository).save(any(Stop.class));
+            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().getAffectedStopIds()).containsExactly(testStopId);
         }
 
         @Test
@@ -269,7 +281,7 @@ class StopServiceTest {
     class DeleteStop {
 
         @Test
-        @DisplayName("deletes existing stop and related entities")
+        @DisplayName("deletes existing stop, related entities, and publishes NetworkChangedEvent")
         void withExistingId_Succeeds() {
             when(stopRepository.existsById(testStopId)).thenReturn(true);
 
@@ -280,6 +292,10 @@ class StopServiceTest {
             verify(deviceRepository).deleteByStopId(testStopId);
             verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.STOP, testStopId);
             verify(stopRepository).deleteById(testStopId);
+
+            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().getAffectedStopIds()).contains(testStopId);
         }
 
         @Test

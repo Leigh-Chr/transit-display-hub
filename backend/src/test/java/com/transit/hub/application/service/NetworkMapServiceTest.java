@@ -18,19 +18,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 
@@ -50,6 +54,9 @@ class NetworkMapServiceTest {
 
     @Mock
     private CacheManager cacheManager;
+
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
 
     @InjectMocks
     private NetworkMapService networkMapService;
@@ -295,29 +302,47 @@ class NetworkMapServiceTest {
     class CacheEviction {
 
         @Test
-        @DisplayName("evicts networkMap and networkAlerts caches on NetworkChangedEvent")
-        void evictsCachesOnNetworkChangedEvent() {
+        @DisplayName("evicts caches and pushes FULL_UPDATE WebSocket payload on NetworkChangedEvent")
+        void evictsCachesAndPushesOnNetworkChangedEvent() {
             Cache networkMapCache = mock(Cache.class);
             Cache networkAlertsCache = mock(Cache.class);
             when(cacheManager.getCache("networkMap")).thenReturn(networkMapCache);
             when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
+            when(stopRepository.findAllWithLines()).thenReturn(List.of());
+            when(broadcastMessageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of());
 
             networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));
 
             verify(networkMapCache).clear();
             verify(networkAlertsCache).clear();
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+            verify(messagingTemplate).convertAndSend(eq("/topic/network-map"), payloadCaptor.capture());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> payload = (Map<String, Object>) payloadCaptor.getValue();
+            assertThat(payload).containsEntry("type", "FULL_UPDATE");
+            assertThat(payload).containsKeys("networkMap", "alerts");
         }
 
         @Test
-        @DisplayName("evicts only networkAlerts cache on MessageChangedEvent")
-        void evictsAlertsCacheOnMessageChangedEvent() {
+        @DisplayName("evicts alerts cache and pushes ALERTS_UPDATE WebSocket payload on MessageChangedEvent")
+        void evictsAlertsCacheAndPushesOnMessageChangedEvent() {
             Cache networkAlertsCache = mock(Cache.class);
             when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
+            when(broadcastMessageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of());
 
             networkMapService.onMessageChanged(new MessageChangedEvent(this, Set.of()));
 
             verify(networkAlertsCache).clear();
-            verify(cacheManager, never()).getCache("networkMap");
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+            verify(messagingTemplate).convertAndSend(eq("/topic/network-map"), payloadCaptor.capture());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> payload = (Map<String, Object>) payloadCaptor.getValue();
+            assertThat(payload).containsEntry("type", "ALERTS_UPDATE");
+            assertThat(payload).containsKey("alerts");
+            assertThat(payload).doesNotContainKey("networkMap");
         }
 
         @Test
@@ -325,6 +350,9 @@ class NetworkMapServiceTest {
         void handlesNullCacheGracefully() {
             when(cacheManager.getCache("networkMap")).thenReturn(null);
             when(cacheManager.getCache("networkAlerts")).thenReturn(null);
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
+            when(stopRepository.findAllWithLines()).thenReturn(List.of());
+            when(broadcastMessageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of());
 
             // Should not throw
             networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));

@@ -17,23 +17,28 @@ import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NetworkMapService {
 
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
     private final BroadcastMessageRepository broadcastMessageRepository;
     private final CacheManager cacheManager;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Cacheable("networkMap")
     @Transactional(readOnly = true)
@@ -125,15 +130,40 @@ public class NetworkMapService {
         );
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onNetworkChanged(NetworkChangedEvent event) {
         evictCache("networkMap");
         evictCache("networkAlerts");
+        pushNetworkMapUpdate();
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageChanged(MessageChangedEvent event) {
         evictCache("networkAlerts");
+        pushAlertsUpdate();
+    }
+
+    private void pushNetworkMapUpdate() {
+        try {
+            NetworkMapResponse networkMap = getNetworkMap();
+            AlertsResponse alerts = getAlerts();
+            Object payload = Map.of("type", "FULL_UPDATE", "networkMap", networkMap, "alerts", alerts);
+            messagingTemplate.convertAndSend("/topic/network-map", payload);
+            log.debug("Pushed network map update via WebSocket");
+        } catch (Exception e) {
+            log.error("Failed to push network map update", e);
+        }
+    }
+
+    private void pushAlertsUpdate() {
+        try {
+            AlertsResponse alerts = getAlerts();
+            Object payload = Map.of("type", "ALERTS_UPDATE", "alerts", alerts);
+            messagingTemplate.convertAndSend("/topic/network-map", payload);
+            log.debug("Pushed alerts update via WebSocket");
+        } catch (Exception e) {
+            log.error("Failed to push alerts update", e);
+        }
     }
 
     private void evictCache(String cacheName) {

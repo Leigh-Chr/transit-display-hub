@@ -7,6 +7,7 @@ import com.transit.hub.application.dto.response.ItineraryResponse;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
@@ -16,13 +17,16 @@ import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -33,6 +37,7 @@ public class ItineraryService {
     private final ItineraryStopRepository itineraryStopRepository;
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<ItineraryResponse> getAllItineraries() {
@@ -99,6 +104,7 @@ public class ItineraryService {
             addStopsToItinerary(saved, request.stopIds());
         }
 
+        publishNetworkChanged(saved);
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(saved.getId()).orElseThrow());
     }
 
@@ -127,16 +133,18 @@ public class ItineraryService {
         }
 
         itineraryRepository.save(itinerary);
+        publishNetworkChanged(itinerary);
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(id).orElseThrow());
     }
 
     @Transactional
     public void deleteItinerary(UUID id) {
-        if (!itineraryRepository.existsById(id)) {
-            throw new EntityNotFoundException("Itinerary", id);
-        }
+        Itinerary itinerary = itineraryRepository.findByIdWithLineAndStops(id)
+                .orElseThrow(() -> new EntityNotFoundException("Itinerary", id));
+        Set<UUID> affectedStopIds = getStopIds(itinerary);
         itineraryStopRepository.deleteByItineraryId(id);
         itineraryRepository.deleteById(id);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, affectedStopIds));
     }
 
     @Transactional
@@ -152,6 +160,7 @@ public class ItineraryService {
         }
 
         itineraryRepository.save(itinerary);
+        publishNetworkChanged(itinerary);
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(id).orElseThrow());
     }
 
@@ -189,6 +198,7 @@ public class ItineraryService {
 
         itinerary.getItineraryStops().add(itineraryStop);
         itineraryRepository.save(itinerary);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(request.stopId())));
 
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(itineraryId).orElseThrow());
     }
@@ -215,6 +225,7 @@ public class ItineraryService {
         }
 
         itineraryRepository.save(itinerary);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(stopId)));
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(itineraryId).orElseThrow());
     }
 
@@ -222,6 +233,19 @@ public class ItineraryService {
     public Itinerary getItineraryEntity(UUID id) {
         return itineraryRepository.findByIdWithLineAndStops(id)
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary", id));
+    }
+
+    private void publishNetworkChanged(Itinerary itinerary) {
+        Set<UUID> affectedStopIds = getStopIds(itinerary);
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, affectedStopIds));
+    }
+
+    private Set<UUID> getStopIds(Itinerary itinerary) {
+        Set<UUID> stopIds = new HashSet<>();
+        for (ItineraryStop is : itinerary.getItineraryStops()) {
+            stopIds.add(is.getStop().getId());
+        }
+        return stopIds;
     }
 
     private void addStopsToItinerary(Itinerary itinerary, List<UUID> stopIds) {

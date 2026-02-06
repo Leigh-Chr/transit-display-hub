@@ -4,13 +4,17 @@ import com.transit.hub.application.dto.request.CreateLineRequest;
 import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.testutil.TestDataFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,6 +55,12 @@ class LineServiceTest {
 
     @Mock
     private BroadcastMessageRepository messageRepository;
+
+    @Mock
+    private StopRepository stopRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private LineService lineService;
@@ -126,7 +136,7 @@ class LineServiceTest {
     class CreateLine {
 
         @Test
-        @DisplayName("creates line with valid request")
+        @DisplayName("creates line with valid request and publishes NetworkChangedEvent")
         void withValidRequest_Succeeds() {
             CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", null);
             when(lineRepository.existsByCode("L2")).thenReturn(false);
@@ -145,6 +155,10 @@ class LineServiceTest {
             ArgumentCaptor<Line> captor = ArgumentCaptor.forClass(Line.class);
             verify(lineRepository).save(captor.capture());
             assertThat(captor.getValue().getCode()).isEqualTo("L2");
+
+            ArgumentCaptor<NetworkChangedEvent> eventCaptor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).isEmpty();
         }
 
         @Test
@@ -167,16 +181,23 @@ class LineServiceTest {
     class UpdateLine {
 
         @Test
-        @DisplayName("updates line with valid request")
+        @DisplayName("updates line with valid request and publishes NetworkChangedEvent with affected stopIds")
         void withValidRequest_Succeeds() {
+            Stop stop1 = TestDataFactory.createStop("S1", testLine);
+            Stop stop2 = TestDataFactory.createStop("S2", testLine);
             CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated Line", "#0000FF", null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(lineRepository.existsByCode("L1-NEW")).thenReturn(false);
             when(lineRepository.save(any(Line.class))).thenReturn(testLine);
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(stop1, stop2));
 
             LineResponse result = lineService.updateLine(testLineId, request);
 
             verify(lineRepository).save(any(Line.class));
+            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().getAffectedStopIds())
+                    .containsExactlyInAnyOrder(stop1.getId(), stop2.getId());
         }
 
         @Test
@@ -185,11 +206,13 @@ class LineServiceTest {
             CreateLineRequest request = new CreateLineRequest("L1", "Updated Name", "#0000FF", null);
             when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(lineRepository.save(any(Line.class))).thenReturn(testLine);
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of());
 
             lineService.updateLine(testLineId, request);
 
             verify(lineRepository, never()).existsByCode(anyString());
             verify(lineRepository).save(any(Line.class));
+            verify(eventPublisher).publishEvent(any(NetworkChangedEvent.class));
         }
 
         @Test
@@ -225,9 +248,11 @@ class LineServiceTest {
     class DeleteLine {
 
         @Test
-        @DisplayName("deletes existing line and related entities")
+        @DisplayName("deletes existing line, related entities, and publishes NetworkChangedEvent")
         void withExistingId_Succeeds() {
+            Stop stop1 = TestDataFactory.createStop("S1", testLine);
             when(lineRepository.existsById(testLineId)).thenReturn(true);
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(stop1));
 
             lineService.deleteLine(testLineId);
 
@@ -235,6 +260,10 @@ class LineServiceTest {
             verify(itineraryRepository).deleteByLineId(testLineId);
             verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.LINE, testLineId);
             verify(lineRepository).deleteById(testLineId);
+
+            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().getAffectedStopIds()).contains(stop1.getId());
         }
 
         @Test

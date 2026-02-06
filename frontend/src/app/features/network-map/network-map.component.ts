@@ -17,8 +17,9 @@ import { RouteFinderService, RouteResult } from './services/route-finder.service
 import { SchematicMapComponent } from './components/schematic-map/schematic-map.component';
 import { RouteSearchBarComponent } from './components/route-search-bar/route-search-bar.component';
 import { StopPopupComponent, StopPopupData, LineAlertInfo } from './components/stop-popup/stop-popup.component';
-import { NetworkMap, NetworkMapAlerts } from '@shared/models';
+import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
 import { ThemeService } from '@core/services/theme.service';
+import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
 
 @Component({
   selector: 'app-network-map',
@@ -396,6 +397,7 @@ export class NetworkMapComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   readonly themeService = inject(ThemeService);
+  private readonly networkMapWs = inject(NetworkMapWebSocketService);
 
   private schematicMap = viewChild(SchematicMapComponent);
 
@@ -513,11 +515,13 @@ export class NetworkMapComponent implements OnInit {
       if (this.highlightTimer) {
         clearTimeout(this.highlightTimer);
       }
+      this.networkMapWs.disconnect();
     });
   }
 
   ngOnInit(): void {
     this.loadNetwork();
+    this.subscribeToUpdates();
   }
 
   loadNetwork(): void {
@@ -541,6 +545,19 @@ export class NetworkMapComponent implements OnInit {
         console.error('Failed to load network map:', err);
         this.error.set('Failed to load network map. Please try again.');
         this.loading.set(false);
+      }
+    });
+  }
+
+  private subscribeToUpdates(): void {
+    this.networkMapWs.connect().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((update: NetworkMapUpdate) => {
+      if (update.type === 'FULL_UPDATE') {
+        this.networkMap.set(update.networkMap);
+        this.alerts.set(update.alerts);
+      } else if (update.type === 'ALERTS_UPDATE') {
+        this.alerts.set(update.alerts);
       }
     });
   }

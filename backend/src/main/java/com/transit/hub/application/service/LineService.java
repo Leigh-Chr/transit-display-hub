@@ -6,19 +6,25 @@ import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.event.NetworkChangedEvent;
+import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +34,8 @@ public class LineService {
     private final ItineraryRepository itineraryRepository;
     private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
+    private final StopRepository stopRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<LineResponse> getAllLines() {
@@ -68,6 +76,7 @@ public class LineService {
                 .build();
 
         Line saved = lineRepository.save(line);
+        publishNetworkChanged(Set.of());
         return LineResponse.from(saved);
     }
 
@@ -87,6 +96,7 @@ public class LineService {
         line.setType(request.type());
 
         Line saved = lineRepository.save(line);
+        publishNetworkChangedForLine(id);
         return LineResponse.from(saved);
     }
 
@@ -95,16 +105,33 @@ public class LineService {
         if (!lineRepository.existsById(id)) {
             throw new EntityNotFoundException("Line", id);
         }
+        Set<UUID> affectedStopIds = getStopIdsForLine(id);
         // Delete related entities in correct order
         scheduleRepository.deleteByItineraryLineId(id);
         itineraryRepository.deleteByLineId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.LINE, id);
         lineRepository.deleteById(id);
+        publishNetworkChanged(affectedStopIds);
     }
 
     @Transactional(readOnly = true)
     public Line getLineEntity(UUID id) {
         return lineRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Line", id));
+    }
+
+    private void publishNetworkChangedForLine(UUID lineId) {
+        Set<UUID> affectedStopIds = getStopIdsForLine(lineId);
+        publishNetworkChanged(affectedStopIds);
+    }
+
+    private Set<UUID> getStopIdsForLine(UUID lineId) {
+        return stopRepository.findByLineId(lineId).stream()
+                .map(Stop::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private void publishNetworkChanged(Set<UUID> affectedStopIds) {
+        eventPublisher.publishEvent(new NetworkChangedEvent(this, affectedStopIds));
     }
 }

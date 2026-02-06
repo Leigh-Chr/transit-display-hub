@@ -286,3 +286,16 @@ export interface NetworkMapAlerts {
   lineAlerts: Record<string, AlertMessage[]>;
   stopAlerts: Record<string, AlertMessage[]>;
 }
+
+export interface NetworkMapFullUpdate {
+  type: 'FULL_UPDATE';
+  networkMap: NetworkMap;
+  alerts: NetworkMapAlerts;
+}
+
+export interface NetworkMapAlertsUpdate {
+  type: 'ALERTS_UPDATE';
+  alerts: NetworkMapAlerts;
+}
+
+export type NetworkMapUpdate = NetworkMapFullUpdate | NetworkMapAlertsUpdate;
