@@ -2,7 +2,6 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
-import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 
 import java.util.Comparator;
@@ -16,18 +15,10 @@ public record ItineraryResponse(
         LineInfo line,
         List<ItineraryStopInfo> stops
 ) {
-    public record LineInfo(UUID id, String code, String name, String color) {}
-
     public record ItineraryStopInfo(UUID id, String name, int position) {}
 
     public static ItineraryResponse from(Itinerary itinerary) {
-        Line line = itinerary.getLine();
-        LineInfo lineInfo = new LineInfo(
-                line.getId(),
-                line.getCode(),
-                line.getName(),
-                line.getColor()
-        );
+        LineInfo lineInfo = LineInfo.from(itinerary.getLine());
 
         List<ItineraryStopInfo> stopInfos = itinerary.getItineraryStops().stream()
                 .sorted(Comparator.comparing(ItineraryStop::getPosition))

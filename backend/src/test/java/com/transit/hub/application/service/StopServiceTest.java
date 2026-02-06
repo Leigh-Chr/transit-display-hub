@@ -1,6 +1,7 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.request.CreateStopRequest;
+import com.transit.hub.application.dto.response.LineInfo;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.event.NetworkChangedEvent;
@@ -97,7 +98,7 @@ class StopServiceTest {
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(StopResponse::name).containsExactly("Station 1", "Station 2");
-            assertThat(result).allSatisfy(r -> assertThat(r.lines()).extracting(StopResponse.LineInfo::code).contains("L1"));
+            assertThat(result).allSatisfy(r -> assertThat(r.lines()).extracting(LineInfo::code).contains("L1"));
         }
 
         @Test
@@ -124,7 +125,7 @@ class StopServiceTest {
             List<StopResponse> result = stopService.getStopsByLine(testLineId);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).lines()).extracting(StopResponse.LineInfo::id).contains(testLineId);
+            assertThat(result.get(0).lines()).extracting(LineInfo::id).contains(testLineId);
         }
 
         @Test
@@ -151,7 +152,7 @@ class StopServiceTest {
 
             assertThat(result.id()).isEqualTo(testStopId);
             assertThat(result.name()).isEqualTo("Central Station");
-            assertThat(result.lines()).extracting(StopResponse.LineInfo::id).contains(testLineId);
+            assertThat(result.lines()).extracting(LineInfo::id).contains(testLineId);
         }
 
         @Test
@@ -184,8 +185,8 @@ class StopServiceTest {
             StopResponse result = stopService.createStop(request);
 
             assertThat(result.name()).isEqualTo("New Station");
-            assertThat(result.lines()).extracting(StopResponse.LineInfo::id).contains(testLineId);
-            assertThat(result.lines()).extracting(StopResponse.LineInfo::code).contains("L1");
+            assertThat(result.lines()).extracting(LineInfo::id).contains(testLineId);
+            assertThat(result.lines()).extracting(LineInfo::code).contains("L1");
 
             ArgumentCaptor<Stop> stopCaptor = ArgumentCaptor.forClass(Stop.class);
             verify(stopRepository).save(stopCaptor.capture());

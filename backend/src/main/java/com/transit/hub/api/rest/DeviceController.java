@@ -17,13 +17,13 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/devices")
 @RequiredArgsConstructor
 public class DeviceController {
 
     private final DeviceService deviceService;
 
-    @GetMapping("/devices")
+    @GetMapping
     public ResponseEntity<List<DeviceResponse>> getDevices(
             @RequestParam(required = false) DeviceStatus status
     ) {
@@ -33,18 +33,18 @@ public class DeviceController {
         return ResponseEntity.ok(deviceService.getAllDevices());
     }
 
-    @GetMapping("/devices/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<DeviceResponse> getDevice(@PathVariable UUID id) {
         return ResponseEntity.ok(deviceService.getDevice(id));
     }
 
-    @PostMapping("/devices")
+    @PostMapping
     public ResponseEntity<DeviceRegistrationResponse> registerDevice(@Valid @RequestBody RegisterDeviceRequest request) {
         DeviceRegistrationResponse response = deviceService.registerDevice(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping("/devices/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<DeviceResponse> updateDevice(
             @PathVariable UUID id,
             @Valid @RequestBody RegisterDeviceRequest request
@@ -52,13 +52,13 @@ public class DeviceController {
         return ResponseEntity.ok(deviceService.updateDevice(id, request));
     }
 
-    @DeleteMapping("/devices/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDevice(@PathVariable UUID id) {
         deviceService.deleteDevice(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/device/authenticate")
+    @PostMapping("/authenticate")
     public ResponseEntity<DeviceAuthResponse> authenticateDevice(@Valid @RequestBody DeviceAuthRequest request) {
         DeviceAuthResponse response = deviceService.authenticateDevice(request.token());
         if (response.valid()) {

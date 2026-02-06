@@ -76,7 +76,7 @@ com.transit.hub/
 │   │   ├── LineService.java
 │   │   ├── StopService.java
 │   │   ├── ItineraryService.java
-│   │   ├── ScheduleServiceV2.java
+│   │   ├── ScheduleService.java
 │   │   ├── MessageService.java
 │   │   ├── DeviceService.java
 │   │   ├── UserService.java
@@ -112,7 +112,7 @@ com.transit.hub/
     │   ├── LineController.java
     │   ├── StopController.java
     │   ├── ItineraryController.java
-    │   ├── ScheduleControllerV2.java
+    │   ├── ScheduleController.java
     │   ├── MessageController.java
     │   ├── DeviceController.java
     │   ├── UserController.java
@@ -484,7 +484,7 @@ export class WebSocketService {
        @NotBlank String code,
        @NotBlank String name,
        @NotBlank @Pattern(regexp = "^#[0-9A-Fa-f]{6}$") String color,
-       LineType type
+       @NotNull LineType type
    ) {}
    ```
 

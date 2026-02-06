@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/device/authenticate").permitAll()
+                        .requestMatchers("/api/devices/authenticate").permitAll()
                         .requestMatchers("/api/display/**").permitAll()  // Public for kiosk displays
                         .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
                         .requestMatchers("/actuator/health").permitAll()
@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/itineraries/**").permitAll()
 
                         // Read-only public access to stop schedules (for network map timetable)
-                        .requestMatchers(HttpMethod.GET, "/api/v2/stops/*/schedules").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stops/*/schedules").permitAll()
 
                         // Read-only access for ADMIN + AGENT (for message scope selection)
                         .requestMatchers(HttpMethod.GET, "/api/lines/**").hasAnyRole("ADMIN", "AGENT")
@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/itineraries/**").hasRole("ADMIN")
                         .requestMatchers("/api/lines/**").hasRole("ADMIN")
                         .requestMatchers("/api/stops/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v2/**").hasRole("ADMIN")
+                        .requestMatchers("/api/schedules/**").hasRole("ADMIN")
                         .requestMatchers("/api/devices/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
 

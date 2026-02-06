@@ -35,8 +35,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ScheduleServiceV2")
-class ScheduleServiceV2Test {
+@DisplayName("ScheduleService")
+class ScheduleServiceTest {
 
     @Mock
     private ScheduleRepository scheduleRepository;
@@ -51,7 +51,7 @@ class ScheduleServiceV2Test {
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
-    private ScheduleServiceV2 scheduleService;
+    private ScheduleService scheduleService;
 
     private Line testLine;
     private Stop testStop;

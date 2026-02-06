@@ -163,7 +163,7 @@ export class LineDialogComponent {
       code: this.form.code,
       name: this.form.name,
       color: this.form.color,
-      type: this.form.type ?? undefined,
+      type: this.form.type!,
     };
     this.dialogRef.close(request);
   }

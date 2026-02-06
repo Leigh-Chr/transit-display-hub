@@ -185,7 +185,8 @@ class DeviceServiceTest {
             assertThat(result.valid()).isTrue();
             assertThat(result.stopId()).isEqualTo(testStopId);
             assertThat(result.stopName()).isEqualTo("Central Station");
-            assertThat(result.lineCode()).isEqualTo("L1");
+            assertThat(result.lines()).hasSize(1);
+            assertThat(result.lines().get(0).code()).isEqualTo("L1");
         }
 
         @Test
@@ -220,7 +221,7 @@ class DeviceServiceTest {
             assertThat(result.valid()).isFalse();
             assertThat(result.stopId()).isNull();
             assertThat(result.stopName()).isNull();
-            assertThat(result.lineCode()).isNull();
+            assertThat(result.lines()).isNull();
 
             verify(deviceRepository, never()).save(any());
         }
@@ -478,7 +479,7 @@ class DeviceServiceTest {
             assertThat(result.valid()).isFalse();
             assertThat(result.stopId()).isNull();
             assertThat(result.stopName()).isNull();
-            assertThat(result.lineCode()).isNull();
+            assertThat(result.lines()).isNull();
             verify(deviceRepository, never()).findByTokenLookup(anyString());
         }
 

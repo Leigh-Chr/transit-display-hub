@@ -86,7 +86,7 @@ describe('LineDialogComponent', () => {
       });
     });
 
-    it('should close dialog with type undefined when type is null', () => {
+    it('should close dialog with type null when type is null', () => {
       component.form.code = 'L1';
       component.form.name = 'Line 1';
       component.form.color = '#FF0000';
@@ -98,7 +98,7 @@ describe('LineDialogComponent', () => {
         code: 'L1',
         name: 'Line 1',
         color: '#FF0000',
-        type: undefined,
+        type: null,
       });
     });
 

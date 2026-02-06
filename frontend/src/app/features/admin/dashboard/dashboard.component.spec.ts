@@ -33,7 +33,7 @@ describe('DashboardComponent', () => {
   ];
 
   const mockItineraries: Itinerary[] = [
-    { id: '1', name: 'North', terminusName: 'North Station', line: { code: 'L1', name: 'Metro 1', color: '#FF5733' }, stops: [] }
+    { id: '1', name: 'North', terminusName: 'North Station', line: { id: '1', code: 'L1', name: 'Metro 1', color: '#FF5733' }, stops: [] }
   ];
 
   const now = new Date();
@@ -72,9 +72,7 @@ describe('DashboardComponent', () => {
     mockLineService = { getAll: vi.fn().mockReturnValue(of(mockLines)) };
     mockStopService = { getAll: vi.fn().mockReturnValue(of(mockStops)) };
     mockItineraryService = { getAll: vi.fn().mockReturnValue(of(mockItineraries)) };
-    mockMessageService = { getAll: vi.fn().mockImplementation((activeOnly?: boolean) =>
-      activeOnly ? of(mockActiveMessages) : of(mockAllMessages)
-    )};
+    mockMessageService = { getAll: vi.fn().mockReturnValue(of(mockAllMessages)) };
     mockDeviceService = { getAll: vi.fn().mockReturnValue(of(mockDevices)) };
 
     TestBed.configureTestingModule({
@@ -106,8 +104,7 @@ describe('DashboardComponent', () => {
       expect(mockLineService.getAll).toHaveBeenCalled();
       expect(mockStopService.getAll).toHaveBeenCalled();
       expect(mockItineraryService.getAll).toHaveBeenCalled();
-      expect(mockMessageService.getAll).toHaveBeenCalledWith(true);
-      expect(mockMessageService.getAll).toHaveBeenCalledWith();
+      expect(mockMessageService.getAll).toHaveBeenCalled();
       expect(mockDeviceService.getAll).toHaveBeenCalled();
     });
 
@@ -303,8 +300,7 @@ describe('DashboardComponent', () => {
     it('should only call messageService.getAll for AGENT', () => {
       fixture.detectChanges();
 
-      expect(mockMessageService.getAll).toHaveBeenCalledWith(true);
-      expect(mockMessageService.getAll).toHaveBeenCalledWith();
+      expect(mockMessageService.getAll).toHaveBeenCalled();
       expect(mockLineService.getAll).not.toHaveBeenCalled();
       expect(mockStopService.getAll).not.toHaveBeenCalled();
       expect(mockItineraryService.getAll).not.toHaveBeenCalled();

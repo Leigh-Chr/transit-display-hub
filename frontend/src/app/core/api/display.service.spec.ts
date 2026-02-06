@@ -14,6 +14,7 @@ describe('DisplayService', () => {
     stopName: 'Central Station',
     lines: [
       {
+        id: 'line-1',
         code: 'L1',
         name: 'Metro Line 1',
         color: '#FF5733'
@@ -24,6 +25,7 @@ describe('DisplayService', () => {
         scheduledTime: '08:30',
         destinationName: 'Terminal',
         line: {
+          id: 'line-1',
           code: 'L1',
           name: 'Metro Line 1',
           color: '#FF5733'
@@ -33,6 +35,7 @@ describe('DisplayService', () => {
         scheduledTime: '08:45',
         destinationName: 'Terminal',
         line: {
+          id: 'line-1',
           code: 'L1',
           name: 'Metro Line 1',
           color: '#FF5733'

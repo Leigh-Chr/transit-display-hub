@@ -51,7 +51,7 @@ describe('StopPopupComponent', () => {
         id: 'it-1',
         name: 'Line M1 - North',
         terminusName: 'North Station',
-        line: { code: 'M1', name: 'Metro 1', color: '#FFCD00' },
+        line: { id: 'line-m1', code: 'M1', name: 'Metro 1', color: '#FFCD00' },
       },
     },
     {
@@ -62,7 +62,7 @@ describe('StopPopupComponent', () => {
         id: 'it-1',
         name: 'Line M1 - North',
         terminusName: 'North Station',
-        line: { code: 'M1', name: 'Metro 1', color: '#FFCD00' },
+        line: { id: 'line-m1', code: 'M1', name: 'Metro 1', color: '#FFCD00' },
       },
     },
   ];

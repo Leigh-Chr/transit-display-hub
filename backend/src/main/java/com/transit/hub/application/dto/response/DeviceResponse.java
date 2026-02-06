@@ -17,12 +17,10 @@ public record DeviceResponse(
         DeviceStatus status,
         Instant lastHeartbeat
 ) {
-    public record LineInfo(String code, String name, String color) {}
-
     public static DeviceResponse from(Device device) {
         List<LineInfo> lines = device.getStop().getLines().stream()
                 .sorted(Comparator.comparing(Line::getCode))
-                .map(line -> new LineInfo(line.getCode(), line.getName(), line.getColor()))
+                .map(LineInfo::from)
                 .toList();
 
         return new DeviceResponse(

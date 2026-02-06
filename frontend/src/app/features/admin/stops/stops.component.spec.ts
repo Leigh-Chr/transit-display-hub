@@ -26,7 +26,7 @@ const mockStop: Stop = {
   name: 'Central',
   latitude: 48.8,
   longitude: 2.3,
-  lines: [{ code: 'L1', name: 'Line 1', color: '#F00' }],
+  lines: [{ id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' }],
   scheduleCount: 5,
   hasDevice: true,
 };

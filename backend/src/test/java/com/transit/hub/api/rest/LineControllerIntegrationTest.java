@@ -8,6 +8,7 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.User;
+import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
@@ -222,7 +223,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 201 with created line for ADMIN")
         void withAdminRole_Returns201() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", null);
+            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", LineType.METRO);
 
             mockMvc.perform(post("/api/lines")
                             .header("Authorization", "Bearer " + adminToken)
@@ -238,7 +239,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", null);
+            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", LineType.METRO);
 
             mockMvc.perform(post("/api/lines")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -249,7 +250,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 403 for AGENT role")
         void withAgentRole_Returns403() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", null);
+            CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", LineType.METRO);
 
             mockMvc.perform(post("/api/lines")
                             .header("Authorization", "Bearer " + agentToken)
@@ -261,7 +262,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 400 for duplicate code")
         void withDuplicateCode_Returns400() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L1", "Duplicate", "#00FF00", null);
+            CreateLineRequest request = new CreateLineRequest("L1", "Duplicate", "#00FF00", LineType.METRO);
 
             mockMvc.perform(post("/api/lines")
                             .header("Authorization", "Bearer " + adminToken)
@@ -314,7 +315,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 200 with updated line for ADMIN")
         void withAdminRole_Returns200() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated Line", "#0000FF", null);
+            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated Line", "#0000FF", LineType.METRO);
 
             mockMvc.perform(put("/api/lines/" + testLine.getId())
                             .header("Authorization", "Bearer " + adminToken)
@@ -329,7 +330,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 404 for non-existent ID")
         void withNonExistentId_Returns404() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L1", "Line", "#FF0000", null);
+            CreateLineRequest request = new CreateLineRequest("L1", "Line", "#FF0000", LineType.METRO);
 
             mockMvc.perform(put("/api/lines/" + UUID.randomUUID())
                             .header("Authorization", "Bearer " + adminToken)
@@ -341,7 +342,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("succeeds when keeping same code")
         void keepingSameCode_Succeeds() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L1", "Updated Name", "#0000FF", null);
+            CreateLineRequest request = new CreateLineRequest("L1", "Updated Name", "#0000FF", LineType.METRO);
 
             mockMvc.perform(put("/api/lines/" + testLine.getId())
                             .header("Authorization", "Bearer " + adminToken)
@@ -358,7 +359,7 @@ class LineControllerIntegrationTest {
             Line otherLine = Line.builder().code("L2").name("Other Line").color("#00FF00").build();
             lineRepository.save(otherLine);
 
-            CreateLineRequest request = new CreateLineRequest("L2", "Trying Duplicate", "#FF0000", null);
+            CreateLineRequest request = new CreateLineRequest("L2", "Trying Duplicate", "#FF0000", LineType.METRO);
 
             mockMvc.perform(put("/api/lines/" + testLine.getId())
                             .header("Authorization", "Bearer " + adminToken)
@@ -370,7 +371,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 403 for AGENT role")
         void withAgentRole_Returns403() throws Exception {
-            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated", "#0000FF", null);
+            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated", "#0000FF", LineType.METRO);
 
             mockMvc.perform(put("/api/lines/" + testLine.getId())
                             .header("Authorization", "Bearer " + agentToken)

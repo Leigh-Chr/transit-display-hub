@@ -33,7 +33,7 @@ describe('MessageService', () => {
       endTime: '2024-12-31T23:59:59Z',
       scopeType: 'LINE',
       scopeId: 'line-123',
-      scopeInfo: { name: 'Metro Line 1', lineCode: 'L1', lineColor: '#FF5733' },
+      scopeInfo: { name: 'Metro Line 1' },
       active: true
     }
   ];

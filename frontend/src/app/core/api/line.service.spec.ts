@@ -105,7 +105,8 @@ describe('LineService', () => {
       const request: CreateLineRequest = {
         code: 'L3',
         name: 'New Line',
-        color: '#0000FF'
+        color: '#0000FF',
+        type: 'METRO'
       };
       const createdLine: Line = {
         id: '333e4567-e89b-12d3-a456-426614174000',
@@ -130,7 +131,8 @@ describe('LineService', () => {
       const request: CreateLineRequest = {
         code: 'L1', // duplicate
         name: 'Duplicate Line',
-        color: '#FF0000'
+        color: '#FF0000',
+        type: 'METRO'
       };
 
       service.create(request).subscribe({
@@ -150,7 +152,8 @@ describe('LineService', () => {
       const request: CreateLineRequest = {
         code: 'L1-NEW',
         name: 'Updated Line',
-        color: '#00FF00'
+        color: '#00FF00',
+        type: 'METRO'
       };
       const updatedLine: Line = {
         id,
@@ -176,7 +179,8 @@ describe('LineService', () => {
       const request: CreateLineRequest = {
         code: 'L1',
         name: 'Line',
-        color: '#FF0000'
+        color: '#FF0000',
+        type: 'METRO'
       };
 
       service.update(id, request).subscribe({

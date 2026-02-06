@@ -17,7 +17,7 @@ describe('DevicesComponent', () => {
     id: 'd1',
     stopId: 's1',
     stopName: 'Central',
-    lines: [{ code: 'L1', name: 'Line 1', color: '#F00' }],
+    lines: [{ id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' }],
     status: 'ONLINE',
     lastHeartbeat: '2024-01-01T12:00:00',
   };

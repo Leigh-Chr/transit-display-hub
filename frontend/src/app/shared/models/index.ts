@@ -26,7 +26,7 @@ export interface PageRequest {
 
 // Common nested types
 export interface LineInfo {
-  id?: string;
+  id: string;
   code: string;
   name: string;
   color: string;
@@ -47,7 +47,7 @@ export interface CreateLineRequest {
   code: string;
   name: string;
   color: string;
-  type?: LineType;
+  type: LineType;
 }
 
 // Itinerary
@@ -121,8 +121,6 @@ export interface CreateScheduleRequest {
 // Message
 export interface ScopeInfo {
   name: string;
-  lineCode?: string;
-  lineColor?: string;
 }
 
 export interface BroadcastMessage {
@@ -177,7 +175,7 @@ export interface DeviceAuthResponse {
   valid: boolean;
   stopId: string | null;
   stopName: string | null;
-  lineCode: string | null;
+  lines: LineInfo[] | null;
 }
 
 // Auth

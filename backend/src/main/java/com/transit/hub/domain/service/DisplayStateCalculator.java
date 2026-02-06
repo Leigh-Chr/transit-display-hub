@@ -1,6 +1,7 @@
 package com.transit.hub.domain.service;
 
 import com.transit.hub.application.dto.response.DisplayState;
+import com.transit.hub.application.dto.response.LineInfo;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Itinerary;
@@ -47,13 +48,9 @@ public class DisplayStateCalculator {
                 .orElseThrow(() -> new EntityNotFoundException("Stop", stopId));
 
         // Get all lines info for this stop
-        List<DisplayState.LineInfo> lineInfos = stop.getLines().stream()
+        List<LineInfo> lineInfos = stop.getLines().stream()
                 .sorted(Comparator.comparing(Line::getCode))
-                .map(line -> new DisplayState.LineInfo(
-                        line.getCode(),
-                        line.getName(),
-                        line.getColor()
-                ))
+                .map(LineInfo::from)
                 .toList();
 
         // Get upcoming arrivals within 30-minute window, one per itinerary/direction
@@ -106,12 +103,7 @@ public class DisplayStateCalculator {
 
     private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule) {
         Itinerary itinerary = schedule.getItinerary();
-        Line line = itinerary.getLine();
-        DisplayState.LineInfo lineInfo = new DisplayState.LineInfo(
-                line.getCode(),
-                line.getName(),
-                line.getColor()
-        );
+        LineInfo lineInfo = LineInfo.from(itinerary.getLine());
         return new DisplayState.ArrivalInfo(
                 schedule.getTime(),
                 itinerary.getTerminusName(),

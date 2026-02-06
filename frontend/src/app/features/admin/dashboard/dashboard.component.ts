@@ -949,16 +949,15 @@ export class DashboardComponent implements OnInit {
         lines: this.lineService.getAll(),
         stops: this.stopService.getAll(),
         itineraries: this.itineraryService.getAll(),
-        activeMessages: this.messageService.getAll(true),
         allMessages: this.messageService.getAll(),
         devices: this.deviceService.getAll(),
       }).subscribe({
-        next: ({ lines, stops, itineraries, activeMessages, allMessages, devices }) => {
+        next: ({ lines, stops, itineraries, allMessages, devices }) => {
           this.lines.set(lines);
           this.stops.set(stops);
           this.itineraries.set(itineraries);
-          this.activeMessages.set(activeMessages);
           this.allMessages.set(allMessages);
+          this.activeMessages.set(allMessages.filter(m => m.active));
           this.devices.set(devices);
           this.loading.set(false);
         },
@@ -971,13 +970,10 @@ export class DashboardComponent implements OnInit {
         },
       });
     } else {
-      forkJoin({
-        activeMessages: this.messageService.getAll(true),
-        allMessages: this.messageService.getAll(),
-      }).subscribe({
-        next: ({ activeMessages, allMessages }) => {
-          this.activeMessages.set(activeMessages);
+      this.messageService.getAll().subscribe({
+        next: (allMessages) => {
           this.allMessages.set(allMessages);
+          this.activeMessages.set(allMessages.filter(m => m.active));
           this.loading.set(false);
         },
         error: () => {

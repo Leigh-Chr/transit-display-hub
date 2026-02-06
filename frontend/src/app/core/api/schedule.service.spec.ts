@@ -66,7 +66,7 @@ describe('ScheduleService', () => {
         expect(schedules.length).toBe(2);
       });
 
-      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
       expect(req.request.method).toBe('GET');
       req.flush(mockSchedules);
     });
@@ -78,7 +78,7 @@ describe('ScheduleService', () => {
         expect(schedules).toEqual([]);
       });
 
-      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
       req.flush([]);
     });
 
@@ -91,7 +91,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
       req.flush({ message: 'Stop not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -115,7 +115,7 @@ describe('ScheduleService', () => {
         expect(schedule.time).toBe('10:00:00');
       });
 
-      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(request);
       req.flush(createdSchedule);
@@ -134,7 +134,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/v2/stops/${stopId}/schedules`);
+      const req = httpMock.expectOne(`/api/stops/${stopId}/schedules`);
       req.flush({ message: 'Stop not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -156,7 +156,7 @@ describe('ScheduleService', () => {
         expect(schedule.time).toBe('08:45:00');
       });
 
-      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/schedules/${id}`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(request);
       req.flush(updatedSchedule);
@@ -175,7 +175,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/schedules/${id}`);
       req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -188,7 +188,7 @@ describe('ScheduleService', () => {
         // Success - no response body expected
       });
 
-      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/schedules/${id}`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -202,7 +202,7 @@ describe('ScheduleService', () => {
         }
       });
 
-      const req = httpMock.expectOne(`/api/v2/schedules/${id}`);
+      const req = httpMock.expectOne(`/api/schedules/${id}`);
       req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });

@@ -121,7 +121,7 @@ class DeviceControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("POST /api/device/authenticate")
+    @DisplayName("POST /api/devices/authenticate")
     class AuthenticateDevice {
 
         @Test
@@ -129,14 +129,15 @@ class DeviceControllerIntegrationTest {
         void publicEndpoint_NoJwtRequired() throws Exception {
             DeviceAuthRequest request = new DeviceAuthRequest(plainDeviceToken);
 
-            mockMvc.perform(post("/api/device/authenticate")
+            mockMvc.perform(post("/api/devices/authenticate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.valid", is(true)))
                     .andExpect(jsonPath("$.stopId", is(testStop.getId().toString())))
                     .andExpect(jsonPath("$.stopName", is("Central Station")))
-                    .andExpect(jsonPath("$.lineCode", is("L1")));
+                    .andExpect(jsonPath("$.lines", hasSize(1)))
+                    .andExpect(jsonPath("$.lines[0].code", is("L1")));
         }
 
         @Test
@@ -144,7 +145,7 @@ class DeviceControllerIntegrationTest {
         void withInvalidToken_Returns401() throws Exception {
             DeviceAuthRequest request = new DeviceAuthRequest("invalid_token");
 
-            mockMvc.perform(post("/api/device/authenticate")
+            mockMvc.perform(post("/api/devices/authenticate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized())
@@ -156,7 +157,7 @@ class DeviceControllerIntegrationTest {
         void onSuccess_SetsDeviceOnline() throws Exception {
             DeviceAuthRequest request = new DeviceAuthRequest(plainDeviceToken);
 
-            mockMvc.perform(post("/api/device/authenticate")
+            mockMvc.perform(post("/api/devices/authenticate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -317,7 +318,7 @@ class DeviceControllerIntegrationTest {
             // Now authenticate with the new token
             DeviceAuthRequest authRequest = new DeviceAuthRequest(newToken);
 
-            mockMvc.perform(post("/api/device/authenticate")
+            mockMvc.perform(post("/api/devices/authenticate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(authRequest)))
                     .andExpect(status().isOk())

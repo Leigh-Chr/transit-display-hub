@@ -19,7 +19,7 @@ public record MessageResponse(
         ScopeInfo scopeInfo,
         boolean active
 ) {
-    public record ScopeInfo(String name, String lineCode, String lineColor) {}
+    public record ScopeInfo(String name) {}
 
     public static MessageResponse from(BroadcastMessage message) {
         return from(message, null);

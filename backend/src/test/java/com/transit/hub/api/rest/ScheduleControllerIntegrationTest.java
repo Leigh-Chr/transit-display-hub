@@ -36,8 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@DisplayName("ScheduleControllerV2 Integration Tests")
-class ScheduleControllerV2IntegrationTest {
+@DisplayName("ScheduleController Integration Tests")
+class ScheduleControllerIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -81,13 +81,13 @@ class ScheduleControllerV2IntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v2/stops/{stopId}/schedules")
+    @DisplayName("GET /api/stops/{stopId}/schedules")
     class GetScheduleForStop {
 
         @Test
         @DisplayName("returns 200 without authentication (public)")
         void withoutAuth_Returns200() throws Exception {
-            mockMvc.perform(get("/api/v2/stops/" + testStop.getId() + "/schedules"))
+            mockMvc.perform(get("/api/stops/" + testStop.getId() + "/schedules"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(1)))
                     .andExpect(jsonPath("$[0].time", is("08:30:00")));
@@ -99,14 +99,14 @@ class ScheduleControllerV2IntegrationTest {
             Stop emptyStop = Stop.builder().name("Empty Stop").lines(new HashSet<>(Set.of(testLine))).build();
             stopRepository.save(emptyStop);
 
-            mockMvc.perform(get("/api/v2/stops/" + emptyStop.getId() + "/schedules"))
+            mockMvc.perform(get("/api/stops/" + emptyStop.getId() + "/schedules"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(0)));
         }
     }
 
     @Nested
-    @DisplayName("POST /api/v2/stops/{stopId}/schedules")
+    @DisplayName("POST /api/stops/{stopId}/schedules")
     class CreateSchedule {
 
         @Test
@@ -114,7 +114,7 @@ class ScheduleControllerV2IntegrationTest {
         void withAdminRole_Returns201() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("14:30", testItinerary.getId());
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -127,7 +127,7 @@ class ScheduleControllerV2IntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("14:30", testItinerary.getId());
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -138,7 +138,7 @@ class ScheduleControllerV2IntegrationTest {
         void withInvalidTimeFormat_Returns400() throws Exception {
             String json = "{\"time\": \"25:00\", \"itineraryId\": \"" + testItinerary.getId() + "\"}";
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json))
@@ -150,7 +150,7 @@ class ScheduleControllerV2IntegrationTest {
         void withMissingItineraryId_Returns400() throws Exception {
             String json = "{\"time\": \"14:30\"}";
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json))
@@ -159,7 +159,7 @@ class ScheduleControllerV2IntegrationTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v2/stops/{stopId}/schedules - edge cases")
+    @DisplayName("POST /api/stops/{stopId}/schedules - edge cases")
     class CreateScheduleEdgeCases {
 
         @Test
@@ -173,7 +173,7 @@ class ScheduleControllerV2IntegrationTest {
 
             CreateScheduleRequest request = new CreateScheduleRequest("10:00", otherItinerary.getId());
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -185,7 +185,7 @@ class ScheduleControllerV2IntegrationTest {
         void withDuplicateSchedule_ReturnsError() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("08:30", testItinerary.getId());
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -197,7 +197,7 @@ class ScheduleControllerV2IntegrationTest {
         void withNonExistentStopId_Returns404() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("10:00", testItinerary.getId());
 
-            mockMvc.perform(post("/api/v2/stops/" + UUID.randomUUID() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + UUID.randomUUID() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -209,7 +209,7 @@ class ScheduleControllerV2IntegrationTest {
         void withNonExistentItineraryId_Returns404() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("10:00", UUID.randomUUID());
 
-            mockMvc.perform(post("/api/v2/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -218,7 +218,7 @@ class ScheduleControllerV2IntegrationTest {
     }
 
     @Nested
-    @DisplayName("PUT /api/v2/schedules/{id}")
+    @DisplayName("PUT /api/schedules/{id}")
     class UpdateSchedule {
 
         @Test
@@ -226,7 +226,7 @@ class ScheduleControllerV2IntegrationTest {
         void withValidRequest_Returns200() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("16:00", testItinerary.getId());
 
-            mockMvc.perform(put("/api/v2/schedules/" + testSchedule.getId())
+            mockMvc.perform(put("/api/schedules/" + testSchedule.getId())
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -239,7 +239,7 @@ class ScheduleControllerV2IntegrationTest {
         void withNonExistentId_Returns404() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("16:00", testItinerary.getId());
 
-            mockMvc.perform(put("/api/v2/schedules/" + UUID.randomUUID())
+            mockMvc.perform(put("/api/schedules/" + UUID.randomUUID())
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -251,7 +251,7 @@ class ScheduleControllerV2IntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("16:00", testItinerary.getId());
 
-            mockMvc.perform(put("/api/v2/schedules/" + testSchedule.getId())
+            mockMvc.perform(put("/api/schedules/" + testSchedule.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -262,7 +262,7 @@ class ScheduleControllerV2IntegrationTest {
         void updatesTime_ReflectedInResponse() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("18:45", testItinerary.getId());
 
-            mockMvc.perform(put("/api/v2/schedules/" + testSchedule.getId())
+            mockMvc.perform(put("/api/schedules/" + testSchedule.getId())
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -270,20 +270,20 @@ class ScheduleControllerV2IntegrationTest {
                     .andExpect(jsonPath("$.time", is("18:45:00")));
 
             // Verify the update persisted by fetching schedules for the stop
-            mockMvc.perform(get("/api/v2/stops/" + testStop.getId() + "/schedules"))
+            mockMvc.perform(get("/api/stops/" + testStop.getId() + "/schedules"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].time", is("18:45:00")));
         }
     }
 
     @Nested
-    @DisplayName("DELETE /api/v2/schedules/{id}")
+    @DisplayName("DELETE /api/schedules/{id}")
     class DeleteSchedule {
 
         @Test
         @DisplayName("returns 204 for successful deletion")
         void withValidId_Returns204() throws Exception {
-            mockMvc.perform(delete("/api/v2/schedules/" + testSchedule.getId())
+            mockMvc.perform(delete("/api/schedules/" + testSchedule.getId())
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isNoContent());
         }
@@ -291,7 +291,7 @@ class ScheduleControllerV2IntegrationTest {
         @Test
         @DisplayName("returns 404 for non-existent ID")
         void withNonExistentId_Returns404() throws Exception {
-            mockMvc.perform(delete("/api/v2/schedules/" + UUID.randomUUID())
+            mockMvc.perform(delete("/api/schedules/" + UUID.randomUUID())
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isNotFound());
         }
@@ -299,7 +299,7 @@ class ScheduleControllerV2IntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            mockMvc.perform(delete("/api/v2/schedules/" + testSchedule.getId()))
+            mockMvc.perform(delete("/api/schedules/" + testSchedule.getId()))
                     .andExpect(status().isUnauthorized());
         }
     }

@@ -45,13 +45,13 @@ Content-Type: application/json
 | `/api/auth/**` | Public |
 | `/api/display/**` | Public |
 | `/api/network-map/**` | Public |
-| `/api/device/authenticate` | Public |
+| `/api/devices/authenticate` | Public |
 | `GET /api/itineraries/**` | Public |
-| `GET /api/v2/stops/*/schedules` | Public |
+| `GET /api/stops/*/schedules` | Public |
 | `/api/messages/**` | Admin, Agent |
 | `GET /api/lines/**`, `GET /api/stops/**` | Admin, Agent |
 | `/api/lines/**`, `/api/stops/**` (POST, PUT, DELETE) | Admin |
-| `/api/v2/**` (POST, PUT, DELETE) | Admin |
+| `/api/schedules/**` (POST, PUT, DELETE) | Admin |
 | `/api/itineraries/**` (POST, PUT, DELETE) | Admin |
 | `/api/devices/**`, `/api/users/**` | Admin |
 
@@ -125,7 +125,7 @@ Content-Type: application/json
 - `code` (requis) : Identifiant court, max 10 caractères, unique
 - `name` (requis) : Nom complet, max 100 caractères
 - `color` (requis) : Couleur hexadécimale (ex: `#FF5733`)
-- `type` (optionnel) : Type de ligne (`METRO`, `BUS`, `TRAM`, `TRAIN`)
+- `type` (requis) : Type de ligne (`METRO`, `BUS`, `TRAM`, `TRAIN`)
 
 **Réponse** (201 Created)
 
@@ -179,8 +179,6 @@ Authorization: Bearer <token>
     "name": "Gare Centrale",
     "latitude": 48.8566,
     "longitude": 2.3522,
-    "schematicX": 150.0,
-    "schematicY": 200.0,
     "lines": [
       { "id": "uuid", "code": "M1", "name": "Métro Ligne 1", "color": "#3B82F6" }
     ],
@@ -361,7 +359,7 @@ Les horaires sont basés sur le modèle itinéraire : chaque horaire associe une
 ### Lister les horaires d'un arrêt
 
 ```http
-GET /api/v2/stops/{stopId}/schedules
+GET /api/stops/{stopId}/schedules
 ```
 
 > Cet endpoint est public.
@@ -391,7 +389,7 @@ GET /api/v2/stops/{stopId}/schedules
 ### Créer un horaire
 
 ```http
-POST /api/v2/stops/{stopId}/schedules
+POST /api/stops/{stopId}/schedules
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -408,7 +406,7 @@ Content-Type: application/json
 ### Modifier un horaire
 
 ```http
-PUT /api/v2/schedules/{id}
+PUT /api/schedules/{id}
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -421,7 +419,7 @@ Content-Type: application/json
 ### Supprimer un horaire
 
 ```http
-DELETE /api/v2/schedules/{id}
+DELETE /api/schedules/{id}
 Authorization: Bearer <token>
 ```
 
@@ -456,9 +454,7 @@ Authorization: Bearer <token>
     "scopeType": "LINE",
     "scopeId": "line-uuid",
     "scopeInfo": {
-      "name": "Métro Ligne 1",
-      "lineCode": "M1",
-      "lineColor": "#3B82F6"
+      "name": "Métro Ligne 1"
     },
     "active": true
   }
@@ -530,7 +526,7 @@ Authorization: Bearer <token>
     "stopId": "stop-uuid",
     "stopName": "Gare Centrale",
     "lines": [
-      { "code": "M1", "name": "Métro Ligne 1", "color": "#3B82F6" }
+      { "id": "line-uuid", "code": "M1", "name": "Métro Ligne 1", "color": "#3B82F6" }
     ],
     "status": "ONLINE",
     "lastHeartbeat": "2026-02-01T12:30:00Z"
@@ -591,7 +587,7 @@ Authorization: Bearer <token>
 ### Authentifier un appareil
 
 ```http
-POST /api/device/authenticate
+POST /api/devices/authenticate
 Content-Type: application/json
 
 {
@@ -607,7 +603,9 @@ Content-Type: application/json
   "valid": true,
   "stopId": "stop-uuid",
   "stopName": "Gare Centrale",
-  "lineCode": "M1"
+  "lines": [
+    { "id": "line-uuid", "code": "M1", "name": "Métro Ligne 1", "color": "#3B82F6" }
+  ]
 }
 ```
 
@@ -729,19 +727,29 @@ GET /api/display/{stopId}
 
 > Cet endpoint est public (pas d'authentification requise).
 
+### Obtenir l'état d'affichage par token appareil
+
+```http
+GET /api/display
+X-Device-Token: <device-token>
+```
+
+> Utilise le token de l'appareil pour déterminer l'arrêt associé. Retourne 401 si le token est invalide.
+
 **Réponse** (200 OK) :
 ```json
 {
   "stopId": "stop-uuid",
   "stopName": "Gare Centrale",
   "lines": [
-    { "code": "M1", "name": "Métro Ligne 1", "color": "#3B82F6" }
+    { "id": "line-uuid", "code": "M1", "name": "Métro Ligne 1", "color": "#3B82F6" }
   ],
   "arrivals": [
     {
       "scheduledTime": "14:30",
       "destinationName": "Aéroport",
       "line": {
+        "id": "line-uuid",
         "code": "M1",
         "name": "Métro Ligne 1",
         "color": "#3B82F6"

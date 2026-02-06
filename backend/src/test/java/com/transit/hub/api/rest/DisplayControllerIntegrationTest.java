@@ -1,9 +1,11 @@
 package com.transit.hub.api.rest;
 
 import com.transit.hub.domain.model.*;
+import com.transit.hub.domain.model.enums.DeviceStatus;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,12 +42,16 @@ class DisplayControllerIntegrationTest {
     @Autowired private ItineraryRepository itineraryRepository;
     @Autowired private ScheduleRepository scheduleRepository;
     @Autowired private BroadcastMessageRepository broadcastMessageRepository;
+    @Autowired private DeviceRepository deviceRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     private Line testLine;
     private Stop testStop;
+    private String plainDeviceToken = "test_device_token_display";
 
     @BeforeEach
     void setUp() {
+        deviceRepository.deleteAll();
         broadcastMessageRepository.deleteAll();
         scheduleRepository.deleteAll();
         itineraryRepository.deleteAll();
@@ -58,6 +64,14 @@ class DisplayControllerIntegrationTest {
 
         testStop = Stop.builder().name("Central Station").lines(new HashSet<>(Set.of(testLine))).build();
         stopRepository.save(testStop);
+
+        Device device = Device.builder()
+                .tokenLookup(plainDeviceToken.substring(0, 8))
+                .tokenHash(passwordEncoder.encode(plainDeviceToken))
+                .stop(testStop)
+                .status(DeviceStatus.OFFLINE)
+                .build();
+        deviceRepository.save(device);
     }
 
     @Nested
@@ -182,6 +196,38 @@ class DisplayControllerIntegrationTest {
                     .andExpect(jsonPath("$.lines[0].code", is("L1")))
                     .andExpect(jsonPath("$.lines[0].name", is("Metro Line 1")))
                     .andExpect(jsonPath("$.lines[0].color", is("#FF5733")));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/display (with X-Device-Token)")
+    class GetDisplayStateByToken {
+
+        @Test
+        @DisplayName("returns 200 with display state for valid device token")
+        void withValidToken_Returns200() throws Exception {
+            mockMvc.perform(get("/api/display")
+                            .header("X-Device-Token", plainDeviceToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.stopId", is(testStop.getId().toString())))
+                    .andExpect(jsonPath("$.stopName", is("Central Station")))
+                    .andExpect(jsonPath("$.arrivals", notNullValue()))
+                    .andExpect(jsonPath("$.messages", notNullValue()));
+        }
+
+        @Test
+        @DisplayName("returns 401 for invalid device token")
+        void withInvalidToken_Returns401() throws Exception {
+            mockMvc.perform(get("/api/display")
+                            .header("X-Device-Token", "invalid_token_value"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("returns error when X-Device-Token header is missing")
+        void withoutToken_ReturnsError() throws Exception {
+            mockMvc.perform(get("/api/display"))
+                    .andExpect(status().is5xxServerError());
         }
     }
 }

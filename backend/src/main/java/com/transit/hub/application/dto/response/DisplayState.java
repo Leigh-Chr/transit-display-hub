@@ -16,8 +16,6 @@ public record DisplayState(
         long version,
         Instant generatedAt
 ) {
-    public record LineInfo(String code, String name, String color) {}
-
     public record ArrivalInfo(
             LocalTime scheduledTime,
             String destinationName,

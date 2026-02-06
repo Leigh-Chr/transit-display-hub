@@ -219,7 +219,7 @@ class MessageServiceTest {
                     testStopId
             );
             when(stopRepository.existsById(testStopId)).thenReturn(true);
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -400,7 +400,7 @@ class MessageServiceTest {
                     testStopId
             );
             when(stopRepository.existsById(testStopId)).thenReturn(true);
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());

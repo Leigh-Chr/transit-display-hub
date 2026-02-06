@@ -13,7 +13,7 @@ describe('ItineraryService', () => {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Direction North',
     terminusName: 'North Station',
-    line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+    line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
     stops: [
       { id: 'stop1', name: 'Central Station', position: 0 },
       { id: 'stop2', name: 'North Station', position: 1 }
@@ -26,7 +26,7 @@ describe('ItineraryService', () => {
       id: '223e4567-e89b-12d3-a456-426614174000',
       name: 'Direction South',
       terminusName: 'South Station',
-      line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+      line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
       stops: []
     }
   ];

@@ -21,13 +21,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Schedule service using the new Itinerary-based Schedule model.
- * This replaces the TimedEntry-based ScheduleService.
- */
 @Service
 @RequiredArgsConstructor
-public class ScheduleServiceV2 {
+public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final StopRepository stopRepository;

@@ -23,10 +23,10 @@ describe('KioskComponent', () => {
   const mockDisplayState: DisplayState = {
     stopId: 'stop-123',
     stopName: 'Central Station',
-    lines: [{ code: 'L1', name: 'Metro Line 1', color: '#FF5733' }],
+    lines: [{ id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' }],
     arrivals: [
-      { scheduledTime: futureTime, destinationName: 'North Station', line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' } },
-      { scheduledTime: futureTime, destinationName: 'South Station', line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' } }
+      { scheduledTime: futureTime, destinationName: 'North Station', line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' } },
+      { scheduledTime: futureTime, destinationName: 'South Station', line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' } }
     ],
     messages: [
       { title: 'Critical Alert', content: 'Service disruption', severity: 'CRITICAL' },
@@ -158,7 +158,7 @@ describe('KioskComponent', () => {
       const manyArrivals = Array.from({ length: 8 }, (_, i) => ({
         scheduledTime: `${String(futureHour).padStart(2, '0')}:${String(i + 10).padStart(2, '0')}:00`,
         destinationName: `Station ${i}`,
-        line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' }
+        line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' }
       }));
       component.displayState.set({ ...mockDisplayState, arrivals: manyArrivals });
       // 8*3=24 → "24s"
@@ -289,7 +289,7 @@ describe('KioskComponent', () => {
       const manyArrivals = Array.from({ length: 10 }, (_, i) => ({
         scheduledTime: `${String(futureHour).padStart(2, '0')}:${String(i + 10).padStart(2, '0')}:00`,
         destinationName: `Station ${i}`,
-        line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+        line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
       }));
 
       component.displayState.set({
@@ -473,7 +473,7 @@ describe('KioskComponent', () => {
       const fourArrivals = Array.from({ length: 4 }, (_, i) => ({
         scheduledTime: `${String(futureHour).padStart(2, '0')}:${String(i + 10).padStart(2, '0')}:00`,
         destinationName: `Station ${i}`,
-        line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+        line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
       }));
 
       fixture.detectChanges();
@@ -500,7 +500,7 @@ describe('KioskComponent', () => {
       const sixArrivals = Array.from({ length: 6 }, (_, i) => ({
         scheduledTime: `${String(futureHour).padStart(2, '0')}:${String(i + 10).padStart(2, '0')}:00`,
         destinationName: `Station ${i}`,
-        line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+        line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
       }));
 
       fixture.detectChanges();
@@ -519,7 +519,7 @@ describe('KioskComponent', () => {
       const sevenArrivals = [...sixArrivals, {
         scheduledTime: `${String(futureHour).padStart(2, '0')}:16:00`,
         destinationName: 'Station 6',
-        line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+        line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
       }];
 
       component.displayState.set({
@@ -537,7 +537,7 @@ describe('KioskComponent', () => {
       const threeArrivals = Array.from({ length: 3 }, (_, i) => ({
         scheduledTime: `${String(futureHour).padStart(2, '0')}:${String(i + 10).padStart(2, '0')}:00`,
         destinationName: `Station ${i}`,
-        line: { code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
+        line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' },
       }));
 
       fixture.detectChanges();

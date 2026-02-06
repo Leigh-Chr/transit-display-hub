@@ -4,8 +4,10 @@ import com.transit.hub.application.dto.request.RegisterDeviceRequest;
 import com.transit.hub.application.dto.response.DeviceAuthResponse;
 import com.transit.hub.application.dto.response.DeviceRegistrationResponse;
 import com.transit.hub.application.dto.response.DeviceResponse;
+import com.transit.hub.application.dto.response.LineInfo;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.Device;
+import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.DeviceStatus;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
@@ -120,18 +122,16 @@ public class DeviceService {
                 device.recordHeartbeat();
                 deviceRepository.save(device);
 
-                // Get first line code for backward compatibility
-                String firstLineCode = device.getStop().getLines().stream()
-                        .map(line -> line.getCode())
-                        .sorted()
-                        .findFirst()
-                        .orElse(null);
+                List<LineInfo> lines = device.getStop().getLines().stream()
+                        .sorted(java.util.Comparator.comparing(Line::getCode))
+                        .map(LineInfo::from)
+                        .toList();
 
                 return new DeviceAuthResponse(
                         true,
                         device.getStop().getId(),
                         device.getStop().getName(),
-                        firstLineCode
+                        lines
                 );
             }
         }

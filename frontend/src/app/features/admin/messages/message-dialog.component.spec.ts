@@ -215,7 +215,7 @@ describe('MessageDialogComponent', () => {
       endTime: '2024-06-01T18:00:00Z',
       scopeType: 'LINE',
       scopeId: 'line1',
-      scopeInfo: { name: 'Line 1', lineCode: 'L1', lineColor: '#FF0000' },
+      scopeInfo: { name: 'Line 1' },
       active: true,
     };
 
