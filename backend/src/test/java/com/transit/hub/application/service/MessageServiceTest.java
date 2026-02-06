@@ -25,8 +25,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +40,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -574,6 +581,245 @@ class MessageServiceTest {
                     .isInstanceOf(EntityNotFoundException.class);
 
             verify(messageRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("publishes event with correct affected stops for LINE message")
+        void publishesEventWithCorrectAffectedStopsForLineMessage() {
+            UUID stop2Id = UUID.randomUUID();
+            Stop stop2 = TestDataFactory.createStopWithId(stop2Id, "Other Station", testLine);
+            BroadcastMessage lineMessage = TestDataFactory.createLineMessage(testLineId);
+            lineMessage.setId(testMessageId);
+
+            when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(lineMessage));
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop, stop2));
+
+            messageService.deleteMessage(testMessageId);
+
+            ArgumentCaptor<MessageChangedEvent> eventCaptor = ArgumentCaptor.forClass(MessageChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).containsExactlyInAnyOrder(testStopId, stop2Id);
+        }
+
+        @Test
+        @DisplayName("publishes event with correct affected stop for STOP message")
+        void publishesEventWithCorrectAffectedStopForStopMessage() {
+            BroadcastMessage stopMessage = TestDataFactory.createStopMessage(testStopId);
+            stopMessage.setId(testMessageId);
+
+            when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(stopMessage));
+
+            messageService.deleteMessage(testMessageId);
+
+            ArgumentCaptor<MessageChangedEvent> eventCaptor = ArgumentCaptor.forClass(MessageChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getAffectedStopIds()).containsExactly(testStopId);
+        }
+    }
+
+    @Nested
+    @DisplayName("createMessage - LINE scope with no stops")
+    class CreateMessageLineScopeNoStops {
+
+        @Test
+        @DisplayName("does not publish event when LINE has no stops")
+        void lineScopeWithNoStops_DoesNotPublishEvent() {
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Line Alert",
+                    "Line-specific message",
+                    MessageSeverity.WARNING,
+                    now.minus(1, ChronoUnit.HOURS),
+                    now.plus(1, ChronoUnit.HOURS),
+                    MessageScope.LINE,
+                    testLineId
+            );
+            when(lineRepository.existsById(testLineId)).thenReturn(true);
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of());
+            when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
+                BroadcastMessage saved = invocation.getArgument(0);
+                saved.setId(UUID.randomUUID());
+                return saved;
+            });
+
+            messageService.createMessage(request);
+
+            verify(eventPublisher, never()).publishEvent(any(MessageChangedEvent.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("updateMessage - scope change")
+    class UpdateMessageScopeChange {
+
+        @Test
+        @DisplayName("publishes event with both old and new affected stops when scope changes from LINE to NETWORK")
+        void scopeChangeFromLineToNetwork_PublishesAllAffectedStops() {
+            UUID stop2Id = UUID.randomUUID();
+            UUID stop3Id = UUID.randomUUID();
+            Stop stop2 = TestDataFactory.createStopWithId(stop2Id, "Line Stop", testLine);
+
+            // Existing message is LINE-scoped
+            BroadcastMessage existing = TestDataFactory.createLineMessage(testLineId);
+            existing.setId(testMessageId);
+
+            // Update to NETWORK scope
+            CreateMessageRequest request = new CreateMessageRequest(
+                    "Updated Title",
+                    "Updated content",
+                    MessageSeverity.WARNING,
+                    now,
+                    futureTime,
+                    MessageScope.NETWORK,
+                    null
+            );
+
+            when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
+            // Original affected stops (LINE scope)
+            when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop, stop2));
+            // New affected stops (NETWORK scope) - includes stop3 that was not in original
+            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId, stop2Id, stop3Id));
+            when(messageRepository.save(any(BroadcastMessage.class))).thenReturn(existing);
+
+            messageService.updateMessage(testMessageId, request);
+
+            ArgumentCaptor<MessageChangedEvent> eventCaptor = ArgumentCaptor.forClass(MessageChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            Set<UUID> affectedStops = eventCaptor.getValue().getAffectedStopIds();
+            assertThat(affectedStops).containsExactlyInAnyOrder(testStopId, stop2Id, stop3Id);
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllMessages - paginated with filters")
+    class GetAllMessagesPaginated {
+
+        @Test
+        @DisplayName("calls findActiveBySeverityAndSearch when all filters are active")
+        void withAllFilters_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            BroadcastMessage msg = TestDataFactory.createNetworkMessage();
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(msg), pageable, 1);
+            when(messageRepository.findActiveBySeverityAndSearch(any(Instant.class), eq(MessageSeverity.WARNING), eq("alert"), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(true, MessageSeverity.WARNING, "alert", pageable);
+
+            verify(messageRepository).findActiveBySeverityAndSearch(any(Instant.class), eq(MessageSeverity.WARNING), eq("alert"), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findActiveBySeverity when active and severity filters are set")
+        void withActiveAndSeverity_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findActiveBySeverity(any(Instant.class), eq(MessageSeverity.CRITICAL), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(true, MessageSeverity.CRITICAL, null, pageable);
+
+            verify(messageRepository).findActiveBySeverity(any(Instant.class), eq(MessageSeverity.CRITICAL), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findActiveBySearch when active and search filters are set")
+        void withActiveAndSearch_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findActiveBySearch(any(Instant.class), eq("test"), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(true, null, "test", pageable);
+
+            verify(messageRepository).findActiveBySearch(any(Instant.class), eq("test"), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findActiveMessages when only active filter is set")
+        void withActiveOnly_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findActiveMessages(any(Instant.class), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(true, null, null, pageable);
+
+            verify(messageRepository).findActiveMessages(any(Instant.class), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findBySeverityAndSearch when severity and search filters are set")
+        void withSeverityAndSearch_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findBySeverityAndSearch(eq(MessageSeverity.INFO), eq("notice"), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(null, MessageSeverity.INFO, "notice", pageable);
+
+            verify(messageRepository).findBySeverityAndSearch(eq(MessageSeverity.INFO), eq("notice"), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findBySeverity when only severity filter is set")
+        void withSeverityOnly_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findBySeverity(eq(MessageSeverity.INFO), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(null, MessageSeverity.INFO, null, pageable);
+
+            verify(messageRepository).findBySeverity(eq(MessageSeverity.INFO), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findBySearch when only search filter is set")
+        void withSearchOnly_CallsCorrectRepository() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findBySearch(eq("alert"), eq(pageable)))
+                    .thenReturn(page);
+
+            messageService.getAllMessages(null, null, "alert", pageable);
+
+            verify(messageRepository).findBySearch(eq("alert"), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("calls findAll when no filters are set")
+        void withNoFilters_CallsFindAll() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findAll(pageable)).thenReturn(page);
+
+            messageService.getAllMessages(null, null, null, pageable);
+
+            verify(messageRepository).findAll(pageable);
+        }
+
+        @Test
+        @DisplayName("treats blank search as no search filter")
+        void withBlankSearch_TreatsAsNoSearch() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findAll(pageable)).thenReturn(page);
+
+            messageService.getAllMessages(null, null, "   ", pageable);
+
+            verify(messageRepository).findAll(pageable);
+        }
+
+        @Test
+        @DisplayName("treats false active flag as no active filter")
+        void withFalseActive_TreatsAsNoFilter() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
+            when(messageRepository.findAll(pageable)).thenReturn(page);
+
+            messageService.getAllMessages(false, null, null, pageable);
+
+            verify(messageRepository).findAll(pageable);
         }
     }
 }

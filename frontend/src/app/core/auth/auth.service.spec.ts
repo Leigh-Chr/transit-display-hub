@@ -270,4 +270,43 @@ describe('AuthService', () => {
       expect(service.getRole()).toBe('ADMIN');
     });
   });
+
+  describe('isAdmin', () => {
+    it('should return false when not authenticated', () => {
+      expect(service.isAdmin()).toBe(false);
+    });
+
+    it('should return true when user has ADMIN role', () => {
+      const request: LoginRequest = { username: 'admin', password: 'admin123' };
+      const response: LoginResponse = {
+        token: validToken,
+        expiresAt: new Date().toISOString(),
+        role: 'ADMIN',
+        username: 'admin'
+      };
+
+      service.login(request).subscribe();
+      const req = httpMock.expectOne('/api/auth/login');
+      req.flush(response);
+
+      expect(service.isAdmin()).toBe(true);
+    });
+
+    it('should return false when user has AGENT role', () => {
+      const agentToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZ2VudCIsInJvbGUiOiJBR0VOVCIsImV4cCI6OTk5OTk5OTk5OX0.signature';
+      const request: LoginRequest = { username: 'agent', password: 'agent123' };
+      const response: LoginResponse = {
+        token: agentToken,
+        expiresAt: new Date().toISOString(),
+        role: 'AGENT',
+        username: 'agent'
+      };
+
+      service.login(request).subscribe();
+      const req = httpMock.expectOne('/api/auth/login');
+      req.flush(response);
+
+      expect(service.isAdmin()).toBe(false);
+    });
+  });
 });

@@ -21,6 +21,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.transit.hub.application.dto.response.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -242,6 +248,55 @@ class LineServiceTest {
                     .hasMessageContaining("Line");
 
             verify(lineRepository, never()).deleteById(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllLines (paginated)")
+    class GetAllLinesPaginated {
+
+        private final Pageable pageable = PageRequest.of(0, 10);
+
+        @Test
+        @DisplayName("with search string calls findBySearchWithStopsAndRoutes")
+        void withSearch() {
+            Page<Line> page = new PageImpl<>(List.of(testLine), pageable, 1);
+            when(lineRepository.findBySearchWithStopsAndRoutes(eq("Metro"), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<LineResponse> result = lineService.getAllLines("Metro", pageable);
+
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.totalElements()).isEqualTo(1);
+            verify(lineRepository).findBySearchWithStopsAndRoutes("Metro", pageable);
+        }
+
+        @Test
+        @DisplayName("without search calls findAllWithStopsAndRoutes")
+        void withoutSearch() {
+            Page<Line> page = new PageImpl<>(List.of(testLine), pageable, 1);
+            when(lineRepository.findAllWithStopsAndRoutes(eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<LineResponse> result = lineService.getAllLines(null, pageable);
+
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.totalElements()).isEqualTo(1);
+            verify(lineRepository).findAllWithStopsAndRoutes(pageable);
+        }
+
+        @Test
+        @DisplayName("with blank search treats as no search")
+        void withBlankSearch() {
+            Page<Line> page = new PageImpl<>(List.of(testLine), pageable, 1);
+            when(lineRepository.findAllWithStopsAndRoutes(eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<LineResponse> result = lineService.getAllLines("   ", pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(lineRepository).findAllWithStopsAndRoutes(pageable);
+            verify(lineRepository, never()).findBySearchWithStopsAndRoutes(any(), any());
         }
     }
 

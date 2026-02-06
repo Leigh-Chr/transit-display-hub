@@ -467,6 +467,103 @@ class DeviceServiceTest {
     }
 
     @Nested
+    @DisplayName("authenticateDevice - edge cases")
+    class AuthenticateDeviceEdgeCases {
+
+        @Test
+        @DisplayName("returns failure with null token")
+        void withNullToken_ReturnsFailure() {
+            DeviceAuthResponse result = deviceService.authenticateDevice(null);
+
+            assertThat(result.valid()).isFalse();
+            assertThat(result.stopId()).isNull();
+            assertThat(result.stopName()).isNull();
+            assertThat(result.lineCode()).isNull();
+            verify(deviceRepository, never()).findByTokenLookup(anyString());
+        }
+
+        @Test
+        @DisplayName("returns failure with empty string token")
+        void withEmptyToken_ReturnsFailure() {
+            DeviceAuthResponse result = deviceService.authenticateDevice("");
+
+            assertThat(result.valid()).isFalse();
+            assertThat(result.stopId()).isNull();
+            verify(deviceRepository, never()).findByTokenLookup(anyString());
+        }
+
+        @Test
+        @DisplayName("returns failure with token shorter than 8 chars")
+        void withSevenCharToken_ReturnsFailure() {
+            DeviceAuthResponse result = deviceService.authenticateDevice("1234567");
+
+            assertThat(result.valid()).isFalse();
+            verify(deviceRepository, never()).findByTokenLookup(anyString());
+        }
+
+        @Test
+        @DisplayName("proceeds to lookup with token of exactly 8 chars")
+        void withExactlyEightCharToken_ProceedsToLookup() {
+            String token = "12345678";
+            when(deviceRepository.findByTokenLookup("12345678")).thenReturn(List.of());
+
+            DeviceAuthResponse result = deviceService.authenticateDevice(token);
+
+            assertThat(result.valid()).isFalse();
+            verify(deviceRepository).findByTokenLookup("12345678");
+        }
+    }
+
+    @Nested
+    @DisplayName("checkOfflineDevices - threshold boundary")
+    class CheckOfflineDevicesThreshold {
+
+        @Test
+        @DisplayName("query uses threshold based on 2-minute heartbeat timeout")
+        void usesCorrectThreshold() {
+            when(deviceRepository.findStaleOnlineDevices(any(Instant.class))).thenReturn(List.of());
+
+            Instant before = Instant.now().minus(Duration.ofMinutes(2));
+            deviceService.checkOfflineDevices();
+            Instant after = Instant.now().minus(Duration.ofMinutes(2));
+
+            ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
+            verify(deviceRepository).findStaleOnlineDevices(captor.capture());
+            Instant threshold = captor.getValue();
+            assertThat(threshold).isBetween(before, after);
+        }
+    }
+
+    @Nested
+    @DisplayName("Device status transitions")
+    class DeviceStatusTransitions {
+
+        @Test
+        @DisplayName("supports OFFLINE to ONLINE to OFFLINE sequence")
+        void offlineToOnlineToOfflineSequence() {
+            // Start OFFLINE
+            assertThat(testDevice.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
+
+            // Transition to ONLINE via heartbeat
+            when(deviceRepository.findById(testDeviceId)).thenReturn(Optional.of(testDevice));
+            when(deviceRepository.save(any(Device.class))).thenReturn(testDevice);
+
+            deviceService.recordHeartbeat(testDeviceId);
+
+            assertThat(testDevice.getStatus()).isEqualTo(DeviceStatus.ONLINE);
+            assertThat(testDevice.getLastHeartbeat()).isNotNull();
+
+            // Transition back to OFFLINE via checkOfflineDevices
+            testDevice.setLastHeartbeat(Instant.now().minus(Duration.ofMinutes(5)));
+            when(deviceRepository.findStaleOnlineDevices(any(Instant.class))).thenReturn(List.of(testDevice));
+
+            deviceService.checkOfflineDevices();
+
+            assertThat(testDevice.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
+        }
+    }
+
+    @Nested
     @DisplayName("deleteDevice")
     class DeleteDevice {
 

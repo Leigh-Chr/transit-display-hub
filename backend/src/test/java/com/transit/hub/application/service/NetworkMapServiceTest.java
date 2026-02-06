@@ -1,9 +1,12 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.NetworkMapResponse;
+import com.transit.hub.application.dto.response.NetworkMapResponse.AlertMessage;
 import com.transit.hub.application.dto.response.NetworkMapResponse.AlertsResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkLine;
 import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkStop;
+import com.transit.hub.domain.event.MessageChangedEvent;
+import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.*;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
@@ -18,15 +21,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
+
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("NetworkMapService")
@@ -185,6 +192,142 @@ class NetworkMapServiceTest {
             assertThat(result.lineAlerts().get(lineId))
                     .extracting(a -> a.severity())
                     .contains(MessageSeverity.INFO, MessageSeverity.CRITICAL);
+        }
+
+        @Test
+        @DisplayName("returns alerts of all three scopes in correct collections")
+        void returnsAlertsOfAllScopesCorrectly() {
+            UUID lineId = UUID.randomUUID();
+            UUID stopId = UUID.randomUUID();
+            BroadcastMessage networkMsg = TestDataFactory.createNetworkMessage();
+            networkMsg.setTitle("Network Issue");
+            BroadcastMessage lineMsg = TestDataFactory.createLineMessage(lineId);
+            lineMsg.setTitle("Line Delay");
+            BroadcastMessage stopMsg = TestDataFactory.createStopMessage(stopId);
+            stopMsg.setTitle("Stop Closed");
+            BroadcastMessage criticalNetwork = TestDataFactory.createCriticalMessage(MessageScope.NETWORK, null);
+            criticalNetwork.setTitle("Critical Network");
+
+            when(broadcastMessageRepository.findActiveMessages(any(Instant.class)))
+                    .thenReturn(List.of(networkMsg, lineMsg, stopMsg, criticalNetwork));
+
+            AlertsResponse result = networkMapService.getAlerts();
+
+            assertThat(result.networkAlerts()).hasSize(2);
+            assertThat(result.networkAlerts()).extracting(AlertMessage::title)
+                    .containsExactlyInAnyOrder("Network Issue", "Critical Network");
+            assertThat(result.lineAlerts()).containsKey(lineId);
+            assertThat(result.lineAlerts().get(lineId)).hasSize(1);
+            assertThat(result.stopAlerts()).containsKey(stopId);
+            assertThat(result.stopAlerts().get(stopId)).hasSize(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("Empty network")
+    class EmptyNetwork {
+
+        @Test
+        @DisplayName("returns empty lines and stops with default bounds for empty network")
+        void returnsEmptyNetworkWithDefaultBounds() {
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
+            when(stopRepository.findAllWithLines()).thenReturn(List.of());
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.lines()).isEmpty();
+            assertThat(result.stops()).isEmpty();
+            assertThat(result.bounds().minX()).isEqualTo(0);
+            assertThat(result.bounds().minY()).isEqualTo(0);
+            assertThat(result.bounds().maxX()).isEqualTo(100);
+            assertThat(result.bounds().maxY()).isEqualTo(100);
+        }
+    }
+
+    @Nested
+    @DisplayName("Bounds calculation edge cases")
+    class BoundsCalculationEdgeCases {
+
+        @Test
+        @DisplayName("returns default bounds when all stops have null coordinates")
+        void returnsDefaultBoundsWhenAllCoordinatesNull() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop stop1 = TestDataFactory.createStop("Station A", line);
+            // No schematicX/Y or lat/lon set -- all null
+            Stop stop2 = TestDataFactory.createStop("Station B", line);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(stop1, stop2));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.bounds().minX()).isEqualTo(0);
+            assertThat(result.bounds().minY()).isEqualTo(0);
+            assertThat(result.bounds().maxX()).isEqualTo(100);
+            assertThat(result.bounds().maxY()).isEqualTo(100);
+        }
+
+        @Test
+        @DisplayName("returns identical min and max when all stops have same coordinates")
+        void returnsIdenticalBoundsWhenAllStopsSameCoordinates() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop stop1 = TestDataFactory.createStop("Station A", line);
+            stop1.setSchematicX(50.0);
+            stop1.setSchematicY(75.0);
+            Stop stop2 = TestDataFactory.createStop("Station B", line);
+            stop2.setSchematicX(50.0);
+            stop2.setSchematicY(75.0);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(stop1, stop2));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.bounds().minX()).isEqualTo(50.0);
+            assertThat(result.bounds().minY()).isEqualTo(75.0);
+            assertThat(result.bounds().maxX()).isEqualTo(50.0);
+            assertThat(result.bounds().maxY()).isEqualTo(75.0);
+        }
+    }
+
+    @Nested
+    @DisplayName("Cache eviction")
+    class CacheEviction {
+
+        @Test
+        @DisplayName("evicts networkMap and networkAlerts caches on NetworkChangedEvent")
+        void evictsCachesOnNetworkChangedEvent() {
+            Cache networkMapCache = mock(Cache.class);
+            Cache networkAlertsCache = mock(Cache.class);
+            when(cacheManager.getCache("networkMap")).thenReturn(networkMapCache);
+            when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
+
+            networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));
+
+            verify(networkMapCache).clear();
+            verify(networkAlertsCache).clear();
+        }
+
+        @Test
+        @DisplayName("evicts only networkAlerts cache on MessageChangedEvent")
+        void evictsAlertsCacheOnMessageChangedEvent() {
+            Cache networkAlertsCache = mock(Cache.class);
+            when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
+
+            networkMapService.onMessageChanged(new MessageChangedEvent(this, Set.of()));
+
+            verify(networkAlertsCache).clear();
+            verify(cacheManager, never()).getCache("networkMap");
+        }
+
+        @Test
+        @DisplayName("handles null cache gracefully during eviction")
+        void handlesNullCacheGracefully() {
+            when(cacheManager.getCache("networkMap")).thenReturn(null);
+            when(cacheManager.getCache("networkAlerts")).thenReturn(null);
+
+            // Should not throw
+            networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));
         }
     }
 }

@@ -2,10 +2,17 @@ package com.transit.hub.api.rest;
 
 import tools.jackson.databind.ObjectMapper;
 import com.transit.hub.application.dto.request.CreateLineRequest;
+import com.transit.hub.application.dto.request.CreateScheduleRequest;
+import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Schedule;
+import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
+import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +28,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -44,6 +55,15 @@ class LineControllerIntegrationTest {
     private LineRepository lineRepository;
 
     @Autowired
+    private StopRepository stopRepository;
+
+    @Autowired
+    private ItineraryRepository itineraryRepository;
+
+    @Autowired
+    private ScheduleRepository scheduleRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -58,6 +78,9 @@ class LineControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        scheduleRepository.deleteAll();
+        itineraryRepository.deleteAll();
+        stopRepository.deleteAll();
         lineRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -116,6 +139,56 @@ class LineControllerIntegrationTest {
             mockMvc.perform(get("/api/lines")
                             .header("Authorization", "Bearer " + agentToken))
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns paginated results with page params")
+        void withPaginationParams_ReturnsPaginatedResponse() throws Exception {
+            Line line2 = Line.builder().code("L2").name("Metro Line 2").color("#00FF00").build();
+            lineRepository.save(line2);
+
+            mockMvc.perform(get("/api/lines")
+                            .param("page", "0")
+                            .param("size", "1")
+                            .param("sortBy", "code")
+                            .param("sortDir", "asc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].code", is("L1")))
+                    .andExpect(jsonPath("$.totalElements", is(2)))
+                    .andExpect(jsonPath("$.totalPages", is(2)));
+        }
+
+        @Test
+        @DisplayName("returns paginated results sorted descending")
+        void withDescSort_ReturnsSortedDescending() throws Exception {
+            Line line2 = Line.builder().code("L2").name("Metro Line 2").color("#00FF00").build();
+            lineRepository.save(line2);
+
+            mockMvc.perform(get("/api/lines")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .param("sortDir", "desc")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].code", is("L2")));
+        }
+
+        @Test
+        @DisplayName("returns filtered results with search parameter")
+        void withSearch_ReturnsMatchingLines() throws Exception {
+            Line line2 = Line.builder().code("BUS1").name("Bus Route 1").color("#00FF00").build();
+            lineRepository.save(line2);
+
+            mockMvc.perform(get("/api/lines")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .param("search", "Metro")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].name", is("Metro Line 1")));
         }
     }
 
@@ -278,6 +351,33 @@ class LineControllerIntegrationTest {
                     .andExpect(jsonPath("$.code", is("L1")))
                     .andExpect(jsonPath("$.name", is("Updated Name")));
         }
+
+        @Test
+        @DisplayName("returns 400 when updating code to existing code from another line")
+        void withDuplicateCodeFromAnotherLine_Returns400() throws Exception {
+            Line otherLine = Line.builder().code("L2").name("Other Line").color("#00FF00").build();
+            lineRepository.save(otherLine);
+
+            CreateLineRequest request = new CreateLineRequest("L2", "Trying Duplicate", "#FF0000", null);
+
+            mockMvc.perform(put("/api/lines/" + testLine.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("returns 403 for AGENT role")
+        void withAgentRole_Returns403() throws Exception {
+            CreateLineRequest request = new CreateLineRequest("L1-NEW", "Updated", "#0000FF", null);
+
+            mockMvc.perform(put("/api/lines/" + testLine.getId())
+                            .header("Authorization", "Bearer " + agentToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden());
+        }
     }
 
     @Nested
@@ -313,6 +413,29 @@ class LineControllerIntegrationTest {
             mockMvc.perform(delete("/api/lines/" + testLine.getId())
                             .header("Authorization", "Bearer " + agentToken))
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("cascading deletion cleans up stops association, itineraries, and schedules")
+        void cascadingDeletion_CleansUpRelatedEntities() throws Exception {
+            Stop stop = Stop.builder().name("Station A").lines(new HashSet<>(Set.of(testLine))).build();
+            stopRepository.save(stop);
+
+            Itinerary itinerary = Itinerary.builder().name("Direction North").line(testLine).build();
+            itineraryRepository.save(itinerary);
+
+            Schedule schedule = Schedule.builder().time(LocalTime.of(10, 0)).stop(stop).itinerary(itinerary).build();
+            scheduleRepository.save(schedule);
+
+            mockMvc.perform(delete("/api/lines/" + testLine.getId())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isNoContent());
+
+            assertThat(lineRepository.findById(testLine.getId())).isEmpty();
+            assertThat(itineraryRepository.findById(itinerary.getId())).isEmpty();
+            assertThat(scheduleRepository.findById(schedule.getId())).isEmpty();
+            // Stop itself should still exist (many-to-many, not cascaded)
+            assertThat(stopRepository.findById(stop.getId())).isPresent();
         }
     }
 }

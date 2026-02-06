@@ -23,6 +23,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.transit.hub.application.dto.response.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +36,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -286,6 +293,66 @@ class StopServiceTest {
                     .hasMessageContaining("Stop");
 
             verify(stopRepository, never()).deleteById(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllStops (paginated)")
+    class GetAllStopsPaginated {
+
+        private final Pageable pageable = PageRequest.of(0, 10);
+
+        @Test
+        @DisplayName("with lineId and search calls findByLineIdAndSearchWithLinesAndDevices")
+        void withLineIdAndSearch() {
+            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
+            when(stopRepository.findByLineIdAndSearchWithLinesAndDevices(eq(testLineId), eq("Central"), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<StopResponse> result = stopService.getAllStops(testLineId, "Central", pageable);
+
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.totalElements()).isEqualTo(1);
+            verify(stopRepository).findByLineIdAndSearchWithLinesAndDevices(testLineId, "Central", pageable);
+        }
+
+        @Test
+        @DisplayName("with lineId only calls findByLineIdWithLinesAndDevices")
+        void withLineIdOnly() {
+            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
+            when(stopRepository.findByLineIdWithLinesAndDevices(eq(testLineId), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<StopResponse> result = stopService.getAllStops(testLineId, null, pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(stopRepository).findByLineIdWithLinesAndDevices(testLineId, pageable);
+        }
+
+        @Test
+        @DisplayName("with search only calls findBySearchWithLinesAndDevices")
+        void withSearchOnly() {
+            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
+            when(stopRepository.findBySearchWithLinesAndDevices(eq("Central"), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<StopResponse> result = stopService.getAllStops(null, "Central", pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(stopRepository).findBySearchWithLinesAndDevices("Central", pageable);
+        }
+
+        @Test
+        @DisplayName("without lineId or search calls findAllWithLinesAndDevices")
+        void withoutLineIdOrSearch() {
+            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
+            when(stopRepository.findAllWithLinesAndDevices(eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<StopResponse> result = stopService.getAllStops(null, null, pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(stopRepository).findAllWithLinesAndDevices(pageable);
         }
     }
 

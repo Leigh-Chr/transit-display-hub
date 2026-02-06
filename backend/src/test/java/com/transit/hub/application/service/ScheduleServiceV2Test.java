@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -381,6 +382,127 @@ class ScheduleServiceV2Test {
                     .hasMessageContaining("Schedule");
 
             verify(scheduleRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("publishes event with correct stopId after deletion")
+        void publishesEventWithCorrectStopId() {
+            UUID specificStopId = UUID.randomUUID();
+            Stop specificStop = TestDataFactory.createStopWithId(specificStopId, "Specific Station", testLine);
+            Schedule scheduleAtSpecificStop = Schedule.builder()
+                    .id(UUID.randomUUID())
+                    .time(LocalTime.of(14, 0))
+                    .stop(specificStop)
+                    .itinerary(testItinerary)
+                    .build();
+            when(scheduleRepository.findById(scheduleAtSpecificStop.getId()))
+                    .thenReturn(Optional.of(scheduleAtSpecificStop));
+
+            scheduleService.deleteSchedule(scheduleAtSpecificStop.getId());
+
+            ArgumentCaptor<ScheduleChangedEvent> eventCaptor = ArgumentCaptor.forClass(ScheduleChangedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().getStopId()).isEqualTo(specificStopId);
+        }
+    }
+
+    @Nested
+    @DisplayName("Schedule boundary times")
+    class ScheduleBoundaryTimes {
+
+        @Test
+        @DisplayName("creates schedule at midnight (00:00)")
+        void createsScheduleAtMidnight() {
+            CreateScheduleRequest request = new CreateScheduleRequest("00:00", testItineraryId);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(scheduleRepository.existsByStopIdAndItineraryIdAndTime(
+                    eq(testStopId), eq(testItineraryId), eq(LocalTime.of(0, 0)))).thenReturn(false);
+            when(scheduleRepository.save(any(Schedule.class))).thenAnswer(inv -> {
+                Schedule s = inv.getArgument(0);
+                return Schedule.builder()
+                        .id(UUID.randomUUID())
+                        .time(s.getTime())
+                        .stop(s.getStop())
+                        .itinerary(s.getItinerary())
+                        .build();
+            });
+
+            ScheduleResponse result = scheduleService.createSchedule(testStopId, request);
+
+            assertThat(result.time()).isEqualTo(LocalTime.of(0, 0));
+        }
+
+        @Test
+        @DisplayName("creates schedule at 23:59")
+        void createsScheduleAtEndOfDay() {
+            CreateScheduleRequest request = new CreateScheduleRequest("23:59", testItineraryId);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(scheduleRepository.existsByStopIdAndItineraryIdAndTime(
+                    eq(testStopId), eq(testItineraryId), eq(LocalTime.of(23, 59)))).thenReturn(false);
+            when(scheduleRepository.save(any(Schedule.class))).thenAnswer(inv -> {
+                Schedule s = inv.getArgument(0);
+                return Schedule.builder()
+                        .id(UUID.randomUUID())
+                        .time(s.getTime())
+                        .stop(s.getStop())
+                        .itinerary(s.getItinerary())
+                        .build();
+            });
+
+            ScheduleResponse result = scheduleService.createSchedule(testStopId, request);
+
+            assertThat(result.time()).isEqualTo(LocalTime.of(23, 59));
+        }
+    }
+
+    @Nested
+    @DisplayName("Duplicate detection accuracy")
+    class DuplicateDetectionAccuracy {
+
+        @Test
+        @DisplayName("allows same stop and itinerary with 1-minute-different time")
+        void allowsDifferentTime() {
+            CreateScheduleRequest request = new CreateScheduleRequest("08:31", testItineraryId);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(scheduleRepository.existsByStopIdAndItineraryIdAndTime(
+                    testStopId, testItineraryId, LocalTime.of(8, 31))).thenReturn(false);
+            when(scheduleRepository.save(any(Schedule.class))).thenAnswer(inv -> {
+                Schedule s = inv.getArgument(0);
+                return Schedule.builder()
+                        .id(UUID.randomUUID())
+                        .time(s.getTime())
+                        .stop(s.getStop())
+                        .itinerary(s.getItinerary())
+                        .build();
+            });
+
+            ScheduleResponse result = scheduleService.createSchedule(testStopId, request);
+
+            assertThat(result.time()).isEqualTo(LocalTime.of(8, 31));
+            verify(scheduleRepository).save(any(Schedule.class));
+        }
+
+        @Test
+        @DisplayName("rejects exact same stop, itinerary, and time")
+        void rejectsExactDuplicate() {
+            CreateScheduleRequest request = new CreateScheduleRequest("08:30", testItineraryId);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(scheduleRepository.existsByStopIdAndItineraryIdAndTime(
+                    testStopId, testItineraryId, LocalTime.of(8, 30))).thenReturn(true);
+
+            assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("already exists");
+
+            verify(scheduleRepository, never()).save(any());
         }
     }
 }

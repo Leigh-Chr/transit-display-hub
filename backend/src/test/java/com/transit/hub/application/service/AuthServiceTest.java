@@ -153,5 +153,115 @@ class AuthServiceTest {
             inOrder.verify(passwordEncoder).matches("password", "encoded_password");
             inOrder.verify(jwtService).generateToken(testUser);
         }
+
+        @Test
+        @DisplayName("throws BadCredentialsException when username is null")
+        void withNullUsername_ThrowsBadCredentials() {
+            LoginRequest request = new LoginRequest(null, "password");
+            when(userRepository.findByUsername(null)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessage("Invalid credentials");
+
+            verifyNoInteractions(passwordEncoder, jwtService);
+        }
+
+        @Test
+        @DisplayName("throws BadCredentialsException when username is empty")
+        void withEmptyUsername_ThrowsBadCredentials() {
+            LoginRequest request = new LoginRequest("", "password");
+            when(userRepository.findByUsername("")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessage("Invalid credentials");
+
+            verifyNoInteractions(passwordEncoder, jwtService);
+        }
+
+        @Test
+        @DisplayName("throws BadCredentialsException when password is null")
+        void withNullPassword_ThrowsBadCredentials() {
+            LoginRequest request = new LoginRequest("testuser", null);
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches(null, "encoded_password")).thenReturn(false);
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessage("Invalid credentials");
+
+            verifyNoInteractions(jwtService);
+        }
+
+        @Test
+        @DisplayName("throws BadCredentialsException when password is empty")
+        void withEmptyPassword_ThrowsBadCredentials() {
+            LoginRequest request = new LoginRequest("testuser", "");
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches("", "encoded_password")).thenReturn(false);
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessage("Invalid credentials");
+
+            verifyNoInteractions(jwtService);
+        }
+
+        @Test
+        @DisplayName("disabled user check precedes password check")
+        void disabledUserCheck_PrecedesPasswordCheck() {
+            User disabledUser = TestDataFactory.createDisabledUser("disabled", UserRole.AGENT);
+            LoginRequest request = new LoginRequest("disabled", "password");
+            when(userRepository.findByUsername("disabled")).thenReturn(Optional.of(disabledUser));
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessage("Account is disabled");
+
+            // Password should never be checked for a disabled user
+            verifyNoInteractions(passwordEncoder, jwtService);
+        }
+
+        @Test
+        @DisplayName("response includes correct role in token for ADMIN")
+        void tokenForAdmin_ContainsAdminRole() {
+            LoginRequest request = new LoginRequest("testuser", "password");
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches("password", "encoded_password")).thenReturn(true);
+            when(jwtService.generateToken(testUser)).thenReturn(TEST_TOKEN);
+            when(jwtService.extractExpiration(TEST_TOKEN)).thenReturn(TEST_EXPIRATION);
+
+            LoginResponse response = authService.login(request);
+
+            assertThat(response.role()).isEqualTo(UserRole.ADMIN);
+            assertThat(response.token()).isEqualTo(TEST_TOKEN);
+            assertThat(response.expiresAt()).isEqualTo(TEST_EXPIRATION);
+        }
+
+        @Test
+        @DisplayName("multiple logins for same user each produce a token")
+        void multipleLogins_EachProducesToken() {
+            String token1 = "token.first.login";
+            String token2 = "token.second.login";
+            Instant expiration1 = Instant.now().plusSeconds(3600);
+            Instant expiration2 = Instant.now().plusSeconds(7200);
+
+            LoginRequest request = new LoginRequest("testuser", "password");
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches("password", "encoded_password")).thenReturn(true);
+            when(jwtService.generateToken(testUser)).thenReturn(token1, token2);
+            when(jwtService.extractExpiration(token1)).thenReturn(expiration1);
+            when(jwtService.extractExpiration(token2)).thenReturn(expiration2);
+
+            LoginResponse response1 = authService.login(request);
+            LoginResponse response2 = authService.login(request);
+
+            assertThat(response1.token()).isEqualTo(token1);
+            assertThat(response2.token()).isEqualTo(token2);
+            assertThat(response1.token()).isNotEqualTo(response2.token());
+
+            verify(jwtService, times(2)).generateToken(testUser);
+        }
     }
 }

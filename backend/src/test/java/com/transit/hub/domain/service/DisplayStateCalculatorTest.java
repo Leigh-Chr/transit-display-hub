@@ -483,4 +483,155 @@ class DisplayStateCalculatorTest {
             assertThat(result.messages()).hasSize(1);
         }
     }
+
+    @Nested
+    @DisplayName("Version tracking")
+    class VersionTracking {
+
+        @Test
+        @DisplayName("version increments across multiple calls for the same stop")
+        void versionIncrementsAcrossMultipleCalls() {
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of());
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            DisplayState result1 = calculator.calculateForStop(testStopId);
+            DisplayState result2 = calculator.calculateForStop(testStopId);
+            DisplayState result3 = calculator.calculateForStop(testStopId);
+
+            assertThat(result1.version()).isGreaterThan(0);
+            assertThat(result2.version()).isEqualTo(result1.version() + 1);
+            assertThat(result3.version()).isEqualTo(result2.version() + 1);
+        }
+
+        @Test
+        @DisplayName("different stops have independent version counters")
+        void differentStopsHaveIndependentVersions() {
+            UUID otherStopId = UUID.randomUUID();
+            UUID otherLineId = UUID.randomUUID();
+            Line otherLine = TestDataFactory.createLineWithId(otherLineId, "L2", "Metro Line 2", "#33FF57");
+            Stop otherStop = TestDataFactory.createStopWithId(otherStopId, "Other Station", otherLine);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of());
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            when(stopRepository.findByIdWithLines(otherStopId)).thenReturn(Optional.of(otherStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(otherStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of());
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(otherLineId)), eq(otherStopId)))
+                    .thenReturn(List.of());
+
+            // Call testStop 3 times
+            calculator.calculateForStop(testStopId);
+            calculator.calculateForStop(testStopId);
+            calculator.calculateForStop(testStopId);
+
+            // First call for otherStop should start at version 1
+            DisplayState otherResult = calculator.calculateForStop(otherStopId);
+            assertThat(otherResult.version()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("Message limit enforcement")
+    class MessageLimitEnforcement {
+
+        @Test
+        @DisplayName("returns exactly 3 messages when 4 are available")
+        void returnsExactlyThreeWhenFourAvailable() {
+            BroadcastMessage msg1 = TestDataFactory.createNetworkMessage();
+            msg1.setTitle("Message 1");
+            BroadcastMessage msg2 = TestDataFactory.createNetworkMessage();
+            msg2.setTitle("Message 2");
+            BroadcastMessage msg3 = TestDataFactory.createNetworkMessage();
+            msg3.setTitle("Message 3");
+            BroadcastMessage msg4 = TestDataFactory.createNetworkMessage();
+            msg4.setTitle("Message 4");
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of());
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of(msg1, msg2, msg3, msg4));
+
+            DisplayState result = calculator.calculateForStop(testStopId);
+
+            assertThat(result.messages()).hasSize(3);
+            assertThat(result.messages()).extracting(DisplayState.MessageInfo::title)
+                    .containsExactly("Message 1", "Message 2", "Message 3");
+        }
+    }
+
+    @Nested
+    @DisplayName("Empty itinerary handling")
+    class EmptyItineraryHandling {
+
+        @Test
+        @DisplayName("returns null destination when itinerary has no stops")
+        void returnsNullDestinationWhenItineraryHasNoStops() {
+            // testItinerary has no stops added, so getTerminusName() returns null
+            Schedule entry = TestDataFactory.createSchedule(LocalTime.of(14, 30), testStop, testItinerary);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of(entry));
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            DisplayState result = calculator.calculateForStop(testStopId);
+
+            assertThat(result.arrivals()).hasSize(1);
+            assertThat(result.arrivals().get(0).destinationName()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Duplicate schedule times")
+    class DuplicateScheduleTimes {
+
+        @Test
+        @DisplayName("keeps only first entry when same itinerary has duplicate times")
+        void keepsFirstEntryForDuplicateTimesOnSameItinerary() {
+            Schedule entry1 = TestDataFactory.createSchedule(LocalTime.of(10, 0), testStop, testItinerary);
+            Schedule entry2 = TestDataFactory.createSchedule(LocalTime.of(10, 0), testStop, testItinerary);
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of(entry1, entry2));
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            DisplayState result = calculator.calculateForStop(testStopId);
+
+            // Only one arrival per itinerary (deduplication by itinerary ID)
+            assertThat(result.arrivals()).hasSize(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("All messages filtered out")
+    class AllMessagesFilteredOut {
+
+        @Test
+        @DisplayName("returns empty messages list when repository returns no active messages")
+        void returnsEmptyMessagesWhenNoneActive() {
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(List.of());
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            DisplayState result = calculator.calculateForStop(testStopId);
+
+            assertThat(result.messages()).isEmpty();
+            assertThat(result.arrivals()).isEmpty();
+            assertThat(result.stopId()).isEqualTo(testStopId);
+            assertThat(result.stopName()).isEqualTo("Central Station");
+        }
+    }
 }

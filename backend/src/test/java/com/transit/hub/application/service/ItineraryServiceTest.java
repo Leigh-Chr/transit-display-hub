@@ -23,12 +23,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.transit.hub.application.dto.request.UpdateItineraryStopsRequest;
+import com.transit.hub.application.dto.response.PageResponse;
+import com.transit.hub.domain.model.ItineraryStop;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -324,6 +334,247 @@ class ItineraryServiceTest {
             assertThatThrownBy(() -> itineraryService.removeStopFromItinerary(testItineraryId, unknownStopId))
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessageContaining("Stop");
+        }
+
+        @Test
+        @DisplayName("successfully removes stop from itinerary")
+        void removesStopFromItinerary() {
+            Itinerary itineraryWithStops = TestDataFactory.createItineraryWithStops(testLine, "Direction East", testStop);
+            UUID itineraryId = itineraryWithStops.getId();
+            when(itineraryRepository.findByIdWithLineAndStops(itineraryId))
+                    .thenReturn(Optional.of(itineraryWithStops));
+            when(stopRepository.existsById(testStopId)).thenReturn(true);
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(itineraryWithStops);
+            when(itineraryRepository.findByIdWithLineAndStops(itineraryId))
+                    .thenReturn(Optional.of(itineraryWithStops));
+
+            ItineraryResponse result = itineraryService.removeStopFromItinerary(itineraryId, testStopId);
+
+            assertThat(result).isNotNull();
+            verify(itineraryRepository).save(any(Itinerary.class));
+        }
+
+        @Test
+        @DisplayName("throws ValidationException when stop exists but is not part of itinerary")
+        void throwsWhenStopNotInItinerary() {
+            UUID otherStopId = UUID.randomUUID();
+            Itinerary itineraryWithStops = TestDataFactory.createItineraryWithStops(testLine, "Direction East", testStop);
+            UUID itineraryId = itineraryWithStops.getId();
+            when(itineraryRepository.findByIdWithLineAndStops(itineraryId))
+                    .thenReturn(Optional.of(itineraryWithStops));
+            when(stopRepository.existsById(otherStopId)).thenReturn(true);
+
+            assertThatThrownBy(() -> itineraryService.removeStopFromItinerary(itineraryId, otherStopId))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("not part of this itinerary");
+        }
+    }
+
+    @Nested
+    @DisplayName("updateItinerary")
+    class UpdateItinerary {
+
+        @Test
+        @DisplayName("updates name and line, saves, and returns response")
+        void updatesNameAndLine() {
+            CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "Updated Direction", null);
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(itineraryRepository.existsByLineIdAndNameExcludingId(testLineId, "Updated Direction", testItineraryId))
+                    .thenReturn(false);
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(testItinerary);
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+
+            ItineraryResponse result = itineraryService.updateItinerary(testItineraryId, request);
+
+            assertThat(result).isNotNull();
+            assertThat(result.id()).isEqualTo(testItineraryId);
+            verify(itineraryRepository).save(any(Itinerary.class));
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException when itinerary not found")
+        void throwsWhenItineraryNotFound() {
+            UUID unknownId = UUID.randomUUID();
+            CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "Direction", null);
+            when(itineraryRepository.findByIdWithLine(unknownId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> itineraryService.updateItinerary(unknownId, request))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Itinerary");
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException when line not found")
+        void throwsWhenLineNotFound() {
+            UUID unknownLineId = UUID.randomUUID();
+            CreateItineraryRequest request = new CreateItineraryRequest(unknownLineId, "Direction", null);
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(lineRepository.findById(unknownLineId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> itineraryService.updateItinerary(testItineraryId, request))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Line");
+        }
+
+        @Test
+        @DisplayName("throws ValidationException when name already exists for different itinerary")
+        void throwsWhenNameAlreadyExists() {
+            CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "Existing Name", null);
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(itineraryRepository.existsByLineIdAndNameExcludingId(testLineId, "Existing Name", testItineraryId))
+                    .thenReturn(true);
+
+            assertThatThrownBy(() -> itineraryService.updateItinerary(testItineraryId, request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("already exists");
+        }
+
+        @Test
+        @DisplayName("updates stops when stopIds provided")
+        void updatesStopsWhenProvided() {
+            List<UUID> stopIds = List.of(testStopId);
+            CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "Updated Direction", stopIds);
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(itineraryRepository.existsByLineIdAndNameExcludingId(testLineId, "Updated Direction", testItineraryId))
+                    .thenReturn(false);
+            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(testItinerary);
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+
+            ItineraryResponse result = itineraryService.updateItinerary(testItineraryId, request);
+
+            assertThat(result).isNotNull();
+            verify(itineraryStopRepository).deleteByItineraryId(testItineraryId);
+            verify(itineraryRepository).save(any(Itinerary.class));
+        }
+
+        @Test
+        @DisplayName("skips stop update when stopIds is null")
+        void skipsStopUpdateWhenNull() {
+            CreateItineraryRequest request = new CreateItineraryRequest(testLineId, "Updated Direction", null);
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            when(itineraryRepository.existsByLineIdAndNameExcludingId(testLineId, "Updated Direction", testItineraryId))
+                    .thenReturn(false);
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(testItinerary);
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+
+            itineraryService.updateItinerary(testItineraryId, request);
+
+            verify(itineraryStopRepository, never()).deleteByItineraryId(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("updateItineraryStops")
+    class UpdateItineraryStops {
+
+        @Test
+        @DisplayName("deletes old stops, adds new ones, and saves")
+        void updatesStopsSuccessfully() {
+            List<UUID> stopIds = List.of(testStopId);
+            UpdateItineraryStopsRequest request = new UpdateItineraryStopsRequest(stopIds);
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(testItinerary);
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+
+            ItineraryResponse result = itineraryService.updateItineraryStops(testItineraryId, request);
+
+            assertThat(result).isNotNull();
+            verify(itineraryStopRepository).deleteByItineraryId(testItineraryId);
+            verify(itineraryRepository).save(any(Itinerary.class));
+        }
+
+        @Test
+        @DisplayName("deletes old stops without adding new ones when list is empty")
+        void handlesEmptyStopList() {
+            UpdateItineraryStopsRequest request = new UpdateItineraryStopsRequest(List.of());
+            when(itineraryRepository.findByIdWithLine(testItineraryId)).thenReturn(Optional.of(testItinerary));
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(testItinerary);
+            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId)).thenReturn(Optional.of(testItinerary));
+
+            ItineraryResponse result = itineraryService.updateItineraryStops(testItineraryId, request);
+
+            assertThat(result).isNotNull();
+            verify(itineraryStopRepository).deleteByItineraryId(testItineraryId);
+            verify(stopRepository, never()).findById(any());
+            verify(itineraryRepository).save(any(Itinerary.class));
+        }
+
+        @Test
+        @DisplayName("throws EntityNotFoundException when itinerary not found")
+        void throwsWhenItineraryNotFound() {
+            UUID unknownId = UUID.randomUUID();
+            UpdateItineraryStopsRequest request = new UpdateItineraryStopsRequest(List.of(testStopId));
+            when(itineraryRepository.findByIdWithLine(unknownId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> itineraryService.updateItineraryStops(unknownId, request))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Itinerary");
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllItineraries (paginated)")
+    class GetAllItinerariesPaginated {
+
+        private final Pageable pageable = PageRequest.of(0, 10);
+
+        @Test
+        @DisplayName("with lineId and search calls findByLineIdAndSearchWithLine")
+        void withLineIdAndSearch() {
+            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
+            when(itineraryRepository.findByLineIdAndSearchWithLine(eq(testLineId), eq("East"), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(testLineId, "East", pageable);
+
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.totalElements()).isEqualTo(1);
+            verify(itineraryRepository).findByLineIdAndSearchWithLine(testLineId, "East", pageable);
+        }
+
+        @Test
+        @DisplayName("with lineId only calls findByLineIdWithLine")
+        void withLineIdOnly() {
+            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
+            when(itineraryRepository.findByLineIdWithLine(eq(testLineId), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(testLineId, null, pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(itineraryRepository).findByLineIdWithLine(testLineId, pageable);
+        }
+
+        @Test
+        @DisplayName("with search only calls findBySearchWithLine")
+        void withSearchOnly() {
+            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
+            when(itineraryRepository.findBySearchWithLine(eq("East"), eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(null, "East", pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(itineraryRepository).findBySearchWithLine("East", pageable);
+        }
+
+        @Test
+        @DisplayName("without lineId or search calls findAllWithLine")
+        void withoutLineIdOrSearch() {
+            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
+            when(itineraryRepository.findAllWithLine(eq(pageable)))
+                    .thenReturn(page);
+
+            PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(null, null, pageable);
+
+            assertThat(result.content()).hasSize(1);
+            verify(itineraryRepository).findAllWithLine(pageable);
         }
     }
 
