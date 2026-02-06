@@ -93,7 +93,7 @@ public class DataLoader implements CommandLineRunner {
                 .enabled(true)
                 .build());
 
-        // Disabled user for testing
+        // Disabled users for testing
         userRepository.save(User.builder()
                 .username("inactive")
                 .password(passwordEncoder.encode("inactive123"))
@@ -101,7 +101,14 @@ public class DataLoader implements CommandLineRunner {
                 .enabled(false)
                 .build());
 
-        log.info("Created {} users (2 admins, 3 agents, 1 disabled)", userRepository.count());
+        userRepository.save(User.builder()
+                .username("admin_disabled")
+                .password(passwordEncoder.encode("admin123"))
+                .role(UserRole.ADMIN)
+                .enabled(false)
+                .build());
+
+        log.info("Created {} users (3 admins, 4 agents, 2 disabled)", userRepository.count());
     }
 
     private Map<String, Line> createLines() {
@@ -159,6 +166,14 @@ public class DataLoader implements CommandLineRunner {
                 .name("Tram - University District")
                 .color("#7CB342")
                 .type(LineType.TRAM)
+                .build()));
+
+        // Bus Lines
+        lines.put("B1", lineRepository.save(Line.builder()
+                .code("B1")
+                .name("Bus - Crosstown Connector")
+                .color("#F4511E")
+                .type(LineType.BUS)
                 .build()));
 
         log.info("Created {} lines", lines.size());
@@ -238,6 +253,23 @@ public class DataLoader implements CommandLineRunner {
         };
         createStopsForLine(lines.get("T2"), t2UniqueStops, stops);
 
+        // B1 - Crosstown Bus - shares stops with M2, M1, M3, T2
+        // This creates realistic multi-line correspondences (3-line stops)
+        addLineToStop(stops, "M2-North Station", lines.get("B1"));
+        addLineToStop(stops, "M2-Sports Complex", lines.get("B1"));
+        addLineToStop(stops, "M2-Shopping Mall", lines.get("B1"));
+        addLineToStop(stops, "Convention Center", lines.get("B1"));
+        addLineToStop(stops, "University", lines.get("B1"));
+        addLineToStop(stops, "T2-Research Park", lines.get("B1"));
+        addLineToStop(stops, "T2-Hospital", lines.get("B1"));
+
+        // B1-only stops
+        String[] b1UniqueStops = {"Marketplace", "Campus Gardens"};
+        createStopsForLine(lines.get("B1"), b1UniqueStops, stops);
+
+        // Assign geographic and schematic coordinates to all stops
+        assignCoordinates(stops);
+
         log.info("Created {} stops across {} lines", stops.size(), lines.size());
         return stops;
     }
@@ -260,6 +292,113 @@ public class DataLoader implements CommandLineRunner {
                     .build();
             stops.put(key, stopRepository.save(stop));
         }
+    }
+
+    private void addLineToStop(Map<String, Stop> stops, String key, Line line) {
+        Stop stop = stops.get(key);
+        if (stop != null) {
+            stop.addLine(line);
+            stopRepository.save(stop);
+        } else {
+            log.warn("Stop key '{}' not found for line sharing with '{}'", key, line.getCode());
+        }
+    }
+
+    private void assignCoordinates(Map<String, Stop> stops) {
+        // Schematic coordinates on a 1000x1000 grid
+        // City center (Central Station) at (500, 450)
+        Map<String, double[]> coords = new LinkedHashMap<>();
+
+        // Central hub
+        coords.put("Central Station", new double[]{500, 450});
+
+        // M1 East-West (roughly horizontal through center)
+        coords.put("Western Terminal", new double[]{50, 470});
+        coords.put("Technology Park", new double[]{140, 465});
+        coords.put("Medical Center", new double[]{240, 460});
+        coords.put("Museum District", new double[]{350, 455});
+        coords.put("Convention Center", new double[]{600, 430});
+        coords.put("University", new double[]{700, 400});
+        coords.put("City Hall", new double[]{790, 410});
+        coords.put("Industrial Park", new double[]{870, 420});
+        coords.put("Eastern Terminal", new double[]{960, 430});
+
+        // M2 North-South (roughly vertical through center)
+        coords.put("North Station", new double[]{510, 50});
+        coords.put("Sports Complex", new double[]{505, 150});
+        coords.put("Shopping Mall", new double[]{500, 270});
+        coords.put("Financial District", new double[]{505, 560});
+        coords.put("Opera House", new double[]{500, 650});
+        coords.put("South Park", new double[]{495, 740});
+        coords.put("Residential Area", new double[]{500, 830});
+        coords.put("South Terminal", new double[]{500, 920});
+
+        // M3 Ring (oval loop around center)
+        coords.put("Old Town", new double[]{680, 370});
+        coords.put("Market Square", new double[]{720, 290});
+        coords.put("Harbor", new double[]{680, 210});
+        coords.put("Beach", new double[]{590, 150});
+        coords.put("Marina", new double[]{480, 130});
+        coords.put("Lighthouse Point", new double[]{370, 170});
+        coords.put("Aquarium", new double[]{300, 250});
+        coords.put("Botanical Garden", new double[]{280, 350});
+        coords.put("Zoo", new double[]{310, 440});
+        coords.put("Stadium", new double[]{390, 490});
+
+        // M4 Downtown Express (diagonal NW to SE)
+        coords.put("Business Park", new double[]{240, 220});
+        coords.put("Tech Hub", new double[]{330, 300});
+        coords.put("Government Center", new double[]{420, 370});
+        coords.put("Embassy Row", new double[]{590, 530});
+        coords.put("International District", new double[]{680, 600});
+
+        // A1 Airport Express (NE from center)
+        coords.put("Downtown Express", new double[]{620, 330});
+        coords.put("Airport City", new double[]{750, 220});
+        coords.put("Airport Terminal 2", new double[]{850, 140});
+        coords.put("Airport Terminal 1", new double[]{930, 70});
+
+        // T1 Riverside Tram (NW to SE through center)
+        coords.put("Art Gallery", new double[]{190, 310});
+        coords.put("Concert Hall", new double[]{270, 360});
+        coords.put("Promenade", new double[]{370, 410});
+        coords.put("Fish Market", new double[]{590, 500});
+        coords.put("Ferry Terminal", new double[]{670, 560});
+        coords.put("Waterfront", new double[]{740, 630});
+        coords.put("Riverside Station", new double[]{820, 700});
+
+        // T2 University District (NW to E through center)
+        coords.put("Science Campus", new double[]{120, 230});
+        coords.put("Library", new double[]{230, 300});
+        coords.put("Student Center", new double[]{340, 370});
+        coords.put("Research Park", new double[]{760, 440});
+        coords.put("Hospital", new double[]{830, 470});
+
+        // B1 Crosstown Bus (unique stops)
+        coords.put("Marketplace", new double[]{550, 350});
+        coords.put("Campus Gardens", new double[]{730, 420});
+
+        // Apply coordinates to all stops
+        // Geographic: center at lat 48.8566, lng 2.3522 (Paris-like)
+        // Scale: 1000 schematic units ≈ 0.06 degrees (~6.7 km)
+        double centerLat = 48.8566;
+        double centerLng = 2.3522;
+        double schematicCenterX = 500;
+        double schematicCenterY = 450;
+        double scale = 0.00006;
+
+        for (Stop stop : stops.values()) {
+            double[] coord = coords.get(stop.getName());
+            if (coord != null) {
+                stop.setSchematicX(coord[0]);
+                stop.setSchematicY(coord[1]);
+                stop.setLongitude(centerLng + (coord[0] - schematicCenterX) * scale);
+                stop.setLatitude(centerLat - (coord[1] - schematicCenterY) * scale);
+                stopRepository.save(stop);
+            }
+        }
+
+        log.info("Assigned coordinates to {} stops", coords.size());
     }
 
     private Map<String, Itinerary> createItineraries(Map<String, Line> lines, Map<String, Stop> stops) {
@@ -337,6 +476,15 @@ public class DataLoader implements CommandLineRunner {
         itineraries.put("T2-HP", createItineraryWithStops(lines.get("T2"), "Direction Hospital",
                 stops, "T2-Science Campus", "T2-Library", "T2-Student Center",
                 "Central Station", "University", "T2-Research Park", "T2-Hospital"));
+
+        // B1 - Crosstown Bus (North to East, connecting M2 corridor to T2/M1 corridor)
+        itineraries.put("B1-N", createItineraryWithStops(lines.get("B1"), "Direction North Station",
+                stops, "T2-Hospital", "T2-Research Park", "B1-Campus Gardens", "University",
+                "Convention Center", "B1-Marketplace", "M2-Shopping Mall", "M2-Sports Complex", "M2-North Station"));
+
+        itineraries.put("B1-S", createItineraryWithStops(lines.get("B1"), "Direction Hospital",
+                stops, "M2-North Station", "M2-Sports Complex", "M2-Shopping Mall", "B1-Marketplace",
+                "Convention Center", "University", "B1-Campus Gardens", "T2-Research Park", "T2-Hospital"));
 
         log.info("Created {} itineraries", itineraries.size());
         return itineraries;
@@ -439,6 +587,10 @@ public class DataLoader implements CommandLineRunner {
             // Airport Express: moderate frequency
             peakInterval = 15;
             offPeakInterval = 20;
+        } else if (lineCode.startsWith("B")) {
+            // Bus: lower frequency
+            peakInterval = 12;
+            offPeakInterval = 20;
         } else {
             // Tram: moderate frequency
             peakInterval = 10;
@@ -475,13 +627,25 @@ public class DataLoader implements CommandLineRunner {
         log.info("Creating devices...");
 
         int deviceCount = 0;
+        int skippedStops = 0;
+        int nullHeartbeatCount = 0;
         List<Stop> stopList = new ArrayList<>(stops.values());
 
-        // Create devices for major stops (Central Station gets multiple devices)
-        for (Stop stop : stopList) {
-            int numDevices = 1;
+        for (int idx = 0; idx < stopList.size(); idx++) {
+            Stop stop = stopList.get(idx);
 
-            // Major stops get more devices
+            // ~15% of minor stops have no display device (realistic: not all stops are equipped)
+            boolean isMajorStop = stop.getName().contains("Central") ||
+                stop.getName().contains("Terminal") ||
+                stop.getName().contains("Airport") ||
+                stop.getLines().size() > 1;
+            if (!isMajorStop && idx % 7 == 0) {
+                skippedStops++;
+                continue;
+            }
+
+            int numDevices = 1;
+            // Major hubs get multiple devices
             if (stop.getName().contains("Central") ||
                 stop.getName().contains("Terminal") ||
                 stop.getName().contains("Airport")) {
@@ -489,15 +653,25 @@ public class DataLoader implements CommandLineRunner {
             }
 
             for (int i = 0; i < numDevices; i++) {
-                // Generate a token (in production this would be secure random)
                 String token = generateDeviceToken();
                 String tokenLookup = token.substring(0, 8);
                 String tokenHash = passwordEncoder.encode(token);
 
-                DeviceStatus status = random.nextDouble() < 0.85 ? DeviceStatus.ONLINE : DeviceStatus.OFFLINE;
-                Instant lastHeartbeat = status == DeviceStatus.ONLINE
-                    ? Instant.now().minus(random.nextInt(60), ChronoUnit.SECONDS)
-                    : Instant.now().minus(random.nextInt(24 * 60) + 5, ChronoUnit.MINUTES);
+                DeviceStatus status;
+                Instant lastHeartbeat;
+
+                if (!isMajorStop && nullHeartbeatCount < 2) {
+                    // Freshly registered devices on minor stops, never connected (null heartbeat)
+                    status = DeviceStatus.OFFLINE;
+                    lastHeartbeat = null;
+                    nullHeartbeatCount++;
+                } else if (random.nextDouble() < 0.85) {
+                    status = DeviceStatus.ONLINE;
+                    lastHeartbeat = Instant.now().minus(random.nextInt(60), ChronoUnit.SECONDS);
+                } else {
+                    status = DeviceStatus.OFFLINE;
+                    lastHeartbeat = Instant.now().minus(random.nextInt(24 * 60) + 5, ChronoUnit.MINUTES);
+                }
 
                 deviceRepository.save(Device.builder()
                         .tokenLookup(tokenLookup)
@@ -521,10 +695,11 @@ public class DataLoader implements CommandLineRunner {
             }
         }
 
-        log.info("Created {} devices ({} online, {} offline)",
+        log.info("Created {} devices ({} online, {} offline, {} stops without device)",
                 deviceCount,
                 deviceRepository.findByStatus(DeviceStatus.ONLINE).size(),
-                deviceRepository.findByStatus(DeviceStatus.OFFLINE).size());
+                deviceRepository.findByStatus(DeviceStatus.OFFLINE).size(),
+                skippedStops);
     }
 
     private String generateDeviceToken() {
@@ -625,6 +800,61 @@ public class DataLoader implements CommandLineRunner {
                 .endTime(now.plus(5, ChronoUnit.DAYS))
                 .build());
 
+        Line m4 = lines.get("M4");
+        messageRepository.save(BroadcastMessage.builder()
+                .title("M4 Signal Failure")
+                .content("Critical signal failure between Government Center and Tech Hub. Expect major delays on the Orange Line.")
+                .severity(MessageSeverity.CRITICAL)
+                .scopeType(MessageScope.LINE)
+                .scopeId(m4.getId())
+                .startTime(now.minus(30, ChronoUnit.MINUTES))
+                .endTime(now.plus(4, ChronoUnit.HOURS))
+                .build());
+
+        Line t2 = lines.get("T2");
+        messageRepository.save(BroadcastMessage.builder()
+                .title("T2 Exam Period Service")
+                .content("Additional trams running on the University District line during exam period.")
+                .severity(MessageSeverity.INFO)
+                .scopeType(MessageScope.LINE)
+                .scopeId(t2.getId())
+                .startTime(now)
+                .endTime(now.plus(14, ChronoUnit.DAYS))
+                .build());
+
+        Line b1 = lines.get("B1");
+        messageRepository.save(BroadcastMessage.builder()
+                .title("B1 Route Detour")
+                .content("Due to road works near Marketplace, buses are diverted via alternate route. Allow extra travel time.")
+                .severity(MessageSeverity.WARNING)
+                .scopeType(MessageScope.LINE)
+                .scopeId(b1.getId())
+                .startTime(now.minus(1, ChronoUnit.DAYS))
+                .endTime(now.plus(7, ChronoUnit.DAYS))
+                .build());
+
+        // Past LINE message (inactive)
+        messageRepository.save(BroadcastMessage.builder()
+                .title("M2 Past Maintenance Complete")
+                .content("Blue Line maintenance has been completed. Normal service restored.")
+                .severity(MessageSeverity.INFO)
+                .scopeType(MessageScope.LINE)
+                .scopeId(m2.getId())
+                .startTime(now.minus(14, ChronoUnit.DAYS))
+                .endTime(now.minus(7, ChronoUnit.DAYS))
+                .build());
+
+        // Future LINE message (not yet active)
+        messageRepository.save(BroadcastMessage.builder()
+                .title("A1 Planned Track Renewal")
+                .content("Airport Express service will be suspended for 48h for track renewal. Bus replacement service available.")
+                .severity(MessageSeverity.WARNING)
+                .scopeType(MessageScope.LINE)
+                .scopeId(a1.getId())
+                .startTime(now.plus(20, ChronoUnit.DAYS))
+                .endTime(now.plus(22, ChronoUnit.DAYS))
+                .build());
+
         // STOP-specific messages
         Stop centralStation = stops.get("Central Station");
         if (centralStation != null) {
@@ -675,6 +905,48 @@ public class DataLoader implements CommandLineRunner {
                     .scopeId(university.getId())
                     .startTime(now)
                     .endTime(now.plus(10, ChronoUnit.HOURS))
+                    .build());
+        }
+
+        // CRITICAL message on a STOP
+        Stop financialDistrict = stops.get("M2-Financial District");
+        if (financialDistrict != null) {
+            messageRepository.save(BroadcastMessage.builder()
+                    .title("Suspicious Package - Platform Closed")
+                    .content("Platform B temporarily closed due to security investigation. Use Platform A. Follow staff instructions.")
+                    .severity(MessageSeverity.CRITICAL)
+                    .scopeType(MessageScope.STOP)
+                    .scopeId(financialDistrict.getId())
+                    .startTime(now.minus(20, ChronoUnit.MINUTES))
+                    .endTime(now.plus(3, ChronoUnit.HOURS))
+                    .build());
+        }
+
+        // Past STOP message (inactive)
+        Stop shoppingMall = stops.get("M2-Shopping Mall");
+        if (shoppingMall != null) {
+            messageRepository.save(BroadcastMessage.builder()
+                    .title("Escalator Repair Completed")
+                    .content("The escalator at the east entrance has been repaired and is now operational.")
+                    .severity(MessageSeverity.INFO)
+                    .scopeType(MessageScope.STOP)
+                    .scopeId(shoppingMall.getId())
+                    .startTime(now.minus(10, ChronoUnit.DAYS))
+                    .endTime(now.minus(3, ChronoUnit.DAYS))
+                    .build());
+        }
+
+        // Future STOP message (not yet active)
+        Stop northStation = stops.get("M2-North Station");
+        if (northStation != null) {
+            messageRepository.save(BroadcastMessage.builder()
+                    .title("Platform Renovation")
+                    .content("North Station Platform 1 will be closed for renovation. All trains will depart from Platform 2.")
+                    .severity(MessageSeverity.WARNING)
+                    .scopeType(MessageScope.STOP)
+                    .scopeId(northStation.getId())
+                    .startTime(now.plus(15, ChronoUnit.DAYS))
+                    .endTime(now.plus(45, ChronoUnit.DAYS))
                     .build());
         }
 
