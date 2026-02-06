@@ -133,7 +133,7 @@ describe('DevicesComponent', () => {
       component.loadDevices();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
 
     it('should show fallback message when error has no message', () => {
@@ -141,7 +141,7 @@ describe('DevicesComponent', () => {
 
       component.loadDevices();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load devices', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load devices', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -177,7 +177,7 @@ describe('DevicesComponent', () => {
       component.openCreateDialog();
       afterClosed$.next({ stopId: 's1' });
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Stop already has a device', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Stop already has a device', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
 
     it('should show fallback message on registration error without message', () => {
@@ -188,7 +188,7 @@ describe('DevicesComponent', () => {
       component.openCreateDialog();
       afterClosed$.next({ stopId: 's1' });
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to register device', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to register device', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -264,7 +264,7 @@ describe('DevicesComponent', () => {
       component.deleteDevice(mockDevice);
       afterClosed$.next(true);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot remove device', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot remove device', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 

@@ -216,4 +216,11 @@ nvm use 20
 
 **Erreur 401 Unauthorized**
 - Le token JWT a expiré (durée de validité : 8 heures)
+- Le token est manquant ou invalide
 - Se reconnecter pour obtenir un nouveau token
+- L'API retourne une réponse JSON structurée (pas du HTML)
+
+**Erreur 403 Forbidden**
+- Permissions insuffisantes pour accéder à l'endpoint
+- L'utilisateur n'a pas le rôle requis (ex: endpoint ADMIN pour un AGENT)
+- Une notification s'affiche dans le frontend

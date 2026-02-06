@@ -128,14 +128,17 @@ export class ScheduleDialogComponent implements OnInit {
   }
 
   private loadItineraries(): void {
-    this.itineraryService.getAll().subscribe(itineraries => {
-      this.itineraries.set(itineraries);
+    this.itineraryService.getAll().subscribe({
+      next: (itineraries) => {
+        this.itineraries.set(itineraries);
 
-      // If we have lines but no itineraryId selected yet, and there's only one itinerary total,
-      // auto-select it
-      if (!this.form.itineraryId && itineraries.length === 1) {
-        this.form.itineraryId = itineraries[0].id;
-      }
+        // If we have lines but no itineraryId selected yet, and there's only one itinerary total,
+        // auto-select it
+        if (!this.form.itineraryId && itineraries.length === 1) {
+          this.form.itineraryId = itineraries[0].id;
+        }
+      },
+      error: () => this.itineraries.set([]),
     });
   }
 

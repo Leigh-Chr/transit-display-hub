@@ -182,6 +182,7 @@ describe('MessagesComponent', () => {
       expect(component.loading()).toBe(false);
       expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', {
         duration: 5000,
+        panelClass: 'error-snackbar',
       });
     });
 
@@ -196,7 +197,7 @@ describe('MessagesComponent', () => {
       expect(mockSnackBar.open).toHaveBeenCalledWith(
         'Failed to load messages',
         'Close',
-        { duration: 5000 },
+        { duration: 5000, panelClass: 'error-snackbar' },
       );
     });
   });

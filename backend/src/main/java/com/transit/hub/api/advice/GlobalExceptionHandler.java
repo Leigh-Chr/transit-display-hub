@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -65,7 +66,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, WebRequest request) {
         log.warn("Data integrity violation: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.CONFLICT, "Data conflict: a record with this value already exists", null, request);
+        String message = "Data conflict: a record with this value already exists";
+        Throwable cause = ex.getMostSpecificCause();
+        String causeMessage = cause.getMessage();
+        if (causeMessage != null) {
+            String lower = causeMessage.toLowerCase();
+            if (lower.contains("foreign key") || lower.contains("fk_") || lower.contains("references")) {
+                message = "Cannot complete operation: this record is referenced by other data";
+            } else if (lower.contains("not null") || lower.contains("not-null")) {
+                message = "A required field is missing";
+            }
+        }
+        return buildErrorResponse(HttpStatus.CONFLICT, message, null, request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions", null, request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)

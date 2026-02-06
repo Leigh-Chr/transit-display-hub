@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
@@ -884,6 +885,7 @@ export class DashboardComponent implements OnInit {
   private readonly itineraryService = inject(ItineraryService);
   private readonly messageService = inject(MessageService);
   private readonly deviceService = inject(DeviceService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly isAdmin = this.authService.isAdmin;
 
@@ -962,6 +964,10 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
+          this.snackBar
+            .open('Failed to load dashboard data', 'Retry', { duration: 8000, panelClass: 'error-snackbar' })
+            .onAction()
+            .subscribe(() => this.loadData());
         },
       });
     } else {
@@ -976,6 +982,10 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
+          this.snackBar
+            .open('Failed to load dashboard data', 'Retry', { duration: 8000, panelClass: 'error-snackbar' })
+            .onAction()
+            .subscribe(() => this.loadData());
         },
       });
     }

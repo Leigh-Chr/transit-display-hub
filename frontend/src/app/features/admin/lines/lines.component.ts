@@ -300,7 +300,7 @@ export class LinesComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.loading.set(false);
           const message = err.error?.message || 'Failed to load lines';
-          this.snackBar.open(message, 'Close', { duration: 5000 });
+          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
   }
@@ -355,7 +355,7 @@ export class LinesComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to create line';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -381,7 +381,7 @@ export class LinesComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to update line';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -411,7 +411,7 @@ export class LinesComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to delete line';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }

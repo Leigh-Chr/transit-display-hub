@@ -807,12 +807,27 @@ stompClient.send('/app/device/heartbeat', {}, JSON.stringify({
 
 ### Format des erreurs
 
+Toutes les erreurs (y compris 401 et 403) retournent une réponse JSON structurée :
+
 ```json
 {
   "timestamp": "2026-02-01T12:00:00Z",
   "status": 400,
   "error": "Bad Request",
   "message": "Le code de ligne est requis",
+  "errors": [
+    { "field": "code", "message": "ne doit pas être vide" }
+  ],
   "path": "/api/lines"
 }
 ```
+
+Le champ `errors` est présent uniquement pour les erreurs de validation (400).
+
+**Messages d'erreur 409 selon le type de violation :**
+
+| Type de violation | Message |
+|-------------------|---------|
+| Contrainte d'unicité | Data conflict: a record with this value already exists |
+| Clé étrangère | Cannot complete operation: this record is referenced by other data |
+| Champ requis manquant | A required field is missing |

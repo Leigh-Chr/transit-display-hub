@@ -183,10 +183,10 @@ class DeviceControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(get("/api/devices"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -265,14 +265,14 @@ class DeviceControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             RegisterDeviceRequest request = new RegisterDeviceRequest(testStop.getId());
 
             mockMvc.perform(post("/api/devices")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -397,10 +397,10 @@ class DeviceControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(delete("/api/devices/" + testDevice.getId()))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test

@@ -102,10 +102,10 @@ class StopControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(get("/api/stops"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -276,10 +276,10 @@ class StopControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(delete("/api/stops/" + testStop.getId()))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test

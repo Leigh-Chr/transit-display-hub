@@ -132,14 +132,22 @@ public class NetworkMapService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onNetworkChanged(NetworkChangedEvent event) {
-        evictCache("networkMap");
-        evictCache("networkAlerts");
+        try {
+            evictCache("networkMap");
+            evictCache("networkAlerts");
+        } catch (Exception e) {
+            log.warn("Failed to evict cache on network change: {}", e.getMessage());
+        }
         pushNetworkMapUpdate();
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageChanged(MessageChangedEvent event) {
-        evictCache("networkAlerts");
+        try {
+            evictCache("networkAlerts");
+        } catch (Exception e) {
+            log.warn("Failed to evict cache on message change: {}", e.getMessage());
+        }
         pushAlertsUpdate();
     }
 

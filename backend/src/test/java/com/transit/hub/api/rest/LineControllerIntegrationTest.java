@@ -127,10 +127,10 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(get("/api/lines"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -236,14 +236,14 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", null);
 
             mockMvc.perform(post("/api/lines")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -401,10 +401,10 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(delete("/api/lines/" + testLine.getId()))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test

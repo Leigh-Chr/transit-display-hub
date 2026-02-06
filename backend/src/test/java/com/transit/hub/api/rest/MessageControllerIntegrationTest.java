@@ -151,10 +151,10 @@ class MessageControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(get("/api/messages"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -372,8 +372,8 @@ class MessageControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             CreateMessageRequest request = new CreateMessageRequest(
                     "Alert", "Content", MessageSeverity.INFO, now, futureTime, MessageScope.NETWORK, null
             );
@@ -381,7 +381,7 @@ class MessageControllerIntegrationTest {
             mockMvc.perform(post("/api/messages")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
     }
 

@@ -290,8 +290,9 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.lineService.getAll().subscribe((lines) => {
-      this.lines.set(lines);
+    this.lineService.getAll().subscribe({
+      next: (lines) => this.lines.set(lines),
+      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
     });
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
@@ -338,7 +339,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
         error: (err) => {
           this.loading.set(false);
           const message = err.error?.message || 'Failed to load itineraries';
-          this.snackBar.open(message, 'Close', { duration: 5000 });
+          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
   }
@@ -403,7 +404,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to create itinerary';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -429,7 +430,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to update itinerary';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -455,7 +456,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to update stops';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -485,7 +486,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to delete itinerary';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }

@@ -259,7 +259,10 @@ export class MessageDialogComponent implements OnInit {
   }
 
   private loadStops(): void {
-    this.stopService.getAll(this.form.lineId).subscribe((stops) => this.stops.set(stops));
+    this.stopService.getAll(this.form.lineId).subscribe({
+      next: (stops) => this.stops.set(stops),
+      error: () => this.stops.set([]),
+    });
   }
 
   isDateRangeValid(): boolean {

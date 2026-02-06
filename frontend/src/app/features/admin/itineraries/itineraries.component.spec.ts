@@ -186,7 +186,7 @@ describe('ItinerariesComponent', () => {
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -196,7 +196,7 @@ describe('ItinerariesComponent', () => {
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load itineraries', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load itineraries', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -317,7 +317,7 @@ describe('ItinerariesComponent', () => {
 
       component.openCreateDialog();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Duplicate name', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Duplicate name', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -361,7 +361,7 @@ describe('ItinerariesComponent', () => {
 
       component.openEditDialog(mockItinerary);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Conflict', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Conflict', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -407,7 +407,7 @@ describe('ItinerariesComponent', () => {
 
       component.openStopsDialog(mockItinerary);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Invalid stop', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Invalid stop', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -445,7 +445,7 @@ describe('ItinerariesComponent', () => {
 
       component.deleteItinerary(mockItinerary);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 });

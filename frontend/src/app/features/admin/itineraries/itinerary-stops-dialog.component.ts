@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { StopService } from '@core/api/stop.service';
 import { Itinerary, Stop, UpdateItineraryStopsRequest } from '@shared/models';
 
@@ -239,6 +240,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<ItineraryStopsDialogComponent>);
   readonly data = inject<ItineraryStopsDialogData>(MAT_DIALOG_DATA);
   private readonly stopService = inject(StopService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly loading = signal(true);
   readonly availableStops = signal<Stop[]>([]);
@@ -264,6 +266,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
+          this.snackBar.open('Failed to load stops', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
     } else {

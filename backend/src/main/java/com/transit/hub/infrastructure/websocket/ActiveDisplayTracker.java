@@ -29,60 +29,72 @@ public class ActiveDisplayTracker {
 
     @EventListener
     public void handleSubscribe(SessionSubscribeEvent event) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String destination = accessor.getDestination();
-        String sessionId = accessor.getSessionId();
-        String subscriptionId = accessor.getSubscriptionId();
+        try {
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+            String destination = accessor.getDestination();
+            String sessionId = accessor.getSessionId();
+            String subscriptionId = accessor.getSubscriptionId();
 
-        if (destination == null || sessionId == null) return;
+            if (destination == null || sessionId == null) return;
 
-        Matcher matcher = DISPLAY_TOPIC_PATTERN.matcher(destination);
-        if (matcher.matches()) {
-            UUID stopId = UUID.fromString(matcher.group(1));
+            Matcher matcher = DISPLAY_TOPIC_PATTERN.matcher(destination);
+            if (matcher.matches()) {
+                UUID stopId = UUID.fromString(matcher.group(1));
 
-            activeSubscriptions
-                    .computeIfAbsent(stopId, k -> ConcurrentHashMap.newKeySet())
-                    .add(sessionId);
+                activeSubscriptions
+                        .computeIfAbsent(stopId, k -> ConcurrentHashMap.newKeySet())
+                        .add(sessionId);
 
-            sessionSubscriptions
-                    .computeIfAbsent(sessionId, k -> new ConcurrentHashMap<>())
-                    .put(subscriptionId, stopId);
+                sessionSubscriptions
+                        .computeIfAbsent(sessionId, k -> new ConcurrentHashMap<>())
+                        .put(subscriptionId, stopId);
 
-            log.debug("Client {} subscribed to stop {}", sessionId, stopId);
+                log.debug("Client {} subscribed to stop {}", sessionId, stopId);
+            }
+        } catch (Exception e) {
+            log.warn("Error handling subscribe event: {}", e.getMessage());
         }
     }
 
     @EventListener
     public void handleUnsubscribe(SessionUnsubscribeEvent event) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String sessionId = accessor.getSessionId();
-        String subscriptionId = accessor.getSubscriptionId();
+        try {
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+            String sessionId = accessor.getSessionId();
+            String subscriptionId = accessor.getSubscriptionId();
 
-        if (sessionId == null || subscriptionId == null) return;
+            if (sessionId == null || subscriptionId == null) return;
 
-        Map<String, UUID> subscriptions = sessionSubscriptions.get(sessionId);
-        if (subscriptions != null) {
-            UUID stopId = subscriptions.remove(subscriptionId);
-            if (stopId != null) {
-                removeSubscription(stopId, sessionId);
-                log.debug("Client {} unsubscribed from stop {}", sessionId, stopId);
+            Map<String, UUID> subscriptions = sessionSubscriptions.get(sessionId);
+            if (subscriptions != null) {
+                UUID stopId = subscriptions.remove(subscriptionId);
+                if (stopId != null) {
+                    removeSubscription(stopId, sessionId);
+                    log.debug("Client {} unsubscribed from stop {}", sessionId, stopId);
+                }
             }
+        } catch (Exception e) {
+            log.warn("Error handling unsubscribe event: {}", e.getMessage());
         }
     }
 
     @EventListener
     public void handleDisconnect(SessionDisconnectEvent event) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String sessionId = accessor.getSessionId();
+        try {
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+            String sessionId = accessor.getSessionId();
 
-        if (sessionId == null) return;
+            if (sessionId == null) return;
 
-        Map<String, UUID> subscriptions = sessionSubscriptions.remove(sessionId);
-        if (subscriptions != null) {
-            for (UUID stopId : subscriptions.values()) {
-                removeSubscription(stopId, sessionId);
+            Map<String, UUID> subscriptions = sessionSubscriptions.remove(sessionId);
+            if (subscriptions != null) {
+                for (UUID stopId : subscriptions.values()) {
+                    removeSubscription(stopId, sessionId);
+                }
+                log.debug("Client {} disconnected, removed {} subscriptions", sessionId, subscriptions.size());
             }
-            log.debug("Client {} disconnected, removed {} subscriptions", sessionId, subscriptions.size());
+        } catch (Exception e) {
+            log.warn("Error handling disconnect event: {}", e.getMessage());
         }
     }
 

@@ -324,7 +324,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadDevices();
-    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe((lines) => this.lines.set(lines));
+    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (lines) => this.lines.set(lines),
+      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+    });
   }
 
   ngOnDestroy(): void {
@@ -343,7 +346,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.loading.set(false);
         const message = err.error?.message || 'Failed to load devices';
-        this.snackBar.open(message, 'Close', { duration: 5000 });
+        this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
       },
     });
   }
@@ -364,7 +367,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to register device';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -378,12 +381,20 @@ export class DevicesComponent implements OnInit, OnDestroy {
   copyToken(): void {
     const token = this.newDeviceToken();
     if (token) {
-      navigator.clipboard.writeText(token).then(() => {
-        this.snackBar.open('Token copied to clipboard', 'Close', {
-          duration: 3000,
-          panelClass: 'success-snackbar',
-        });
-      });
+      navigator.clipboard.writeText(token).then(
+        () => {
+          this.snackBar.open('Token copied to clipboard', 'Close', {
+            duration: 3000,
+            panelClass: 'success-snackbar',
+          });
+        },
+        () => {
+          this.snackBar.open('Failed to copy token', 'Close', {
+            duration: 5000,
+            panelClass: 'error-snackbar',
+          });
+        }
+      );
     }
   }
 
@@ -410,7 +421,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to remove device';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }

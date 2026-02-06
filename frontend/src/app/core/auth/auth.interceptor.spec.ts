@@ -154,7 +154,7 @@ describe('authInterceptor', () => {
           expect(snackBarSpy.open).toHaveBeenCalledWith(
             'Access denied: insufficient permissions',
             'Close',
-            { duration: 5000 }
+            { duration: 5000, panelClass: 'error-snackbar' }
           );
         }
       });

@@ -257,7 +257,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
   displayedColumns = ['line', 'destination', 'time', 'actions'];
 
   ngOnInit(): void {
-    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe((lines) => this.lines.set(lines));
+    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (lines) => this.lines.set(lines),
+      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+    });
   }
 
   ngAfterViewInit(): void {
@@ -280,7 +283,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
       this.stopService
         .getAll(this.selectedLineId)
         .pipe(takeUntil(this.destroy$))
-        .subscribe((stops) => this.stops.set(stops));
+        .subscribe({
+          next: (stops) => this.stops.set(stops),
+          error: () => this.snackBar.open('Failed to load stops', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+        });
     } else {
       this.stops.set([]);
     }
@@ -299,7 +305,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
         error: (err) => {
           this.loading.set(false);
           const message = err.error?.message || 'Failed to load schedules';
-          this.snackBar.open(message, 'Close', { duration: 5000 });
+          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
     } else {
@@ -330,7 +336,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to create schedule entry';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -359,7 +365,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to update schedule entry';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }
@@ -390,7 +396,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           error: (err) => {
             const message = err.error?.message || 'Failed to delete schedule entry';
-            this.snackBar.open(message, 'Close', { duration: 5000 });
+            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
       }

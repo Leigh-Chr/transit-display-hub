@@ -213,6 +213,7 @@ describe('StopsComponent', () => {
       expect(component.loading()).toBe(false);
       expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', {
         duration: 5000,
+        panelClass: 'error-snackbar',
       });
     });
 
@@ -226,7 +227,7 @@ describe('StopsComponent', () => {
       expect(mockSnackBar.open).toHaveBeenCalledWith(
         'Failed to load stops',
         'Close',
-        { duration: 5000 }
+        { duration: 5000, panelClass: 'error-snackbar' }
       );
     });
   });

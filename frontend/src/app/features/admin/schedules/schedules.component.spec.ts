@@ -152,7 +152,7 @@ describe('SchedulesComponent', () => {
       component.loadSchedules();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -163,7 +163,7 @@ describe('SchedulesComponent', () => {
 
       component.loadSchedules();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load schedules', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load schedules', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 

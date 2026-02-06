@@ -157,14 +157,14 @@ class ItineraryControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             CreateItineraryRequest request = new CreateItineraryRequest(testLine.getId(), "Direction South", null);
 
             mockMvc.perform(post("/api/itineraries")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -210,14 +210,14 @@ class ItineraryControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             CreateItineraryRequest request = new CreateItineraryRequest(testLine.getId(), "Name", null);
 
             mockMvc.perform(put("/api/itineraries/" + testItinerary.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -242,10 +242,10 @@ class ItineraryControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId()))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -327,14 +327,14 @@ class ItineraryControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             AddItineraryStopRequest request = new AddItineraryStopRequest(testStop.getId(), null);
 
             mockMvc.perform(post("/api/itineraries/" + testItinerary.getId() + "/stops")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -394,13 +394,13 @@ class ItineraryControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 without authentication")
-        void withoutAuth_Returns403() throws Exception {
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
             testItinerary.addStop(testStop, 0);
             itineraryRepository.save(testItinerary);
 
             mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId() + "/stops/" + testStop.getId()))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

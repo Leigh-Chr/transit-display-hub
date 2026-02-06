@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -232,14 +233,72 @@ class GlobalExceptionHandlerTest {
         }
 
         @Test
-        @DisplayName("returns generic conflict message regardless of cause")
-        void returnsGenericMessage() {
-            DataIntegrityViolationException exception = new DataIntegrityViolationException("Foreign key constraint");
+        @DisplayName("returns foreign key message when cause mentions foreign key")
+        void returnsForeignKeyMessage() {
+            var cause = new RuntimeException("Referential integrity constraint violation: FK_STOP_LINE references");
+            DataIntegrityViolationException exception = new DataIntegrityViolationException("could not execute", cause);
+
+            ResponseEntity<GlobalExceptionHandler.ApiError> response = exceptionHandler.handleDataIntegrity(exception, webRequest);
+
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().message()).isEqualTo("Cannot complete operation: this record is referenced by other data");
+        }
+
+        @Test
+        @DisplayName("returns not-null message when cause mentions not null")
+        void returnsNotNullMessage() {
+            var cause = new RuntimeException("NULL not allowed for column \"NAME\"; SQL [NOT NULL check constraint");
+            DataIntegrityViolationException exception = new DataIntegrityViolationException("not null", cause);
+
+            ResponseEntity<GlobalExceptionHandler.ApiError> response = exceptionHandler.handleDataIntegrity(exception, webRequest);
+
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().message()).isEqualTo("A required field is missing");
+        }
+
+        @Test
+        @DisplayName("returns unique constraint message for other violations")
+        void returnsUniqueConstraintMessage() {
+            var cause = new RuntimeException("Unique index or primary key violation");
+            DataIntegrityViolationException exception = new DataIntegrityViolationException("unique", cause);
 
             ResponseEntity<GlobalExceptionHandler.ApiError> response = exceptionHandler.handleDataIntegrity(exception, webRequest);
 
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().message()).isEqualTo("Data conflict: a record with this value already exists");
+        }
+    }
+
+    @Nested
+    @DisplayName("handleAccessDenied")
+    class HandleAccessDenied {
+
+        @Test
+        @DisplayName("returns 403 with access denied message")
+        void returnsForbiddenStatus() {
+            AccessDeniedException exception = new AccessDeniedException("Access is denied");
+
+            ResponseEntity<GlobalExceptionHandler.ApiError> response = exceptionHandler.handleAccessDenied(exception, webRequest);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().status()).isEqualTo(403);
+            assertThat(response.getBody().error()).isEqualTo("Forbidden");
+            assertThat(response.getBody().message()).isEqualTo("Access denied: insufficient permissions");
+            assertThat(response.getBody().timestamp()).isNotNull();
+            assertThat(response.getBody().path()).isEqualTo("/api/test");
+            assertThat(response.getBody().errors()).isNull();
+        }
+
+        @Test
+        @DisplayName("returns generic message regardless of exception message")
+        void returnsGenericMessage() {
+            AccessDeniedException exception = new AccessDeniedException("Specific internal reason");
+
+            ResponseEntity<GlobalExceptionHandler.ApiError> response = exceptionHandler.handleAccessDenied(exception, webRequest);
+
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().message()).isEqualTo("Access denied: insufficient permissions");
         }
     }
 

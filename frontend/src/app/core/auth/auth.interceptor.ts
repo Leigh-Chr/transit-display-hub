@@ -19,11 +19,20 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      if (error.status === 0) {
+        snackBar.open('Network error: please check your connection', 'Close', {
+          duration: 5000,
+          panelClass: 'error-snackbar',
+        });
+      }
       if (error.status === 401 && !req.url.includes('/auth/login')) {
         authService.logout();
       }
       if (error.status === 403) {
-        snackBar.open('Access denied: insufficient permissions', 'Close', { duration: 5000 });
+        snackBar.open('Access denied: insufficient permissions', 'Close', {
+          duration: 5000,
+          panelClass: 'error-snackbar',
+        });
       }
       return throwError(() => error);
     })

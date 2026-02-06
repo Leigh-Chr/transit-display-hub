@@ -148,14 +148,14 @@ describe('LinesComponent', () => {
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
 
     it('should show fallback error message when error has no message', () => {
       mockLineService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
       fixture.detectChanges();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load lines', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -277,7 +277,7 @@ describe('LinesComponent', () => {
 
       component.openCreateDialog();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Duplicate code', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Duplicate code', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -320,7 +320,7 @@ describe('LinesComponent', () => {
 
       component.openEditDialog(existingLine);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Conflict', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Conflict', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 
@@ -358,7 +358,7 @@ describe('LinesComponent', () => {
 
       component.deleteLine(lineToDelete);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
 
     it('should show fallback error message when delete error has no message', () => {
@@ -368,7 +368,7 @@ describe('LinesComponent', () => {
 
       component.deleteLine(lineToDelete);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to delete line', 'Close', { duration: 5000 });
+      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to delete line', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
     });
   });
 

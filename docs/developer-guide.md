@@ -280,7 +280,7 @@ src/app/
 │   │   ├── auth.service.ts       # Gestion authentification (Signals)
 │   │   ├── auth.guard.ts         # Protection des routes (authentification)
 │   │   ├── role.guard.ts         # Protection des routes (autorisation par rôle)
-│   │   └── auth.interceptor.ts   # Ajout token JWT, gestion 403
+│   │   └── auth.interceptor.ts   # Ajout token JWT, gestion erreurs (401, 403, réseau)
 │   ├── api/
 │   │   ├── line.service.ts
 │   │   ├── stop.service.ts
@@ -358,6 +358,7 @@ src/app/
 { path: 'map', loadComponent: () => ... },      // Carte réseau (public)
 { path: 'display', loadComponent: () => ... },   // Kiosque (public)
 { path: 'display/:stopId', loadComponent: () => ... },
+{ path: '**', loadComponent: () => import('./features/not-found/...') }, // Page 404
 ```
 
 ### Configuration Angular
