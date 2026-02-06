@@ -1,5 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { DashboardComponent } from './dashboard.component';
+import { AuthService } from '@core/auth/auth.service';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ItineraryService } from '@core/api/itinerary.service';
@@ -14,6 +16,7 @@ import { Line, Stop, Itinerary, BroadcastMessage, Device } from '@shared/models'
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
+  let mockAuthService: { isAdmin: ReturnType<typeof signal<boolean>> };
   let mockLineService: { getAll: ReturnType<typeof vi.fn> };
   let mockStopService: { getAll: ReturnType<typeof vi.fn> };
   let mockItineraryService: { getAll: ReturnType<typeof vi.fn> };
@@ -65,6 +68,7 @@ describe('DashboardComponent', () => {
   ];
 
   beforeEach(() => {
+    mockAuthService = { isAdmin: signal(true) };
     mockLineService = { getAll: vi.fn().mockReturnValue(of(mockLines)) };
     mockStopService = { getAll: vi.fn().mockReturnValue(of(mockStops)) };
     mockItineraryService = { getAll: vi.fn().mockReturnValue(of(mockItineraries)) };
@@ -78,6 +82,7 @@ describe('DashboardComponent', () => {
       providers: [
         provideRouter([]),
         provideAnimationsAsync(),
+        { provide: AuthService, useValue: mockAuthService },
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },
         { provide: ItineraryService, useValue: mockItineraryService },
@@ -287,6 +292,77 @@ describe('DashboardComponent', () => {
       };
 
       expect(component.getMessageStatus(message)).toBe('expired');
+    });
+  });
+
+  describe('AGENT role', () => {
+    beforeEach(() => {
+      mockAuthService.isAdmin.set(false);
+    });
+
+    it('should only call messageService.getAll for AGENT', () => {
+      fixture.detectChanges();
+
+      expect(mockMessageService.getAll).toHaveBeenCalledWith(true);
+      expect(mockMessageService.getAll).toHaveBeenCalledWith();
+      expect(mockLineService.getAll).not.toHaveBeenCalled();
+      expect(mockStopService.getAll).not.toHaveBeenCalled();
+      expect(mockItineraryService.getAll).not.toHaveBeenCalled();
+      expect(mockDeviceService.getAll).not.toHaveBeenCalled();
+    });
+
+    it('should set loading to false after AGENT data loads', () => {
+      fixture.detectChanges();
+
+      expect(component.loading()).toBe(false);
+      expect(component.activeMessages()).toEqual(mockActiveMessages);
+      expect(component.allMessages()).toEqual(mockAllMessages);
+    });
+
+    it('should not display admin-only stat cards for AGENT', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const statLabels = fixture.nativeElement.querySelectorAll('.stat-label');
+      const labelTexts = Array.from(statLabels).map((el: any) => el.textContent.trim());
+
+      expect(labelTexts).toContain('Active Messages');
+      expect(labelTexts).not.toContain('Lines');
+      expect(labelTexts).not.toContain('Stops');
+      expect(labelTexts).not.toContain('Itineraries');
+      expect(labelTexts).not.toContain('Devices Online');
+    });
+
+    it('should not display admin-only quick actions for AGENT', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const actionButtons = fixture.nativeElement.querySelectorAll('.action-btn span');
+      const actionTexts = Array.from(actionButtons).map((el: any) => el.textContent.trim());
+
+      expect(actionTexts).toContain('New Message');
+      expect(actionTexts).toContain('Network Map');
+      expect(actionTexts).not.toContain('Manage Lines');
+      expect(actionTexts).not.toContain('Manage Stops');
+      expect(actionTexts).not.toContain('Edit Schedules');
+      expect(actionTexts).not.toContain('Register Device');
+      expect(actionTexts).not.toContain('Manage Users');
+    });
+
+    it('should not display the overview grid for AGENT', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const overviewGrid = fixture.nativeElement.querySelector('.overview-grid');
+      expect(overviewGrid).toBeFalsy();
+    });
+
+    it('should set loading to false on error for AGENT', () => {
+      mockMessageService.getAll = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
+
+      fixture.detectChanges();
+
+      expect(component.loading()).toBe(false);
     });
   });
 });

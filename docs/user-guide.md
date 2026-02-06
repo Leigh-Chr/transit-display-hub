@@ -24,7 +24,7 @@ Ce guide explique comment utiliser l'interface d'administration de Transit Displ
 ### Rôles
 
 - **Administrateur** : Accès complet (lignes, arrêts, itinéraires, horaires, messages, appareils, utilisateurs)
-- **Agent** : Gestion des messages broadcast uniquement
+- **Agent** : Gestion des messages broadcast, consultation du dashboard (messages et alertes), accès à la carte du réseau. Le menu latéral affiche uniquement Dashboard, Messages et Carte du réseau. Les listes de lignes et d'arrêts sont accessibles en lecture seule pour le ciblage des messages (scope Ligne/Arrêt).
 
 ### Se déconnecter
 
@@ -34,18 +34,25 @@ Cliquez sur **Logout** dans le coin supérieur droit.
 
 ## Dashboard
 
-Le tableau de bord affiche un résumé de votre réseau :
+Le tableau de bord affiche un résumé adapté à votre rôle.
+
+### Vue Administrateur
 
 - **Lignes** : Nombre total de lignes configurées
 - **Arrêts** : Nombre total d'arrêts
 - **Messages actifs** : Messages broadcast actuellement diffusés
 - **Appareils en ligne** : Nombre d'écrans connectés / total
+- **Vue d'ensemble** : Aperçu des lignes du réseau et santé des appareils
+- **Actions rapides** : Accès direct à la gestion des lignes, arrêts, horaires, appareils et utilisateurs
+
+### Vue Agent
+
+- **Messages actifs** : Messages broadcast actuellement diffusés
+- **Actions rapides** : Créer un message, accéder à la carte du réseau
 
 ### Alertes
 
-Les alertes apparaissent quand :
-- Un message **CRITIQUE** est actif
-- Un appareil est **hors ligne**
+Les alertes (messages critiques et messages récents) sont visibles par tous les rôles. Les alertes d'appareils hors ligne ne sont visibles que par les administrateurs.
 
 ---
 

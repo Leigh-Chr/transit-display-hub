@@ -51,6 +51,10 @@ public class SecurityConfig {
                         // Read-only public access to stop schedules (for network map timetable)
                         .requestMatchers(HttpMethod.GET, "/api/v2/stops/*/schedules").permitAll()
 
+                        // Read-only access for ADMIN + AGENT (for message scope selection)
+                        .requestMatchers(HttpMethod.GET, "/api/lines/**").hasAnyRole("ADMIN", "AGENT")
+                        .requestMatchers(HttpMethod.GET, "/api/stops/**").hasAnyRole("ADMIN", "AGENT")
+
                         // Admin only endpoints
                         .requestMatchers("/api/itineraries/**").hasRole("ADMIN")
                         .requestMatchers("/api/lines/**").hasRole("ADMIN")

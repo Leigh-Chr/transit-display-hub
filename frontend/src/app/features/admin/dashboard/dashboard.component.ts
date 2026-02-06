@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
+import { AuthService } from '@core/auth/auth.service';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ItineraryService } from '@core/api/itinerary.service';
@@ -38,42 +39,44 @@ import { gridStagger, fadeIn } from '@shared/animations';
         <app-stats-skeleton />
       } @else {
         <!-- Stats Grid -->
-        <div class="stats-grid" [@gridStagger]="5">
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon lines-icon">
-                <mat-icon>subway</mat-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ lines().length }}</div>
-                <div class="stat-label">Lines</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+        <div class="stats-grid" [@gridStagger]="isAdmin() ? 5 : 1">
+          @if (isAdmin()) {
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon lines-icon">
+                  <mat-icon>subway</mat-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value">{{ lines().length }}</div>
+                  <div class="stat-label">Lines</div>
+                </div>
+              </mat-card-content>
+            </mat-card>
 
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon stops-icon">
-                <mat-icon>place</mat-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ stops().length }}</div>
-                <div class="stat-label">Stops</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon stops-icon">
+                  <mat-icon>place</mat-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value">{{ stops().length }}</div>
+                  <div class="stat-label">Stops</div>
+                </div>
+              </mat-card-content>
+            </mat-card>
 
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon routes-icon">
-                <mat-icon>alt_route</mat-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ itineraries().length }}</div>
-                <div class="stat-label">Itineraries</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon routes-icon">
+                  <mat-icon>alt_route</mat-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value">{{ itineraries().length }}</div>
+                  <div class="stat-label">Itineraries</div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
 
           <mat-card class="stat-card">
             <mat-card-content>
@@ -87,26 +90,29 @@ import { gridStagger, fadeIn } from '@shared/animations';
             </mat-card-content>
           </mat-card>
 
-          <mat-card class="stat-card">
-            <mat-card-content>
-              <div class="stat-icon devices-icon" [class.warning]="devices().length > 0 && deviceHealthPercent() < 100">
-                <mat-icon>{{ devices().length === 0 || deviceHealthPercent() === 100 ? 'tv' : 'tv_off' }}</mat-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">
-                  @if (devices().length === 0) {
-                    —
-                  } @else {
-                    {{ onlineDevices() }}/{{ devices().length }}
-                  }
+          @if (isAdmin()) {
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <div class="stat-icon devices-icon" [class.warning]="devices().length > 0 && deviceHealthPercent() < 100">
+                  <mat-icon>{{ devices().length === 0 || deviceHealthPercent() === 100 ? 'tv' : 'tv_off' }}</mat-icon>
                 </div>
-                <div class="stat-label">Devices Online</div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+                <div class="stat-info">
+                  <div class="stat-value">
+                    @if (devices().length === 0) {
+                      —
+                    } @else {
+                      {{ onlineDevices() }}/{{ devices().length }}
+                    }
+                  </div>
+                  <div class="stat-label">Devices Online</div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
         </div>
 
         <!-- Network Overview -->
+        @if (isAdmin()) {
         <div class="overview-grid" @fadeIn>
           <!-- Lines Overview -->
           <mat-card class="overview-card">
@@ -197,6 +203,8 @@ import { gridStagger, fadeIn } from '@shared/animations';
             </mat-card-content>
           </mat-card>
         </div>
+
+        }
 
         <!-- Critical Messages Section -->
         @if (criticalMessages().length > 0) {
@@ -293,30 +301,34 @@ import { gridStagger, fadeIn } from '@shared/animations';
                 <mat-icon>campaign</mat-icon>
                 <span>New Message</span>
               </a>
-              <a mat-stroked-button routerLink="/admin/lines" class="action-btn">
-                <mat-icon>subway</mat-icon>
-                <span>Manage Lines</span>
-              </a>
-              <a mat-stroked-button routerLink="/admin/stops" class="action-btn">
-                <mat-icon>place</mat-icon>
-                <span>Manage Stops</span>
-              </a>
-              <a mat-stroked-button routerLink="/admin/schedules" class="action-btn">
-                <mat-icon>schedule</mat-icon>
-                <span>Edit Schedules</span>
-              </a>
-              <a mat-stroked-button routerLink="/admin/devices" class="action-btn">
-                <mat-icon>tv</mat-icon>
-                <span>Register Device</span>
-              </a>
+              @if (isAdmin()) {
+                <a mat-stroked-button routerLink="/admin/lines" class="action-btn">
+                  <mat-icon>subway</mat-icon>
+                  <span>Manage Lines</span>
+                </a>
+                <a mat-stroked-button routerLink="/admin/stops" class="action-btn">
+                  <mat-icon>place</mat-icon>
+                  <span>Manage Stops</span>
+                </a>
+                <a mat-stroked-button routerLink="/admin/schedules" class="action-btn">
+                  <mat-icon>schedule</mat-icon>
+                  <span>Edit Schedules</span>
+                </a>
+                <a mat-stroked-button routerLink="/admin/devices" class="action-btn">
+                  <mat-icon>tv</mat-icon>
+                  <span>Register Device</span>
+                </a>
+              }
               <a mat-stroked-button routerLink="/map" class="action-btn">
                 <mat-icon>map</mat-icon>
                 <span>Network Map</span>
               </a>
-              <a mat-stroked-button routerLink="/admin/users" class="action-btn">
-                <mat-icon>people</mat-icon>
-                <span>Manage Users</span>
-              </a>
+              @if (isAdmin()) {
+                <a mat-stroked-button routerLink="/admin/users" class="action-btn">
+                  <mat-icon>people</mat-icon>
+                  <span>Manage Users</span>
+                </a>
+              }
             </div>
           </mat-card-content>
         </mat-card>
@@ -866,11 +878,14 @@ import { gridStagger, fadeIn } from '@shared/animations';
   `,
 })
 export class DashboardComponent implements OnInit {
+  private readonly authService = inject(AuthService);
   private readonly lineService = inject(LineService);
   private readonly stopService = inject(StopService);
   private readonly itineraryService = inject(ItineraryService);
   private readonly messageService = inject(MessageService);
   private readonly deviceService = inject(DeviceService);
+
+  readonly isAdmin = this.authService.isAdmin;
 
   loading = signal(true);
   lines = signal<Line[]>([]);
@@ -927,27 +942,43 @@ export class DashboardComponent implements OnInit {
   loadData(): void {
     this.loading.set(true);
 
-    forkJoin({
-      lines: this.lineService.getAll(),
-      stops: this.stopService.getAll(),
-      itineraries: this.itineraryService.getAll(),
-      activeMessages: this.messageService.getAll(true),
-      allMessages: this.messageService.getAll(),
-      devices: this.deviceService.getAll(),
-    }).subscribe({
-      next: ({ lines, stops, itineraries, activeMessages, allMessages, devices }) => {
-        this.lines.set(lines);
-        this.stops.set(stops);
-        this.itineraries.set(itineraries);
-        this.activeMessages.set(activeMessages);
-        this.allMessages.set(allMessages);
-        this.devices.set(devices);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      },
-    });
+    if (this.isAdmin()) {
+      forkJoin({
+        lines: this.lineService.getAll(),
+        stops: this.stopService.getAll(),
+        itineraries: this.itineraryService.getAll(),
+        activeMessages: this.messageService.getAll(true),
+        allMessages: this.messageService.getAll(),
+        devices: this.deviceService.getAll(),
+      }).subscribe({
+        next: ({ lines, stops, itineraries, activeMessages, allMessages, devices }) => {
+          this.lines.set(lines);
+          this.stops.set(stops);
+          this.itineraries.set(itineraries);
+          this.activeMessages.set(activeMessages);
+          this.allMessages.set(allMessages);
+          this.devices.set(devices);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
+    } else {
+      forkJoin({
+        activeMessages: this.messageService.getAll(true),
+        allMessages: this.messageService.getAll(),
+      }).subscribe({
+        next: ({ activeMessages, allMessages }) => {
+          this.activeMessages.set(activeMessages);
+          this.allMessages.set(allMessages);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
+    }
   }
 
   getMessageStatus(message: BroadcastMessage): 'active' | 'scheduled' | 'expired' {

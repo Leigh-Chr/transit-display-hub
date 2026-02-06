@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 
 export const routes: Routes = [
   {
@@ -27,18 +28,26 @@ export const routes: Routes = [
       },
       {
         path: 'lines',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
         loadComponent: () => import('./features/admin/lines/lines.component').then(m => m.LinesComponent)
       },
       {
         path: 'stops',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
         loadComponent: () => import('./features/admin/stops/stops.component').then(m => m.StopsComponent)
       },
       {
         path: 'itineraries',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
         loadComponent: () => import('./features/admin/itineraries/itineraries.component').then(m => m.ItinerariesComponent)
       },
       {
         path: 'schedules',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
         loadComponent: () => import('./features/admin/schedules/schedules.component').then(m => m.SchedulesComponent)
       },
       {
@@ -47,10 +56,14 @@ export const routes: Routes = [
       },
       {
         path: 'devices',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
         loadComponent: () => import('./features/admin/devices/devices.component').then(m => m.DevicesComponent)
       },
       {
         path: 'users',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
         loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
       }
     ]

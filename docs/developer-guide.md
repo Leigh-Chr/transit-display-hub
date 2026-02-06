@@ -278,8 +278,9 @@ src/app/
 ├── core/
 │   ├── auth/
 │   │   ├── auth.service.ts       # Gestion authentification (Signals)
-│   │   ├── auth.guard.ts         # Protection des routes
-│   │   └── auth.interceptor.ts   # Ajout token JWT aux requêtes
+│   │   ├── auth.guard.ts         # Protection des routes (authentification)
+│   │   ├── role.guard.ts         # Protection des routes (autorisation par rôle)
+│   │   └── auth.interceptor.ts   # Ajout token JWT, gestion 403
 │   ├── api/
 │   │   ├── line.service.ts
 │   │   ├── stop.service.ts
@@ -344,14 +345,14 @@ src/app/
 { path: 'login', loadComponent: () => import('./features/auth/login/...') },
 { path: 'admin', canActivate: [authGuard], loadComponent: () => ...,
   children: [
-    { path: 'dashboard', loadComponent: () => ... },
-    { path: 'lines', loadComponent: () => ... },
-    { path: 'stops', loadComponent: () => ... },
-    { path: 'itineraries', loadComponent: () => ... },
-    { path: 'schedules', loadComponent: () => ... },
-    { path: 'messages', loadComponent: () => ... },
-    { path: 'devices', loadComponent: () => ... },
-    { path: 'users', loadComponent: () => ... },
+    { path: 'dashboard', loadComponent: () => ... },                              // ADMIN + AGENT
+    { path: 'messages', loadComponent: () => ... },                               // ADMIN + AGENT
+    { path: 'lines', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } }, // ADMIN only
+    { path: 'stops', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
+    { path: 'itineraries', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
+    { path: 'schedules', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
+    { path: 'devices', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
+    { path: 'users', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
   ]
 },
 { path: 'map', loadComponent: () => ... },      // Carte réseau (public)

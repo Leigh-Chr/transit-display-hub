@@ -134,11 +134,11 @@ class LineControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns 403 for AGENT role")
-        void withAgentRole_Returns403() throws Exception {
+        @DisplayName("returns 200 for AGENT role")
+        void withAgentRole_Returns200() throws Exception {
             mockMvc.perform(get("/api/lines")
                             .header("Authorization", "Bearer " + agentToken))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk());
         }
 
         @Test

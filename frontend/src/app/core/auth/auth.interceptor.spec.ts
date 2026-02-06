@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
 import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
@@ -12,6 +13,9 @@ describe('authInterceptor', () => {
     getToken: MockedFunction<() => string | null>;
     logout: MockedFunction<() => void>;
   };
+  let snackBarSpy: {
+    open: MockedFunction<MatSnackBar['open']>;
+  };
 
   const testUrl = '/api/test';
   const loginUrl = '/api/auth/login';
@@ -21,12 +25,16 @@ describe('authInterceptor', () => {
       getToken: vi.fn(),
       logout: vi.fn()
     };
+    snackBarSpy = {
+      open: vi.fn()
+    };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceSpy }
+        { provide: AuthService, useValue: authServiceSpy },
+        { provide: MatSnackBar, useValue: snackBarSpy }
       ]
     });
 
@@ -134,6 +142,52 @@ describe('authInterceptor', () => {
 
       const req = httpMock.expectOne(testUrl);
       req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+    });
+  });
+
+  describe('403 error handling', () => {
+    it('should show snackbar on 403 error', () => {
+      authServiceSpy.getToken.mockReturnValue('token');
+
+      httpClient.get(testUrl).subscribe({
+        error: () => {
+          expect(snackBarSpy.open).toHaveBeenCalledWith(
+            'Access denied: insufficient permissions',
+            'Close',
+            { duration: 5000 }
+          );
+        }
+      });
+
+      const req = httpMock.expectOne(testUrl);
+      req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+    });
+
+    it('should re-throw the error after showing snackbar', () => {
+      authServiceSpy.getToken.mockReturnValue('token');
+
+      httpClient.get(testUrl).subscribe({
+        error: (err: HttpErrorResponse) => {
+          expect(err.status).toBe(403);
+          expect(snackBarSpy.open).toHaveBeenCalled();
+        }
+      });
+
+      const req = httpMock.expectOne(testUrl);
+      req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+    });
+
+    it('should not show snackbar for non-403 errors', () => {
+      authServiceSpy.getToken.mockReturnValue('token');
+
+      httpClient.get(testUrl).subscribe({
+        error: () => {
+          expect(snackBarSpy.open).not.toHaveBeenCalled();
+        }
+      });
+
+      const req = httpMock.expectOne(testUrl);
+      req.flush({ message: 'Server error' }, { status: 500, statusText: 'Internal Server Error' });
     });
   });
 

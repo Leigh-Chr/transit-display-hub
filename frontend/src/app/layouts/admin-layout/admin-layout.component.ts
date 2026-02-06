@@ -54,48 +54,50 @@ import { routeSlide } from '@shared/animations';
             <span matListItemTitle>Dashboard</span>
           </a>
 
-          <mat-divider></mat-divider>
-          <div class="nav-section-title">Network</div>
+          @if (authService.isAdmin()) {
+            <mat-divider></mat-divider>
+            <div class="nav-section-title">Network</div>
 
-          <a
-            mat-list-item
-            routerLink="/admin/lines"
-            routerLinkActive="active-link"
-            (click)="closeSidenavOnMobile()"
-          >
-            <mat-icon matListItemIcon>subway</mat-icon>
-            <span matListItemTitle>Lines</span>
-          </a>
+            <a
+              mat-list-item
+              routerLink="/admin/lines"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>subway</mat-icon>
+              <span matListItemTitle>Lines</span>
+            </a>
 
-          <a
-            mat-list-item
-            routerLink="/admin/stops"
-            routerLinkActive="active-link"
-            (click)="closeSidenavOnMobile()"
-          >
-            <mat-icon matListItemIcon>place</mat-icon>
-            <span matListItemTitle>Stops</span>
-          </a>
+            <a
+              mat-list-item
+              routerLink="/admin/stops"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>place</mat-icon>
+              <span matListItemTitle>Stops</span>
+            </a>
 
-          <a
-            mat-list-item
-            routerLink="/admin/itineraries"
-            routerLinkActive="active-link"
-            (click)="closeSidenavOnMobile()"
-          >
-            <mat-icon matListItemIcon>route</mat-icon>
-            <span matListItemTitle>Itineraries</span>
-          </a>
+            <a
+              mat-list-item
+              routerLink="/admin/itineraries"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>route</mat-icon>
+              <span matListItemTitle>Itineraries</span>
+            </a>
 
-          <a
-            mat-list-item
-            routerLink="/admin/schedules"
-            routerLinkActive="active-link"
-            (click)="closeSidenavOnMobile()"
-          >
-            <mat-icon matListItemIcon>schedule</mat-icon>
-            <span matListItemTitle>Schedules</span>
-          </a>
+            <a
+              mat-list-item
+              routerLink="/admin/schedules"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>schedule</mat-icon>
+              <span matListItemTitle>Schedules</span>
+            </a>
+          }
 
           <a
             mat-list-item
@@ -120,17 +122,17 @@ import { routeSlide } from '@shared/animations';
             <span matListItemTitle>Messages</span>
           </a>
 
-          <a
-            mat-list-item
-            routerLink="/admin/devices"
-            routerLinkActive="active-link"
-            (click)="closeSidenavOnMobile()"
-          >
-            <mat-icon matListItemIcon>tv</mat-icon>
-            <span matListItemTitle>Devices</span>
-          </a>
-
           @if (authService.isAdmin()) {
+            <a
+              mat-list-item
+              routerLink="/admin/devices"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>tv</mat-icon>
+              <span matListItemTitle>Devices</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 

@@ -174,30 +174,59 @@ describe('AdminLayoutComponent', () => {
   });
 
   describe('template rendering', () => {
-    it('should show Users nav link when authService.isAdmin() is true', async () => {
+    it('should show all nav links when authService.isAdmin() is true', async () => {
       mockAuthService.isAdmin.set(true);
       fixture.detectChanges();
       await fixture.whenStable();
 
       const navLinks = fixture.nativeElement.querySelectorAll('a[mat-list-item]');
-      const usersLink = Array.from(navLinks).find(
-        (link: any) => link.textContent?.includes('Users')
+      const hasLink = (name: string) => Array.from(navLinks).some(
+        (link: any) => link.textContent?.includes(name)
       );
 
-      expect(usersLink).toBeTruthy();
+      expect(hasLink('Users')).toBe(true);
+      expect(hasLink('Lines')).toBe(true);
+      expect(hasLink('Stops')).toBe(true);
+      expect(hasLink('Itineraries')).toBe(true);
+      expect(hasLink('Schedules')).toBe(true);
+      expect(hasLink('Devices')).toBe(true);
+      expect(hasLink('Dashboard')).toBe(true);
+      expect(hasLink('Messages')).toBe(true);
+      expect(hasLink('Network Map')).toBe(true);
     });
 
-    it('should hide Users nav link when authService.isAdmin() is false', async () => {
+    it('should hide admin-only nav links when authService.isAdmin() is false', async () => {
       mockAuthService.isAdmin.set(false);
       fixture.detectChanges();
       await fixture.whenStable();
 
       const navLinks = fixture.nativeElement.querySelectorAll('a[mat-list-item]');
-      const usersLink = Array.from(navLinks).find(
-        (link: any) => link.textContent?.includes('Users')
+      const hasLink = (name: string) => Array.from(navLinks).some(
+        (link: any) => link.textContent?.includes(name)
       );
 
-      expect(usersLink).toBeFalsy();
+      expect(hasLink('Lines')).toBe(false);
+      expect(hasLink('Stops')).toBe(false);
+      expect(hasLink('Itineraries')).toBe(false);
+      expect(hasLink('Schedules')).toBe(false);
+      expect(hasLink('Devices')).toBe(false);
+      expect(hasLink('Users')).toBe(false);
+    });
+
+    it('should always show Dashboard, Messages, and Network Map links', async () => {
+      mockAuthService.isAdmin.set(false);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const navLinks = fixture.nativeElement.querySelectorAll('a[mat-list-item]');
+      const hasLink = (name: string) => Array.from(navLinks).some(
+        (link: any) => link.textContent?.includes(name)
+      );
+
+      expect(hasLink('Dashboard')).toBe(true);
+      expect(hasLink('Messages')).toBe(true);
+      expect(hasLink('Network Map')).toBe(true);
+      expect(navLinks.length).toBe(3);
     });
 
     it('should show username when not on mobile', async () => {

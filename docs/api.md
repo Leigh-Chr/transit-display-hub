@@ -49,7 +49,9 @@ Content-Type: application/json
 | `GET /api/itineraries/**` | Public |
 | `GET /api/v2/stops/*/schedules` | Public |
 | `/api/messages/**` | Admin, Agent |
-| `/api/lines/**`, `/api/stops/**`, `/api/v2/**` | Admin |
+| `GET /api/lines/**`, `GET /api/stops/**` | Admin, Agent |
+| `/api/lines/**`, `/api/stops/**` (POST, PUT, DELETE) | Admin |
+| `/api/v2/**` (POST, PUT, DELETE) | Admin |
 | `/api/itineraries/**` (POST, PUT, DELETE) | Admin |
 | `/api/devices/**`, `/api/users/**` | Admin |
 
