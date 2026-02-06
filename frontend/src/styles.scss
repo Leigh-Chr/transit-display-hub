@@ -50,8 +50,8 @@ html {
       tertiary: mat.$orange-palette,
     ),
     typography: (
-      brand-family: 'Roboto, system-ui, sans-serif',
-      plain-family: 'Roboto, system-ui, sans-serif',
+      brand-family: 'Inter, system-ui, sans-serif',
+      plain-family: 'Inter, system-ui, sans-serif',
       bold-weight: 700,
       medium-weight: 500,
       regular-weight: 400,
@@ -139,11 +139,76 @@ html {
     --app-surface-tinted: color-mix(in srgb, var(--mat-sys-primary, #0078D4) 5%, var(--app-surface));
   }
 
-  // === Sidebar (admin navigation) ===
+  // === Sidebar (admin navigation — always dark) ===
   --app-sidebar-bg: #1A1A2E;
   --app-sidebar-text: rgba(255, 255, 255, 0.87);
   --app-sidebar-text-muted: rgba(255, 255, 255, 0.6);
   --app-sidebar-active: #0F4C75;
+  --app-sidebar-border: rgba(255, 255, 255, 0.12);
+
+  // === Aliases (referenced by components) ===
+  --app-primary: var(--mat-sys-primary, #0078D4);
+  --app-primary-container: var(--mat-sys-primary-container, #e3f2fd);
+  --app-on-primary-container: var(--mat-sys-on-primary-container, #1565c0);
+  --app-surface-container-highest: #E0E0E0;
+  --app-surface-hover: rgba(0, 0, 0, 0.04);
+
+  // === Network Map (theme-adaptive) ===
+  --app-map-surface: #ffffff;
+  --app-map-surface-variant: #f5f5f5;
+  --app-map-surface-container: #fafafa;
+  --app-map-surface-container-high: #f0f0f0;
+  --app-map-surface-container-higher: #e8e8e8;
+  --app-map-on-surface: #333333;
+  --app-map-on-surface-variant: #555555;
+  --app-map-on-surface-muted: #888888;
+  --app-map-accent: #1976d2;
+  --app-map-outline: #d0d0d0;
+  --app-map-outline-subtle: #e0e0e0;
+  --app-map-overlay-bg: rgba(255, 255, 255, 0.92);
+  --app-map-input-bg: rgba(0, 0, 0, 0.04);
+  --app-map-input-placeholder: rgba(0, 0, 0, 0.38);
+  --app-map-shadow: rgba(0, 0, 0, 0.12);
+  --app-map-chip-inactive: #555555;
+  --app-map-stop-stroke: white;
+
+  // === Kiosk Display (always dark, dedicated screens) ===
+  --app-kiosk-surface: #000000;
+  --app-kiosk-on-surface: #ffffff;
+  --app-kiosk-on-surface-muted: rgba(255, 255, 255, 0.5);
+  --app-kiosk-border: rgba(255, 255, 255, 0.25);
+  --app-kiosk-border-subtle: rgba(255, 255, 255, 0.15);
+  --app-kiosk-border-faint: rgba(255, 255, 255, 0.1);
+  --app-kiosk-alert-bg: #C62828;
+  --app-kiosk-info-accent: #64B5F6;
+  --app-kiosk-warning-accent: #FFB74D;
+  --app-kiosk-info-bg: rgba(33, 150, 243, 0.1);
+  --app-kiosk-info-bg-subtle: rgba(33, 150, 243, 0.05);
+  --app-kiosk-info-border: rgba(33, 150, 243, 0.3);
+  --app-kiosk-connection-error: rgba(244, 67, 54, 0.9);
+  --app-kiosk-error-icon: #F44336;
+  --app-kiosk-text-shadow: rgba(0, 0, 0, 0.3);
+  --app-kiosk-text-shadow-strong: rgba(0, 0, 0, 0.4);
+
+  // === Dashboard Stat Icons ===
+  --app-stat-lines: linear-gradient(135deg, #6366f1, #4f46e5);
+  --app-stat-stops: linear-gradient(135deg, #ec4899, #db2777);
+  --app-stat-routes: linear-gradient(135deg, #14b8a6, #0d9488);
+  --app-stat-messages: linear-gradient(135deg, #f59e0b, #d97706);
+  --app-stat-devices: linear-gradient(135deg, #22c55e, #16a34a);
+  --app-stat-devices-warning: linear-gradient(135deg, #ef4444, #dc2626);
+
+  // === Standardization Tokens ===
+  --app-radius-xs: 4px;
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+  --app-radius-lg: 16px;
+  --app-radius-pill: 20px;
+  --app-line-badge-radius: 16px;
+  --app-dialog-min-width: 380px;
+  --app-dialog-min-width-lg: 420px;
+  --app-actions-column-width: 140px;
+  --app-gap-grid: 20px;
 }
 
 // Dark theme overrides
@@ -188,6 +253,32 @@ html {
   @supports (color: color-mix(in srgb, red 50%, blue)) {
     --app-surface-tinted: color-mix(in srgb, var(--mat-sys-primary, #60A5FA) 4%, var(--app-surface));
   }
+
+  // Aliases
+  --app-primary: var(--mat-sys-primary, #60A5FA);
+  --app-primary-container: var(--mat-sys-primary-container, #1E3A5F);
+  --app-on-primary-container: var(--mat-sys-on-primary-container, #90CAF9);
+  --app-surface-container-highest: #484F58;
+  --app-surface-hover: rgba(255, 255, 255, 0.06);
+
+  // Network Map dark overrides
+  --app-map-surface: #0f0f1a;
+  --app-map-surface-variant: #1a1a2e;
+  --app-map-surface-container: #16213e;
+  --app-map-surface-container-high: #2a2a4a;
+  --app-map-surface-container-higher: #3a3a5a;
+  --app-map-on-surface: #e0e0e0;
+  --app-map-on-surface-variant: rgba(255, 255, 255, 0.6);
+  --app-map-on-surface-muted: rgba(255, 255, 255, 0.4);
+  --app-map-accent: #64b5f6;
+  --app-map-outline: rgba(255, 255, 255, 0.1);
+  --app-map-outline-subtle: rgba(255, 255, 255, 0.08);
+  --app-map-overlay-bg: rgba(26, 26, 46, 0.88);
+  --app-map-input-bg: rgba(255, 255, 255, 0.07);
+  --app-map-input-placeholder: rgba(255, 255, 255, 0.3);
+  --app-map-shadow: rgba(0, 0, 0, 0.3);
+  --app-map-chip-inactive: #888888;
+  --app-map-stop-stroke: var(--app-map-surface-variant);
 }
 
 // ----------------------------------------------------------------------------
@@ -261,7 +352,7 @@ body {
   // Override mat-sidenav background
   --mat-sidenav-container-background-color: var(--app-sidebar-bg);
   --mat-sidenav-container-text-color: var(--app-sidebar-text);
-  --mat-sidenav-container-divider-color: rgba(255, 255, 255, 0.12);
+  --mat-sidenav-container-divider-color: var(--app-sidebar-border);
 
   // Force all text and icons to be light colored
   mat-nav-list {
@@ -281,7 +372,7 @@ body {
     --mdc-list-item-focus-state-layer-opacity: 1;
 
     a[mat-list-item] {
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       margin: 2px 8px;
 
       // Force text color with direct styling
@@ -328,7 +419,7 @@ body {
 
   // Override mat-divider
   mat-divider {
-    --mat-divider-color: rgba(255, 255, 255, 0.12);
+    --mat-divider-color: var(--app-sidebar-border);
   }
 }
 
@@ -403,17 +494,6 @@ mat-card {
     opacity: 0.7;
     transition: opacity var(--m3-duration-short3) var(--m3-easing-standard);
   }
-}
-
-// Dark autocomplete panel (for overlays rendered outside dark-theme contexts)
-div.mat-mdc-autocomplete-panel.dark-autocomplete {
-  --mat-autocomplete-background-color: #1a1a2e;
-  --mat-option-label-text-color: rgba(255, 255, 255, 0.85);
-  --mat-option-hover-state-layer-color: rgba(255, 255, 255, 0.08);
-  --mat-option-focus-state-layer-color: rgba(255, 255, 255, 0.12);
-  --mat-option-selected-state-layer-color: rgba(255, 255, 255, 0.12);
-  --mat-option-selected-state-label-text-color: #fff;
-  background-color: #1a1a2e;
 }
 
 // Dialogs - consistent appearance
@@ -655,7 +735,7 @@ div.mat-mdc-autocomplete-panel.dark-autocomplete {
 // Responsive cards
 @media (max-width: 600px) {
   mat-card {
-    border-radius: 8px !important;
+    border-radius: var(--app-radius-sm) !important;
   }
 }
 

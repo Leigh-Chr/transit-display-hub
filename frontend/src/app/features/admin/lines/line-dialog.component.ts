@@ -76,7 +76,7 @@ interface LineForm {
               matInput
               [(ngModel)]="form.color"
               name="color"
-              placeholder="#3B82F6"
+              placeholder="#0078D4"
               required
             />
           </mat-form-field>
@@ -106,7 +106,7 @@ interface LineForm {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-width: 380px;
+      min-width: var(--app-dialog-min-width);
       padding-top: 12px;
     }
 
@@ -128,7 +128,7 @@ interface LineForm {
       width: 56px;
       height: 56px;
       border: 1px solid var(--app-outline);
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       cursor: pointer;
       padding: 4px;
       background: var(--app-surface-container);
@@ -140,7 +140,7 @@ interface LineForm {
     }
 
     .color-picker:focus {
-      outline: 2px solid var(--mat-sys-primary);
+      outline: 2px solid var(--app-primary);
       outline-offset: 2px;
     }
   `,
@@ -154,7 +154,7 @@ export class LineDialogComponent {
   form: LineForm = {
     code: this.data.line?.code ?? '',
     name: this.data.line?.name ?? '',
-    color: this.data.line?.color ?? '#3B82F6',
+    color: this.data.line?.color ?? '#0078D4',
     type: this.data.line?.type ?? null,
   };
 

@@ -21,8 +21,8 @@ import { SkeletonComponent } from './skeleton.component';
   styles: `
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--app-gap-grid);
     }
 
     .stat-card mat-card-content {

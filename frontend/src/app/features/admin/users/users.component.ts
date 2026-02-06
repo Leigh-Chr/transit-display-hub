@@ -171,7 +171,7 @@ import { fadeIn } from '@shared/animations';
     }
 
     mat-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       overflow: hidden;
     }
 
@@ -192,7 +192,7 @@ import { fadeIn } from '@shared/animations';
     .role-badge {
       display: inline-block;
       padding: 4px 12px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
@@ -209,7 +209,7 @@ import { fadeIn } from '@shared/animations';
     .status-badge {
       display: inline-block;
       padding: 4px 12px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       font-size: 12px;
       font-weight: 600;
       background-color: var(--app-critical-container);
@@ -223,7 +223,7 @@ import { fadeIn } from '@shared/animations';
 
     .actions-column {
       text-align: right;
-      width: 120px;
+      width: var(--app-actions-column-width);
     }
   `,
 })

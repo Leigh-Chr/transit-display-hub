@@ -82,7 +82,7 @@ interface DeviceForm {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-width: 350px;
+      min-width: var(--app-dialog-min-width);
       padding-top: 8px;
     }
 

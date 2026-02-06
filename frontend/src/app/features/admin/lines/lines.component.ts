@@ -176,11 +176,11 @@ import { gridStagger } from '@shared/animations';
     .lines-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+      gap: var(--app-gap-grid);
     }
 
     .line-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .line-header {
@@ -193,7 +193,7 @@ import { gridStagger } from '@shared/animations';
     .line-code {
       display: inline-block;
       padding: 8px 18px;
-      border-radius: 24px;
+      border-radius: var(--app-line-badge-radius);
       color: white;
       font-size: 18px;
       font-weight: 700;
@@ -215,7 +215,7 @@ import { gridStagger } from '@shared/animations';
 
     .line-stats {
       display: flex;
-      gap: 20px;
+      gap: var(--app-gap-grid);
       margin-bottom: 16px;
     }
 
@@ -236,11 +236,11 @@ import { gridStagger } from '@shared/animations';
 
     mat-paginator {
       margin-top: 24px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     mat-card:not(.line-card) {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
   `,
 })

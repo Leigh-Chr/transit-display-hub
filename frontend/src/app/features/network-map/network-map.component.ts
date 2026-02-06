@@ -18,6 +18,7 @@ import { SchematicMapComponent } from './components/schematic-map/schematic-map.
 import { RouteSearchBarComponent } from './components/route-search-bar/route-search-bar.component';
 import { StopPopupComponent, StopPopupData, LineAlertInfo } from './components/stop-popup/stop-popup.component';
 import { NetworkMap, NetworkMapAlerts } from '@shared/models';
+import { ThemeService } from '@core/services/theme.service';
 
 @Component({
   selector: 'app-network-map',
@@ -41,6 +42,9 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
           <h1>Network Map</h1>
         </div>
         <p class="subtitle">{{ subtitle() }}</p>
+        <button class="theme-toggle" (click)="themeService.toggleTheme()" title="Toggle theme">
+          <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
       </header>
 
       <main class="map-wrapper">
@@ -95,7 +99,6 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
                   <mat-autocomplete #stopAuto="matAutocomplete"
                     [displayWith]="stopDisplayFn"
                     (optionSelected)="onStopSearchSelected($event)"
-                    class="dark-autocomplete"
                   >
                     @for (stop of filteredStops(); track stop.id) {
                       <mat-option [value]="stop">
@@ -131,7 +134,7 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
     :host {
       display: block;
       min-height: 100vh;
-      background: #0f0f1a;
+      background: var(--app-map-surface);
     }
 
     .network-map-page {
@@ -150,6 +153,32 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       gap: 16px;
     }
 
+    .theme-toggle {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid var(--app-map-outline);
+      border-radius: 50%;
+      background: var(--app-map-overlay-bg);
+      color: var(--app-map-on-surface-variant);
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    .theme-toggle:hover {
+      background: var(--app-map-surface-container-high);
+    }
+
+    .theme-toggle mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
     .title-row {
       display: flex;
       align-items: center;
@@ -160,19 +189,19 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       margin: 0;
       font-size: 1.75rem;
       font-weight: 600;
-      color: #fff;
+      color: var(--app-map-on-surface);
     }
 
     .page-header mat-icon {
       font-size: 32px;
       width: 32px;
       height: 32px;
-      color: #64b5f6;
+      color: var(--app-map-accent);
     }
 
     .subtitle {
       margin: 0;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--app-map-on-surface-variant);
       font-size: 0.9375rem;
     }
 
@@ -180,9 +209,9 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       flex: 1;
       position: relative;
       min-height: 0;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 20px var(--app-map-shadow);
     }
 
     .route-search-overlay {
@@ -203,12 +232,12 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
 
     .stop-search-panel {
       width: 230px;
-      background: rgba(26, 26, 46, 0.88);
+      background: var(--app-map-overlay-bg);
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border: 1px solid var(--app-map-outline);
+      border-radius: var(--app-radius-md);
       padding: 10px 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 16px var(--app-map-shadow);
     }
 
     .stop-search-panel .panel-header {
@@ -222,7 +251,7 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       font-size: 14px;
       width: 14px;
       height: 14px;
-      color: #64b5f6;
+      color: var(--app-map-accent);
     }
 
     .stop-search-panel .panel-title {
@@ -230,19 +259,19 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-map-on-surface-muted);
       flex: 1;
     }
 
     .stop-search-field {
       width: 100%;
-      --mat-form-field-filled-container-color: rgba(255, 255, 255, 0.07);
+      --mat-form-field-filled-container-color: var(--app-map-input-bg);
       --mat-form-field-filled-container-shape: 6px;
       --mat-form-field-container-height: 40px;
       --mat-form-field-container-vertical-padding: 8px;
       --mat-form-field-container-text-size: 13px;
-      --mat-form-field-filled-input-text-color: #e0e0e0;
-      --mat-form-field-filled-input-text-placeholder-color: rgba(255, 255, 255, 0.3);
+      --mat-form-field-filled-input-text-color: var(--app-map-on-surface);
+      --mat-form-field-filled-input-text-placeholder-color: var(--app-map-input-placeholder);
       --mat-form-field-filled-active-indicator-height: 0;
       --mat-form-field-filled-focus-active-indicator-height: 0;
       --mat-form-field-focus-state-layer-opacity: 0;
@@ -254,7 +283,7 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       width: 16px;
       height: 16px;
       margin-right: 2px;
-      color: #64b5f6;
+      color: var(--app-map-accent);
     }
 
     .stop-search-panel .clear-btn {
@@ -264,15 +293,15 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       width: 24px;
       height: 24px;
       padding: 0;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--app-map-outline);
       border-radius: 50%;
-      background: #2a2a4a;
-      color: rgba(255, 255, 255, 0.5);
+      background: var(--app-map-surface-container-high);
+      color: var(--app-map-on-surface-muted);
       cursor: pointer;
     }
 
     .stop-search-panel .clear-btn:hover {
-      background: #3a3a5a;
+      background: var(--app-map-surface-container-higher);
     }
 
     .stop-search-panel .clear-btn mat-icon {
@@ -294,21 +323,20 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       justify-content: center;
       gap: 6px;
       padding: 6px 12px;
-      background: rgba(26, 26, 46, 0.88);
+      background: var(--app-map-overlay-bg);
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      color: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--app-map-outline);
+      border-radius: var(--app-radius-sm);
+      color: var(--app-map-on-surface-variant);
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 2px 8px var(--app-map-shadow);
     }
 
     .view-toggle-btn:hover {
-      background: rgba(26, 26, 46, 0.95);
-      color: rgba(255, 255, 255, 0.85);
+      background: var(--app-map-surface-container-high);
     }
 
     .view-toggle-btn mat-icon {
@@ -326,12 +354,12 @@ import { NetworkMap, NetworkMapAlerts } from '@shared/models';
       justify-content: center;
       height: 100%;
       gap: 16px;
-      color: rgba(255, 255, 255, 0.6);
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: var(--app-map-on-surface-variant);
+      background: linear-gradient(135deg, var(--app-map-surface-variant) 0%, var(--app-map-surface-container) 100%);
     }
 
     .error-state {
-      color: #ef5350;
+      color: var(--app-critical);
     }
 
     .error-state mat-icon,
@@ -367,6 +395,7 @@ export class NetworkMapComponent implements OnInit {
   private readonly routeFinder = inject(RouteFinderService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  readonly themeService = inject(ThemeService);
 
   private schematicMap = viewChild(SchematicMapComponent);
 

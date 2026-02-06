@@ -21,7 +21,7 @@ import { SkeletonComponent } from './skeleton.component';
   `,
   styles: `
     .card-skeleton {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     mat-card-content {

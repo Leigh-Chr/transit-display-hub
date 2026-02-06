@@ -404,8 +404,8 @@ function severityRank(s: MessageSeverity): number {
       flex-direction: column;
       width: 100%;
       height: 100%;
-      background: #fff;
-      border-radius: 8px;
+      background: var(--app-map-surface);
+      border-radius: var(--app-radius-sm);
       overflow: hidden;
     }
 
@@ -415,8 +415,8 @@ function severityRank(s: MessageSeverity): number {
       display: flex;
       gap: 8px;
       padding: 12px 16px;
-      background: #f5f5f5;
-      border-bottom: 1px solid #e0e0e0;
+      background: var(--app-map-surface-variant);
+      border-bottom: 1px solid var(--app-map-outline-subtle);
       flex-wrap: wrap;
       align-items: center;
     }
@@ -424,12 +424,12 @@ function severityRank(s: MessageSeverity): number {
     .filter-chip {
       position: relative;
       padding: 6px 14px;
-      border: 2px solid var(--chip-color, #888);
-      background: white;
-      color: var(--chip-color, #888);
+      border: 2px solid var(--chip-color, var(--app-map-chip-inactive));
+      background: var(--app-map-surface);
+      color: var(--chip-color, var(--app-map-chip-inactive));
       font-weight: 700;
       font-size: 13px;
-      border-radius: 20px;
+      border-radius: var(--app-radius-pill);
       cursor: pointer;
       transition: all 0.15s;
       user-select: none;
@@ -440,7 +440,7 @@ function severityRank(s: MessageSeverity): number {
     }
 
     .filter-chip.active {
-      background: var(--chip-color, #888);
+      background: var(--chip-color, var(--app-map-chip-inactive));
       color: white;
     }
 
@@ -455,7 +455,7 @@ function severityRank(s: MessageSeverity): number {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      border: 1.5px solid white;
+      border: 1.5px solid var(--app-map-surface);
     }
 
     .chip-alert-dot-critical { background: var(--app-critical); }
@@ -463,7 +463,7 @@ function severityRank(s: MessageSeverity): number {
     .chip-alert-dot-info { background: var(--app-info); }
 
     .all-chip {
-      --chip-color: #555;
+      --chip-color: var(--app-map-chip-inactive);
     }
 
     /* --- Alert overlay --- */
@@ -487,7 +487,7 @@ function severityRank(s: MessageSeverity): number {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #888;
+      color: var(--app-map-on-surface-muted);
       padding: 6px 4px 2px;
     }
 
@@ -496,12 +496,12 @@ function severityRank(s: MessageSeverity): number {
     }
 
     .alert-panel {
-      --mat-expansion-container-background-color: rgba(255, 255, 255, 0.88);
+      --mat-expansion-container-background-color: var(--app-map-overlay-bg);
       --mat-expansion-container-shape: 8px;
       --mat-expansion-header-text-size: 13px;
       --mat-expansion-header-text-weight: 600;
       backdrop-filter: blur(8px);
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 1px 6px var(--app-map-shadow);
     }
 
     .alert-panel + .alert-panel {
@@ -521,7 +521,7 @@ function severityRank(s: MessageSeverity): number {
 
     .alert-line-badge {
       padding: 2px 7px;
-      border-radius: 4px;
+      border-radius: var(--app-radius-xs);
       font-size: 11px;
       font-weight: 700;
       color: white;
@@ -542,7 +542,7 @@ function severityRank(s: MessageSeverity): number {
       margin: 0;
       font-size: 12.5px;
       line-height: 1.5;
-      color: #555;
+      color: var(--app-map-on-surface-variant);
     }
 
 
@@ -554,7 +554,7 @@ function severityRank(s: MessageSeverity): number {
     }
 
     .empty-selection-text {
-      color: #999;
+      color: var(--app-map-on-surface-muted);
       font-size: 15px;
     }
 
@@ -567,7 +567,7 @@ function severityRank(s: MessageSeverity): number {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+      background: linear-gradient(180deg, var(--app-map-surface-container) 0%, var(--app-map-surface) 100%);
       cursor: grab;
       touch-action: none;
       user-select: none;
@@ -592,7 +592,7 @@ function severityRank(s: MessageSeverity): number {
     }
 
     .interchange-connector {
-      stroke: rgba(150, 150, 150, 0.25);
+      stroke: var(--app-map-outline);
       stroke-width: 1.5;
       stroke-dasharray: 4 4;
     }
@@ -611,12 +611,12 @@ function severityRank(s: MessageSeverity): number {
     .line-name-label {
       font-size: 9px;
       font-weight: 500;
-      fill: #888;
+      fill: var(--app-map-on-surface-muted);
       font-family: system-ui, -apple-system, sans-serif;
     }
 
     .line-type-icon path {
-      fill: #999;
+      fill: var(--app-map-on-surface-muted);
     }
 
     .legend {
@@ -626,11 +626,11 @@ function severityRank(s: MessageSeverity): number {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid #d0d0d0;
-      border-radius: 8px;
+      background: var(--app-map-overlay-bg);
+      border: 1px solid var(--app-map-outline);
+      border-radius: var(--app-radius-sm);
       padding: 10px 14px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 1px 4px var(--app-map-shadow);
       z-index: 2;
       pointer-events: none;
     }
@@ -640,7 +640,7 @@ function severityRank(s: MessageSeverity): number {
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      color: #555;
+      color: var(--app-map-on-surface-variant);
       white-space: nowrap;
     }
 
@@ -665,16 +665,16 @@ function severityRank(s: MessageSeverity): number {
       width: 36px;
       height: 36px;
       padding: 0;
-      border: 1px solid #d0d0d0;
+      border: 1px solid var(--app-map-outline);
       border-radius: 50%;
-      background: white;
-      color: #444;
+      background: var(--app-map-surface);
+      color: var(--app-map-on-surface-variant);
       cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 1px 4px var(--app-map-shadow);
     }
 
     .zoom-btn:hover {
-      background: #f0f0f0;
+      background: var(--app-map-surface-container-high);
     }
 
     .zoom-btn mat-icon {
@@ -699,7 +699,7 @@ function severityRank(s: MessageSeverity): number {
 
     .search-highlight-ring {
       fill: none;
-      stroke: #64b5f6;
+      stroke: var(--app-map-accent);
       stroke-width: 3;
       animation: search-pulse 1.5s ease-in-out infinite;
     }
@@ -755,9 +755,9 @@ function severityRank(s: MessageSeverity): number {
     .stop-name {
       font-size: 12px;
       font-family: system-ui, -apple-system, sans-serif;
-      fill: #333;
+      fill: var(--app-map-on-surface);
       paint-order: stroke;
-      stroke: white;
+      stroke: var(--app-map-stop-stroke);
       stroke-width: 3px;
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -785,85 +785,39 @@ function severityRank(s: MessageSeverity): number {
       font-size: 11px;
     }
 
-    @media (prefers-color-scheme: dark) {
+    :host-context(.dark-theme) {
       .map-container {
-        background: #1a1a2e;
-      }
-
-      .empty-selection-text {
-        color: rgba(255, 255, 255, 0.4);
-      }
-
-      .alert-panel {
-        --mat-expansion-container-background-color: rgba(26, 26, 46, 0.88);
-        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
-      }
-
-      .alert-content {
-        color: #aaa;
-      }
-
-      .alert-section-label {
-        color: #777;
+        background: var(--app-map-surface-variant);
       }
 
       .chip-alert-dot {
-        border-color: #16213e;
+        border-color: var(--app-map-surface-container);
       }
 
       .line-filters {
-        background: #16213e;
-        border-bottom-color: #2a2a4a;
+        background: var(--app-map-surface-container);
+        border-bottom-color: var(--app-map-surface-container-high);
       }
 
       .filter-chip {
-        background: #1a1a2e;
-      }
-
-      .filter-chip.active {
-        background: var(--chip-color, #888);
+        background: var(--app-map-surface-variant);
       }
 
       .line-diagram-wrapper {
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        background: linear-gradient(180deg, var(--app-map-surface-variant) 0%, var(--app-map-surface-container) 100%);
       }
 
       .legend {
-        background: rgba(26, 26, 46, 0.92);
-        border-color: #3a3a5a;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-      }
-
-      .legend-item {
-        color: #bbb;
+        border-color: var(--app-map-surface-container-higher);
       }
 
       .zoom-btn {
-        background: #2a2a4a;
-        border-color: #3a3a5a;
-        color: #ccc;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        background: var(--app-map-surface-container-high);
+        border-color: var(--app-map-surface-container-higher);
       }
 
       .zoom-btn:hover {
-        background: #3a3a5a;
-      }
-
-      .line-name-label {
-        fill: #999;
-      }
-
-      .line-type-icon path {
-        fill: #777;
-      }
-
-      .stop-name {
-        fill: #e0e0e0;
-        stroke: #1a1a2e;
-      }
-
-      .interchange-connector {
-        stroke: rgba(255, 255, 255, 0.12);
+        background: var(--app-map-surface-container-higher);
       }
 
       .route-active-path {

@@ -54,11 +54,11 @@ import { MatIconModule } from '@angular/material/icon';
     }
 
     .empty-icon.primary {
-      background-color: var(--mat-sys-primary-container, #e3f2fd);
+      background-color: var(--app-primary-container);
     }
 
     .empty-icon.primary mat-icon {
-      color: var(--mat-sys-on-primary-container, #1565c0);
+      color: var(--app-on-primary-container);
     }
 
     .empty-title {

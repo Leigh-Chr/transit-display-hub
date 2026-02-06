@@ -33,7 +33,7 @@ import { SkeletonComponent } from './skeleton.component';
     .table-skeleton {
       padding: 0;
       overflow: hidden;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .skeleton-header {

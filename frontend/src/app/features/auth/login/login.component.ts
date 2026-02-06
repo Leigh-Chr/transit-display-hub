@@ -25,7 +25,12 @@ import { AuthService } from '@core/auth/auth.service';
     <main class="login-container">
       <mat-card class="login-card">
         <mat-card-header>
-          <h1 class="login-title">Transit Display Hub</h1>
+          <div class="login-brand">
+            <div class="brand-icon">
+              <mat-icon>directions_transit</mat-icon>
+            </div>
+            <h1 class="login-title">Transit Display Hub</h1>
+          </div>
         </mat-card-header>
 
         <mat-card-content>
@@ -89,19 +94,44 @@ import { AuthService } from '@core/auth/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--app-surface) 0%, var(--app-surface-variant) 100%);
+      background: linear-gradient(135deg, var(--app-sidebar-bg) 0%, var(--app-map-surface-container) 50%, var(--app-sidebar-active) 100%);
     }
 
     .login-card {
       width: 100%;
       max-width: 420px;
       padding: 24px;
-      border-radius: 16px;
+      border-radius: var(--app-radius-lg);
     }
 
     mat-card-header {
       justify-content: center;
       margin-bottom: 32px;
+    }
+
+    .login-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .brand-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--app-radius-lg);
+      background: linear-gradient(135deg, var(--app-primary), var(--app-sidebar-active));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+
+      mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
     }
 
     .login-title {
@@ -123,7 +153,7 @@ import { AuthService } from '@core/auth/auth.service';
       height: 52px;
       font-size: 16px;
       font-weight: 500;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
     }
 
     .submit-button mat-spinner {
@@ -137,7 +167,7 @@ import { AuthService } from '@core/auth/auth.service';
       padding: 14px 16px;
       margin-bottom: 16px;
       background-color: var(--app-critical-container);
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       color: var(--app-on-critical-container);
       font-size: 14px;
       font-weight: 500;

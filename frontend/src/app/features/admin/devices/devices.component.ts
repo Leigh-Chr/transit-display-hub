@@ -184,13 +184,13 @@ import { gridStagger } from '@shared/animations';
     .devices-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 20px;
+      gap: var(--app-gap-grid);
     }
 
     .device-card {
       display: flex;
       flex-direction: column;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .device-header {
@@ -229,7 +229,7 @@ import { gridStagger } from '@shared/animations';
     .line-badge {
       display: inline-block;
       padding: 4px 10px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       color: white;
       font-size: 12px;
       font-weight: 600;
@@ -238,7 +238,7 @@ import { gridStagger } from '@shared/animations';
     .status-badge {
       display: inline-block;
       padding: 6px 14px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
@@ -283,7 +283,7 @@ import { gridStagger } from '@shared/animations';
       width: 100%;
       max-width: 480px;
       margin: 16px;
-      border-radius: 16px;
+      border-radius: var(--app-radius-lg);
     }
 
     .token-instructions {
@@ -297,7 +297,7 @@ import { gridStagger } from '@shared/animations';
       font-size: 13px;
       background-color: var(--app-surface-variant);
       padding: 16px;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       word-break: break-all;
       margin-bottom: 20px;
       user-select: all;

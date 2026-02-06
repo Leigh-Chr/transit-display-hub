@@ -87,7 +87,7 @@ export interface ScheduleDialogData {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-width: 350px;
+      min-width: var(--app-dialog-min-width);
       padding-top: 8px;
     }
 
@@ -104,7 +104,7 @@ export interface ScheduleDialogData {
     .line-badge-small {
       display: inline-block;
       padding: 2px 8px;
-      border-radius: 12px;
+      border-radius: var(--app-line-badge-radius);
       color: white;
       font-size: 12px;
       font-weight: 600;

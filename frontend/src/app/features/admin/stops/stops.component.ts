@@ -221,7 +221,7 @@ import { fadeIn } from '@shared/animations';
     }
 
     mat-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       overflow: hidden;
     }
 
@@ -234,7 +234,7 @@ import { fadeIn } from '@shared/animations';
     .line-badge {
       display: inline-block;
       padding: 4px 10px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       color: white;
       font-size: 12px;
       font-weight: 600;
@@ -242,7 +242,7 @@ import { fadeIn } from '@shared/animations';
 
     .actions-column {
       text-align: right;
-      width: 160px;
+      width: var(--app-actions-column-width);
     }
 
     .device-column {

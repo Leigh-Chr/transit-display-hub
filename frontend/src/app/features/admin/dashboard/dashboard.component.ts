@@ -336,12 +336,12 @@ import { gridStagger, fadeIn } from '@shared/animations';
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 20px;
+      gap: var(--app-gap-grid);
       margin-bottom: 28px;
     }
 
     .stat-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .stat-card mat-card-content {
@@ -354,7 +354,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
     .stat-icon {
       width: 48px;
       height: 48px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -369,27 +369,27 @@ import { gridStagger, fadeIn } from '@shared/animations';
     }
 
     .lines-icon {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      background: var(--app-stat-lines);
     }
 
     .stops-icon {
-      background: linear-gradient(135deg, #ec4899, #db2777);
+      background: var(--app-stat-stops);
     }
 
     .routes-icon {
-      background: linear-gradient(135deg, #14b8a6, #0d9488);
+      background: var(--app-stat-routes);
     }
 
     .messages-icon {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
+      background: var(--app-stat-messages);
     }
 
     .devices-icon {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
+      background: var(--app-stat-devices);
     }
 
     .devices-icon.warning {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
+      background: var(--app-stat-devices-warning);
     }
 
     .stat-info {
@@ -414,12 +414,12 @@ import { gridStagger, fadeIn } from '@shared/animations';
     .overview-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 20px;
+      gap: var(--app-gap-grid);
       margin-bottom: 28px;
     }
 
     .overview-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .overview-card mat-card-header {
@@ -441,7 +441,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
       align-items: center;
       gap: 12px;
       padding: 10px 12px;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       text-decoration: none;
       color: inherit;
       transition: background-color 0.2s;
@@ -454,7 +454,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
     .line-badge {
       display: inline-block;
       padding: 4px 10px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       color: white;
       font-size: 12px;
       font-weight: 600;
@@ -613,7 +613,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
     /* Alerts */
     .alerts-card {
       margin-bottom: 28px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .alerts-card mat-card-title {
@@ -634,7 +634,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
       display: flex;
       align-items: center;
       padding: 12px 16px;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       margin-bottom: 8px;
     }
 
@@ -694,7 +694,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
       display: block;
       padding: 10px 16px;
       margin-bottom: 8px;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       background-color: var(--app-surface-container);
       color: var(--app-primary);
       text-decoration: none;
@@ -715,7 +715,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
     /* Recent Messages */
     .recent-card {
       margin-bottom: 28px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .recent-card mat-card-header {
@@ -739,14 +739,14 @@ import { gridStagger, fadeIn } from '@shared/animations';
       align-items: center;
       gap: 12px;
       padding: 12px;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       background-color: var(--app-surface-container);
     }
 
     .message-severity {
       width: 36px;
       height: 36px;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -794,7 +794,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
       font-size: 12px;
       font-weight: 600;
       padding: 4px 10px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       background-color: var(--app-surface-container-high);
       color: var(--app-on-surface-variant);
     }
@@ -811,7 +811,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
 
     /* Quick Actions */
     .quick-actions-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .actions-grid {
@@ -828,7 +828,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
       gap: 8px;
       padding: 20px 16px;
       height: auto;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .action-btn mat-icon {

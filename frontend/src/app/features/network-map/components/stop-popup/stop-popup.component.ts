@@ -153,7 +153,7 @@ interface TimetableGroup {
 
     .line-badge {
       padding: 5px 12px;
-      border-radius: 6px;
+      border-radius: var(--app-radius-sm);
       font-size: 0.875rem;
       font-weight: 700;
       color: white;
@@ -163,7 +163,7 @@ interface TimetableGroup {
     .line-badge.small {
       padding: 3px 10px;
       font-size: 0.75rem;
-      border-radius: 4px;
+      border-radius: var(--app-radius-xs);
       flex-shrink: 0;
     }
 
@@ -181,7 +181,7 @@ interface TimetableGroup {
       display: flex;
       flex-direction: column;
       gap: 1px;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--app-surface-variant);
     }
 
     .message-card {
@@ -322,7 +322,7 @@ interface TimetableGroup {
       font-size: 0.8125rem;
       font-variant-numeric: tabular-nums;
       padding: 2px 6px;
-      border-radius: 4px;
+      border-radius: var(--app-radius-xs);
       line-height: 1.4;
     }
 

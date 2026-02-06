@@ -192,8 +192,8 @@ import { DisplayState } from '@shared/models';
 
     :host {
       display: block;
-      background: #000;
-      color: #fff;
+      background: var(--app-kiosk-surface);
+      color: var(--app-kiosk-on-surface);
       min-height: 100vh;
       font-family: 'Roboto', 'Arial', sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -213,7 +213,7 @@ import { DisplayState } from '@shared/models';
       justify-content: space-between;
       align-items: center;
       padding-bottom: 1.5vh;
-      border-bottom: 0.4vh solid rgba(255, 255, 255, 0.25);
+      border-bottom: 0.4vh solid var(--app-kiosk-border);
       margin-bottom: 1.5vh;
     }
 
@@ -235,8 +235,8 @@ import { DisplayState } from '@shared/models';
       border-radius: 0.5vh;
       font-size: 3vh;
       font-weight: 700;
-      color: #fff;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      color: var(--app-kiosk-on-surface);
+      text-shadow: 0 1px 2px var(--app-kiosk-text-shadow);
     }
 
     .clock-container {
@@ -246,7 +246,7 @@ import { DisplayState } from '@shared/models';
     .date {
       font-size: 3vh;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-kiosk-on-surface-muted);
       margin-bottom: 0.5vh;
     }
 
@@ -261,7 +261,7 @@ import { DisplayState } from '@shared/models';
     .alert-banner {
       display: flex;
       align-items: center;
-      background: #C62828;
+      background: var(--app-kiosk-alert-bg);
       margin-bottom: 1vh;
       border-radius: 0.5vh;
     }
@@ -341,8 +341,8 @@ import { DisplayState } from '@shared/models';
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: rgba(255, 255, 255, 0.5);
-      border-bottom: 0.1vh solid rgba(255, 255, 255, 0.15);
+      color: var(--app-kiosk-on-surface-muted);
+      border-bottom: 0.1vh solid var(--app-kiosk-border-subtle);
       flex-shrink: 0;
     }
 
@@ -365,7 +365,7 @@ import { DisplayState } from '@shared/models';
       display: flex;
       align-items: center;
       padding: 1.5vh 1vw;
-      border-bottom: 0.1vh solid rgba(255, 255, 255, 0.1);
+      border-bottom: 0.1vh solid var(--app-kiosk-border-faint);
     }
 
     .line-badge {
@@ -375,8 +375,8 @@ import { DisplayState } from '@shared/models';
       font-weight: 700;
       padding: 1vh 0;
       border-radius: 0.5vh;
-      color: #fff;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      color: var(--app-kiosk-on-surface);
+      text-shadow: 0 1px 3px var(--app-kiosk-text-shadow-strong);
       flex-shrink: 0;
     }
 
@@ -402,14 +402,14 @@ import { DisplayState } from '@shared/models';
     .time-relative {
       font-size: clamp(3.5vh, 5vh, 7vh);
       font-weight: 700;
-      color: #fff;
+      color: var(--app-kiosk-on-surface);
     }
 
     .time-absolute {
       font-size: clamp(2.5vh, 3.5vh, 5vh);
       font-weight: 500;
       font-variant-numeric: tabular-nums;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-kiosk-on-surface-muted);
     }
 
     /* --- Departures Viewport (scrolling container) --- */
@@ -450,7 +450,7 @@ import { DisplayState } from '@shared/models';
       align-items: center;
       justify-content: center;
       font-size: 4vh;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-kiosk-on-surface-muted);
       min-height: 20vh;
     }
 
@@ -459,9 +459,9 @@ import { DisplayState } from '@shared/models';
       margin-top: auto;
       padding-top: 1.5vh;
       overflow: hidden;
-      background: linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 50%, rgba(33, 150, 243, 0.1) 100%);
+      background: linear-gradient(90deg, var(--app-kiosk-info-bg) 0%, var(--app-kiosk-info-bg-subtle) 50%, var(--app-kiosk-info-bg) 100%);
       border-radius: 0.5vh;
-      border-top: 0.3vh solid rgba(33, 150, 243, 0.3);
+      border-top: 0.3vh solid var(--app-kiosk-info-border);
     }
 
     .ticker-track {
@@ -489,11 +489,11 @@ import { DisplayState } from '@shared/models';
       align-items: center;
       gap: 0.8vw;
       font-size: 3vh;
-      color: #64B5F6;
+      color: var(--app-kiosk-info-accent);
     }
 
     .ticker-warning {
-      color: #FFB74D;
+      color: var(--app-kiosk-warning-accent);
     }
 
     .ticker-item mat-icon {
@@ -513,7 +513,7 @@ import { DisplayState } from '@shared/models';
 
     .ticker-separator {
       margin: 0 3vw;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-kiosk-on-surface-muted);
       font-size: 3vh;
     }
 
@@ -525,7 +525,7 @@ import { DisplayState } from '@shared/models';
       display: flex;
       align-items: center;
       gap: 0.8vw;
-      background: rgba(244, 67, 54, 0.9);
+      background: var(--app-kiosk-connection-error);
       padding: 0.8vh 1.5vw;
       border-radius: 0.5vh;
       font-size: 3vh;
@@ -559,7 +559,7 @@ import { DisplayState } from '@shared/models';
       font-size: 12vh;
       width: 12vh;
       height: 12vh;
-      color: #F44336;
+      color: var(--app-kiosk-error-icon);
       margin-bottom: 3vh;
     }
 
@@ -572,7 +572,7 @@ import { DisplayState } from '@shared/models';
 
     .error-state p {
       font-size: 3vh;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-kiosk-on-surface-muted);
       max-width: 60vw;
     }
 

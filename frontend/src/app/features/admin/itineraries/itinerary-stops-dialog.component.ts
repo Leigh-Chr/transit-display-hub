@@ -127,7 +127,7 @@ interface StopItem {
       gap: 12px;
       padding: 8px 12px;
       background: var(--app-surface-variant);
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       cursor: move;
       transition: box-shadow 0.2s, background-color 0.2s;
     }
@@ -176,14 +176,14 @@ interface StopItem {
     .itinerary-stops-dialog-content .drop-placeholder {
       background: var(--app-primary);
       opacity: 0.2;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       min-height: 44px;
     }
 
     /* CDK drag-drop global styles */
     .cdk-drag-preview.stop-item {
       box-sizing: border-box;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
       background: var(--app-surface, #fff);
       display: flex;
@@ -206,7 +206,7 @@ interface StopItem {
       gap: 8px;
       padding: 12px;
       background: var(--app-surface-variant);
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       margin: 0;
       font-size: 14px;
     }
@@ -224,7 +224,7 @@ interface StopItem {
       gap: 8px;
       padding: 24px;
       background: var(--app-surface-variant);
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       color: var(--app-on-surface-muted);
       font-size: 14px;
       margin: 16px 0 0;

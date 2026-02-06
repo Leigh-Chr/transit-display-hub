@@ -194,7 +194,7 @@ import { routeSlide } from '@shared/animations';
 
     .sidenav-header {
       padding: 24px 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom: 1px solid var(--app-sidebar-border);
     }
 
     .sidenav-header h1 {
@@ -215,7 +215,7 @@ import { routeSlide } from '@shared/animations';
     }
 
     mat-nav-list a {
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       margin: 2px 8px;
     }
 

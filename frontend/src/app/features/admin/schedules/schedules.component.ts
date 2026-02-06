@@ -182,13 +182,13 @@ import { fadeIn } from '@shared/animations';
 
     .selector-card {
       margin-bottom: 28px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .selector-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
+      gap: var(--app-gap-grid);
     }
 
     .selector-row mat-form-field {
@@ -200,7 +200,7 @@ import { fadeIn } from '@shared/animations';
     }
 
     mat-card {
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       overflow: hidden;
     }
 
@@ -219,7 +219,7 @@ import { fadeIn } from '@shared/animations';
     .line-badge {
       display: inline-block;
       padding: 4px 10px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       color: white;
       font-size: 12px;
       font-weight: 600;
@@ -227,7 +227,7 @@ import { fadeIn } from '@shared/animations';
 
     .actions-column {
       text-align: right;
-      width: 120px;
+      width: var(--app-actions-column-width);
     }
 
     @media (max-width: 600px) {

@@ -49,7 +49,6 @@ import { RouteResult } from '../../services/route-finder.service';
         <mat-autocomplete #depAuto="matAutocomplete"
           [displayWith]="displayFn"
           (optionSelected)="onDepartureSelected($event)"
-          class="dark-autocomplete"
         >
           @for (stop of filteredDepartures(); track stop.id) {
             <mat-option [value]="stop">
@@ -77,7 +76,6 @@ import { RouteResult } from '../../services/route-finder.service';
         <mat-autocomplete #arrAuto="matAutocomplete"
           [displayWith]="displayFn"
           (optionSelected)="onArrivalSelected($event)"
-          class="dark-autocomplete"
         >
           @for (stop of filteredArrivals(); track stop.id) {
             <mat-option [value]="stop">
@@ -134,12 +132,12 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .route-search-panel {
       width: 230px;
-      background: rgba(26, 26, 46, 0.88);
+      background: var(--app-map-overlay-bg);
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border: 1px solid var(--app-map-outline);
+      border-radius: var(--app-radius-md);
       padding: 10px 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 16px var(--app-map-shadow);
     }
 
     .panel-header {
@@ -153,7 +151,7 @@ import { RouteResult } from '../../services/route-finder.service';
       font-size: 14px;
       width: 14px;
       height: 14px;
-      color: #64b5f6;
+      color: var(--app-map-accent);
     }
 
     .panel-title {
@@ -161,7 +159,7 @@ import { RouteResult } from '../../services/route-finder.service';
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--app-map-on-surface-muted);
       flex: 1;
     }
 
@@ -172,15 +170,15 @@ import { RouteResult } from '../../services/route-finder.service';
       width: 24px;
       height: 24px;
       padding: 0;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--app-map-outline);
       border-radius: 50%;
-      background: #2a2a4a;
-      color: rgba(255, 255, 255, 0.5);
+      background: var(--app-map-surface-container-high);
+      color: var(--app-map-on-surface-muted);
       cursor: pointer;
     }
 
     .clear-btn:hover {
-      background: #3a3a5a;
+      background: var(--app-map-surface-container-higher);
     }
 
     .clear-btn mat-icon {
@@ -193,13 +191,13 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .search-field {
       width: 100%;
-      --mat-form-field-filled-container-color: rgba(255, 255, 255, 0.07);
+      --mat-form-field-filled-container-color: var(--app-map-input-bg);
       --mat-form-field-filled-container-shape: 6px;
       --mat-form-field-container-height: 40px;
       --mat-form-field-container-vertical-padding: 8px;
       --mat-form-field-container-text-size: 13px;
-      --mat-form-field-filled-input-text-color: #e0e0e0;
-      --mat-form-field-filled-input-text-placeholder-color: rgba(255, 255, 255, 0.3);
+      --mat-form-field-filled-input-text-color: var(--app-map-on-surface);
+      --mat-form-field-filled-input-text-placeholder-color: var(--app-map-input-placeholder);
       --mat-form-field-filled-active-indicator-height: 0;
       --mat-form-field-filled-focus-active-indicator-height: 0;
       --mat-form-field-focus-state-layer-opacity: 0;
@@ -214,11 +212,11 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .departure-icon {
-      color: #4caf50;
+      color: var(--app-success);
     }
 
     .arrival-icon {
-      color: #f44336;
+      color: var(--app-critical);
     }
 
     /* --- Separator with swap --- */
@@ -232,7 +230,7 @@ import { RouteResult } from '../../services/route-finder.service';
     .connector-line {
       flex: 1;
       height: 1px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--app-map-outline-subtle);
     }
 
     .swap-btn {
@@ -242,16 +240,16 @@ import { RouteResult } from '../../services/route-finder.service';
       width: 26px;
       height: 26px;
       padding: 0;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--app-map-outline);
       border-radius: 50%;
-      background: #2a2a4a;
-      color: rgba(255, 255, 255, 0.5);
+      background: var(--app-map-surface-container-high);
+      color: var(--app-map-on-surface-muted);
       cursor: pointer;
       flex-shrink: 0;
     }
 
     .swap-btn:hover {
-      background: #3a3a5a;
+      background: var(--app-map-surface-container-higher);
     }
 
     .swap-btn mat-icon {
@@ -264,7 +262,7 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .error-hint {
       font-size: 11px;
-      color: #ef5350;
+      color: var(--app-critical);
       padding: 4px 4px 0;
     }
 
@@ -273,7 +271,7 @@ import { RouteResult } from '../../services/route-finder.service';
     .route-breakdown {
       margin-top: 8px;
       padding-top: 8px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: 1px solid var(--app-map-outline-subtle);
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -296,7 +294,7 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .segment-badge {
       padding: 2px 7px;
-      border-radius: 4px;
+      border-radius: var(--app-radius-xs);
       font-size: 10px;
       font-weight: 700;
       color: white;
@@ -314,7 +312,7 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .segment-endpoints {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--app-map-on-surface);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -322,7 +320,7 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .segment-meta {
       font-size: 10px;
-      color: rgba(255, 255, 255, 0.35);
+      color: var(--app-map-on-surface-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -332,7 +330,7 @@ import { RouteResult } from '../../services/route-finder.service';
       font-size: 14px;
       width: 14px;
       height: 14px;
-      color: rgba(255, 255, 255, 0.25);
+      color: var(--app-map-on-surface-muted);
       flex-shrink: 0;
       margin-top: 1px;
     }
@@ -344,7 +342,7 @@ import { RouteResult } from '../../services/route-finder.service';
       flex-direction: column;
       padding: 4px 0 2px 15px;
       margin-left: 11px;
-      border-left: 2px solid rgba(255, 255, 255, 0.08);
+      border-left: 2px solid var(--app-map-outline-subtle);
     }
 
     .stop-item {
@@ -373,14 +371,14 @@ import { RouteResult } from '../../services/route-finder.service';
 
     .stop-name {
       font-size: 10px;
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--app-map-on-surface-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .stop-endpoint-name {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--app-map-on-surface-variant);
       font-weight: 600;
     }
 
@@ -397,12 +395,12 @@ import { RouteResult } from '../../services/route-finder.service';
       font-size: 12px;
       width: 12px;
       height: 12px;
-      color: rgba(255, 255, 255, 0.3);
+      color: var(--app-map-on-surface-muted);
     }
 
     .transfer-label {
       font-size: 10px;
-      color: rgba(255, 255, 255, 0.3);
+      color: var(--app-map-on-surface-muted);
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;

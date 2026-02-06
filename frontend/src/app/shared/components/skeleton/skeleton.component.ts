@@ -30,7 +30,7 @@ import { Component, input } from '@angular/core';
     }
 
     .skeleton-text {
-      border-radius: 4px;
+      border-radius: var(--app-radius-xs);
     }
 
     @keyframes shimmer {

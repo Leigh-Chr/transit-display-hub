@@ -229,12 +229,12 @@ import { listStagger } from '@shared/animations';
     .messages-list {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--app-gap-grid);
     }
 
     .message-card {
       padding: 20px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     .message-content {
@@ -246,7 +246,7 @@ import { listStagger } from '@shared/animations';
     .severity-icon {
       width: 44px;
       height: 44px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -324,7 +324,7 @@ import { listStagger } from '@shared/animations';
     .badge {
       display: inline-block;
       padding: 4px 12px;
-      border-radius: 16px;
+      border-radius: var(--app-line-badge-radius);
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
@@ -364,7 +364,7 @@ import { listStagger } from '@shared/animations';
 
     mat-paginator {
       margin-top: 24px;
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
     }
 
     @media (max-width: 600px) {
