@@ -17,9 +17,14 @@ Ce guide explique comment utiliser l'interface d'administration de Transit Displ
 | Utilisateur | Mot de passe | Rôle |
 |-------------|--------------|------|
 | admin | admin123 | Administrateur complet |
-| agent | agent123 | Agent (accès limité) |
+| agent | agent123 | Agent (messages uniquement) |
 
 > **Important** : Changez les mots de passe par défaut en production.
+
+### Rôles
+
+- **Administrateur** : Accès complet (lignes, arrêts, itinéraires, horaires, messages, appareils, utilisateurs)
+- **Agent** : Gestion des messages broadcast uniquement
 
 ### Se déconnecter
 
@@ -32,6 +37,7 @@ Cliquez sur **Logout** dans le coin supérieur droit.
 Le tableau de bord affiche un résumé de votre réseau :
 
 - **Lignes** : Nombre total de lignes configurées
+- **Arrêts** : Nombre total d'arrêts
 - **Messages actifs** : Messages broadcast actuellement diffusés
 - **Appareils en ligne** : Nombre d'écrans connectés / total
 
@@ -48,14 +54,16 @@ Les alertes apparaissent quand :
 ### Voir les lignes
 
 1. Cliquez sur **Lignes** dans le menu latéral
-2. La liste affiche toutes les lignes avec leur code, nom, couleur et nombre d'arrêts
+2. La liste affiche toutes les lignes avec leur code, nom, type, couleur et nombre d'arrêts
+3. Utilisez la barre de recherche pour filtrer
 
 ### Créer une ligne
 
 1. Cliquez sur **+ Nouvelle Ligne**
 2. Remplissez les champs :
-   - **Code** : Identifiant court (ex: L1, M2, T3)
-   - **Nom** : Nom complet (ex: Ligne 1 - Centre)
+   - **Code** : Identifiant court (ex: M1, B2, T3)
+   - **Nom** : Nom complet (ex: Métro Ligne 1 - Centre)
+   - **Type** : Métro, Bus, Tram ou Train
    - **Couleur** : Choisissez une couleur d'identification
 3. Cliquez sur **Créer**
 
@@ -70,7 +78,7 @@ Les alertes apparaissent quand :
 1. Cliquez sur **Supprimer**
 2. Confirmez la suppression
 
-> **Attention** : Supprimer une ligne supprime également tous ses arrêts et horaires.
+> **Attention** : Supprimer une ligne supprime également ses itinéraires et horaires associés.
 
 ---
 
@@ -84,25 +92,62 @@ Les alertes apparaissent quand :
 ### Créer un arrêt
 
 1. Cliquez sur **+ Nouvel Arrêt**
-2. Sélectionnez la **Ligne**
-3. Entrez le **Nom** de l'arrêt
-4. Définissez la **Position** (ordre sur la ligne)
+2. Entrez le **Nom** de l'arrêt
+3. Sélectionnez une ou plusieurs **Lignes** (un arrêt peut desservir plusieurs lignes)
+4. Optionnellement, renseignez les coordonnées GPS (**Latitude** et **Longitude**)
 5. Cliquez sur **Créer**
 
 ### Modifier un arrêt
 
 1. Cliquez sur **Modifier**
-2. Modifiez le nom ou la position
+2. Modifiez le nom, les lignes ou les coordonnées
 3. Cliquez sur **Enregistrer**
-
-> La ligne d'un arrêt ne peut pas être modifiée. Pour changer de ligne, supprimez et recréez l'arrêt.
 
 ### Supprimer un arrêt
 
 1. Cliquez sur **Supprimer**
 2. Confirmez
 
-> Supprimer un arrêt supprime également tous ses horaires et retire l'appareil associé.
+> Supprimer un arrêt supprime également tous ses horaires et retire les appareils associés.
+
+---
+
+## Gestion des Itinéraires
+
+Un itinéraire représente un parcours ordonné d'arrêts sur une ligne, correspondant à une direction (ex: "Direction Aéroport", "Direction Centre-Ville").
+
+### Voir les itinéraires
+
+1. Cliquez sur **Itinéraires** dans le menu
+2. Filtrez par ligne si nécessaire
+3. Chaque itinéraire affiche sa ligne, son nom et la liste ordonnée de ses arrêts
+
+### Créer un itinéraire
+
+1. Cliquez sur **+ Nouvel Itinéraire**
+2. Sélectionnez la **Ligne**
+3. Entrez le **Nom** (ex: Direction Aéroport)
+4. Ajoutez les **Arrêts** dans l'ordre du parcours
+5. Cliquez sur **Créer**
+
+### Modifier un itinéraire
+
+1. Cliquez sur **Modifier**
+2. Modifiez le nom ou réordonnez les arrêts
+3. Cliquez sur **Enregistrer**
+
+### Gérer les arrêts d'un itinéraire
+
+- **Ajouter un arrêt** : Sélectionnez un arrêt et sa position dans la séquence
+- **Réordonner** : Modifiez l'ordre des arrêts par glisser-déposer ou en changeant les positions
+- **Retirer un arrêt** : Supprimez un arrêt de l'itinéraire sans supprimer l'arrêt lui-même
+
+### Supprimer un itinéraire
+
+1. Cliquez sur **Supprimer**
+2. Confirmez
+
+> **Attention** : Supprimer un itinéraire supprime également tous les horaires qui y font référence.
 
 ---
 
@@ -111,8 +156,7 @@ Les alertes apparaissent quand :
 ### Accéder aux horaires
 
 1. Cliquez sur **Horaires** dans le menu
-2. Sélectionnez une **Ligne**
-3. Sélectionnez un **Arrêt**
+2. Sélectionnez un **Arrêt**
 
 Les horaires de l'arrêt s'affichent triés par heure.
 
@@ -121,20 +165,15 @@ Les horaires de l'arrêt s'affichent triés par heure.
 1. Cliquez sur **+ Nouvel Horaire**
 2. Remplissez :
    - **Heure de départ** : Format HH:MM
-   - **Destination** : Terminus de cette course
-   - **Jours** : Sélectionnez les jours de circulation
+   - **Itinéraire** : Sélectionnez l'itinéraire (détermine la ligne et la direction)
 3. Cliquez sur **Créer**
 
-### Raccourcis de sélection des jours
-
-- **Jours ouvrés** : Lundi à Vendredi
-- **Week-end** : Samedi et Dimanche
-- **Tous les jours** : Lundi à Dimanche
+> L'itinéraire sélectionné détermine automatiquement la ligne et le terminus affiché aux voyageurs.
 
 ### Modifier un horaire
 
 1. Cliquez sur **Modifier**
-2. Modifiez les informations
+2. Modifiez l'heure ou l'itinéraire
 3. Cliquez sur **Enregistrer**
 
 ### Supprimer un horaire
@@ -191,7 +230,8 @@ Les messages broadcast permettent de communiquer avec les voyageurs.
 
 ### Filtrer les messages
 
-- Cochez **Actifs uniquement** pour voir seulement les messages en cours
+- Filtrez par statut **Actifs uniquement** pour voir les messages en cours
+- Filtrez par **Sévérité** pour cibler un type spécifique
 
 ### Modifier un message
 
@@ -215,8 +255,8 @@ Les appareils sont les écrans d'affichage installés aux arrêts.
 1. Cliquez sur **Appareils** dans le menu
 2. Chaque carte affiche :
    - Nom de l'arrêt
-   - Ligne associée
-   - Statut (En ligne / Hors ligne / En attente)
+   - Lignes desservies
+   - Statut (En ligne / Hors ligne)
    - Dernière connexion
 
 ### Filtrer par statut
@@ -225,15 +265,13 @@ Utilisez le menu déroulant pour filtrer :
 - **Tous** : Tous les appareils
 - **En ligne** : Appareils connectés
 - **Hors ligne** : Appareils déconnectés
-- **En attente** : Appareils jamais connectés
 
 ### Enregistrer un appareil
 
 1. Cliquez sur **+ Enregistrer un appareil**
-2. Sélectionnez la **Ligne**
-3. Sélectionnez l'**Arrêt**
-4. Cliquez sur **Enregistrer**
-5. **Copiez le token** affiché
+2. Sélectionnez l'**Arrêt**
+3. Cliquez sur **Enregistrer**
+4. **Copiez le token** affiché
 
 > **Important** : Le token n'est affiché qu'une seule fois. Conservez-le précieusement.
 
@@ -245,17 +283,11 @@ Sur l'appareil d'affichage, configurez l'URL :
 https://transit.example.com/display?token=VOTRE_TOKEN
 ```
 
-Ou pour un accès sans token (test) :
+Ou pour un accès direct par arrêt (test) :
 
 ```
 https://transit.example.com/display/STOP_ID
 ```
-
-### Copier le token
-
-Si vous avez besoin du token d'un appareil existant :
-1. Cliquez sur **Copier le token**
-2. Le token est copié dans le presse-papiers
 
 ### Supprimer un appareil
 
@@ -266,30 +298,76 @@ Si vous avez besoin du token d'un appareil existant :
 
 ---
 
+## Gestion des Utilisateurs
+
+### Voir les utilisateurs
+
+1. Cliquez sur **Utilisateurs** dans le menu
+2. La liste affiche tous les comptes avec leur nom, rôle et statut
+
+### Créer un utilisateur
+
+1. Cliquez sur **+ Nouvel Utilisateur**
+2. Remplissez :
+   - **Nom d'utilisateur** : 3 à 50 caractères
+   - **Mot de passe** : 6 caractères minimum
+   - **Rôle** : Administrateur ou Agent
+3. Cliquez sur **Créer**
+
+### Modifier un utilisateur
+
+1. Cliquez sur **Modifier**
+2. Modifiez le rôle, le mot de passe ou activez/désactivez le compte
+3. Cliquez sur **Enregistrer**
+
+### Désactiver un compte
+
+Pour empêcher un utilisateur de se connecter sans supprimer son compte :
+1. Cliquez sur **Modifier**
+2. Décochez **Activé**
+3. Cliquez sur **Enregistrer**
+
+### Supprimer un utilisateur
+
+1. Cliquez sur **Supprimer**
+2. Confirmez
+
+---
+
+## Carte du Réseau
+
+La carte du réseau offre une visualisation interactive de l'ensemble du réseau de transport.
+
+### Accéder à la carte
+
+La carte est accessible publiquement à l'adresse `/map` (pas d'authentification requise).
+
+### Fonctionnalités
+
+- **Vue schématique** : Visualisation claire du réseau avec les lignes et arrêts
+- **Informations arrêt** : Cliquez sur un arrêt pour voir les prochains départs et les lignes desservies
+- **Recherche d'itinéraire** : Utilisez la barre de recherche pour trouver un trajet entre deux arrêts
+- **Alertes actives** : Les messages d'alerte en cours sont affichés sur la carte
+
+---
+
 ## Affichage Kiosque
 
 L'écran kiosque affiche les informations voyageurs.
 
 ### Éléments affichés
 
-1. **En-tête** : Nom de l'arrêt et ligne
+1. **En-tête** : Nom de l'arrêt et lignes desservies
 2. **Prochains départs** : Liste des prochaines courses avec :
-   - Destination
-   - Temps d'attente (ou "MAINTENANT")
+   - Ligne et direction (terminus)
    - Heure programmée
 3. **Messages** : Alertes et informations
 4. **Pied de page** : Heure actuelle et statut de connexion
 
-### Codes couleur du temps d'attente
-
-- **Vert** : ≤ 5 minutes (départ imminent)
-- **Jaune** : 6-10 minutes
-- **Blanc** : > 10 minutes
-
 ### Statut de connexion
 
-- **Connecté** (vert) : Mises à jour en temps réel
-- **Déconnecté** (rouge) : Tentative de reconnexion
+- **Connecté** (vert) : Mises à jour en temps réel via WebSocket
+- **Déconnecté** (rouge) : Tentative de reconnexion automatique
 
 ---
 
@@ -303,8 +381,8 @@ L'écran kiosque affiche les informations voyageurs.
 
 ### Horaires
 
-1. **Vérifiez les jours** : Assurez-vous que les bons jours sont sélectionnés
-2. **Destination claire** : Utilisez des noms reconnaissables
+1. **Créez d'abord les itinéraires** : Les horaires référencent un itinéraire existant
+2. **Un itinéraire par direction** : Créez un itinéraire "Direction A" et un "Direction B" pour chaque ligne
 
 ### Appareils
 
@@ -339,9 +417,17 @@ L'écran kiosque affiche les informations voyageurs.
 ### Les horaires ne s'affichent pas
 
 1. Vérifiez que des horaires sont créés pour cet arrêt
-2. Vérifiez que le jour actuel est sélectionné
-3. Vérifiez que l'heure de départ n'est pas déjà passée
+2. Vérifiez que l'heure de départ n'est pas déjà passée
+3. Vérifiez que l'itinéraire associé est bien configuré
 
-### Comment changer mon mot de passe ?
+### Comment changer un mot de passe ?
 
-Contactez l'administrateur système. La gestion des utilisateurs n'est pas disponible dans l'interface actuelle.
+1. Connectez-vous en tant qu'administrateur
+2. Allez dans **Utilisateurs**
+3. Cliquez sur **Modifier** à côté de l'utilisateur
+4. Entrez le nouveau mot de passe
+5. Cliquez sur **Enregistrer**
+
+### Comment affecter un arrêt à plusieurs lignes ?
+
+Lors de la création ou modification d'un arrêt, sélectionnez plusieurs lignes. Un arrêt peut desservir autant de lignes que nécessaire (correspondance).

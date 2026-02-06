@@ -60,17 +60,22 @@ spring:
   profiles:
     active: prod
   datasource:
-    url: jdbc:postgresql://localhost:5432/transitdb
-    username: transit
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/transitdb}
+    username: ${DATABASE_USER:transit}
     password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 
-jwt:
-  secret: ${JWT_SECRET}
-  expiration: 86400000
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-hours: 8
 
 server:
   port: 8080
@@ -94,6 +99,8 @@ ExecStart=/usr/bin/java -jar transit-display-hub.jar --spring.config.location=fi
 Restart=always
 RestartSec=10
 
+Environment=DATABASE_URL=jdbc:postgresql://localhost:5432/transitdb
+Environment=DATABASE_USER=transit
 Environment=DATABASE_PASSWORD=your-secure-password
 Environment=JWT_SECRET=your-256-bit-secret-key-minimum-32-characters
 
@@ -245,9 +252,9 @@ services:
     build: ./backend
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transitdb
-      SPRING_DATASOURCE_USERNAME: transit
-      SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/transitdb
+      DATABASE_USER: transit
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - postgres
@@ -286,11 +293,7 @@ docker-compose logs -f
 
 ### Flyway (recommandé pour production)
 
-Ajouter dans `build.gradle.kts` :
-
-```kotlin
-implementation("org.flywaydb:flyway-core")
-```
+Flyway est déjà inclus dans les dépendances du projet (`flyway-core` et `flyway-database-postgresql`). En profil `prod`, les migrations s'exécutent automatiquement au démarrage avec `baseline-on-migrate: true`.
 
 Structure des migrations :
 
@@ -298,19 +301,14 @@ Structure des migrations :
 src/main/resources/db/migration/
 ├── V1__create_lines_table.sql
 ├── V2__create_stops_table.sql
-├── V3__create_timed_entries_table.sql
+├── V3__create_schedules_table.sql
+├── V4__create_itineraries_table.sql
 └── ...
 ```
 
 ### Exécution des migrations
 
-```bash
-# Automatique au démarrage
-./gradlew bootRun
-
-# Ou manuellement
-./gradlew flywayMigrate
-```
+Les migrations sont appliquées automatiquement au démarrage en profil prod. En profil dev, Flyway est désactivé (DDL géré par Hibernate `create-drop`).
 
 ---
 
@@ -322,6 +320,8 @@ Ne jamais stocker les secrets dans les fichiers de config :
 
 ```bash
 # Fichier .env (non versionné)
+DATABASE_URL=jdbc:postgresql://localhost:5432/transitdb
+DATABASE_USER=transit
 DATABASE_PASSWORD=super-secret-password
 JWT_SECRET=256-bit-secret-key-at-least-32-chars
 ```

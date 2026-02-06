@@ -80,23 +80,29 @@ Le fichier de configuration se trouve dans `backend/src/main/resources/applicati
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `SPRING_PROFILES_ACTIVE` | Profil actif (dev, prod) | dev |
-| `DATABASE_URL` | URL de connexion PostgreSQL | - |
-| `DATABASE_USERNAME` | Utilisateur PostgreSQL | - |
-| `DATABASE_PASSWORD` | Mot de passe PostgreSQL | - |
-| `JWT_SECRET` | Clé secrète JWT (min 256 bits) | Généré |
-| `JWT_EXPIRATION` | Durée de validité du token (ms) | 86400000 |
+| `DATABASE_URL` | URL de connexion PostgreSQL | `jdbc:postgresql://localhost:5432/transit` |
+| `DATABASE_USER` | Utilisateur PostgreSQL | `transit` |
+| `DATABASE_PASSWORD` | Mot de passe PostgreSQL | `transit` |
+| `JWT_SECRET` | Clé secrète JWT (min 256 bits) | (obligatoire en prod) |
 
 #### Profil développement (défaut)
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:h2:mem:transitdb
+    url: jdbc:h2:mem:transitdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
   h2:
     console:
       enabled: true
       path: /h2-console
+  flyway:
+    enabled: false
+
+app:
+  jwt:
+    secret: dev-secret-key-...
+    expiration-hours: 8
 ```
 
 Console H2 accessible sur http://localhost:8080/h2-console
@@ -106,24 +112,32 @@ Console H2 accessible sur http://localhost:8080/h2-console
 ```yaml
 spring:
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/transit}
+    username: ${DATABASE_USER:transit}
+    password: ${DATABASE_PASSWORD:transit}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-hours: 8
 ```
 
-### Frontend - environment.ts
+### Frontend - proxy.conf.json
 
-```typescript
-// src/environments/environment.ts
-export const environment = {
-  production: false,
-  apiUrl: '/api',
-  wsUrl: '/ws'
-};
+Le proxy de développement redirige les appels API vers le backend :
+
+```json
+{
+  "/api": { "target": "http://localhost:8080" },
+  "/ws": { "target": "http://localhost:8080", "ws": true }
+}
 ```
 
 ## Vérification de l'installation
@@ -201,5 +215,5 @@ nvm use 20
 - En dev, les requêtes `/api/*` sont redirigées vers le backend
 
 **Erreur 401 Unauthorized**
-- Le token JWT a expiré
+- Le token JWT a expiré (durée de validité : 8 heures)
 - Se reconnecter pour obtenir un nouveau token
