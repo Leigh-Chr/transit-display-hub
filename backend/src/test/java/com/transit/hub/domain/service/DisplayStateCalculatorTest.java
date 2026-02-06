@@ -156,10 +156,10 @@ class DisplayStateCalculatorTest {
         }
 
         @Test
-        @DisplayName("returns one arrival per line only")
-        void returnsOneArrivalPerLine() {
-            // Create multiple entries for the same line - only the first should be returned
-            List<Schedule> multipleEntriesSameLine = List.of(
+        @DisplayName("returns one arrival per itinerary only")
+        void returnsOneArrivalPerItinerary() {
+            // Create multiple entries for the same itinerary - only the first should be returned
+            List<Schedule> multipleEntriesSameItinerary = List.of(
                     TestDataFactory.createSchedule(LocalTime.of(8, 0), testStop, testItinerary),
                     TestDataFactory.createSchedule(LocalTime.of(8, 15), testStop, testItinerary),
                     TestDataFactory.createSchedule(LocalTime.of(8, 30), testStop, testItinerary)
@@ -167,15 +167,52 @@ class DisplayStateCalculatorTest {
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
-                    .thenReturn(multipleEntriesSameLine);
+                    .thenReturn(multipleEntriesSameItinerary);
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
 
             DisplayState result = calculator.calculateForStop(testStopId);
 
-            // Only one arrival per line (the earliest)
+            // Only one arrival per itinerary (the earliest)
             assertThat(result.arrivals()).hasSize(1);
             assertThat(result.arrivals().get(0).scheduledTime()).isEqualTo(LocalTime.of(8, 0));
+        }
+
+        @Test
+        @DisplayName("returns both directions for the same line")
+        void returnsBothDirectionsForSameLine() {
+            // Two itineraries for the same line (e.g. eastbound and westbound)
+            Itinerary eastbound = TestDataFactory.createItineraryWithId(UUID.randomUUID(), testLine, "Direction East");
+            Stop eastTerminus = TestDataFactory.createStopWithId(UUID.randomUUID(), "Eastern Terminal", testLine);
+            eastbound.addStop(testStop, 0);
+            eastbound.addStop(eastTerminus, 1);
+
+            Itinerary westbound = TestDataFactory.createItineraryWithId(UUID.randomUUID(), testLine, "Direction West");
+            Stop westTerminus = TestDataFactory.createStopWithId(UUID.randomUUID(), "Western Terminal", testLine);
+            westbound.addStop(testStop, 0);
+            westbound.addStop(westTerminus, 1);
+
+            List<Schedule> bothDirections = List.of(
+                    TestDataFactory.createSchedule(LocalTime.of(8, 0), testStop, eastbound),
+                    TestDataFactory.createSchedule(LocalTime.of(8, 5), testStop, westbound)
+            );
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
+                    .thenReturn(bothDirections);
+            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
+                    .thenReturn(List.of());
+
+            DisplayState result = calculator.calculateForStop(testStopId);
+
+            // Both directions should be shown (one arrival per itinerary)
+            assertThat(result.arrivals()).hasSize(2);
+            assertThat(result.arrivals().get(0).scheduledTime()).isEqualTo(LocalTime.of(8, 0));
+            assertThat(result.arrivals().get(0).destinationName()).isEqualTo("Eastern Terminal");
+            assertThat(result.arrivals().get(0).line().code()).isEqualTo("L1");
+            assertThat(result.arrivals().get(1).scheduledTime()).isEqualTo(LocalTime.of(8, 5));
+            assertThat(result.arrivals().get(1).destinationName()).isEqualTo("Western Terminal");
+            assertThat(result.arrivals().get(1).line().code()).isEqualTo("L1");
         }
 
         @Test
@@ -188,8 +225,8 @@ class DisplayStateCalculatorTest {
             List<Schedule> entriesFromDifferentLines = List.of(
                     TestDataFactory.createSchedule(LocalTime.of(8, 0), testStop, testItinerary),
                     TestDataFactory.createSchedule(LocalTime.of(8, 10), testStop, itinerary2),
-                    TestDataFactory.createSchedule(LocalTime.of(8, 15), testStop, testItinerary), // Should be ignored (same line as first)
-                    TestDataFactory.createSchedule(LocalTime.of(8, 20), testStop, itinerary2)     // Should be ignored (same line as second)
+                    TestDataFactory.createSchedule(LocalTime.of(8, 15), testStop, testItinerary), // Should be ignored (same itinerary as first)
+                    TestDataFactory.createSchedule(LocalTime.of(8, 20), testStop, itinerary2)     // Should be ignored (same itinerary as second)
             );
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));

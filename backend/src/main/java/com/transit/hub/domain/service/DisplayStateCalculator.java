@@ -56,15 +56,15 @@ public class DisplayStateCalculator {
                 ))
                 .toList();
 
-        // Get upcoming arrivals within 30-minute window, one per line (next departure only)
+        // Get upcoming arrivals within 30-minute window, one per itinerary/direction
         LocalTime now = LocalTime.now();
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
         List<DisplayState.ArrivalInfo> arrivals = scheduleRepository
                 .findByStopIdAndTimeWindowWithItinerary(stopId, now, windowEnd)
                 .stream()
-                // Group by line code, keeping only the first (earliest) departure per line
+                // Group by itinerary, keeping only the first (earliest) departure per direction
                 .collect(Collectors.toMap(
-                        schedule -> schedule.getItinerary().getLine().getCode(),
+                        schedule -> schedule.getItinerary().getId(),
                         Function.identity(),
                         (existing, replacement) -> existing, // Keep first occurrence (earliest time)
                         LinkedHashMap::new // Preserve insertion order

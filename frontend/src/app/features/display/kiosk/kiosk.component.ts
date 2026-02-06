@@ -85,7 +85,7 @@ import { DisplayState } from '@shared/models';
                  [class.scrolling]="needsScrolling()"
                  [style.animationDuration]="scrollDuration()">
               <div class="departures-list">
-                @for (arrival of allArrivals(); track arrival.line.code) {
+                @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
                   <div class="departure-row">
                     <span
                       class="line-badge"
@@ -109,7 +109,7 @@ import { DisplayState } from '@shared/models';
               @if (needsScrolling()) {
                 <div class="list-divider"></div>
                 <div class="departures-list">
-                  @for (arrival of allArrivals(); track arrival.line.code) {
+                  @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
                     <div class="departure-row">
                       <span
                         class="line-badge"
