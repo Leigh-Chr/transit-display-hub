@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ItineraryStopsDialogComponent, ItineraryStopsDialogData } from './itinerary-stops-dialog.component';
@@ -31,7 +30,7 @@ describe('ItineraryStopsDialogComponent', () => {
     { id: 's4', name: 'Fourth Stop', latitude: null, longitude: null, lines: [], scheduleCount: 0, hasDevice: false },
   ];
 
-  function createComponent(data: ItineraryStopsDialogData = { itinerary: mockItinerary }) {
+  function createComponent(data: ItineraryStopsDialogData = { itinerary: mockItinerary }): void {
     mockDialogRef = { close: vi.fn() };
     mockStopService = { getAll: vi.fn().mockReturnValue(of(mockLineStops)) };
 
@@ -39,7 +38,6 @@ describe('ItineraryStopsDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [ItineraryStopsDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: StopService, useValue: mockStopService },
@@ -107,7 +105,7 @@ describe('ItineraryStopsDialogComponent', () => {
       component.removeStop(0);
 
       expect(component.selectedStops().length).toBe(1);
-      expect(component.selectedStops()[0].id).toBe('s2');
+      expect(component.selectedStops()[0]!.id).toBe('s2');
       expect(component.availableStops().length).toBe(3);
     });
   });
@@ -179,7 +177,6 @@ describe('ItineraryStopsDialogComponent', () => {
       TestBed.configureTestingModule({
         imports: [ItineraryStopsDialogComponent],
         providers: [
-          provideNoopAnimations(),
           { provide: MAT_DIALOG_DATA, useValue: { itinerary: mockItinerary } },
           { provide: MatDialogRef, useValue: mockDialogRef },
           { provide: StopService, useValue: mockStopService },

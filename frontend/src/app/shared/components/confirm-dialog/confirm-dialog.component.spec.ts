@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { ConfirmDialogComponent, ConfirmDialogData } from './confirm-dialog.component';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 describe('ConfirmDialogComponent', () => {
   let component: ConfirmDialogComponent;
@@ -13,7 +13,7 @@ describe('ConfirmDialogComponent', () => {
     message: 'Are you sure you want to delete this item?'
   };
 
-  function createComponent(data: ConfirmDialogData = defaultData) {
+  function createComponent(data: ConfirmDialogData = defaultData): void {
     mockDialogRef = { close: vi.fn() };
 
     TestBed.resetTestingModule();
@@ -84,7 +84,7 @@ describe('ConfirmDialogComponent', () => {
     it('should default to warn color', () => {
       createComponent();
       const confirmBtn = fixture.nativeElement.querySelectorAll('button')[1];
-      expect(confirmBtn.getAttribute('ng-reflect-color') || 'warn').toBe('warn');
+      expect(confirmBtn.getAttribute('ng-reflect-color') ?? 'warn').toBe('warn');
     });
 
     it('should use custom confirm color', () => {

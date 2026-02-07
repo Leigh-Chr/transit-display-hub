@@ -1,7 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
-import { ActivatedRoute, Router } from '@angular/router';
+import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, Subject, throwError } from 'rxjs';
@@ -100,7 +98,6 @@ describe('MessagesComponent', () => {
     TestBed.configureTestingModule({
       imports: [MessagesComponent],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         { provide: MessageService, useValue: mockMessageService },
         { provide: LineService, useValue: mockLineService },

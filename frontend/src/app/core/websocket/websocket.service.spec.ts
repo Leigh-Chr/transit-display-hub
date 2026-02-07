@@ -1,6 +1,27 @@
 import { TestBed } from '@angular/core/testing';
+import { Observable } from 'rxjs';
 import { WebSocketService } from './websocket.service';
+import { DisplayState } from '@shared/models';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+
+interface MockStompConfig {
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onStompError: (frame: { headers: Record<string, string>; body: string }) => void;
+}
+
+interface MockStompClient {
+  activate: ReturnType<typeof vi.fn>;
+  deactivate: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+  publish: ReturnType<typeof vi.fn>;
+  connected: boolean;
+  _config: MockStompConfig;
+}
+
+interface ServicePrivateFields {
+  client: MockStompClient;
+}
 
 // Mock SockJS
 vi.mock('sockjs-client', () => ({
@@ -15,8 +36,8 @@ vi.mock('@stomp/stompjs', () => {
     subscribe = vi.fn();
     publish = vi.fn();
     connected = false;
-    _config: any;
-    constructor(config: any) {
+    _config: MockStompConfig;
+    constructor(config: MockStompConfig) {
       this._config = config;
     }
   }
@@ -53,8 +74,7 @@ describe('WebSocketService', () => {
   describe('connect', () => {
     it('should return an observable', () => {
       const obs = service.connect('stop-123');
-      expect(obs).toBeDefined();
-      expect(typeof obs.subscribe).toBe('function');
+      expect(obs).toBeInstanceOf(Observable);
     });
   });
 
@@ -79,7 +99,7 @@ describe('WebSocketService', () => {
 
     it('should call deactivate on the STOMP client', () => {
       service.connect('stop-123');
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       service.disconnect();
       expect(client.deactivate).toHaveBeenCalled();
     });
@@ -108,7 +128,7 @@ describe('WebSocketService', () => {
 
   describe('connect observable', () => {
     it('should return a subscribable observable that does not immediately emit', () => {
-      const values: any[] = [];
+      const values: DisplayState[] = [];
       const obs = service.connect('stop-123');
 
       obs.subscribe((val) => values.push(val));
@@ -121,14 +141,14 @@ describe('WebSocketService', () => {
   describe('STOMP callbacks', () => {
     it('should set state to CONNECTED on onConnect callback', () => {
       service.connect('stop-123');
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       expect(service.connectionState()).toBe('CONNECTED');
     });
 
     it('should set state to DISCONNECTED on onDisconnect callback', () => {
       service.connect('stop-123');
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       expect(service.connectionState()).toBe('CONNECTED');
       client._config.onDisconnect();
@@ -137,8 +157,8 @@ describe('WebSocketService', () => {
 
     it('should set state to RECONNECTING on onStompError callback', () => {
       service.connect('stop-123');
-      const client = (service as any)['client'];
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const client = (service as unknown as ServicePrivateFields).client;
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
       client._config.onStompError({ headers: {}, body: 'error' });
       expect(service.connectionState()).toBe('RECONNECTING');
       consoleSpy.mockRestore();
@@ -146,7 +166,7 @@ describe('WebSocketService', () => {
 
     it('should subscribe to the correct topic on connect', () => {
       service.connect('stop-456');
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       expect(client.subscribe).toHaveBeenCalledWith(
         '/topic/display/stop-456',
@@ -155,31 +175,31 @@ describe('WebSocketService', () => {
     });
 
     it('should emit parsed display state when message received', () => {
-      const values: any[] = [];
+      const values: DisplayState[] = [];
       const obs = service.connect('stop-123');
       obs.subscribe(val => values.push(val));
 
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
 
-      const subscribeCallback = client.subscribe.mock.calls[0][1];
+      const subscribeCallback = client.subscribe.mock.calls[0]![1];
       const mockState = { stopId: 'stop-123', stopName: 'Test', lines: [], arrivals: [], messages: [], version: 1, generatedAt: '' };
       subscribeCallback({ body: JSON.stringify(mockState) });
 
       expect(values).toHaveLength(1);
-      expect(values[0].stopId).toBe('stop-123');
+      expect(values[0]!.stopId).toBe('stop-123');
     });
 
     it('should handle malformed message body gracefully', () => {
-      const values: any[] = [];
+      const values: DisplayState[] = [];
       const obs = service.connect('stop-123');
       obs.subscribe(val => values.push(val));
 
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
 
-      const subscribeCallback = client.subscribe.mock.calls[0][1];
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const subscribeCallback = client.subscribe.mock.calls[0]![1];
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
       subscribeCallback({ body: 'not-json' });
       expect(values).toHaveLength(0);
       consoleSpy.mockRestore();
@@ -188,7 +208,7 @@ describe('WebSocketService', () => {
     it('should start heartbeat on connect and publish to correct destination', () => {
       vi.useFakeTimers();
       service.connect('stop-123');
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client.connected = true;
       client._config.onConnect();
 

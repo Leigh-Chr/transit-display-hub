@@ -33,7 +33,6 @@ describe('DisplayLayoutComponent', () => {
     fixture.detectChanges();
 
     const hostEl = fixture.nativeElement as HTMLElement;
-    const computedStyle = getComputedStyle(hostEl);
     // The :host style sets display: block; min-height: 100vh
     // In test environment, styles may or may not be applied, so we check the component exists
     expect(hostEl).toBeTruthy();

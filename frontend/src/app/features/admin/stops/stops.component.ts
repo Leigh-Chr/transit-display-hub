@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -15,7 +15,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
-import { Line, Stop, PageResponse } from '@shared/models';
+import { Line, Stop, PageResponse, CreateStopRequest } from '@shared/models';
 import { StopDialogComponent, StopDialogData } from './stop-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -24,7 +24,6 @@ import {
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
-import { fadeIn } from '@shared/animations';
 
 @Component({
   selector: 'app-stops',
@@ -44,7 +43,7 @@ import { fadeIn } from '@shared/animations';
     EmptyStateComponent,
     SearchInputComponent,
   ],
-  animations: [fadeIn],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stops-page">
       <div class="page-header">
@@ -92,7 +91,7 @@ import { fadeIn } from '@shared/animations';
           ]"
         />
       } @else if (dataSource.data.length === 0 && !search && !lineId) {
-        <mat-card @fadeIn>
+        <mat-card animate.enter="fade-in">
           @if (lines().length === 0) {
             <app-empty-state
               icon="subway"
@@ -112,7 +111,7 @@ import { fadeIn } from '@shared/animations';
           }
         </mat-card>
       } @else if (dataSource.data.length === 0) {
-        <mat-card @fadeIn>
+        <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
             title="No results found"
@@ -120,7 +119,7 @@ import { fadeIn } from '@shared/animations';
           />
         </mat-card>
       } @else {
-        <mat-card @fadeIn>
+        <mat-card animate.enter="fade-in">
           <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
               <th mat-header-cell *matHeaderCellDef>Lines</th>
@@ -267,6 +266,14 @@ import { fadeIn } from '@shared/animations';
       }
     }
 
+    /* Enter animations */
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+
     @media (max-width: 600px) {
       .toolbar {
         flex-direction: column;
@@ -307,10 +314,10 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       this.page = params['page'] ? +params['page'] : 0;
       this.size = params['size'] ? +params['size'] : 10;
-      this.sortBy = params['sortBy'] || 'name';
+      this.sortBy = (params['sortBy'] as string | undefined) ?? 'name';
       this.sortDir = params['sortDir'] === 'desc' ? 'desc' : 'asc';
-      this.search = params['search'] || '';
-      this.lineId = params['lineId'] || '';
+      this.search = (params['search'] as string | undefined) ?? '';
+      this.lineId = (params['lineId'] as string | undefined) ?? '';
       this.loadStops();
     });
   }
@@ -352,9 +359,10 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
           this.totalElements = response.totalElements;
           this.loading.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.loading.set(false);
-          const message = err.error?.message || 'Failed to load stops';
+          const httpErr = err as { error?: { message?: string } };
+          const message = httpErr.error?.message ?? 'Failed to load stops';
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -362,14 +370,14 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   updateUrl(): void {
     const queryParams: Record<string, string | number> = {};
-    if (this.page > 0) queryParams['page'] = this.page;
-    if (this.size !== 10) queryParams['size'] = this.size;
-    if (this.sortBy !== 'name') queryParams['sortBy'] = this.sortBy;
-    if (this.sortDir !== 'asc') queryParams['sortDir'] = this.sortDir;
-    if (this.search) queryParams['search'] = this.search;
-    if (this.lineId) queryParams['lineId'] = this.lineId;
+    if (this.page > 0) {queryParams['page'] = this.page;}
+    if (this.size !== 10) {queryParams['size'] = this.size;}
+    if (this.sortBy !== 'name') {queryParams['sortBy'] = this.sortBy;}
+    if (this.sortDir !== 'asc') {queryParams['sortDir'] = this.sortDir;}
+    if (this.search) {queryParams['search'] = this.search;}
+    if (this.lineId) {queryParams['lineId'] = this.lineId;}
 
-    this.router.navigate([], {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
       replaceUrl: true,
@@ -413,7 +421,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.stopService.create(result).subscribe({
+        this.stopService.create(result as CreateStopRequest).subscribe({
           next: () => {
             this.loadStops();
             this.snackBar.open('Stop created', 'Close', {
@@ -421,8 +429,9 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to create stop';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to create stop';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -442,7 +451,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.stopService.update(stop.id, result).subscribe({
+        this.stopService.update(stop.id, result as CreateStopRequest).subscribe({
           next: () => {
             this.loadStops();
             this.snackBar.open('Stop updated', 'Close', {
@@ -450,8 +459,9 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to update stop';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to update stop';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -480,8 +490,9 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to delete stop';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to delete stop';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit, ViewEncapsulation } from '@angular/core';
 import { CdkDropList, CdkDrag, CdkDragHandle, CdkDragDrop, CdkDragPlaceholder, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -39,6 +39,7 @@ interface StopItem {
     MatSelectModule,
   ],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>Manage Stops - {{ data.itinerary.name }}</h2>
 
@@ -82,7 +83,7 @@ interface StopItem {
 
           <p class="terminus-info">
             <mat-icon class="terminus-icon">flag</mat-icon>
-            <span>Terminus: <strong>{{ selectedStops()[selectedStops().length - 1].name }}</strong></span>
+            <span>Terminus: <strong>{{ selectedStops()[selectedStops().length - 1]?.name }}</strong></span>
           </p>
         } @else {
           <p class="empty-message">
@@ -250,7 +251,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
 
   ngOnInit(): void {
     // Initialize selectedStops from itinerary's current stops
-    const currentStops: StopItem[] = (this.data.itinerary.stops || [])
+    const currentStops: StopItem[] = this.data.itinerary.stops
       .sort((a, b) => a.position - b.position)
       .map(s => ({ id: s.id, name: s.name }));
     this.selectedStops.set(currentStops);
@@ -287,7 +288,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
   }
 
   addStop(stopId: string): void {
-    if (!stopId) return;
+    if (!stopId) {return;}
 
     const stop = this.allLineStops.find(s => s.id === stopId);
     if (stop) {

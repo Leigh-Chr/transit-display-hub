@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { provideRouter, ChildrenOutletContexts } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AdminLayoutComponent } from './admin-layout.component';
@@ -47,7 +46,6 @@ describe('AdminLayoutComponent', () => {
     TestBed.configureTestingModule({
       imports: [AdminLayoutComponent],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         { provide: AuthService, useValue: mockAuthService },
         { provide: ThemeService, useValue: mockThemeService },
@@ -144,35 +142,6 @@ describe('AdminLayoutComponent', () => {
     });
   });
 
-  describe('getRouteAnimationData', () => {
-    it('should return empty string when no context is available', () => {
-      const contexts = TestBed.inject(ChildrenOutletContexts);
-      vi.spyOn(contexts, 'getContext').mockReturnValue(null);
-
-      expect(component.getRouteAnimationData()).toBe('');
-    });
-
-    it('should return empty string when context has no route', () => {
-      const contexts = TestBed.inject(ChildrenOutletContexts);
-      vi.spyOn(contexts, 'getContext').mockReturnValue({ route: null } as any);
-
-      expect(component.getRouteAnimationData()).toBe('');
-    });
-
-    it('should return the url string from the route snapshot', () => {
-      const contexts = TestBed.inject(ChildrenOutletContexts);
-      vi.spyOn(contexts, 'getContext').mockReturnValue({
-        route: {
-          snapshot: {
-            url: ['admin', 'dashboard'],
-          },
-        },
-      } as any);
-
-      expect(component.getRouteAnimationData()).toBe('admin,dashboard');
-    });
-  });
-
   describe('template rendering', () => {
     it('should show all nav links when authService.isAdmin() is true', async () => {
       mockAuthService.isAdmin.set(true);
@@ -180,8 +149,8 @@ describe('AdminLayoutComponent', () => {
       await fixture.whenStable();
 
       const navLinks = fixture.nativeElement.querySelectorAll('a[mat-list-item]');
-      const hasLink = (name: string) => Array.from(navLinks).some(
-        (link: any) => link.textContent?.includes(name)
+      const hasLink = (name: string): boolean => Array.from(navLinks as NodeListOf<HTMLElement>).some(
+        (link) => link.textContent.includes(name)
       );
 
       expect(hasLink('Users')).toBe(true);
@@ -201,8 +170,8 @@ describe('AdminLayoutComponent', () => {
       await fixture.whenStable();
 
       const navLinks = fixture.nativeElement.querySelectorAll('a[mat-list-item]');
-      const hasLink = (name: string) => Array.from(navLinks).some(
-        (link: any) => link.textContent?.includes(name)
+      const hasLink = (name: string): boolean => Array.from(navLinks as NodeListOf<HTMLElement>).some(
+        (link) => link.textContent.includes(name)
       );
 
       expect(hasLink('Lines')).toBe(false);
@@ -219,8 +188,8 @@ describe('AdminLayoutComponent', () => {
       await fixture.whenStable();
 
       const navLinks = fixture.nativeElement.querySelectorAll('a[mat-list-item]');
-      const hasLink = (name: string) => Array.from(navLinks).some(
-        (link: any) => link.textContent?.includes(name)
+      const hasLink = (name: string): boolean => Array.from(navLinks as NodeListOf<HTMLElement>).some(
+        (link) => link.textContent.includes(name)
       );
 
       expect(hasLink('Dashboard')).toBe(true);
@@ -256,12 +225,12 @@ describe('AdminLayoutComponent', () => {
 
       const buttons = fixture.nativeElement.querySelectorAll('button[mat-icon-button]');
       // Find the theme toggle button (has dark_mode or light_mode icon)
-      const themeButton = Array.from(buttons).find(
-        (btn: any) => btn.getAttribute('aria-label') === 'Toggle dark mode'
-      ) as HTMLButtonElement;
+      const themeButton = Array.from(buttons as NodeListOf<HTMLButtonElement>).find(
+        (btn) => btn.getAttribute('aria-label') === 'Toggle dark mode'
+      );
 
       expect(themeButton).toBeTruthy();
-      themeButton.click();
+      themeButton!.click();
 
       expect(mockThemeService.toggleTheme).toHaveBeenCalledOnce();
     });

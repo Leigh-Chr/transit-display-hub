@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Line, CreateLineRequest, PageRequest, PageResponse } from '@shared/models';
@@ -8,8 +8,7 @@ import { Line, CreateLineRequest, PageRequest, PageResponse } from '@shared/mode
 })
 export class LineService {
   private readonly baseUrl = '/api/lines';
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getAll(): Observable<Line[]> {
     return this.http.get<Line[]>(this.baseUrl);
@@ -17,10 +16,10 @@ export class LineService {
 
   getAllPaginated(request: PageRequest = {}): Observable<PageResponse<Line>> {
     let params = new HttpParams().set('page', String(request.page ?? 0));
-    if (request.size) params = params.set('size', String(request.size));
-    if (request.sortBy) params = params.set('sortBy', request.sortBy);
-    if (request.sortDir) params = params.set('sortDir', request.sortDir);
-    if (request.search) params = params.set('search', request.search);
+    if (request.size) {params = params.set('size', String(request.size));}
+    if (request.sortBy) {params = params.set('sortBy', request.sortBy);}
+    if (request.sortDir) {params = params.set('sortDir', request.sortDir);}
+    if (request.search) {params = params.set('search', request.search);}
     return this.http.get<PageResponse<Line>>(this.baseUrl, { params });
   }
 
@@ -37,6 +36,7 @@ export class LineService {
   }
 
   delete(id: string): Observable<void> {
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

@@ -50,8 +50,8 @@ describe('RouteFinderService', () => {
 
     expect(result).not.toBeNull();
     expect(result!.segments).toHaveLength(1);
-    expect(result!.segments[0].lineCode).toBe('LA');
-    expect(result!.segments[0].stopIds).toEqual(['A1', 'X', 'A2']);
+    expect(result!.segments[0]!.lineCode).toBe('LA');
+    expect(result!.segments[0]!.stopIds).toEqual(['A1', 'X', 'A2']);
     expect(result!.transfers).toBe(0);
     expect(result!.transferStopIds).toEqual([]);
   });
@@ -61,8 +61,8 @@ describe('RouteFinderService', () => {
 
     expect(result).not.toBeNull();
     expect(result!.segments).toHaveLength(2);
-    expect(result!.segments[0].lineCode).toBe('LA');
-    expect(result!.segments[1].lineCode).toBe('LB');
+    expect(result!.segments[0]!.lineCode).toBe('LA');
+    expect(result!.segments[1]!.lineCode).toBe('LB');
     expect(result!.transfers).toBe(1);
     expect(result!.transferStopIds).toContain('X');
   });
@@ -101,6 +101,6 @@ describe('RouteFinderService', () => {
     expect(result).not.toBeNull();
     expect(result!.segments).toHaveLength(1);
     // Direction should be toward terminus (Bravo = A2) since we're going forward
-    expect(result!.segments[0].directionName).toBe('Bravo');
+    expect(result!.segments[0]!.directionName).toBe('Bravo');
   });
 });

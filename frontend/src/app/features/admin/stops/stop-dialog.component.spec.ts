@@ -1,9 +1,8 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StopDialogComponent, StopDialogData } from './stop-dialog.component';
-import { Line, Stop, LineInfo } from '@shared/models';
+import { Line, Stop } from '@shared/models';
 
 describe('StopDialogComponent', () => {
   let component: StopDialogComponent;
@@ -15,14 +14,13 @@ describe('StopDialogComponent', () => {
     { id: '2', code: 'L2', name: 'Line 2', color: '#00FF00', type: null, stopCount: 3, itineraryCount: 1 },
   ];
 
-  function createComponent(data: StopDialogData = { lines: mockLines }) {
+  function createComponent(data: StopDialogData = { lines: mockLines }): void {
     mockDialogRef = { close: vi.fn() };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [StopDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
       ],

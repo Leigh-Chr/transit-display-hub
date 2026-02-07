@@ -1,9 +1,8 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SchematicMapComponent } from './schematic-map.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
-import { NetworkLine, NetworkMapAlerts } from '@shared/models';
+import { NetworkLine } from '@shared/models';
 
 describe('SchematicMapComponent', () => {
   let component: SchematicMapComponent;
@@ -30,7 +29,6 @@ describe('SchematicMapComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [SchematicMapComponent],
-      providers: [provideNoopAnimations()],
     });
 
     fixture = TestBed.createComponent(SchematicMapComponent);
@@ -52,8 +50,8 @@ describe('SchematicMapComponent', () => {
 
     const sorted = component.sortedLines();
     expect(sorted.length).toBe(2);
-    expect(sorted[0].code).toBe('L1');
-    expect(sorted[1].code).toBe('L2');
+    expect(sorted[0]!.code).toBe('L1');
+    expect(sorted[1]!.code).toBe('L2');
   });
 
   it('should compute visibleCodeSet from input', () => {
@@ -80,8 +78,8 @@ describe('SchematicMapComponent', () => {
   it('should detect interchange stops', () => {
     fixture.detectChanges();
 
-    const interchangeStop = mockStops[1]; // Transfer - has two line codes
-    const normalStop = mockStops[0]; // Alpha - has one line code
+    const interchangeStop = mockStops[1]!; // Transfer - has two line codes
+    const normalStop = mockStops[0]!; // Alpha - has one line code
 
     expect(component.isInterchange(interchangeStop)).toBe(true);
     expect(component.isInterchange(normalStop)).toBe(false);
@@ -156,10 +154,10 @@ describe('SchematicMapComponent', () => {
       component.stopSelected.subscribe(spy);
 
       const mockEvent = { stopPropagation: vi.fn() } as unknown as Event;
-      component.onStopClick(mockStops[0], mockEvent);
+      component.onStopClick(mockStops[0]!, mockEvent);
 
-      expect(spy).toHaveBeenCalledWith(mockStops[0]);
-      expect((mockEvent as any).stopPropagation).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith(mockStops[0]!);
+      expect((mockEvent as unknown as { stopPropagation: ReturnType<typeof vi.fn> }).stopPropagation).toHaveBeenCalled();
     });
   });
 
@@ -347,10 +345,10 @@ describe('SchematicMapComponent', () => {
 
       const overlays = component.routeOverlayPaths();
       expect(overlays.length).toBeGreaterThan(0);
-      expect(overlays[0].lineId).toBe('line1');
-      expect(overlays[0].color).toBe('#FF0000');
-      expect(overlays[0].path).toContain('M ');
-      expect(overlays[0].path).toContain('L ');
+      expect(overlays[0]!.lineId).toBe('line1');
+      expect(overlays[0]!.color).toBe('#FF0000');
+      expect(overlays[0]!.path).toContain('M ');
+      expect(overlays[0]!.path).toContain('L ');
     });
   });
 

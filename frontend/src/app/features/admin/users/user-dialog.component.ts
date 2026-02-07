@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -29,6 +29,7 @@ export interface UserDialogData {
     MatSelectModule,
     MatSlideToggleModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>
       {{ data.isEdit ? 'Edit User' : 'New User' }}

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -14,7 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
-import { Line, BroadcastMessage, MessageSeverity, PageResponse } from '@shared/models';
+import { Line, BroadcastMessage, MessageSeverity, PageResponse, CreateMessageRequest } from '@shared/models';
 import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -23,7 +23,6 @@ import {
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
-import { listStagger } from '@shared/animations';
 
 @Component({
   selector: 'app-messages',
@@ -42,7 +41,7 @@ import { listStagger } from '@shared/animations';
     EmptyStateComponent,
     SearchInputComponent,
   ],
-  animations: [listStagger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="messages-page">
       <div class="page-header">
@@ -106,7 +105,7 @@ import { listStagger } from '@shared/animations';
           />
         </mat-card>
       } @else {
-        <div class="messages-list" [@listStagger]="messages().length">
+        <div class="messages-list" animate.enter="list-stagger">
           @for (message of messages(); track message.id) {
             <mat-card class="message-card">
               <div class="message-content">
@@ -367,6 +366,14 @@ import { listStagger } from '@shared/animations';
       border-radius: var(--app-radius-md);
     }
 
+    /* Enter animations */
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .list-stagger { animation: slideInUp 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+
     @media (max-width: 600px) {
       .toolbar {
         flex-direction: column;
@@ -423,8 +430,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       this.page = params['page'] ? +params['page'] : 0;
       this.size = params['size'] ? +params['size'] : 10;
-      this.search = params['search'] || '';
-      this.severity = (params['severity'] as MessageSeverity) || '';
+      this.search = (params['search'] as string | undefined) ?? '';
+      this.severity = (params['severity'] as MessageSeverity | undefined) ?? '';
       this.showActiveOnly = params['active'] === 'true';
       this.loadMessages();
     });
@@ -453,9 +460,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
           this.totalElements = response.totalElements;
           this.loading.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.loading.set(false);
-          const message = err.error?.message || 'Failed to load messages';
+          const httpErr = err as { error?: { message?: string } };
+          const message = httpErr.error?.message ?? 'Failed to load messages';
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -463,13 +471,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   updateUrl(): void {
     const queryParams: Record<string, string | number | boolean> = {};
-    if (this.page > 0) queryParams['page'] = this.page;
-    if (this.size !== 10) queryParams['size'] = this.size;
-    if (this.search) queryParams['search'] = this.search;
-    if (this.severity) queryParams['severity'] = this.severity;
-    if (this.showActiveOnly) queryParams['active'] = 'true';
+    if (this.page > 0) {queryParams['page'] = this.page;}
+    if (this.size !== 10) {queryParams['size'] = this.size;}
+    if (this.search) {queryParams['search'] = this.search;}
+    if (this.severity) {queryParams['severity'] = this.severity;}
+    if (this.showActiveOnly) {queryParams['active'] = 'true';}
 
-    this.router.navigate([], {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
       replaceUrl: true,
@@ -514,7 +522,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.messageService.create(result).subscribe({
+        this.messageService.create(result as CreateMessageRequest).subscribe({
           next: () => {
             this.loadMessages();
             this.snackBar.open('Message created', 'Close', {
@@ -522,8 +530,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to create message';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to create message';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -540,7 +549,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.messageService.update(message.id, result).subscribe({
+        this.messageService.update(message.id, result as CreateMessageRequest).subscribe({
           next: () => {
             this.loadMessages();
             this.snackBar.open('Message updated', 'Close', {
@@ -548,8 +557,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const msg = err.error?.message || 'Failed to update message';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const msg = httpErr.error?.message ?? 'Failed to update message';
             this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -578,8 +588,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const msg = err.error?.message || 'Failed to delete message';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const msg = httpErr.error?.message ?? 'Failed to delete message';
             this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -16,7 +16,6 @@ import { MessageService } from '@core/api/message.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Stop, Itinerary, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
-import { gridStagger, fadeIn } from '@shared/animations';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,7 +30,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
     MatTooltipModule,
     StatsSkeletonComponent,
   ],
-  animations: [gridStagger, fadeIn],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dashboard">
       <h1 class="page-title">Dashboard</h1>
@@ -40,7 +39,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
         <app-stats-skeleton />
       } @else {
         <!-- Stats Grid -->
-        <div class="stats-grid" [@gridStagger]="isAdmin() ? 5 : 1">
+        <div class="stats-grid" animate.enter="grid-stagger">
           @if (isAdmin()) {
             <mat-card class="stat-card">
               <mat-card-content>
@@ -114,7 +113,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
 
         <!-- Network Overview -->
         @if (isAdmin()) {
-        <div class="overview-grid" @fadeIn>
+        <div class="overview-grid" animate.enter="fade-in">
           <!-- Lines Overview -->
           <mat-card class="overview-card">
             <mat-card-header>
@@ -209,7 +208,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
 
         <!-- Critical Messages Section -->
         @if (criticalMessages().length > 0) {
-          <mat-card class="alerts-card" @fadeIn>
+          <mat-card class="alerts-card" animate.enter="fade-in">
             <mat-card-header>
               <mat-card-title>
                 <mat-icon class="title-icon critical">error</mat-icon>
@@ -239,7 +238,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
 
         <!-- Recent Messages -->
         @if (recentMessages().length > 0) {
-          <mat-card class="recent-card" @fadeIn>
+          <mat-card class="recent-card" animate.enter="fade-in">
             <mat-card-header>
               <mat-card-title>Recent Messages</mat-card-title>
               <a mat-button routerLink="/admin/messages" class="view-all">View All</a>
@@ -292,7 +291,7 @@ import { gridStagger, fadeIn } from '@shared/animations';
         }
 
         <!-- Quick Actions -->
-        <mat-card class="quick-actions-card" @fadeIn>
+        <mat-card class="quick-actions-card" animate.enter="fade-in">
           <mat-card-header>
             <mat-card-title>Quick Actions</mat-card-title>
           </mat-card-header>
@@ -856,6 +855,20 @@ import { gridStagger, fadeIn } from '@shared/animations';
       font-weight: 500;
     }
 
+    /* Enter animations */
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    .grid-stagger { animation: scaleIn 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+
     /* Responsive */
     @media (max-width: 600px) {
       .stats-grid {
@@ -923,7 +936,7 @@ export class DashboardComponent implements OnInit {
 
   deviceHealthPercent = computed(() => {
     const total = this.devices().length;
-    if (total === 0) return 100;
+    if (total === 0) {return 100;}
     return Math.round((this.onlineDevices() / total) * 100);
   });
 
@@ -991,8 +1004,8 @@ export class DashboardComponent implements OnInit {
     const now = new Date();
     const start = new Date(message.startTime);
     const end = new Date(message.endTime);
-    if (now < start) return 'scheduled';
-    if (now > end) return 'expired';
+    if (now < start) {return 'scheduled';}
+    if (now > end) {return 'expired';}
     return 'active';
   }
 }

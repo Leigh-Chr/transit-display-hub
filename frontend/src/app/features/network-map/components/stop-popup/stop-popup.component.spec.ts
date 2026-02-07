@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { StopPopupComponent, StopPopupData } from './stop-popup.component';
 import { ScheduleService } from '@core/api/schedule.service';
 import { Schedule } from '@shared/models';
@@ -129,7 +129,7 @@ describe('StopPopupComponent', () => {
     expect(component.loading()).toBe(false);
     expect(component.timetableGroups().length).toBeGreaterThan(0);
 
-    const group = component.timetableGroups()[0];
+    const group = component.timetableGroups()[0]!;
     expect(group.lineCode).toBe('M1');
     expect(group.directionName).toBe('North Station');
     expect(group.times.length).toBe(2);
@@ -208,9 +208,9 @@ describe('StopPopupComponent', () => {
       const messages = component.messages();
       expect(messages.length).toBe(3);
       // Should be sorted: CRITICAL, WARNING, INFO
-      expect(messages[0].severity).toBe('CRITICAL');
-      expect(messages[1].severity).toBe('WARNING');
-      expect(messages[2].severity).toBe('INFO');
+      expect(messages[0]!.severity).toBe('CRITICAL');
+      expect(messages[1]!.severity).toBe('WARNING');
+      expect(messages[2]!.severity).toBe('INFO');
     });
 
     it('should render message cards in the template', async () => {

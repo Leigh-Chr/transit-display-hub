@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   input,
   output,
@@ -46,6 +47,7 @@ function severityRank(s: MessageSeverity): number {
   selector: 'app-schematic-map',
   standalone: true,
   imports: [MatExpansionModule, MatIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="map-container" #container>
       <!-- Line filter chips -->
@@ -141,7 +143,7 @@ function severityRank(s: MessageSeverity): number {
           <!-- Line code badges + name (left of each row) -->
           @for (row of networkLineRows(); track row.line.id) {
             @if (row.stops.length > 0) {
-              <g [attr.transform]="'translate(' + (row.stops[0].x - 30) + ',' + row.y + ')'"
+              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 30) + ',' + row.y + ')'"
                  [class.route-dimmed]="hasRoute() && !routeActiveEdges().has(row.line.id)">
                 <rect
                   [attr.x]="-16"
@@ -888,7 +890,7 @@ export class SchematicMapComponent {
     return [...this.lines()].sort((a, b) => {
       const typeA = a.code.replace(/[0-9]/g, '');
       const typeB = b.code.replace(/[0-9]/g, '');
-      if (typeA !== typeB) return typeA.localeCompare(typeB);
+      if (typeA !== typeB) {return typeA.localeCompare(typeB);}
       const numA = parseInt(a.code.replace(/[^0-9]/g, ''), 10) || 0;
       const numB = parseInt(b.code.replace(/[^0-9]/g, ''), 10) || 0;
       return numA - numB;
@@ -917,15 +919,16 @@ export class SchematicMapComponent {
   /** Map<lineId, Set<edgeKey>> where edgeKey = "stopA|stopB" (sorted) */
   routeActiveEdges = computed(() => {
     const result = this.routeResult();
-    if (!result) return new Map<string, Set<string>>();
+    if (!result) {return new Map<string, Set<string>>();}
 
     const map = new Map<string, Set<string>>();
     for (const segment of result.segments) {
-      if (!map.has(segment.lineId)) map.set(segment.lineId, new Set());
-      const edges = map.get(segment.lineId)!;
+      if (!map.has(segment.lineId)) {map.set(segment.lineId, new Set());}
+      const edges = map.get(segment.lineId) ?? new Set<string>();
       for (let i = 0; i < segment.stopIds.length - 1; i++) {
         const a = segment.stopIds[i];
         const b = segment.stopIds[i + 1];
+        if (a === undefined || b === undefined) {continue;}
         edges.add(a < b ? `${a}|${b}` : `${b}|${a}`);
       }
     }
@@ -935,12 +938,12 @@ export class SchematicMapComponent {
   /** Map<lineId, Set<stopId>> — stops that touch an active edge on that line */
   routeStopsByLine = computed(() => {
     const result = this.routeResult();
-    if (!result) return new Map<string, Set<string>>();
+    if (!result) {return new Map<string, Set<string>>();}
 
     const map = new Map<string, Set<string>>();
     for (const segment of result.segments) {
-      if (!map.has(segment.lineId)) map.set(segment.lineId, new Set());
-      const stops = map.get(segment.lineId)!;
+      if (!map.has(segment.lineId)) {map.set(segment.lineId, new Set());}
+      const stops = map.get(segment.lineId) ?? new Set<string>();
       for (const id of segment.stopIds) {
         stops.add(id);
       }
@@ -956,23 +959,26 @@ export class SchematicMapComponent {
 
     for (const row of rows) {
       const lineEdges = activeEdges.get(row.line.id);
-      if (!lineEdges || lineEdges.size === 0) continue;
+      if (!lineEdges || lineEdges.size === 0) {continue;}
 
       // Find consecutive segments of active edges in this row
       let pathD = '';
       let inSegment = false;
 
       for (let i = 0; i < row.stops.length - 1; i++) {
-        const a = row.stops[i].stop.id;
-        const b = row.stops[i + 1].stop.id;
+        const curr = row.stops[i];
+        const next = row.stops[i + 1];
+        if (!curr || !next) {continue;}
+        const a = curr.stop.id;
+        const b = next.stop.id;
         const key = a < b ? `${a}|${b}` : `${b}|${a}`;
 
         if (lineEdges.has(key)) {
           if (!inSegment) {
-            pathD += `M ${row.stops[i].x},${row.y} `;
+            pathD += `M ${curr.x},${row.y} `;
             inSegment = true;
           }
-          pathD += `L ${row.stops[i + 1].x},${row.y} `;
+          pathD += `L ${next.x},${row.y} `;
         } else {
           inSegment = false;
         }
@@ -989,7 +995,7 @@ export class SchematicMapComponent {
   /** Direction arrows placed along each route segment */
   routeDirectionArrows = computed(() => {
     const result = this.routeResult();
-    if (!result) return [];
+    if (!result) {return [];}
 
     const rows = this.networkLineRows();
     const rowByLine = new Map(rows.map(r => [r.line.id, r]));
@@ -998,12 +1004,15 @@ export class SchematicMapComponent {
 
     for (const segment of result.segments) {
       const row = rowByLine.get(segment.lineId);
-      if (!row || segment.stopIds.length < 2) continue;
+      if (!row || segment.stopIds.length < 2) {continue;}
 
       const stopXMap = new Map(row.stops.map(s => [s.stop.id, s.x]));
-      const firstX = stopXMap.get(segment.stopIds[0]);
-      const lastX = stopXMap.get(segment.stopIds[segment.stopIds.length - 1]);
-      if (firstX === undefined || lastX === undefined) continue;
+      const firstStopId = segment.stopIds[0];
+      const lastStopId = segment.stopIds[segment.stopIds.length - 1];
+      if (!firstStopId || !lastStopId) {continue;}
+      const firstX = stopXMap.get(firstStopId);
+      const lastX = stopXMap.get(lastStopId);
+      if (firstX === undefined || lastX === undefined) {continue;}
 
       const right = lastX > firstX;
       const minX = Math.min(firstX, lastX);
@@ -1072,7 +1081,7 @@ export class SchematicMapComponent {
    * Interchange stops are fixed to a shared X (average of desired positions)
    * so that vertical connectors stay aligned across rows.
    */
-  private networkStopPositions = computed<Map<string, Map<string, number>>>(() => {
+  private readonly networkStopPositions = computed<Map<string, Map<string, number>>>(() => {
     const lines = this.visibleLines();
     const pad = this.NETWORK_PADDING;
     const size = 1000 - 2 * pad;
@@ -1081,7 +1090,7 @@ export class SchematicMapComponent {
     const desiredPos = new Map<string, Map<string, number>>();
     for (const line of lines) {
       const it = line.itineraries[0] ?? [];
-      if (it.length === 0) continue;
+      if (it.length === 0) {continue;}
       const spacing = it.length > 1 ? size / (it.length - 1) : 0;
       const m = new Map<string, number>();
       it.forEach((id, i) => m.set(id, pad + i * spacing));
@@ -1092,16 +1101,16 @@ export class SchematicMapComponent {
     const stopLineIds = new Map<string, string[]>();
     for (const line of lines) {
       for (const id of (line.itineraries[0] ?? [])) {
-        if (!stopLineIds.has(id)) stopLineIds.set(id, []);
-        stopLineIds.get(id)!.push(line.id);
+        if (!stopLineIds.has(id)) {stopLineIds.set(id, []);}
+        stopLineIds.get(id)?.push(line.id);
       }
     }
 
     const interchangeX = new Map<string, number>();
     for (const [stopId, lineIds] of stopLineIds) {
-      if (lineIds.length <= 1) continue;
+      if (lineIds.length <= 1) {continue;}
       let sum = 0;
-      for (const lid of lineIds) sum += desiredPos.get(lid)!.get(stopId)!;
+      for (const lid of lineIds) {sum += desiredPos.get(lid)?.get(stopId) ?? 0;}
       interchangeX.set(stopId, sum / lineIds.length);
     }
 
@@ -1112,13 +1121,16 @@ export class SchematicMapComponent {
     for (const line of lines) {
       const it = line.itineraries[0] ?? [];
       const ixInOrder: string[] = it.filter(id => interchangeX.has(id));
-      if (ixInOrder.length < 2) continue;
+      if (ixInOrder.length < 2) {continue;}
 
       for (let i = 1; i < ixInOrder.length; i++) {
-        const prevX = interchangeX.get(ixInOrder[i - 1])!;
-        const curX = interchangeX.get(ixInOrder[i])!;
-        if (curX - prevX < minGap) {
-          interchangeX.set(ixInOrder[i], prevX + minGap);
+        const prevId = ixInOrder[i - 1];
+        const curId = ixInOrder[i];
+        if (!prevId || !curId) {continue;}
+        const prevX = interchangeX.get(prevId);
+        const curX = interchangeX.get(curId);
+        if (prevX !== undefined && curX !== undefined && curX - prevX < minGap) {
+          interchangeX.set(curId, prevX + minGap);
         }
       }
     }
@@ -1130,43 +1142,55 @@ export class SchematicMapComponent {
 
     for (const line of lines) {
       const it = line.itineraries[0] ?? [];
-      if (it.length === 0) continue;
+      if (it.length === 0) {continue;}
 
       const lineMap = new Map<string, number>();
 
       if (it.length === 1) {
-        const ix = interchangeX.get(it[0]);
-        lineMap.set(it[0], ix ?? leftX + size / 2);
+        const firstId = it[0];
+        if (firstId) {
+          const ix = interchangeX.get(firstId);
+          lineMap.set(firstId, ix ?? leftX + size / 2);
+        }
         result.set(line.id, lineMap);
         continue;
       }
 
       const anchors: { idx: number; x: number }[] = [];
 
-      const firstIx = interchangeX.get(it[0]);
+      const firstId = it[0] ?? '';
+      const firstIx = interchangeX.get(firstId);
       const firstX = firstIx ?? leftX;
       anchors.push({ idx: 0, x: firstX });
-      lineMap.set(it[0], firstX);
+      lineMap.set(firstId, firstX);
 
       for (let i = 1; i < it.length - 1; i++) {
-        const ix = interchangeX.get(it[i]);
+        const stopId = it[i];
+        if (!stopId) {continue;}
+        const ix = interchangeX.get(stopId);
         if (ix !== undefined) {
           const prev = anchors[anchors.length - 1];
+          if (!prev) {continue;}
           const x = Math.max(ix, prev.x + minGap);
           anchors.push({ idx: i, x });
-          lineMap.set(it[i], x);
+          lineMap.set(stopId, x);
         }
       }
 
-      const lastIx = interchangeX.get(it[it.length - 1]);
-      const lastX = lastIx != null ? Math.max(lastIx, anchors[anchors.length - 1].x + minGap) : rightX;
+      const lastId = it[it.length - 1] ?? '';
+      const lastIx = interchangeX.get(lastId);
+      const lastAnchor = anchors[anchors.length - 1];
+      const lastX = lastIx !== undefined && lastAnchor ? Math.max(lastIx, lastAnchor.x + minGap) : rightX;
       anchors.push({ idx: it.length - 1, x: lastX });
-      lineMap.set(it[it.length - 1], lastX);
+      lineMap.set(lastId, lastX);
 
       for (let a = 0; a < anchors.length - 1; a++) {
+        const anchorA = anchors[a];
+        const anchorB = anchors[a + 1];
+        if (!anchorA || !anchorB) {continue;}
         this.distributeSegment(
-          it, anchors[a].idx + 1, anchors[a + 1].idx,
-          anchors[a].x, anchors[a + 1].x, lineMap
+          it, anchorA.idx + 1, anchorB.idx,
+          anchorA.x, anchorB.x, lineMap
         );
       }
 
@@ -1203,10 +1227,14 @@ export class SchematicMapComponent {
         .filter((s): s is { stop: LayoutStop; x: number } => s !== null);
 
       let path = '';
-      if (stops.length >= 2) {
-        path = `M ${stops[0].x},${y}`;
+      const firstStop = stops[0];
+      if (stops.length >= 2 && firstStop) {
+        path = `M ${firstStop.x},${y}`;
         for (let i = 1; i < stops.length; i++) {
-          path += ` L ${stops[i].x},${y}`;
+          const s = stops[i];
+          if (s) {
+            path += ` L ${s.x},${y}`;
+          }
         }
       }
 
@@ -1224,7 +1252,7 @@ export class SchematicMapComponent {
         if (!positions.has(stop.id)) {
           positions.set(stop.id, { name: stop.name, x, ys: [] });
         }
-        positions.get(stop.id)!.ys.push(row.y);
+        positions.get(stop.id)?.ys.push(row.y);
       }
     }
 
@@ -1276,24 +1304,26 @@ export class SchematicMapComponent {
     const stopAlerts = this.alerts().stopAlerts;
     const map = new Map<string, MessageSeverity>();
     for (const [stopId, alerts] of Object.entries(stopAlerts)) {
-      if (!alerts?.length) continue;
-      const max = alerts.reduce((best, m) =>
+      if (alerts.length === 0) {continue;}
+      const max = alerts.reduce<MessageSeverity | null>((best, m) =>
         best === null || severityRank(m.severity) > severityRank(best) ? m.severity : best,
-        null as MessageSeverity | null,
+        null,
       );
-      if (max) map.set(stopId, max);
+      if (max) {map.set(stopId, max);}
     }
     return map;
   });
 
   /** Set of stop IDs that are terminus in at least one visible line's itinerary */
-  private networkTerminusIds = computed(() => {
+  private readonly networkTerminusIds = computed(() => {
     const ids = new Set<string>();
     for (const line of this.visibleLines()) {
       for (const itinerary of line.itineraries) {
         if (itinerary.length > 0) {
-          ids.add(itinerary[0]);
-          ids.add(itinerary[itinerary.length - 1]);
+          const first = itinerary[0];
+          const last = itinerary[itinerary.length - 1];
+          if (first) {ids.add(first);}
+          if (last) {ids.add(last);}
         }
       }
     }
@@ -1349,7 +1379,9 @@ export class SchematicMapComponent {
 
   isRowTerminus(stopId: string, row: NetworkLineRow): boolean {
     const stops = row.stops;
-    return stops.length > 0 && (stops[0].stop.id === stopId || stops[stops.length - 1].stop.id === stopId);
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    return stops.length > 0 && (first?.stop.id === stopId || last?.stop.id === stopId);
   }
 
   isInterchange(stop: LayoutStop): boolean {
@@ -1397,10 +1429,10 @@ export class SchematicMapComponent {
 
   getLineAlertSeverity(lineId: string): MessageSeverity | null {
     const messages = this.alerts().lineAlerts[lineId];
-    if (!messages?.length) return null;
-    return messages.reduce((max, m) =>
+    if (!messages?.length) {return null;}
+    return messages.reduce<MessageSeverity | null>((max, m) =>
       max === null || severityRank(m.severity) > severityRank(max) ? m.severity : max,
-      null as MessageSeverity | null,
+      null,
     );
   }
 
@@ -1433,11 +1465,14 @@ export class SchematicMapComponent {
     fromX: number, toX: number, out: Map<string, number>
   ): void {
     const count = toIdx - fromIdx;
-    if (count <= 0) return;
+    if (count <= 0) {return;}
     const totalSlots = count + 1;
     const spacing = (toX - fromX) / totalSlots;
     for (let i = 0; i < count; i++) {
-      out.set(itinerary[fromIdx + i], fromX + (i + 1) * spacing);
+      const stopId = itinerary[fromIdx + i];
+      if (stopId) {
+        out.set(stopId, fromX + (i + 1) * spacing);
+      }
     }
   }
 
@@ -1469,9 +1504,9 @@ export class SchematicMapComponent {
           break;
         }
       }
-      if (sx !== null) break;
+      if (sx !== null) {break;}
     }
-    if (sx === null || sy === null) return;
+    if (sx === null || sy === null) {return;}
 
     this.panZoom.centerOn(sx, sy, this.baseViewBox());
     this.updateViewBox();
@@ -1479,7 +1514,7 @@ export class SchematicMapComponent {
 
   exportSvg(): void {
     const svgEl = this.svgElement()?.nativeElement;
-    if (!svgEl) return;
+    if (!svgEl) {return;}
 
     exportSvgToFile({
       svgElement: svgEl,
@@ -1491,7 +1526,7 @@ export class SchematicMapComponent {
 
   onWheel(event: WheelEvent): void {
     const svg = this.svgElement()?.nativeElement;
-    if (!svg) return;
+    if (!svg) {return;}
     this.panZoom.onWheel(event, svg.getBoundingClientRect(), this.baseViewBox());
     this.updateViewBox();
   }
@@ -1503,9 +1538,9 @@ export class SchematicMapComponent {
   }
 
   onPointerMove(event: MouseEvent): void {
-    if (!this.panZoom.isDragging) return;
+    if (!this.panZoom.isDragging) {return;}
     const svg = this.svgElement()?.nativeElement;
-    if (!svg) return;
+    if (!svg) {return;}
     this.panZoom.onPointerMove(event, svg.getBoundingClientRect(), this.baseViewBox());
     this.updateViewBox();
   }
@@ -1524,7 +1559,7 @@ export class SchematicMapComponent {
 
   onTouchMove(event: TouchEvent): void {
     const svg = this.svgElement()?.nativeElement;
-    if (!svg) return;
+    if (!svg) {return;}
     this.panZoom.onTouchMove(event, svg.getBoundingClientRect(), this.baseViewBox());
     this.updateViewBox();
   }

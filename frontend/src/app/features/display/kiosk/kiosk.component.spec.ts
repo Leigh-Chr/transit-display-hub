@@ -1,4 +1,4 @@
-import { TestBed, ComponentFixture, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { KioskComponent } from './kiosk.component';
 import { DisplayService } from '@core/api/display.service';
 import { WebSocketService, ConnectionState } from '@core/websocket/websocket.service';
@@ -124,12 +124,12 @@ describe('KioskComponent', () => {
 
     it('should compute criticalMessages', () => {
       expect(component.criticalMessages().length).toBe(1);
-      expect(component.criticalMessages()[0].title).toBe('Critical Alert');
+      expect(component.criticalMessages()[0]!.title).toBe('Critical Alert');
     });
 
     it('should compute infoMessages', () => {
       expect(component.infoMessages().length).toBe(1);
-      expect(component.infoMessages()[0].title).toBe('Info Notice');
+      expect(component.infoMessages()[0]!.title).toBe('Info Notice');
     });
 
     it('should compute connected state', () => {
@@ -310,9 +310,9 @@ describe('KioskComponent', () => {
 
     it('should separate critical messages from info messages', () => {
       expect(component.criticalMessages().length).toBe(1);
-      expect(component.criticalMessages()[0].severity).toBe('CRITICAL');
+      expect(component.criticalMessages()[0]!.severity).toBe('CRITICAL');
       expect(component.infoMessages().length).toBe(1);
-      expect(component.infoMessages()[0].severity).toBe('INFO');
+      expect(component.infoMessages()[0]!.severity).toBe('INFO');
     });
 
     it('should include WARNING in infoMessages (non-critical)', () => {

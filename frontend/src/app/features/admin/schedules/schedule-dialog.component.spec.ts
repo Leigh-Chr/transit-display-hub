@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
@@ -34,7 +33,7 @@ describe('ScheduleDialogComponent', () => {
     },
   ];
 
-  function createComponent(data: ScheduleDialogData = { lines: mockLines }) {
+  function createComponent(data: ScheduleDialogData = { lines: mockLines }): void {
     mockDialogRef = { close: vi.fn() };
     mockItineraryService = { getAll: vi.fn().mockReturnValue(of(mockItineraries)) };
 
@@ -42,7 +41,6 @@ describe('ScheduleDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [ScheduleDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: ItineraryService, useValue: mockItineraryService },
@@ -121,7 +119,7 @@ describe('ScheduleDialogComponent', () => {
 
   describe('create mode with single itinerary auto-select', () => {
     it('should auto-select the itinerary when only one exists', () => {
-      const singleItinerary: Itinerary[] = [mockItineraries[0]];
+      const singleItinerary: Itinerary[] = [mockItineraries[0]!];
       mockDialogRef = { close: vi.fn() };
       mockItineraryService = { getAll: vi.fn().mockReturnValue(of(singleItinerary)) };
 
@@ -129,7 +127,6 @@ describe('ScheduleDialogComponent', () => {
       TestBed.configureTestingModule({
         imports: [ScheduleDialogComponent],
         providers: [
-          provideNoopAnimations(),
           { provide: MAT_DIALOG_DATA, useValue: { lines: mockLines } },
           { provide: MatDialogRef, useValue: mockDialogRef },
           { provide: ItineraryService, useValue: mockItineraryService },

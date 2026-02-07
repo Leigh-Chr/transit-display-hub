@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
@@ -23,7 +22,7 @@ describe('DeviceDialogComponent', () => {
     { id: 'stop2', name: 'North', latitude: null, longitude: null, lines: [], scheduleCount: 0, hasDevice: false },
   ];
 
-  function createComponent(data: DeviceDialogData = { lines: mockLines }) {
+  function createComponent(data: DeviceDialogData = { lines: mockLines }): void {
     mockDialogRef = { close: vi.fn() };
     mockStopService = { getAll: vi.fn().mockReturnValue(of(mockStops)) };
 
@@ -31,7 +30,6 @@ describe('DeviceDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [DeviceDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: StopService, useValue: mockStopService },

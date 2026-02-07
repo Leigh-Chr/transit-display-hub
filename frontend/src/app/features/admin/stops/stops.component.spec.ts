@@ -1,9 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { ActivatedRoute } from '@angular/router';
+import { provideRouter, ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError, Subject, BehaviorSubject } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineService } from '@core/api/line.service';
@@ -100,7 +98,6 @@ describe('StopsComponent', () => {
     TestBed.configureTestingModule({
       imports: [StopsComponent],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },

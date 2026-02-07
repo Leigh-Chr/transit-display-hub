@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UserDialogComponent, UserDialogData } from './user-dialog.component';
 import { User } from '@shared/models';
@@ -10,14 +9,13 @@ describe('UserDialogComponent', () => {
   let fixture: ComponentFixture<UserDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
 
-  function createComponent(data: UserDialogData = { isEdit: false }) {
+  function createComponent(data: UserDialogData = { isEdit: false }): void {
     mockDialogRef = { close: vi.fn() };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [UserDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
       ],

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Schedule, CreateScheduleRequest } from '@shared/models';
@@ -7,7 +7,7 @@ import { Schedule, CreateScheduleRequest } from '@shared/models';
   providedIn: 'root'
 })
 export class ScheduleService {
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getForStop(stopId: string): Observable<Schedule[]> {
     return this.http.get<Schedule[]>(`/api/stops/${stopId}/schedules`);
@@ -22,6 +22,7 @@ export class ScheduleService {
   }
 
   delete(id: string): Observable<void> {
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
     return this.http.delete<void>(`/api/schedules/${id}`);
   }
 }

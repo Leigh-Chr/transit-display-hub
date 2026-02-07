@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -28,6 +28,7 @@ export interface ScheduleDialogData {
     MatInputModule,
     MatSelectModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>
       {{ data.entry ? 'Edit Schedule Entry' : 'New Schedule Entry' }}
@@ -120,7 +121,7 @@ export class ScheduleDialogComponent implements OnInit {
 
   form: CreateScheduleRequest = {
     time: this.data.entry?.time ?? '',
-    itineraryId: this.data.entry?.itinerary?.id ?? '',
+    itineraryId: this.data.entry?.itinerary.id ?? '',
   };
 
   ngOnInit(): void {
@@ -134,8 +135,9 @@ export class ScheduleDialogComponent implements OnInit {
 
         // If we have lines but no itineraryId selected yet, and there's only one itinerary total,
         // auto-select it
-        if (!this.form.itineraryId && itineraries.length === 1) {
-          this.form.itineraryId = itineraries[0].id;
+        const firstItinerary = itineraries[0];
+        if (!this.form.itineraryId && itineraries.length === 1 && firstItinerary) {
+          this.form.itineraryId = firstItinerary.id;
         }
       },
       error: () => this.itineraries.set([]),

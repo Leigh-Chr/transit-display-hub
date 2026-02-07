@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-empty-state',
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="empty-state">
       <div class="empty-icon" [class]="iconColor()">
@@ -83,5 +84,5 @@ export class EmptyStateComponent {
   readonly description = input<string | undefined>(undefined);
   readonly actionLabel = input<string | undefined>(undefined);
   readonly actionIcon = input<string | undefined>(undefined);
-  readonly action = output<void>();
+  readonly action = output();
 }

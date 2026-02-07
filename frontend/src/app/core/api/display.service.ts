@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DisplayState } from '@shared/models';
@@ -7,7 +7,7 @@ import { DisplayState } from '@shared/models';
   providedIn: 'root'
 })
 export class DisplayService {
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getState(stopId: string): Observable<DisplayState> {
     return this.http.get<DisplayState>(`/api/display/${stopId}`);

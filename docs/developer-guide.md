@@ -13,7 +13,7 @@ Transit Display Hub suit une architecture en couches inspirée du Domain-Driven 
 │  Features         │  Core Services   │  Shared           │
 │  - Admin          │  - AuthService   │  - Models         │
 │  - Display        │  - ApiServices   │  - Components     │
-│  - Network Map    │  - WebSocket     │  - Animations     │
+│  - Network Map    │  - WebSocket     │                   │
 │  - Auth           │  - Theme         │  - Pipes          │
 │                   │  - Breakpoints   │                   │
 └───────────────────┴──────────────────┴───────────────────┘
@@ -303,11 +303,7 @@ src/app/
 │   │   ├── empty-state/
 │   │   ├── search-input/
 │   │   └── skeleton/             # Composants de chargement
-│   ├── pipes/
-│   └── animations/
-│       ├── fade.animation.ts
-│       ├── route.animation.ts
-│       └── stagger.animation.ts
+│   └── pipes/
 ├── features/
 │   ├── auth/
 │   │   └── login/
@@ -368,7 +364,6 @@ src/app/
 provideZonelessChangeDetection()    // Détection de changements sans Zone.js
 provideRouter(routes)
 provideHttpClient(withInterceptors([authInterceptor]))
-provideAnimations()
 ```
 
 ### Services API
@@ -377,8 +372,7 @@ provideAnimations()
 @Injectable({ providedIn: 'root' })
 export class LineService {
   private readonly baseUrl = '/api/lines';
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getAll(): Observable<Line[]> {
     return this.http.get<Line[]>(this.baseUrl);
@@ -406,6 +400,7 @@ Angular 21 utilise des composants standalone et la syntaxe de contrôle de flux.
 @Component({
   selector: 'app-lines',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule],
   template: `
     <div>
@@ -416,11 +411,10 @@ Angular 21 utilise des composants standalone et la syntaxe de contrôle de flux.
   `
 })
 export class LinesComponent {
+  private readonly lineService = inject(LineService);
   lines = signal<Line[]>([]);
 
-  constructor(private lineService: LineService) {}
-
-  ngOnInit() {
+  ngOnInit(): void {
     this.lineService.getAll().subscribe(lines =>
       this.lines.set(lines)
     );

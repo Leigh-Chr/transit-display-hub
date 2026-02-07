@@ -24,7 +24,7 @@ export class SchematicLayoutService {
 
   calculateLayout(
     stops: NetworkStop[],
-    bounds: NetworkBounds,
+    _bounds: NetworkBounds,
     lines?: NetworkLine[]
   ): { stops: LayoutStop[]; bounds: LayoutBounds } {
     if (stops.length === 0) {
@@ -76,11 +76,12 @@ export class SchematicLayoutService {
 
     // First pass: assign positions. Interchanges keep their first placement.
     lines.forEach((line, lineIndex) => {
-      if (line.itineraries.length === 0) return;
+      if (line.itineraries.length === 0) {return;}
 
       const itinerary = line.itineraries[0];
+      if (!itinerary) {return;}
       const stopCount = itinerary.length;
-      if (stopCount === 0) return;
+      if (stopCount === 0) {return;}
 
       const y = baseY + lineIndex * rowSpacing;
       const xSpacing = stopCount > 1 ? size / (stopCount - 1) : 0;
@@ -99,7 +100,7 @@ export class SchematicLayoutService {
     const centerY = padding + size / 2;
 
     return stops.map(stop => {
-      const pos = stopPositions.get(stop.id) || { x: centerX, y: centerY };
+      const pos = stopPositions.get(stop.id) ?? { x: centerX, y: centerY };
       return { ...stop, x: pos.x, y: pos.y };
     });
   }
@@ -143,10 +144,10 @@ export class SchematicLayoutService {
     }
 
     // Handle edge cases
-    if (minX === Infinity) minX = 0;
-    if (maxX === -Infinity) maxX = 1;
-    if (minY === Infinity) minY = 0;
-    if (maxY === -Infinity) maxY = 1;
+    if (minX === Infinity) {minX = 0;}
+    if (maxX === -Infinity) {maxX = 1;}
+    if (minY === Infinity) {minY = 0;}
+    if (maxY === -Infinity) {maxY = 1;}
 
     // Ensure some range
     if (maxX === minX) { minX -= 0.01; maxX += 0.01; }

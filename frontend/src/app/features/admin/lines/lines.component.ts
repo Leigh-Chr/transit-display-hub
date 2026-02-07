@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -12,7 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
-import { Line, PageResponse } from '@shared/models';
+import { Line, PageResponse, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -21,7 +21,6 @@ import {
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
-import { gridStagger } from '@shared/animations';
 
 @Component({
   selector: 'app-lines',
@@ -39,7 +38,7 @@ import { gridStagger } from '@shared/animations';
     EmptyStateComponent,
     SearchInputComponent,
   ],
-  animations: [gridStagger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="lines-page">
       <div class="page-header">
@@ -98,7 +97,7 @@ import { gridStagger } from '@shared/animations';
           />
         </mat-card>
       } @else {
-        <div class="lines-grid" [@gridStagger]="lines().length">
+        <div class="lines-grid" animate.enter="grid-stagger">
           @for (line of lines(); track line.id) {
             <mat-card class="line-card">
               <mat-card-content>
@@ -242,6 +241,14 @@ import { gridStagger } from '@shared/animations';
     mat-card:not(.line-card) {
       border-radius: var(--app-radius-md);
     }
+
+    /* Enter animations */
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .grid-stagger { animation: scaleIn 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
   `,
 })
 export class LinesComponent implements OnInit, OnDestroy {
@@ -266,8 +273,8 @@ export class LinesComponent implements OnInit, OnDestroy {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       this.page = params['page'] ? +params['page'] : 0;
       this.size = params['size'] ? +params['size'] : 12;
-      this.sortBy = params['sortBy'] || 'code';
-      this.search = params['search'] || '';
+      this.sortBy = (params['sortBy'] as string | undefined) ?? 'code';
+      this.search = (params['search'] as string | undefined) ?? '';
       this.loadLines();
     });
   }
@@ -297,9 +304,10 @@ export class LinesComponent implements OnInit, OnDestroy {
           this.totalElements = response.totalElements;
           this.loading.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.loading.set(false);
-          const message = err.error?.message || 'Failed to load lines';
+          const httpErr = err as { error?: { message?: string } };
+          const message = httpErr.error?.message ?? 'Failed to load lines';
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -307,12 +315,12 @@ export class LinesComponent implements OnInit, OnDestroy {
 
   updateUrl(): void {
     const queryParams: Record<string, string | number> = {};
-    if (this.page > 0) queryParams['page'] = this.page;
-    if (this.size !== 12) queryParams['size'] = this.size;
-    if (this.sortBy !== 'code') queryParams['sortBy'] = this.sortBy;
-    if (this.search) queryParams['search'] = this.search;
+    if (this.page > 0) {queryParams['page'] = this.page;}
+    if (this.size !== 12) {queryParams['size'] = this.size;}
+    if (this.sortBy !== 'code') {queryParams['sortBy'] = this.sortBy;}
+    if (this.search) {queryParams['search'] = this.search;}
 
-    this.router.navigate([], {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
       replaceUrl: true,
@@ -345,7 +353,7 @@ export class LinesComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.lineService.create(result).subscribe({
+        this.lineService.create(result as CreateLineRequest).subscribe({
           next: () => {
             this.loadLines();
             this.snackBar.open('Line created', 'Close', {
@@ -353,8 +361,9 @@ export class LinesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to create line';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to create line';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -371,7 +380,7 @@ export class LinesComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.lineService.update(line.id, result).subscribe({
+        this.lineService.update(line.id, result as CreateLineRequest).subscribe({
           next: () => {
             this.loadLines();
             this.snackBar.open('Line updated', 'Close', {
@@ -379,8 +388,9 @@ export class LinesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to update line';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to update line';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -409,8 +419,9 @@ export class LinesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to delete line';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to delete line';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

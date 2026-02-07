@@ -1,21 +1,25 @@
-import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection, ApplicationConfig } from '@angular/core';
-import { beforeEach } from 'vitest';
+import { TestBed, TestModuleMetadata } from '@angular/core/testing';
+import { provideZonelessChangeDetection, Provider } from '@angular/core';
 
 // Configure TestBed with zoneless change detection for all tests
-const originalConfigureTestingModule = TestBed.configureTestingModule.bind(TestBed);
+const originalConfigureTestingModule = TestBed.configureTestingModule.bind(TestBed) as
+  (moduleDef: TestModuleMetadata) => typeof TestBed;
 
-TestBed.configureTestingModule = function(moduleDef: any) {
-  // Ensure zoneless change detection is always provided
-  const providers = moduleDef.providers || [];
-  const hasZoneless = providers.some((p: any) =>
-    p?.provide?.toString?.().includes('ChangeDetection') ||
-    p?.ɵprov?.token?.toString?.().includes('ChangeDetection')
-  );
+TestBed.configureTestingModule = function configureTestingModuleWithZoneless(
+  moduleDef: TestModuleMetadata,
+): typeof TestBed {
+  const providers: Provider[] = (moduleDef.providers ?? []) as Provider[];
+  const hasZoneless = providers.some((p: Provider) => {
+    if (typeof p === 'object' && 'provide' in p) {
+      const provide = (p as { provide: unknown }).provide;
+      return typeof provide === 'function' && provide.name.includes('ChangeDetection');
+    }
+    return false;
+  });
 
   if (!hasZoneless) {
-    moduleDef.providers = [provideZonelessChangeDetection(), ...providers];
+    moduleDef = { ...moduleDef, providers: [provideZonelessChangeDetection(), ...providers] };
   }
 
   return originalConfigureTestingModule(moduleDef);
-};
+} as typeof TestBed.configureTestingModule;

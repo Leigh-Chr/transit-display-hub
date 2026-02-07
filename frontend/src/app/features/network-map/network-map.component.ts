@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, signal, computed, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, computed, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -35,6 +35,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
     SchematicMapComponent,
     RouteSearchBarComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="network-map-page">
       <header class="page-header">
@@ -114,8 +115,8 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
                 [departureStop]="departureStop()"
                 [arrivalStop]="arrivalStop()"
                 [routeResult]="routeResult()"
-                (search)="onRouteSearch($event)"
-                (clear)="onRouteClear()"
+                (searchRoute)="onRouteSearch($event)"
+                (clearRoute)="onRouteClear()"
                 (departureChanged)="onDepartureChanged($event)"
                 (arrivalChanged)="onArrivalChanged($event)"
               />
@@ -399,7 +400,7 @@ export class NetworkMapComponent implements OnInit {
   readonly themeService = inject(ThemeService);
   private readonly networkMapWs = inject(NetworkMapWebSocketService);
 
-  private schematicMap = viewChild(SchematicMapComponent);
+  private readonly schematicMap = viewChild(SchematicMapComponent);
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -414,12 +415,12 @@ export class NetworkMapComponent implements OnInit {
   // Stop search
   stopSearchCtrl = new FormControl<LayoutStop | string>('');
   highlightedStopId = signal<string | null>(null);
-  private stopSearchFilter = signal('');
+  private readonly stopSearchFilter = signal('');
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   filteredStops = computed(() => {
     const term = this.stopSearchFilter();
-    if (!term) return [];
+    if (!term) {return [];}
     const lower = term.toLowerCase();
     return this.layoutStops().filter(s => s.name.toLowerCase().includes(lower));
   });
@@ -440,10 +441,10 @@ export class NetworkMapComponent implements OnInit {
   });
 
   /** Query param ?lines=M1,T2 — null means "show all" */
-  private linesParam = linkedQueryParam('lines', {
+  private readonly linesParam = linkedQueryParam('lines', {
     parse: (v: string | null): string[] | null => {
-      if (v === null) return null;
-      if (v === '') return [];
+      if (v === null) {return null;}
+      if (v === '') {return [];}
       return v.split(',');
     },
     stringify: (v: string[] | null) => v === null ? null : v.join(','),
@@ -454,17 +455,17 @@ export class NetworkMapComponent implements OnInit {
   allLineCodes = computed(() => this.lines().map(l => l.code));
 
   /** Resolves null (no param) → all codes; filters out invalid codes */
-  private userVisibleLineCodes = computed(() => {
+  private readonly userVisibleLineCodes = computed(() => {
     const param = this.linesParam();
-    if (param === null) return this.allLineCodes();
+    if (param === null) {return this.allLineCodes();}
     const valid = new Set(this.allLineCodes());
     return param.filter(code => valid.has(code));
   });
 
   /** Route line codes extracted from the current route result */
-  private routeLineCodes = computed(() => {
+  private readonly routeLineCodes = computed(() => {
     const result = this.routeResult();
-    if (!result) return [];
+    if (!result) {return [];}
     return [...new Set(result.segments.map(s => s.lineCode))];
   });
 
@@ -496,7 +497,7 @@ export class NetworkMapComponent implements OnInit {
   });
 
   /** Map line code → line id for reverse lookups */
-  private lineIdByCode = computed(() => {
+  private readonly lineIdByCode = computed(() => {
     const map = new Map<string, string>();
     for (const line of this.lines()) {
       map.set(line.code, line.id);
@@ -556,7 +557,7 @@ export class NetworkMapComponent implements OnInit {
       if (update.type === 'FULL_UPDATE') {
         this.networkMap.set(update.networkMap);
         this.alerts.set(update.alerts);
-      } else if (update.type === 'ALERTS_UPDATE') {
+      } else {
         this.alerts.set(update.alerts);
       }
     });
@@ -590,12 +591,13 @@ export class NetworkMapComponent implements OnInit {
   onStopSelected(stop: LayoutStop): void {
     // Route selection mode: fill arrival
     if (this.isRouteSelectionMode) {
-      if (stop.id === this.departureStop()!.id) {
+      const departure = this.departureStop();
+      if (!departure || stop.id === departure.id) {
         this.openStopPopup(stop);
         return;
       }
       this.arrivalStop.set(stop);
-      this.onRouteSearch({ from: this.departureStop()!.id, to: stop.id });
+      this.onRouteSearch({ from: departure.id, to: stop.id });
       return;
     }
 
@@ -605,7 +607,7 @@ export class NetworkMapComponent implements OnInit {
 
   onRouteSearch(event: { from: string; to: string }): void {
     const map = this.networkMap();
-    if (!map) return;
+    if (!map) {return;}
 
     const result = this.routeFinder.findRoute(map, event.from, event.to);
     this.routeResult.set(result);
@@ -633,8 +635,8 @@ export class NetworkMapComponent implements OnInit {
   // --- Stop search ---
 
   stopDisplayFn = (value: LayoutStop | string): string => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
+    if (!value) {return '';}
+    if (typeof value === 'string') {return value;}
     return value.name;
   };
 
@@ -647,7 +649,7 @@ export class NetworkMapComponent implements OnInit {
     this.highlightedStopId.set(stop.id);
 
     // Clear highlight after a few seconds
-    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    if (this.highlightTimer) {clearTimeout(this.highlightTimer);}
     this.highlightTimer = setTimeout(() => {
       this.highlightedStopId.set(null);
       this.highlightTimer = null;
@@ -704,9 +706,9 @@ export class NetworkMapComponent implements OnInit {
 
     for (const code of stop.lineCodes) {
       const lineId = idByCode.get(code);
-      if (!lineId) continue;
+      if (!lineId) {continue;}
       const alerts = lineAlerts[lineId];
-      if (!alerts?.length) continue;
+      if (!alerts?.length) {continue;}
       const color = colorMap.get(code) ?? '#666';
       for (const a of alerts) {
         result.push({ lineCode: code, lineColor: color, title: a.title, content: a.content, severity: a.severity });

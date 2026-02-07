@@ -9,14 +9,9 @@ describe('ThemeService', () => {
     localStorage.clear();
     document.documentElement.classList.remove('dark-theme');
 
-    // Stub matchMedia if not present (happy-dom may not define it)
-    if (!window.matchMedia) {
-      (window as any).matchMedia = () => ({ matches: false });
-    } else {
-      vi.spyOn(window, 'matchMedia').mockReturnValue({
-        matches: false
-      } as MediaQueryList);
-    }
+    // Mock matchMedia (happy-dom may not define it natively)
+    (window as unknown as { matchMedia: (query: string) => Partial<MediaQueryList> }).matchMedia =
+      vi.fn().mockReturnValue({ matches: false } as MediaQueryList);
 
     TestBed.configureTestingModule({
       providers: [ThemeService]
@@ -55,24 +50,24 @@ describe('ThemeService', () => {
     it('should persist theme to localStorage after toggle', () => {
       service.toggleTheme(); // false -> true
       // Effect runs synchronously in test with TestBed
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(localStorage.getItem('theme')).toBe('dark');
 
       service.toggleTheme(); // true -> false
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(localStorage.getItem('theme')).toBe('light');
     });
 
     it('should update document class on toggle', () => {
       service.toggleTheme(); // false -> true
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(document.documentElement.classList.contains('dark-theme')).toBe(true);
 
       service.toggleTheme(); // true -> false
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(document.documentElement.classList.contains('dark-theme')).toBe(false);
     });
@@ -139,16 +134,16 @@ describe('ThemeService with system dark preference', () => {
 
     // Save and replace matchMedia
     originalMatchMedia = window.matchMedia;
-    (window as any).matchMedia = (query: string) => ({
+    (window as unknown as { matchMedia: (query: string) => MediaQueryList }).matchMedia = (query: string) => ({
       matches: true,
       media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
+      addEventListener: () => { /* noop mock */ },
+      removeEventListener: () => { /* noop mock */ },
+      addListener: () => { /* noop mock */ },
+      removeListener: () => { /* noop mock */ },
       dispatchEvent: () => false,
       onchange: null,
-    });
+    }) as MediaQueryList;
 
     TestBed.configureTestingModule({
       providers: [ThemeService]
@@ -159,7 +154,7 @@ describe('ThemeService with system dark preference', () => {
 
   afterEach(() => {
     localStorage.clear();
-    (window as any).matchMedia = originalMatchMedia;
+    (window as unknown as { matchMedia: typeof window.matchMedia }).matchMedia = originalMatchMedia;
   });
 
   it('should fall back to system dark preference', () => {

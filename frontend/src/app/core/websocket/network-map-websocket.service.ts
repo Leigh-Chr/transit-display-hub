@@ -11,7 +11,7 @@ export class NetworkMapWebSocketService {
   private client: Client | null = null;
   private subscription: StompSubscription | null = null;
   private updateSubject = new Subject<NetworkMapUpdate>();
-  private connected = signal(false);
+  private readonly connected = signal(false);
 
   isConnected = this.connected.asReadonly();
 
@@ -27,7 +27,8 @@ export class NetworkMapWebSocketService {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         this.connected.set(true);
-        this.subscription = this.client!.subscribe('/topic/network-map', (message: IMessage) => {
+        if (!this.client) {return;}
+        this.subscription = this.client.subscribe('/topic/network-map', (message: IMessage) => {
           try {
             const update = JSON.parse(message.body) as NetworkMapUpdate;
             this.updateSubject.next(update);
@@ -55,7 +56,7 @@ export class NetworkMapWebSocketService {
       this.subscription = null;
     }
     if (this.client) {
-      this.client.deactivate();
+      void this.client.deactivate();
       this.client = null;
     }
     this.connected.set(false);

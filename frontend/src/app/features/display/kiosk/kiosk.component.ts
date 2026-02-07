@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   OnInit,
   OnDestroy,
@@ -17,6 +18,7 @@ import { DisplayState } from '@shared/models';
   selector: 'app-kiosk',
   standalone: true,
   imports: [MatIconModule, MatProgressSpinnerModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="kiosk">
       @if (displayState()) {
@@ -622,13 +624,13 @@ export class KioskComponent implements OnInit, OnDestroy {
     // Re-evaluate when time changes
     this.currentTime();
 
-    const arrivals = this.displayState()?.arrivals || [];
+    const arrivals = this.displayState()?.arrivals ?? [];
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     return arrivals.filter(arrival => {
       const parts = arrival.scheduledTime.split(':');
-      const arrivalMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      const arrivalMinutes = parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
       // Keep arrivals that are in the future (with 1 min buffer for "Imminent")
       return arrivalMinutes >= currentMinutes;
     });
@@ -653,13 +655,13 @@ export class KioskComponent implements OnInit, OnDestroy {
   });
 
   criticalMessages = computed(() =>
-    (this.displayState()?.messages || []).filter(
+    (this.displayState()?.messages ?? []).filter(
       (m) => m.severity === 'CRITICAL'
     )
   );
 
   infoMessages = computed(() =>
-    (this.displayState()?.messages || []).filter(
+    (this.displayState()?.messages ?? []).filter(
       (m) => m.severity !== 'CRITICAL'
     )
   );
@@ -668,7 +670,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   tickerDuration = computed(() => {
     const messages = this.infoMessages();
     const totalLength = messages.reduce((acc, m) =>
-      acc + (m.title?.length || 0) + (m.content?.length || 0), 0
+      acc + m.title.length + m.content.length, 0
     );
     // Base: 20s, add 2s per 50 characters for readability
     const duration = Math.max(15, 20 + Math.floor(totalLength / 50) * 2);
@@ -679,7 +681,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   alertDuration = computed(() => {
     const messages = this.criticalMessages();
     const totalLength = messages.reduce((acc, m) =>
-      acc + (m.title?.length || 0) + (m.content?.length || 0), 0
+      acc + m.title.length + m.content.length, 0
     );
     // Slower pace for critical messages: 15s base, add 3s per 50 chars
     const duration = Math.max(12, 15 + Math.floor(totalLength / 50) * 3);
@@ -692,7 +694,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.route.params.subscribe((params) => {
-      const routeStopId = params['stopId'];
+      const routeStopId = String(params['stopId'] ?? '');
       if (routeStopId) {
         this.stopId = routeStopId;
         this.initializeWithStopId();
@@ -700,8 +702,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
 
     this.route.queryParams.subscribe((params) => {
-      this.token = params['token'] || null;
-      const queryStopId = params['stopId'] || null;
+      this.token = String(params['token'] ?? '') || null;
+      const queryStopId = String(params['stopId'] ?? '') || null;
 
       if (this.token) {
         this.initializeWithToken();
@@ -730,7 +732,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private initializeWithToken(): void {
-    this.displayService.getStateByToken(this.token!).subscribe({
+    if (!this.token) {
+      return;
+    }
+    this.displayService.getStateByToken(this.token).subscribe({
       next: (state) => {
         this.displayState.set(state);
         this.subscribeToUpdates(state.stopId);
@@ -742,10 +747,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private initializeWithStopId(): void {
-    this.displayService.getState(this.stopId!).subscribe({
+    if (!this.stopId) {
+      return;
+    }
+    const stopId = this.stopId;
+    this.displayService.getState(stopId).subscribe({
       next: (state) => {
         this.displayState.set(state);
-        this.subscribeToUpdates(this.stopId!);
+        this.subscribeToUpdates(stopId);
       },
       error: () => {
         this.error.set('Stop not found.');
@@ -783,7 +792,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   formatDepartureTime(time: string): string {
     // Time comes as "HH:MM:SS" or "HH:MM" - show only HH:MM
     const parts = time.split(':');
-    return `${parts[0]}:${parts[1]}`;
+    return `${parts[0] ?? '00'}:${parts[1] ?? '00'}`;
   }
 
   getMinutesUntil(time: string): number {
@@ -791,8 +800,8 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.currentTime();
 
     const parts = time.split(':');
-    const hours = parseInt(parts[0], 10);
-    const minutes = parseInt(parts[1], 10);
+    const hours = parseInt(parts[0] ?? '0', 10);
+    const minutes = parseInt(parts[1] ?? '0', 10);
 
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();

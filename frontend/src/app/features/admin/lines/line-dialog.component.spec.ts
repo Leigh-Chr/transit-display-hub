@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineDialogComponent, LineDialogData } from './line-dialog.component';
 import { Line } from '@shared/models';
@@ -10,14 +9,13 @@ describe('LineDialogComponent', () => {
   let fixture: ComponentFixture<LineDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
 
-  function createComponent(data: LineDialogData = {}) {
+  function createComponent(data: LineDialogData = {}): void {
     mockDialogRef = { close: vi.fn() };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [LineDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
       ],
@@ -86,7 +84,7 @@ describe('LineDialogComponent', () => {
       });
     });
 
-    it('should close dialog with type null when type is null', () => {
+    it('should not close dialog when type is null', () => {
       component.form.code = 'L1';
       component.form.name = 'Line 1';
       component.form.color = '#FF0000';
@@ -94,12 +92,7 @@ describe('LineDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
-        code: 'L1',
-        name: 'Line 1',
-        color: '#FF0000',
-        type: null,
-      });
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
     });
 
     it('should close dialog without data when cancel is clicked', () => {

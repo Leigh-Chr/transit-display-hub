@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -21,6 +21,7 @@ import { AuthService } from '@core/auth/auth.service';
     MatProgressSpinnerModule,
     MatIconModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="login-container">
       <mat-card class="login-card">
@@ -198,7 +199,7 @@ export class LoginComponent {
   error = signal<string | null>(null);
 
   onSubmit(): void {
-    if (!this.username || !this.password) return;
+    if (!this.username || !this.password) {return;}
 
     this.loading.set(true);
     this.error.set(null);
@@ -207,11 +208,12 @@ export class LoginComponent {
       .login({ username: this.username, password: this.password })
       .subscribe({
         next: () => {
-          this.router.navigate(['/admin']);
+          void this.router.navigate(['/admin']);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.loading.set(false);
-          if (err.status === 401) {
+          const httpErr = err as { status?: number };
+          if (httpErr.status === 401) {
             this.error.set('Invalid credentials');
           } else {
             this.error.set('An error occurred. Please try again.');

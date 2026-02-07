@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -13,7 +13,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
-import { Line, Stop, Schedule } from '@shared/models';
+import { Line, Stop, Schedule, CreateScheduleRequest } from '@shared/models';
 import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -21,7 +21,6 @@ import {
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { fadeIn } from '@shared/animations';
 
 @Component({
   selector: 'app-schedules',
@@ -38,7 +37,7 @@ import { fadeIn } from '@shared/animations';
     TableSkeletonComponent,
     EmptyStateComponent,
   ],
-  animations: [fadeIn],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="schedules-page">
       <div class="page-header">
@@ -93,7 +92,7 @@ import { fadeIn } from '@shared/animations';
             [columns]="[{ width: '100px' }, { width: '150px' }, { width: '80px' }]"
           />
         } @else if (dataSource.data.length === 0) {
-          <mat-card @fadeIn>
+          <mat-card animate.enter="fade-in">
             <mat-card-header>
               <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
             </mat-card-header>
@@ -108,7 +107,7 @@ import { fadeIn } from '@shared/animations';
             />
           </mat-card>
         } @else {
-          <mat-card @fadeIn>
+          <mat-card animate.enter="fade-in">
             <mat-card-header>
               <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
             </mat-card-header>
@@ -230,6 +229,14 @@ import { fadeIn } from '@shared/animations';
       width: var(--app-actions-column-width);
     }
 
+    /* Enter animations */
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+
     @media (max-width: 600px) {
       .selector-row {
         grid-template-columns: 1fr;
@@ -296,15 +303,16 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.selectedStopId) {
       this.loading.set(true);
       const stop = this.stops().find((s) => s.id === this.selectedStopId);
-      this.selectedStop.set(stop || null);
+      this.selectedStop.set(stop ?? null);
       this.scheduleService.getForStop(this.selectedStopId).pipe(takeUntil(this.destroy$)).subscribe({
         next: (schedules) => {
           this.dataSource.data = schedules.sort((a, b) => a.time.localeCompare(b.time));
           this.loading.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.loading.set(false);
-          const message = err.error?.message || 'Failed to load schedules';
+          const httpErr = err as { error?: { message?: string } };
+          const message = httpErr.error?.message ?? 'Failed to load schedules';
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -316,7 +324,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openCreateDialog(): void {
     const stop = this.selectedStop();
-    if (!stop) return;
+    if (!stop) {return;}
 
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
       data: { lines: stop.lines } as ScheduleDialogData,
@@ -326,7 +334,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.scheduleService.create(this.selectedStopId, result).subscribe({
+        this.scheduleService.create(this.selectedStopId, result as CreateScheduleRequest).subscribe({
           next: () => {
             this.loadSchedules();
             this.snackBar.open('Schedule entry created', 'Close', {
@@ -334,8 +342,9 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to create schedule entry';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to create schedule entry';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -345,7 +354,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openEditDialog(entry: Schedule): void {
     const stop = this.selectedStop();
-    if (!stop) return;
+    if (!stop) {return;}
 
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
       data: { entry, lines: stop.lines } as ScheduleDialogData,
@@ -355,7 +364,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.scheduleService.update(entry.id, result).subscribe({
+        this.scheduleService.update(entry.id, result as CreateScheduleRequest).subscribe({
           next: () => {
             this.loadSchedules();
             this.snackBar.open('Schedule entry updated', 'Close', {
@@ -363,8 +372,9 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to update schedule entry';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to update schedule entry';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -373,7 +383,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteSchedule(entry: Schedule): void {
-    const terminusName = entry.itinerary.terminusName || 'unknown';
+    const terminusName = entry.itinerary.terminusName ?? 'unknown';
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete Schedule Entry',
@@ -394,8 +404,9 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to delete schedule entry';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to delete schedule entry';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

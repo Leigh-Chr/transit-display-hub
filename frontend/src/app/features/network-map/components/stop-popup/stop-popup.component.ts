@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
@@ -48,6 +48,7 @@ interface TimetableGroup {
   selector: 'app-stop-popup',
   standalone: true,
   imports: [MatDialogModule, MatButtonModule, MatDividerModule, MatIconModule, MatProgressSpinnerModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dialog-header">
       <div class="stop-info">
@@ -356,13 +357,13 @@ export class StopPopupComponent implements OnInit {
   }
 
   private buildMessages(): void {
-    const networkMsgs: PopupMessage[] = (this.data.networkAlerts ?? [])
+    const networkMsgs: PopupMessage[] = this.data.networkAlerts
       .map(a => ({ title: a.title, content: a.content, severity: a.severity }));
 
-    const stopMsgs: PopupMessage[] = (this.data.stopAlerts ?? [])
+    const stopMsgs: PopupMessage[] = this.data.stopAlerts
       .map(a => ({ title: a.title, content: a.content, severity: a.severity }));
 
-    const lineMsgs: PopupMessage[] = (this.data.lineAlerts ?? [])
+    const lineMsgs: PopupMessage[] = this.data.lineAlerts
       .map(a => ({ title: a.title, content: a.content, severity: a.severity, lineCode: a.lineCode, lineColor: a.lineColor }));
 
     const result = [...networkMsgs, ...stopMsgs, ...lineMsgs].sort((a, b) =>
@@ -411,10 +412,10 @@ export class StopPopupComponent implements OnInit {
       }
 
       const parts = s.time.split(':');
-      const minutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-      const time = `${parts[0]}:${parts[1]}`;
+      const minutes = parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
+      const time = `${parts[0] ?? '00'}:${parts[1] ?? '00'}`;
 
-      grouped.get(it.id)!.entries.push({
+      grouped.get(it.id)?.entries.push({
         time,
         minutes,
         status: minutes < currentMinutes ? 'past' : 'future',
@@ -428,8 +429,9 @@ export class StopPopupComponent implements OnInit {
 
       // Mark the first future entry as 'next'
       const nextIdx = entries.findIndex(e => e.status === 'future');
-      if (nextIdx !== -1) {
-        entries[nextIdx].status = 'next';
+      const nextEntry = entries[nextIdx];
+      if (nextIdx !== -1 && nextEntry) {
+        nextEntry.status = 'next';
       }
 
       groups.push({ ...group, times: entries });

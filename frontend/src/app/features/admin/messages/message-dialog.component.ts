@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -46,6 +46,7 @@ interface MessageForm {
     MatInputModule,
     MatSelectModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>
       {{ data.message ? 'Edit Message' : 'New Broadcast Message' }}
@@ -219,8 +220,8 @@ export class MessageDialogComponent implements OnInit {
         content: message.content,
         severity: message.severity,
         scopeType: message.scopeType,
-        lineId: message.scopeType === 'LINE' ? message.scopeId || '' : '',
-        stopId: message.scopeType === 'STOP' ? message.scopeId || '' : '',
+        lineId: message.scopeType === 'LINE' ? message.scopeId ?? '' : '',
+        stopId: message.scopeType === 'STOP' ? message.scopeId ?? '' : '',
         startTime: this.toLocalDatetime(new Date(message.startTime)),
         endTime: this.toLocalDatetime(new Date(message.endTime)),
       };
@@ -266,7 +267,7 @@ export class MessageDialogComponent implements OnInit {
   }
 
   isDateRangeValid(): boolean {
-    if (!this.form.startTime || !this.form.endTime) return true;
+    if (!this.form.startTime || !this.form.endTime) {return true;}
     return new Date(this.form.endTime) > new Date(this.form.startTime);
   }
 

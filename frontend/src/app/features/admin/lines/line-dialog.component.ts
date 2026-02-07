@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -33,6 +33,7 @@ interface LineForm {
     MatInputModule,
     MatSelectModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ data.line ? 'Edit Line' : 'New Line' }}</h2>
     <mat-dialog-content>
@@ -159,11 +160,14 @@ export class LineDialogComponent {
   };
 
   save(): void {
+    if (!this.form.type) {
+      return;
+    }
     const request: CreateLineRequest = {
       code: this.form.code,
       name: this.form.name,
       color: this.form.color,
-      type: this.form.type!,
+      type: this.form.type,
     };
     this.dialogRef.close(request);
   }

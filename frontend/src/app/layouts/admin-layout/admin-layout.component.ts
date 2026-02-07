@@ -1,7 +1,6 @@
-import { Component, inject, signal, viewChild } from '@angular/core';
-import { MatSidenav } from '@angular/material/sidenav';
-import { RouterModule, RouterLink, RouterLinkActive, ChildrenOutletContexts } from '@angular/router';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
+import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
+import { RouterModule, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +10,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
-import { routeSlide } from '@shared/animations';
 
 @Component({
   selector: 'app-admin-layout',
@@ -28,7 +26,7 @@ import { routeSlide } from '@shared/animations';
     MatDividerModule,
     MatTooltipModule,
   ],
-  animations: [routeSlide],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-sidenav-container class="admin-container">
       <mat-sidenav
@@ -179,7 +177,7 @@ import { routeSlide } from '@shared/animations';
           </button>
         </mat-toolbar>
 
-        <main class="main-content" [@routeSlide]="getRouteAnimationData()">
+        <main class="main-content" animate.enter="route-enter">
           <router-outlet></router-outlet>
         </main>
       </mat-sidenav-content>
@@ -238,6 +236,14 @@ import { routeSlide } from '@shared/animations';
       overflow: auto;
     }
 
+    /* Enter animations */
+    @keyframes routeEnter {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .route-enter { animation: routeEnter 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+
     @media (max-width: 600px) {
       .main-content {
         padding: 16px;
@@ -257,14 +263,9 @@ export class AdminLayoutComponent {
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
   readonly breakpointService = inject(BreakpointService);
-  private readonly contexts = inject(ChildrenOutletContexts);
 
   readonly sidenavRef = viewChild<MatSidenav>('sidenav');
   readonly sidenavOpen = signal(this.loadSidenavState());
-
-  getRouteAnimationData() {
-    return this.contexts.getContext('primary')?.route?.snapshot?.url.toString() || '';
-  }
 
   private loadSidenavState(): boolean {
     const stored = localStorage.getItem(AdminLayoutComponent.SIDENAV_STORAGE_KEY);

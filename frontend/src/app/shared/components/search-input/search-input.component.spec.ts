@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { SearchInputComponent } from './search-input.component';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 describe('SearchInputComponent', () => {
@@ -12,7 +11,6 @@ describe('SearchInputComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [SearchInputComponent],
-      providers: [provideAnimationsAsync()]
     });
 
     fixture = TestBed.createComponent(SearchInputComponent);
@@ -113,7 +111,7 @@ describe('SearchInputComponent', () => {
       // Set input before detectChanges
       TestBed.runInInjectionContext(() => {
         // initialValue is a signal input, we set it via component ref
-        (newComponent as any).initialValue = () => 'initial';
+        (newComponent as unknown as { initialValue: () => string }).initialValue = () => 'initial';
       });
 
       newFixture.detectChanges();

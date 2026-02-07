@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { SkeletonComponent } from './skeleton.component';
 
@@ -6,6 +6,7 @@ import { SkeletonComponent } from './skeleton.component';
   selector: 'app-card-skeleton',
   standalone: true,
   imports: [MatCardModule, SkeletonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-card class="card-skeleton">
       <mat-card-content>

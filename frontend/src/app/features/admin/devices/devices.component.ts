@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -11,7 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
-import { Line, Device, DeviceStatus } from '@shared/models';
+import { Line, Device, DeviceStatus, RegisterDeviceRequest } from '@shared/models';
 import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -19,7 +19,6 @@ import {
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { gridStagger } from '@shared/animations';
 
 @Component({
   selector: 'app-devices',
@@ -35,7 +34,7 @@ import { gridStagger } from '@shared/animations';
     CardSkeletonComponent,
     EmptyStateComponent,
   ],
-  animations: [gridStagger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="devices-page">
       <div class="page-header">
@@ -74,7 +73,7 @@ import { gridStagger } from '@shared/animations';
           />
         </mat-card>
       } @else {
-        <div class="devices-grid" [@gridStagger]="devices().length">
+        <div class="devices-grid" animate.enter="grid-stagger">
           @for (device of devices(); track device.id) {
             <mat-card class="device-card">
               <mat-card-content>
@@ -307,6 +306,14 @@ import { gridStagger } from '@shared/animations';
     .full-width {
       width: 100%;
     }
+
+    /* Enter animations */
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .grid-stagger { animation: scaleIn 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
   `,
 })
 export class DevicesComponent implements OnInit, OnDestroy {
@@ -343,9 +350,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
         this.devices.set(devices);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.loading.set(false);
-        const message = err.error?.message || 'Failed to load devices';
+        const httpErr = err as { error?: { message?: string } };
+        const message = httpErr.error?.message ?? 'Failed to load devices';
         this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
       },
     });
@@ -360,13 +368,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.deviceService.register(result).subscribe({
+        this.deviceService.register(result as RegisterDeviceRequest).subscribe({
           next: (registration) => {
             this.newDeviceToken.set(registration.token);
             this.loadDevices();
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to register device';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to register device';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -419,8 +428,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
               panelClass: 'success-snackbar',
             });
           },
-          error: (err) => {
-            const message = err.error?.message || 'Failed to remove device';
+          error: (err: unknown) => {
+            const httpErr = err as { error?: { message?: string } };
+            const message = httpErr.error?.message ?? 'Failed to remove device';
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

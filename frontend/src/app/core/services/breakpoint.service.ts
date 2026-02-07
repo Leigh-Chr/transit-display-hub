@@ -11,7 +11,7 @@ export class BreakpointService {
   readonly isMobile = toSignal(
     this.breakpointObserver
       .observe([Breakpoints.XSmall, Breakpoints.Small])
-      .pipe(map((r) => r.breakpoints[Breakpoints.XSmall] || false)),
+      .pipe(map((r) => r.breakpoints[Breakpoints.XSmall] ?? false)),
     { initialValue: false }
   );
 

@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { inject, Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
@@ -17,17 +17,17 @@ interface JwtPayload {
 export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
 
-  private tokenSignal = signal<string | null>(this.getStoredToken());
+  private readonly tokenSignal = signal<string | null>(this.getStoredToken());
 
   isAuthenticated = computed(() => {
     const token = this.tokenSignal();
-    if (!token) return false;
+    if (!token) {return false;}
     return !this.isTokenExpired(token);
   });
 
   currentUser = computed<AuthUser | null>(() => {
     const token = this.tokenSignal();
-    if (!token) return null;
+    if (!token) {return null;}
     try {
       const decoded = jwtDecode<JwtPayload>(token);
       return {
@@ -43,10 +43,8 @@ export class AuthService {
     return this.currentUser()?.role === 'ADMIN';
   });
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {}
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
 
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
@@ -60,7 +58,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     this.tokenSignal.set(null);
-    this.router.navigate(['/login']);
+    void this.router.navigate(['/login']);
   }
 
   getToken(): string | null {
@@ -69,7 +67,7 @@ export class AuthService {
 
   getRole(): UserRole | null {
     const user = this.currentUser();
-    return user ? user.role as UserRole : null;
+    return user ? user.role : null;
   }
 
   private getStoredToken(): string | null {

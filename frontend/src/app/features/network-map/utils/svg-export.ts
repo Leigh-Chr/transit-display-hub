@@ -33,7 +33,7 @@ export function exportSvgToFile(options: SvgExportOptions): void {
   // Remove hidden-line badges
   clone.querySelectorAll('.stop-group > g:last-child').forEach(g => {
     const t = g.getAttribute('transform') ?? '';
-    if (/translate\(0,\s*(18|28)\)/.test(t)) g.remove();
+    if (/translate\(0,\s*(18|28)\)/.test(t)) {g.remove();}
   });
 
   // Strip route-dimmed class so all elements render at full opacity

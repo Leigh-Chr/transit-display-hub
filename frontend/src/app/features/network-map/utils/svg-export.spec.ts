@@ -89,7 +89,7 @@ describe('exportSvgToFile', () => {
       createdBlob = obj as Blob;
       return mockObjectUrl;
     });
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => { /* noop */ });
   });
 
   afterEach(() => {
@@ -109,7 +109,6 @@ describe('exportSvgToFile', () => {
   describe('viewBox and dimensions', () => {
     it('should set viewBox from baseViewBox', () => {
       const svg = buildSvgElement();
-      const clone = svg.cloneNode(true) as SVGSVGElement;
 
       // We verify through the serialized output by checking the blob content
       callExport({ svgElement: svg });

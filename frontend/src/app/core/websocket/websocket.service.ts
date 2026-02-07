@@ -1,7 +1,7 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { Observable, Subject, BehaviorSubject, timer } from 'rxjs';
+import { Observable, Subject, timer } from 'rxjs';
 import { takeUntil, tap } from 'rxjs/operators';
 import { DisplayState } from '@shared/models';
 
@@ -12,10 +12,10 @@ export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'REC
 })
 export class WebSocketService {
   private client: Client | null = null;
-  private displayStateSubject = new Subject<DisplayState>();
-  private connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
+  private readonly displayStateSubject = new Subject<DisplayState>();
+  private readonly connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
   private stopId: string | null = null;
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
 
   connectionState = this.connectionStateSignal.asReadonly();
 
@@ -50,7 +50,7 @@ export class WebSocketService {
   disconnect(): void {
     this.destroy$.next();
     if (this.client) {
-      this.client.deactivate();
+      void this.client.deactivate();
       this.client = null;
     }
     this.stopId = null;
@@ -58,7 +58,7 @@ export class WebSocketService {
   }
 
   private subscribeToStop(stopId: string): void {
-    if (!this.client) return;
+    if (!this.client) {return;}
 
     this.client.subscribe(`/topic/display/${stopId}`, (message: IMessage) => {
       try {
@@ -74,7 +74,7 @@ export class WebSocketService {
     timer(0, 30000).pipe(
       takeUntil(this.destroy$),
       tap(() => {
-        if (this.client && this.client.connected) {
+        if (this.client?.connected) {
           this.client.publish({
             destination: '/app/device/heartbeat',
             body: JSON.stringify({ stopId: this.stopId })

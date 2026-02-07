@@ -1,5 +1,4 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RouteSearchBarComponent } from './route-search-bar.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
@@ -35,7 +34,6 @@ describe('RouteSearchBarComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [RouteSearchBarComponent],
-      providers: [provideNoopAnimations()],
     });
 
     fixture = TestBed.createComponent(RouteSearchBarComponent);
@@ -82,22 +80,22 @@ describe('RouteSearchBarComponent', () => {
 
     const filtered = component.filteredDepartures();
     expect(filtered.length).toBe(1);
-    expect(filtered[0].name).toBe('Alpha');
+    expect(filtered[0]!.name).toBe('Alpha');
   });
 
   it('should display stop name using displayFn', () => {
-    const stop = mockStops[0];
+    const stop = mockStops[0]!;
     expect(component.displayFn(stop)).toBe('Alpha');
     expect(component.displayFn('some string')).toBe('some string');
-    expect(component.displayFn(null as any)).toBe('');
+    expect(component.displayFn(null as unknown as string)).toBe('');
     expect(component.displayFn('')).toBe('');
   });
 
   it('should detect same stop error', () => {
     fixture.detectChanges();
 
-    component.selectedDeparture.set(mockStops[0]);
-    component.selectedArrival.set(mockStops[0]);
+    component.selectedDeparture.set(mockStops[0]!);
+    component.selectedArrival.set(mockStops[0]!);
 
     expect(component.sameStopError()).toBe(true);
   });
@@ -105,8 +103,8 @@ describe('RouteSearchBarComponent', () => {
   it('should not flag same stop error for different stops', () => {
     fixture.detectChanges();
 
-    component.selectedDeparture.set(mockStops[0]);
-    component.selectedArrival.set(mockStops[1]);
+    component.selectedDeparture.set(mockStops[0]!);
+    component.selectedArrival.set(mockStops[1]!);
 
     expect(component.sameStopError()).toBe(false);
   });
@@ -114,7 +112,7 @@ describe('RouteSearchBarComponent', () => {
   it('should not flag same stop error when one is null', () => {
     fixture.detectChanges();
 
-    component.selectedDeparture.set(mockStops[0]);
+    component.selectedDeparture.set(mockStops[0]!);
     component.selectedArrival.set(null);
 
     expect(component.sameStopError()).toBe(false);
@@ -124,8 +122,8 @@ describe('RouteSearchBarComponent', () => {
     it('should swap departure and arrival selections', () => {
       fixture.detectChanges();
 
-      component.selectedDeparture.set(mockStops[0]);
-      component.selectedArrival.set(mockStops[1]);
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(mockStops[1]!);
 
       component.swapStops();
 
@@ -141,8 +139,8 @@ describe('RouteSearchBarComponent', () => {
       component.departureChanged.subscribe(depSpy);
       component.arrivalChanged.subscribe(arrSpy);
 
-      component.selectedDeparture.set(mockStops[0]);
-      component.selectedArrival.set(mockStops[1]);
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(mockStops[1]!);
 
       component.swapStops();
 
@@ -160,10 +158,10 @@ describe('RouteSearchBarComponent', () => {
       const clearSpy = vi.fn();
       component.departureChanged.subscribe(depSpy);
       component.arrivalChanged.subscribe(arrSpy);
-      component.clear.subscribe(clearSpy);
+      component.clearRoute.subscribe(clearSpy);
 
-      component.selectedDeparture.set(mockStops[0]);
-      component.selectedArrival.set(mockStops[1]);
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(mockStops[1]!);
 
       component.clearSearch();
 

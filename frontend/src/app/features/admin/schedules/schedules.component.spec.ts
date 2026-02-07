@@ -1,5 +1,4 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
@@ -48,7 +47,6 @@ describe('SchedulesComponent', () => {
     TestBed.configureTestingModule({
       imports: [SchedulesComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },
         { provide: ScheduleService, useValue: mockScheduleService },
@@ -122,9 +120,9 @@ describe('SchedulesComponent', () => {
 
       expect(component.selectedStop()).toEqual(mockStop);
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
-      expect(component.dataSource.data[0].time).toBe('06:00:00');
-      expect(component.dataSource.data[1].time).toBe('08:30:00');
-      expect(component.dataSource.data[2].time).toBe('14:00:00');
+      expect(component.dataSource.data[0]!.time).toBe('06:00:00');
+      expect(component.dataSource.data[1]!.time).toBe('08:30:00');
+      expect(component.dataSource.data[2]!.time).toBe('14:00:00');
       expect(component.loading()).toBe(false);
     });
 

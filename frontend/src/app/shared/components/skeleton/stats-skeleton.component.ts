@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { SkeletonComponent } from './skeleton.component';
 
@@ -6,6 +6,7 @@ import { SkeletonComponent } from './skeleton.component';
   selector: 'app-stats-skeleton',
   standalone: true,
   imports: [MatCardModule, SkeletonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stats-grid">
       @for (i of [1, 2, 3]; track i) {

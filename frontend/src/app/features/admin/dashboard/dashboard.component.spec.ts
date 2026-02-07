@@ -8,10 +8,9 @@ import { ItineraryService } from '@core/api/itinerary.service';
 import { MessageService } from '@core/api/message.service';
 import { DeviceService } from '@core/api/device.service';
 import { provideRouter } from '@angular/router';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Line, Stop, Itinerary, BroadcastMessage, Device } from '@shared/models';
+import { Line, Stop, Itinerary, BroadcastMessage, Device, LineType } from '@shared/models';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -79,7 +78,6 @@ describe('DashboardComponent', () => {
       imports: [DashboardComponent],
       providers: [
         provideRouter([]),
-        provideAnimationsAsync(),
         { provide: AuthService, useValue: mockAuthService },
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },
@@ -142,12 +140,12 @@ describe('DashboardComponent', () => {
 
     it('should compute criticalMessages', () => {
       expect(component.criticalMessages().length).toBe(1);
-      expect(component.criticalMessages()[0].title).toBe('Critical Alert');
+      expect(component.criticalMessages()[0]!.title).toBe('Critical Alert');
     });
 
     it('should compute offlineDevices', () => {
       expect(component.offlineDevices().length).toBe(1);
-      expect(component.offlineDevices()[0].stopName).toBe('North');
+      expect(component.offlineDevices()[0]!.stopName).toBe('North');
     });
 
     it('should compute onlineDevices count', () => {
@@ -205,8 +203,8 @@ describe('DashboardComponent', () => {
       expect(recent.length).toBe(3);
       // Most recent startTime should be first
       for (let i = 0; i < recent.length - 1; i++) {
-        expect(new Date(recent[i].startTime).getTime()).toBeGreaterThanOrEqual(
-          new Date(recent[i + 1].startTime).getTime()
+        expect(new Date(recent[i]!.startTime).getTime()).toBeGreaterThanOrEqual(
+          new Date(recent[i + 1]!.startTime).getTime()
         );
       }
     });
@@ -218,7 +216,7 @@ describe('DashboardComponent', () => {
           code: `L${i}`,
           name: `Line ${i}`,
           color: '#000',
-          type: null as any,
+          type: null as unknown as LineType,
           stopCount: 0,
           itineraryCount: 0,
         }))
@@ -320,7 +318,7 @@ describe('DashboardComponent', () => {
       await fixture.whenStable();
 
       const statLabels = fixture.nativeElement.querySelectorAll('.stat-label');
-      const labelTexts = Array.from(statLabels).map((el: any) => el.textContent.trim());
+      const labelTexts = Array.from(statLabels as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
 
       expect(labelTexts).toContain('Active Messages');
       expect(labelTexts).not.toContain('Lines');
@@ -334,7 +332,7 @@ describe('DashboardComponent', () => {
       await fixture.whenStable();
 
       const actionButtons = fixture.nativeElement.querySelectorAll('.action-btn span');
-      const actionTexts = Array.from(actionButtons).map((el: any) => el.textContent.trim());
+      const actionTexts = Array.from(actionButtons as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
 
       expect(actionTexts).toContain('New Message');
       expect(actionTexts).toContain('Network Map');

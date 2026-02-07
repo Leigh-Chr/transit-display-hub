@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, of, throwError } from 'rxjs';
@@ -51,7 +50,6 @@ describe('LinesComponent', () => {
     TestBed.configureTestingModule({
       imports: [LinesComponent],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },

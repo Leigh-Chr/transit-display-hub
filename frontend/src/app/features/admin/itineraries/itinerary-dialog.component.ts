@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -34,6 +34,7 @@ interface ItineraryForm {
     MatInputModule,
     MatSelectModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>
       {{ data.itinerary ? 'Edit Itinerary' : 'New Itinerary' }}
@@ -166,7 +167,7 @@ export class ItineraryDialogComponent {
   readonly data = inject<ItineraryDialogData>(MAT_DIALOG_DATA);
 
   form: ItineraryForm = {
-    lineId: this.data.itinerary?.line?.id ?? '',
+    lineId: this.data.itinerary?.line.id ?? '',
     name: this.data.itinerary?.name ?? '',
   };
 

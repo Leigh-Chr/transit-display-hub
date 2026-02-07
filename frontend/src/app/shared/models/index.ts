@@ -17,11 +17,11 @@ export interface PageResponse<T> {
 }
 
 export interface PageRequest {
-  page?: number;
-  size?: number;
-  sortBy?: string;
-  sortDir?: 'asc' | 'desc';
-  search?: string;
+  page?: number | undefined;
+  size?: number | undefined;
+  sortBy?: string | undefined;
+  sortDir?: 'asc' | 'desc' | undefined;
+  search?: string | undefined;
 }
 
 // Common nested types
@@ -68,7 +68,7 @@ export interface Itinerary {
 export interface CreateItineraryRequest {
   lineId: string;
   name: string;
-  stopIds?: string[];
+  stopIds?: string[] | undefined;
 }
 
 export interface UpdateItineraryStopsRequest {
@@ -77,7 +77,7 @@ export interface UpdateItineraryStopsRequest {
 
 export interface AddItineraryStopRequest {
   stopId: string;
-  position?: number;
+  position?: number | undefined;
 }
 
 // Stop
@@ -94,8 +94,8 @@ export interface Stop {
 export interface CreateStopRequest {
   name: string;
   lineIds: string[];
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | undefined;
+  longitude?: number | undefined;
 }
 
 // Schedule
@@ -143,7 +143,7 @@ export interface CreateMessageRequest {
   startTime: string;
   endTime: string;
   scopeType: MessageScope;
-  scopeId?: string;
+  scopeId?: string | undefined;
 }
 
 // Device
@@ -153,7 +153,7 @@ export interface Device {
   stopName: string;
   lines: LineInfo[];
   status: DeviceStatus;
-  lastHeartbeat?: string;
+  lastHeartbeat?: string | undefined;
 }
 
 export interface DeviceRegistration {
@@ -165,17 +165,6 @@ export interface DeviceRegistration {
 
 export interface RegisterDeviceRequest {
   stopId: string;
-}
-
-export interface DeviceAuthRequest {
-  token: string;
-}
-
-export interface DeviceAuthResponse {
-  valid: boolean;
-  stopId: string | null;
-  stopName: string | null;
-  lines: LineInfo[] | null;
 }
 
 // Auth
@@ -212,7 +201,7 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest {
-  password?: string;
+  password?: string | undefined;
   role: UserRole;
   enabled: boolean;
 }

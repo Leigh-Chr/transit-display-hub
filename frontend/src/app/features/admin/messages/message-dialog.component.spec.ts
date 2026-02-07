@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
@@ -17,7 +16,7 @@ describe('MessageDialogComponent', () => {
     { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 },
   ];
 
-  function createComponent(data: MessageDialogData = { lines: mockLines }) {
+  function createComponent(data: MessageDialogData = { lines: mockLines }): void {
     mockDialogRef = { close: vi.fn() };
     mockStopService = { getAll: vi.fn().mockReturnValue(of([])) };
 
@@ -25,7 +24,6 @@ describe('MessageDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [MessageDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: StopService, useValue: mockStopService },

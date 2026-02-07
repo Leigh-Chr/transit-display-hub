@@ -100,8 +100,8 @@ describe('SvgPanZoom', () => {
       pz.zoomOut(base);
       const afterZoomOut = pz.computeViewBox(base).split(' ').map(Number);
 
-      expect(afterZoomOut[2]).toBeGreaterThan(afterZoomIn[2]);
-      expect(afterZoomOut[3]).toBeGreaterThan(afterZoomIn[3]);
+      expect(afterZoomOut[2]!).toBeGreaterThan(afterZoomIn[2]!);
+      expect(afterZoomOut[3]!).toBeGreaterThan(afterZoomIn[3]!);
     });
 
     it('should zoom out by factor 1.4', () => {
@@ -245,7 +245,7 @@ describe('SvgPanZoom', () => {
       const vbBottomRight = pz2.computeViewBox(base).split(' ').map(Number);
 
       // Pan offsets should differ based on zoom anchor point
-      expect(vbTopLeft[0]).not.toBeCloseTo(vbBottomRight[0], 0);
+      expect(vbTopLeft[0]!).not.toBeCloseTo(vbBottomRight[0]!, 0);
     });
   });
 

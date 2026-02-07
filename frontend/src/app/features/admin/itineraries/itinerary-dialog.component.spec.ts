@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ItineraryDialogComponent, ItineraryDialogData } from './itinerary-dialog.component';
 import { Line, Itinerary } from '@shared/models';
@@ -15,14 +14,13 @@ describe('ItineraryDialogComponent', () => {
     { id: 'line2', code: 'L2', name: 'Line 2', color: '#00FF00', type: null, stopCount: 3, itineraryCount: 1 },
   ];
 
-  function createComponent(data: ItineraryDialogData = { lines: mockLines }) {
+  function createComponent(data: ItineraryDialogData = { lines: mockLines }): void {
     mockDialogRef = { close: vi.fn() };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [ItineraryDialogComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
       ],

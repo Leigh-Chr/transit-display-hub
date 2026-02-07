@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { LoginComponent } from './login.component';
 import { AuthService } from '@core/auth/auth.service';
 import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
@@ -18,7 +17,7 @@ describe('LoginComponent', () => {
     routerSpy = { navigate: vi.fn() };
 
     await TestBed.configureTestingModule({
-      imports: [LoginComponent, NoopAnimationsModule],
+      imports: [LoginComponent],
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Router, useValue: routerSpy }

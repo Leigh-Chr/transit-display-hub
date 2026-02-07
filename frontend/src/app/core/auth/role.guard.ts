@@ -9,7 +9,7 @@ export const roleGuard: CanActivateFn = (route) => {
   const router = inject(Router);
   const snackBar = inject(MatSnackBar);
 
-  const requiredRole: UserRole | undefined = route.data['requiredRole'];
+  const requiredRole = route.data['requiredRole'] as UserRole | undefined;
 
   if (!requiredRole) {
     return true;
@@ -23,6 +23,6 @@ export const roleGuard: CanActivateFn = (route) => {
     duration: 5000,
     panelClass: 'error-snackbar',
   });
-  router.navigate(['/admin/dashboard']);
+  void router.navigate(['/admin/dashboard']);
   return false;
 };

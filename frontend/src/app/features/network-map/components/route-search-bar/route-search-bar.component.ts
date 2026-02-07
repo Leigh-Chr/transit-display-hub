@@ -1,7 +1,6 @@
 import {
+  ChangeDetectionStrategy,
   Component,
-  DestroyRef,
-  inject,
   input,
   output,
   effect,
@@ -27,6 +26,7 @@ import { RouteResult } from '../../services/route-finder.service';
     MatInputModule,
     MatIconModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="route-search-panel">
       <div class="panel-header">
@@ -421,8 +421,8 @@ export class RouteSearchBarComponent {
   arrivalStop = input<LayoutStop | null>(null);
   routeResult = input<RouteResult | null>(null);
 
-  search = output<{ from: string; to: string }>();
-  clear = output<void>();
+  searchRoute = output<{ from: string; to: string }>();
+  clearRoute = output();
   departureChanged = output<LayoutStop | null>();
   arrivalChanged = output<LayoutStop | null>();
 
@@ -433,7 +433,6 @@ export class RouteSearchBarComponent {
   selectedArrival = signal<LayoutStop | null>(null);
   expandedSegments = signal(new Set<number>());
 
-  private readonly destroyRef = inject(DestroyRef);
   private suppressSync = false;
 
   sameStopError = computed(() => {
@@ -452,8 +451,8 @@ export class RouteSearchBarComponent {
     return this.filterStops(term);
   });
 
-  private departureFilter = signal('');
-  private arrivalFilter = signal('');
+  private readonly departureFilter = signal('');
+  private readonly arrivalFilter = signal('');
 
   constructor() {
     this.departureCtrl.valueChanges.pipe(takeUntilDestroyed()).subscribe(val => {
@@ -477,7 +476,7 @@ export class RouteSearchBarComponent {
     // Sync from parent (map click) → form controls
     effect(() => {
       const stop = this.departureStop();
-      if (this.suppressSync) return;
+      if (this.suppressSync) {return;}
       this.selectedDeparture.set(stop);
       this.departureCtrl.setValue(stop ?? '', { emitEvent: false });
       this.departureFilter.set('');
@@ -486,7 +485,7 @@ export class RouteSearchBarComponent {
 
     effect(() => {
       const stop = this.arrivalStop();
-      if (this.suppressSync) return;
+      if (this.suppressSync) {return;}
       this.selectedArrival.set(stop);
       this.arrivalCtrl.setValue(stop ?? '', { emitEvent: false });
       this.arrivalFilter.set('');
@@ -495,8 +494,8 @@ export class RouteSearchBarComponent {
   }
 
   displayFn = (value: LayoutStop | string): string => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
+    if (!value) {return '';}
+    if (typeof value === 'string') {return value;}
     return value.name;
   };
 
@@ -562,7 +561,7 @@ export class RouteSearchBarComponent {
     } finally {
       this.suppressSync = false;
     }
-    this.clear.emit();
+    this.clearRoute.emit();
   }
 
   toggleSegment(index: number): void {
@@ -577,7 +576,7 @@ export class RouteSearchBarComponent {
   }
 
   private filterStops(term: string): LayoutStop[] {
-    if (!term) return this.stops();
+    if (!term) {return this.stops();}
     const lower = term.toLowerCase();
     return this.stops().filter(s => s.name.toLowerCase().includes(lower));
   }
@@ -586,7 +585,7 @@ export class RouteSearchBarComponent {
     const dep = this.selectedDeparture();
     const arr = this.selectedArrival();
     if (dep && arr && dep.id !== arr.id) {
-      this.search.emit({ from: dep.id, to: arr.id });
+      this.searchRoute.emit({ from: dep.id, to: arr.id });
     }
   }
 }

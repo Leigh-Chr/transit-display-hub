@@ -1,4 +1,4 @@
-import { Component, input, output, OnInit, OnDestroy, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -16,6 +16,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
     MatIconModule,
     MatButtonModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
       <mat-icon matPrefix>search</mat-icon>

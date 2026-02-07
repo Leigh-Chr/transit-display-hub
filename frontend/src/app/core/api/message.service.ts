@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BroadcastMessage, CreateMessageRequest, MessageSeverity, PageRequest, PageResponse } from '@shared/models';
 
 export interface MessagePageRequest extends PageRequest {
-  active?: boolean;
-  severity?: MessageSeverity;
+  active?: boolean | undefined;
+  severity?: MessageSeverity | undefined;
 }
 
 @Injectable({
@@ -13,10 +13,9 @@ export interface MessagePageRequest extends PageRequest {
 })
 export class MessageService {
   private readonly baseUrl = '/api/messages';
+  private readonly http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
-
-  getAll(activeOnly: boolean = false): Observable<BroadcastMessage[]> {
+  getAll(activeOnly = false): Observable<BroadcastMessage[]> {
     let params = new HttpParams();
     if (activeOnly) {
       params = params.set('active', 'true');
@@ -26,12 +25,12 @@ export class MessageService {
 
   getAllPaginated(request: MessagePageRequest = {}): Observable<PageResponse<BroadcastMessage>> {
     let params = new HttpParams().set('page', String(request.page ?? 0));
-    if (request.size) params = params.set('size', String(request.size));
-    if (request.sortBy) params = params.set('sortBy', request.sortBy);
-    if (request.sortDir) params = params.set('sortDir', request.sortDir);
-    if (request.search) params = params.set('search', request.search);
-    if (request.active) params = params.set('active', 'true');
-    if (request.severity) params = params.set('severity', request.severity);
+    if (request.size) {params = params.set('size', String(request.size));}
+    if (request.sortBy) {params = params.set('sortBy', request.sortBy);}
+    if (request.sortDir) {params = params.set('sortDir', request.sortDir);}
+    if (request.search) {params = params.set('search', request.search);}
+    if (request.active) {params = params.set('active', 'true');}
+    if (request.severity) {params = params.set('severity', request.severity);}
     return this.http.get<PageResponse<BroadcastMessage>>(this.baseUrl, { params });
   }
 
@@ -48,6 +47,7 @@ export class MessageService {
   }
 
   delete(id: string): Observable<void> {
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

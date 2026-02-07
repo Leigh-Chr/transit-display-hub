@@ -1,7 +1,27 @@
 import { TestBed } from '@angular/core/testing';
+import { Observable } from 'rxjs';
 import { NetworkMapWebSocketService } from './network-map-websocket.service';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { NetworkMapUpdate } from '@shared/models';
+
+interface MockStompConfig {
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onStompError: (frame: { headers: Record<string, string>; body: string }) => void;
+}
+
+interface MockStompClient {
+  activate: ReturnType<typeof vi.fn>;
+  deactivate: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+  connected: boolean;
+  _config: MockStompConfig;
+}
+
+interface ServicePrivateFields {
+  client: MockStompClient;
+  subscription: { unsubscribe: ReturnType<typeof vi.fn> };
+}
 
 // Mock SockJS
 vi.mock('sockjs-client', () => ({
@@ -15,8 +35,8 @@ vi.mock('@stomp/stompjs', () => {
     deactivate = vi.fn();
     subscribe = vi.fn().mockReturnValue({ unsubscribe: vi.fn() });
     connected = false;
-    _config: any;
-    constructor(config: any) {
+    _config: MockStompConfig;
+    constructor(config: MockStompConfig) {
       this._config = config;
     }
   }
@@ -48,8 +68,7 @@ describe('NetworkMapWebSocketService', () => {
   describe('connect', () => {
     it('should return an observable', () => {
       const obs = service.connect();
-      expect(obs).toBeDefined();
-      expect(typeof obs.subscribe).toBe('function');
+      expect(obs).toBeInstanceOf(Observable);
     });
 
     it('should return the same observable on subsequent calls', () => {
@@ -61,15 +80,15 @@ describe('NetworkMapWebSocketService', () => {
 
     it('should activate the STOMP client', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       expect(client.activate).toHaveBeenCalled();
     });
 
     it('should not create a second client on repeat connect', () => {
       service.connect();
-      const client1 = (service as any)['client'];
+      const client1 = (service as unknown as ServicePrivateFields).client;
       service.connect();
-      const client2 = (service as any)['client'];
+      const client2 = (service as unknown as ServicePrivateFields).client;
       expect(client1).toBe(client2);
     });
   });
@@ -77,7 +96,7 @@ describe('NetworkMapWebSocketService', () => {
   describe('disconnect', () => {
     it('should set isConnected to false', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       expect(service.isConnected()).toBe(true);
       service.disconnect();
@@ -86,16 +105,16 @@ describe('NetworkMapWebSocketService', () => {
 
     it('should call deactivate on the STOMP client', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       service.disconnect();
       expect(client.deactivate).toHaveBeenCalled();
     });
 
     it('should unsubscribe from the STOMP subscription', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
-      const subscription = (service as any)['subscription'];
+      const subscription = (service as unknown as ServicePrivateFields).subscription;
       service.disconnect();
       expect(subscription.unsubscribe).toHaveBeenCalled();
     });
@@ -111,7 +130,7 @@ describe('NetworkMapWebSocketService', () => {
       service.disconnect();
       const obs = service.connect();
       expect(obs).toBeDefined();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       expect(client.activate).toHaveBeenCalled();
     });
   });
@@ -119,14 +138,14 @@ describe('NetworkMapWebSocketService', () => {
   describe('STOMP callbacks', () => {
     it('should set isConnected to true on onConnect', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       expect(service.isConnected()).toBe(true);
     });
 
     it('should set isConnected to false on onDisconnect', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       client._config.onDisconnect();
       expect(service.isConnected()).toBe(false);
@@ -134,8 +153,8 @@ describe('NetworkMapWebSocketService', () => {
 
     it('should set isConnected to false on onStompError', () => {
       service.connect();
-      const client = (service as any)['client'];
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const client = (service as unknown as ServicePrivateFields).client;
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
       client._config.onStompError({ headers: {}, body: 'error' });
       expect(service.isConnected()).toBe(false);
       consoleSpy.mockRestore();
@@ -143,7 +162,7 @@ describe('NetworkMapWebSocketService', () => {
 
     it('should subscribe to /topic/network-map on connect', () => {
       service.connect();
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
       expect(client.subscribe).toHaveBeenCalledWith(
         '/topic/network-map',
@@ -158,10 +177,10 @@ describe('NetworkMapWebSocketService', () => {
       const obs = service.connect();
       obs.subscribe(val => values.push(val));
 
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
 
-      const subscribeCallback = client.subscribe.mock.calls[0][1];
+      const subscribeCallback = client.subscribe.mock.calls[0]![1];
       const mockUpdate = {
         type: 'FULL_UPDATE',
         networkMap: { lines: [], stops: [], bounds: { minX: 0, minY: 0, maxX: 100, maxY: 100 } },
@@ -170,7 +189,7 @@ describe('NetworkMapWebSocketService', () => {
       subscribeCallback({ body: JSON.stringify(mockUpdate) });
 
       expect(values).toHaveLength(1);
-      expect(values[0].type).toBe('FULL_UPDATE');
+      expect(values[0]!.type).toBe('FULL_UPDATE');
     });
 
     it('should emit ALERTS_UPDATE messages', () => {
@@ -178,10 +197,10 @@ describe('NetworkMapWebSocketService', () => {
       const obs = service.connect();
       obs.subscribe(val => values.push(val));
 
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
 
-      const subscribeCallback = client.subscribe.mock.calls[0][1];
+      const subscribeCallback = client.subscribe.mock.calls[0]![1];
       const mockUpdate = {
         type: 'ALERTS_UPDATE',
         alerts: { networkAlerts: [], lineAlerts: {}, stopAlerts: {} }
@@ -189,7 +208,7 @@ describe('NetworkMapWebSocketService', () => {
       subscribeCallback({ body: JSON.stringify(mockUpdate) });
 
       expect(values).toHaveLength(1);
-      expect(values[0].type).toBe('ALERTS_UPDATE');
+      expect(values[0]!.type).toBe('ALERTS_UPDATE');
     });
 
     it('should handle malformed message body gracefully', () => {
@@ -197,11 +216,11 @@ describe('NetworkMapWebSocketService', () => {
       const obs = service.connect();
       obs.subscribe(val => values.push(val));
 
-      const client = (service as any)['client'];
+      const client = (service as unknown as ServicePrivateFields).client;
       client._config.onConnect();
 
-      const subscribeCallback = client.subscribe.mock.calls[0][1];
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const subscribeCallback = client.subscribe.mock.calls[0]![1];
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
       subscribeCallback({ body: 'not-json' });
       expect(values).toHaveLength(0);
       consoleSpy.mockRestore();

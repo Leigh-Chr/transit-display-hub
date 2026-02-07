@@ -51,8 +51,8 @@ describe('SchematicLayoutService', () => {
     expect(result.stops).toHaveLength(3);
     const xs = result.stops.map(s => s.x);
     // Stops should be in left-to-right order
-    expect(xs[0]).toBeLessThan(xs[1]);
-    expect(xs[1]).toBeLessThan(xs[2]);
+    expect(xs[0]!).toBeLessThan(xs[1]!);
+    expect(xs[1]!).toBeLessThan(xs[2]!);
   });
 
   it('should use grid fallback when no coordinates and no lines', () => {

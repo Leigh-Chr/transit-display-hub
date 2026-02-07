@@ -4,7 +4,7 @@ import { NetworkMap, NetworkLine } from '@shared/models';
 class MinHeap<T> {
   private heap: T[] = [];
 
-  constructor(private compareFn: (a: T, b: T) => number) {}
+  constructor(private readonly compareFn: (a: T, b: T) => number) {}
 
   get size(): number {
     return this.heap.length;
@@ -16,10 +16,10 @@ class MinHeap<T> {
   }
 
   pop(): T | undefined {
-    if (this.heap.length === 0) return undefined;
+    if (this.heap.length === 0) {return undefined;}
     const top = this.heap[0];
-    const last = this.heap.pop()!;
-    if (this.heap.length > 0) {
+    const last = this.heap.pop();
+    if (this.heap.length > 0 && last !== undefined) {
       this.heap[0] = last;
       this.sinkDown(0);
     }
@@ -29,22 +29,34 @@ class MinHeap<T> {
   private bubbleUp(i: number): void {
     while (i > 0) {
       const parent = (i - 1) >> 1;
-      if (this.compareFn(this.heap[i], this.heap[parent]) >= 0) break;
-      [this.heap[i], this.heap[parent]] = [this.heap[parent], this.heap[i]];
+      const current = this.heap[i];
+      const parentVal = this.heap[parent];
+      if (current === undefined || parentVal === undefined || this.compareFn(current, parentVal) >= 0) {break;}
+      this.heap[i] = parentVal;
+      this.heap[parent] = current;
       i = parent;
     }
   }
 
   private sinkDown(i: number): void {
     const n = this.heap.length;
-    while (true) {
+    for (;;) {
       let smallest = i;
       const left = 2 * i + 1;
       const right = 2 * i + 2;
-      if (left < n && this.compareFn(this.heap[left], this.heap[smallest]) < 0) smallest = left;
-      if (right < n && this.compareFn(this.heap[right], this.heap[smallest]) < 0) smallest = right;
-      if (smallest === i) break;
-      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+      const smallestVal = this.heap[smallest];
+      const leftVal = this.heap[left];
+      const rightVal = this.heap[right];
+      if (smallestVal !== undefined && left < n && leftVal !== undefined && this.compareFn(leftVal, smallestVal) < 0) {smallest = left;}
+      const newSmallestVal = this.heap[smallest];
+      if (newSmallestVal !== undefined && right < n && rightVal !== undefined && this.compareFn(rightVal, newSmallestVal) < 0) {smallest = right;}
+      if (smallest === i) {break;}
+      const iVal = this.heap[i];
+      const sVal = this.heap[smallest];
+      if (iVal !== undefined && sVal !== undefined) {
+        this.heap[i] = sVal;
+        this.heap[smallest] = iVal;
+      }
       i = smallest;
     }
   }
@@ -80,20 +92,20 @@ interface PqEntry {
 export class RouteFinderService {
 
   findRoute(networkMap: NetworkMap, fromStopId: string, toStopId: string): RouteResult | null {
-    if (fromStopId === toStopId) return null;
+    if (fromStopId === toStopId) {return null;}
 
     // Build adjacency: key = "stopId|lineId", value = [{ neighbor key, cost }]
     const adj = new Map<string, { key: string; node: GraphNode; cost: number }[]>();
 
-    const getKey = (stopId: string, lineId: string) => `${stopId}|${lineId}`;
+    const getKey = (stopId: string, lineId: string): string => `${stopId}|${lineId}`;
 
-    const ensureNode = (key: string) => {
-      if (!adj.has(key)) adj.set(key, []);
+    const ensureNode = (key: string): void => {
+      if (!adj.has(key)) {adj.set(key, []);}
     };
 
-    const addEdge = (fromKey: string, toKey: string, toNode: GraphNode, cost: number) => {
+    const addEdge = (fromKey: string, toKey: string, toNode: GraphNode, cost: number): void => {
       ensureNode(fromKey);
-      adj.get(fromKey)!.push({ key: toKey, node: toNode, cost });
+      adj.get(fromKey)?.push({ key: toKey, node: toNode, cost });
     };
 
     // Track which lines serve each stop
@@ -101,12 +113,12 @@ export class RouteFinderService {
 
     for (const line of networkMap.lines) {
       const itinerary = line.itineraries[0];
-      if (!itinerary || itinerary.length === 0) continue;
+      if (!itinerary || itinerary.length === 0) {continue;}
 
       // Register stop-line associations
       for (const stopId of itinerary) {
-        if (!stopToLines.has(stopId)) stopToLines.set(stopId, new Set());
-        stopToLines.get(stopId)!.add(line.id);
+        if (!stopToLines.has(stopId)) {stopToLines.set(stopId, new Set());}
+        stopToLines.get(stopId)?.add(line.id);
       }
 
       // Same-line edges (cost 1) — bidirectional
@@ -115,6 +127,7 @@ export class RouteFinderService {
       for (let i = 0; i < itinerary.length - 1; i++) {
         const a = itinerary[i];
         const b = itinerary[i + 1];
+        if (a === undefined || b === undefined) {continue;}
         const keyA = getKey(a, line.id);
         const keyB = getKey(b, line.id);
         const nodeA: GraphNode = { stopId: a, lineId: line.id };
@@ -131,10 +144,13 @@ export class RouteFinderService {
       const lines = [...lineIds];
       for (let i = 0; i < lines.length; i++) {
         for (let j = i + 1; j < lines.length; j++) {
-          const keyA = getKey(stopId, lines[i]);
-          const keyB = getKey(stopId, lines[j]);
-          const nodeA: GraphNode = { stopId, lineId: lines[i] };
-          const nodeB: GraphNode = { stopId, lineId: lines[j] };
+          const lineI = lines[i];
+          const lineJ = lines[j];
+          if (lineI === undefined || lineJ === undefined) {continue;}
+          const keyA = getKey(stopId, lineI);
+          const keyB = getKey(stopId, lineJ);
+          const nodeA: GraphNode = { stopId, lineId: lineI };
+          const nodeB: GraphNode = { stopId, lineId: lineJ };
 
           addEdge(keyA, keyB, nodeB, TRANSFER_COST);
           addEdge(keyB, keyA, nodeA, TRANSFER_COST);
@@ -150,7 +166,7 @@ export class RouteFinderService {
 
     // Start from all lines at the departure stop
     const startLines = stopToLines.get(fromStopId);
-    if (!startLines || startLines.size === 0) return null;
+    if (!startLines || startLines.size === 0) {return null;}
 
     for (const lineId of startLines) {
       const key = getKey(fromStopId, lineId);
@@ -161,14 +177,16 @@ export class RouteFinderService {
 
     // Target keys
     const targetLines = stopToLines.get(toStopId);
-    if (!targetLines || targetLines.size === 0) return null;
+    if (!targetLines || targetLines.size === 0) {return null;}
     const targetKeys = new Set([...targetLines].map(lid => getKey(toStopId, lid)));
 
     while (pq.size > 0) {
-      const { node, cost } = pq.pop()!;
+      const popped = pq.pop();
+      if (!popped) {break;}
+      const { node, cost } = popped;
       const key = getKey(node.stopId, node.lineId);
 
-      if (cost > (dist.get(key) ?? Infinity)) continue;
+      if (cost > (dist.get(key) ?? Infinity)) {continue;}
 
       if (targetKeys.has(key)) {
         return this.reconstructRoute(key, prev, networkMap);
@@ -198,7 +216,9 @@ export class RouteFinderService {
     let current: string | null = endKey;
 
     while (current !== null) {
-      const [stopId, lineId] = current.split('|');
+      const parts = current.split('|');
+      const stopId = parts[0] ?? '';
+      const lineId = parts[1] ?? '';
       path.unshift({ stopId, lineId });
       current = prev.get(current) ?? null;
     }
@@ -218,8 +238,12 @@ export class RouteFinderService {
     let currentSegment: RouteSegment | null = null;
 
     for (const step of path) {
-      if (!currentSegment || currentSegment.lineId !== step.lineId) {
-        const line = lineMap.get(step.lineId)!;
+      if (currentSegment !== null && currentSegment.lineId === step.lineId) {
+        currentSegment.stopIds.push(step.stopId);
+        currentSegment.stopNames.push(stopNameMap.get(step.stopId) ?? '');
+      } else {
+        const line = lineMap.get(step.lineId);
+        if (!line) {continue;}
         currentSegment = {
           lineId: step.lineId,
           lineCode: line.code,
@@ -229,36 +253,36 @@ export class RouteFinderService {
           directionName: '',
         };
         segments.push(currentSegment);
-      } else {
-        currentSegment.stopIds.push(step.stopId);
-        currentSegment.stopNames.push(stopNameMap.get(step.stopId) ?? '');
       }
     }
 
     // Compute direction for each segment
     for (const segment of segments) {
-      const line = lineMap.get(segment.lineId)!;
+      const line = lineMap.get(segment.lineId);
+      if (!line) {continue;}
       const itinerary = line.itineraries[0] ?? [];
+      const firstStopId = segment.stopIds[0] ?? '';
+      const lastStopId = segment.stopIds[segment.stopIds.length - 1] ?? '';
 
       if (itinerary.length >= 2 && segment.stopIds.length >= 2) {
-        const firstIdx = itinerary.indexOf(segment.stopIds[0]);
-        const lastIdx = itinerary.indexOf(segment.stopIds[segment.stopIds.length - 1]);
+        const firstIdx = itinerary.indexOf(firstStopId);
+        const lastIdx = itinerary.indexOf(lastStopId);
         const terminusId = lastIdx > firstIdx
-          ? itinerary[itinerary.length - 1]
-          : itinerary[0];
+          ? (itinerary[itinerary.length - 1] ?? '')
+          : (itinerary[0] ?? '');
         segment.directionName = stopNameMap.get(terminusId) ?? '';
       } else {
-        segment.directionName = stopNameMap.get(segment.stopIds[segment.stopIds.length - 1]) ?? '';
+        segment.directionName = stopNameMap.get(lastStopId) ?? '';
       }
     }
 
     // Build transfer stop IDs (stops where segments change)
     const transferStopIds: string[] = [];
     for (let i = 1; i < segments.length; i++) {
-      // The transfer happens at the last stop of the previous segment
-      // which is also the first stop of the next segment
-      const transferStop = segments[i].stopIds[0];
-      if (!transferStopIds.includes(transferStop)) {
+      const seg = segments[i];
+      if (!seg) {continue;}
+      const transferStop = seg.stopIds[0];
+      if (transferStop !== undefined && !transferStopIds.includes(transferStop)) {
         transferStopIds.push(transferStop);
       }
     }

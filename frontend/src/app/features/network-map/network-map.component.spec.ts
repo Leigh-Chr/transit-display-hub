@@ -1,9 +1,8 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
-import { signal, Component, input, output } from '@angular/core';
+import { signal, Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,38 +15,36 @@ import { NetworkMapComponent } from './network-map.component';
 import { NetworkMapDataService } from './services/network-map-data.service';
 import { SchematicLayoutService, LayoutStop } from './services/schematic-layout.service';
 import { RouteFinderService, RouteResult } from './services/route-finder.service';
-import { SchematicMapComponent } from './components/schematic-map/schematic-map.component';
-import { RouteSearchBarComponent } from './components/route-search-bar/route-search-bar.component';
 import { ThemeService } from '@core/services/theme.service';
-import { NetworkMap, NetworkMapAlerts } from '@shared/models';
+import { NetworkMap, NetworkMapAlerts, NetworkLine } from '@shared/models';
 
 // Stub child components to avoid their complex dependencies
-@Component({ selector: 'app-schematic-map', standalone: true, template: '<ng-content />' })
+@Component({ selector: 'app-schematic-map', standalone: true, template: '<ng-content />', changeDetection: ChangeDetectionStrategy.OnPush })
 class MockSchematicMapComponent {
-  lines = input.required<any[]>();
-  stops = input.required<any[]>();
+  lines = input.required<NetworkLine[]>();
+  stops = input.required<LayoutStop[]>();
   lineColorMap = input.required<Map<string, string>>();
   visibleLineCodes = input.required<string[]>();
-  alerts = input<any>();
-  routeResult = input<any>();
+  alerts = input<NetworkMapAlerts>();
+  routeResult = input<RouteResult | null>();
   departureStopId = input<string | null>(null);
   arrivalStopId = input<string | null>(null);
   highlightedStopId = input<string | null>(null);
-  stopSelected = output<any>();
+  stopSelected = output<LayoutStop>();
   filterChange = output<string[]>();
   centerOnStop = vi.fn();
 }
 
-@Component({ selector: 'app-route-search-bar', standalone: true, template: '' })
+@Component({ selector: 'app-route-search-bar', standalone: true, template: '', changeDetection: ChangeDetectionStrategy.OnPush })
 class MockRouteSearchBarComponent {
-  stops = input.required<any[]>();
-  departureStop = input<any>();
-  arrivalStop = input<any>();
-  routeResult = input<any>();
-  search = output<{ from: string; to: string }>();
-  clear = output<void>();
-  departureChanged = output<any>();
-  arrivalChanged = output<any>();
+  stops = input.required<LayoutStop[]>();
+  departureStop = input<LayoutStop | null>();
+  arrivalStop = input<LayoutStop | null>();
+  routeResult = input<RouteResult | null>();
+  searchRoute = output<{ from: string; to: string }>();
+  clearRoute = output();
+  departureChanged = output<LayoutStop | null>();
+  arrivalChanged = output<LayoutStop | null>();
 }
 
 describe('NetworkMapComponent', () => {
@@ -109,7 +106,6 @@ describe('NetworkMapComponent', () => {
     TestBed.configureTestingModule({
       imports: [NetworkMapComponent],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         { provide: NetworkMapDataService, useValue: mockNetworkMapService },
         { provide: SchematicLayoutService, useValue: mockLayoutService },
@@ -164,7 +160,7 @@ describe('NetworkMapComponent', () => {
     fixture.detectChanges();
 
     expect(component.lines().length).toBe(2);
-    expect(component.lines()[0].code).toBe('L1');
+    expect(component.lines()[0]!.code).toBe('L1');
   });
 
   it('should compute layoutStops', () => {
@@ -209,7 +205,7 @@ describe('NetworkMapComponent', () => {
     it('should show departure hint when only departure is selected', () => {
       fixture.detectChanges();
 
-      component.departureStop.set(mockStops[0]);
+      component.departureStop.set(mockStops[0]!);
       expect(component.subtitle()).toContain('Departure: Alpha');
       expect(component.subtitle()).toContain('select an arrival stop');
     });
@@ -280,8 +276,8 @@ describe('NetworkMapComponent', () => {
     it('should clear route state on onRouteClear', () => {
       fixture.detectChanges();
 
-      component.departureStop.set(mockStops[0]);
-      component.arrivalStop.set(mockStops[1]);
+      component.departureStop.set(mockStops[0]!);
+      component.arrivalStop.set(mockStops[1]!);
       component.routeResult.set({
         segments: [],
         transfers: 0,
@@ -300,25 +296,25 @@ describe('NetworkMapComponent', () => {
     it('should update departureStop on onDepartureChanged', () => {
       fixture.detectChanges();
 
-      component.onDepartureChanged(mockStops[0]);
+      component.onDepartureChanged(mockStops[0]!);
 
-      expect(component.departureStop()).toEqual(mockStops[0]);
+      expect(component.departureStop()).toEqual(mockStops[0]!);
       expect(component.routeResult()).toBeNull();
     });
 
     it('should update arrivalStop on onArrivalChanged', () => {
       fixture.detectChanges();
 
-      component.onArrivalChanged(mockStops[1]);
+      component.onArrivalChanged(mockStops[1]!);
 
-      expect(component.arrivalStop()).toEqual(mockStops[1]);
+      expect(component.arrivalStop()).toEqual(mockStops[1]!);
       expect(component.routeResult()).toBeNull();
     });
   });
 
   describe('stop search', () => {
     it('should return display name for a stop object', () => {
-      const result = component.stopDisplayFn(mockStops[0]);
+      const result = component.stopDisplayFn(mockStops[0]!);
       expect(result).toBe('Alpha');
     });
 
@@ -328,8 +324,8 @@ describe('NetworkMapComponent', () => {
     });
 
     it('should return empty string for falsy input', () => {
-      expect(component.stopDisplayFn('' as any)).toBe('');
-      expect(component.stopDisplayFn(null as any)).toBe('');
+      expect(component.stopDisplayFn('' as unknown as string)).toBe('');
+      expect(component.stopDisplayFn(null as unknown as string)).toBe('');
     });
 
     it('should filter stops based on search text', () => {
@@ -415,14 +411,14 @@ describe('NetworkMapComponent', () => {
       fixture.detectChanges();
 
       // Enter route selection mode: departure set, arrival null, no routeResult
-      component.departureStop.set(mockStops[0]);
+      component.departureStop.set(mockStops[0]!);
       component.arrivalStop.set(null);
       component.routeResult.set(null);
 
       // Click a different stop
-      component.onStopSelected(mockStops[1]);
+      component.onStopSelected(mockStops[1]!);
 
-      expect(component.arrivalStop()).toEqual(mockStops[1]);
+      expect(component.arrivalStop()).toEqual(mockStops[1]!);
       expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2');
       expect(component.routeResult()).toEqual(mockResult);
     });
@@ -431,12 +427,12 @@ describe('NetworkMapComponent', () => {
       fixture.detectChanges();
 
       // Enter route selection mode
-      component.departureStop.set(mockStops[0]);
+      component.departureStop.set(mockStops[0]!);
       component.arrivalStop.set(null);
       component.routeResult.set(null);
 
       // Click the same stop as departure
-      component.onStopSelected(mockStops[0]);
+      component.onStopSelected(mockStops[0]!);
 
       // Should open dialog, not set arrival
       expect(component.arrivalStop()).toBeNull();
@@ -504,7 +500,7 @@ describe('NetworkMapComponent', () => {
 
       const filtered = component.filteredStops();
       expect(filtered.length).toBe(1);
-      expect(filtered[0].name).toBe('Alpha');
+      expect(filtered[0]!.name).toBe('Alpha');
     });
 
     it('should match case-insensitively', () => {
@@ -515,7 +511,7 @@ describe('NetworkMapComponent', () => {
 
       const filtered = component.filteredStops();
       expect(filtered.length).toBe(1);
-      expect(filtered[0].name).toBe('Bravo');
+      expect(filtered[0]!.name).toBe('Bravo');
     });
   });
 
@@ -525,7 +521,7 @@ describe('NetworkMapComponent', () => {
 
       const mockEvent = {
         option: { value: mockStops[0] },
-      } as any;
+      } as unknown as MatAutocompleteSelectedEvent;
 
       component.onStopSearchSelected(mockEvent);
 

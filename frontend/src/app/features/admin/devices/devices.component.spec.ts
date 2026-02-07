@@ -1,7 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError, Subject } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceService } from '@core/api/device.service';
@@ -79,7 +78,6 @@ describe('DevicesComponent', () => {
     TestBed.configureTestingModule({
       imports: [DevicesComponent],
       providers: [
-        provideNoopAnimations(),
         { provide: DeviceService, useValue: mockDeviceService },
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
@@ -209,7 +207,7 @@ describe('DevicesComponent', () => {
       component.newDeviceToken.set('jwt-token-123');
 
       component.copyToken();
-      await writeText.mock.results[0].value;
+      await writeText.mock.results[0]!.value;
 
       expect(writeText).toHaveBeenCalledWith('jwt-token-123');
       expect(mockSnackBar.open).toHaveBeenCalledWith('Token copied to clipboard', 'Close', {

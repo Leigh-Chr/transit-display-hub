@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, of, throwError } from 'rxjs';
@@ -85,7 +84,6 @@ describe('ItinerariesComponent', () => {
     TestBed.configureTestingModule({
       imports: [ItinerariesComponent],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         { provide: ItineraryService, useValue: mockItineraryService },
         { provide: LineService, useValue: mockLineService },

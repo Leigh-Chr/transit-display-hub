@@ -57,13 +57,13 @@ export class SvgPanZoom {
   }
 
   onPointerDown(event: MouseEvent): boolean {
-    if (event.button !== 0) return false;
+    if (event.button !== 0) {return false;}
     this.dragStart = { x: event.clientX, y: event.clientY, panX: this._panX, panY: this._panY };
     return true;
   }
 
   onPointerMove(event: MouseEvent, svgRect: DOMRect, base: ViewBox): boolean {
-    if (!this.dragStart) return false;
+    if (!this.dragStart) {return false;}
     const scaleX = (base.w / this._zoom) / svgRect.width;
     const scaleY = (base.h / this._zoom) / svgRect.height;
     this._panX = this.dragStart.panX - (event.clientX - this.dragStart.x) * scaleX;
@@ -78,7 +78,9 @@ export class SvgPanZoom {
   onTouchStart(event: TouchEvent): void {
     if (event.touches.length === 1) {
       const t = event.touches[0];
-      this.dragStart = { x: t.clientX, y: t.clientY, panX: this._panX, panY: this._panY };
+      if (t) {
+        this.dragStart = { x: t.clientX, y: t.clientY, panX: this._panX, panY: this._panY };
+      }
     } else if (event.touches.length === 2) {
       this.dragStart = null;
       this.lastTouchDist = this.getTouchDist(event);
@@ -90,10 +92,12 @@ export class SvgPanZoom {
 
     if (event.touches.length === 1 && this.dragStart) {
       const t = event.touches[0];
-      const scaleX = (base.w / this._zoom) / svgRect.width;
-      const scaleY = (base.h / this._zoom) / svgRect.height;
-      this._panX = this.dragStart.panX - (t.clientX - this.dragStart.x) * scaleX;
-      this._panY = this.dragStart.panY - (t.clientY - this.dragStart.y) * scaleY;
+      if (t) {
+        const scaleX = (base.w / this._zoom) / svgRect.width;
+        const scaleY = (base.h / this._zoom) / svgRect.height;
+        this._panX = this.dragStart.panX - (t.clientX - this.dragStart.x) * scaleX;
+        this._panY = this.dragStart.panY - (t.clientY - this.dragStart.y) * scaleY;
+      }
     } else if (event.touches.length === 2) {
       const dist = this.getTouchDist(event);
       if (this.lastTouchDist > 0) {
@@ -118,7 +122,9 @@ export class SvgPanZoom {
   }
 
   private getTouchDist(event: TouchEvent): number {
-    const [a, b] = [event.touches[0], event.touches[1]];
+    const a = event.touches[0];
+    const b = event.touches[1];
+    if (!a || !b) {return 0;}
     return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   }
 }
