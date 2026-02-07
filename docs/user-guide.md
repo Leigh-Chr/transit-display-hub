@@ -15,13 +15,16 @@ administration interface.
 
 ### Default Accounts
 
-| Username | Password | Role                    |
-| -------- | -------- | ----------------------- |
-| admin    | admin123 | Full Administrator      |
-| agent    | agent123 | Agent (messages only)   |
+| Username | Password | Role                    | Available in     |
+| -------- | -------- | ----------------------- | ---------------- |
+| admin    | admin123 | Full Administrator      | Dev + Production |
+| agent    | agent123 | Agent (messages only)   | Dev only         |
 
-> **Important**: Change the default passwords in
-> production.
+> **Important**: Change the default admin password
+> immediately in production. The `agent` account is only
+> available in the dev environment (seeded by DataLoader).
+> In production, create additional users via the admin
+> interface.
 
 ### Roles
 

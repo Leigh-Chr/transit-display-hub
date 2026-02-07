@@ -122,7 +122,16 @@ sudo systemctl enable transit-hub
 sudo systemctl status transit-hub
 ```
 
-### 6. Nginx Configuration
+### 6. First Login
+
+On first startup, Flyway creates the database schema and seeds a default admin user:
+
+- **Username**: `admin`
+- **Password**: `admin123`
+
+> **Important**: Change this password immediately after first login via the Users management page.
+
+### 7. Nginx Configuration
 
 Create `/etc/nginx/sites-available/transit-hub`:
 
@@ -186,7 +195,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 7. Deploy the Frontend
+### 8. Deploy the Frontend
 
 ```bash
 # Copy the files
@@ -256,16 +265,20 @@ docker compose down -v
 
 ### Flyway
 
-Flyway is included in the project dependencies. The initial schema migration is at:
+Flyway is included in the project dependencies (`spring-boot-starter-flyway`). The migrations are at:
 
 ```
-backend/src/main/resources/db/migration/V1__initial_schema.sql
+backend/src/main/resources/db/migration/
+├── V1__initial_schema.sql      # Full PostgreSQL schema (tables, indexes, constraints)
+└── V2__seed_admin_user.sql     # Default admin user (admin / admin123)
 ```
 
-- **Dev profile**: Flyway is disabled. Hibernate `create-drop` manages the schema, and the DataLoader seeds sample data.
-- **Prod profile**: Flyway runs automatically on startup with `baseline-on-migrate: true`. The DataLoader is disabled.
+- **Dev profile**: Flyway is disabled. Hibernate `create-drop` manages the schema, and the DataLoader seeds sample data (multiple users, lines, stops, etc.).
+- **Prod profile**: Flyway runs automatically on startup with `baseline-on-migrate: true`. The DataLoader is disabled. Only the `admin` user is created by V2 migration.
 
-To add future migrations, create files following the naming convention `V2__description.sql`, `V3__description.sql`, etc.
+> **Important**: Change the default admin password immediately after first login.
+
+To add future migrations, create files following the naming convention `V3__description.sql`, `V4__description.sql`, etc.
 
 ---
 
