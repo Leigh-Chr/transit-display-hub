@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "app.data-loader.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.data-loader.enabled", havingValue = "true", matchIfMissing = false)
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;

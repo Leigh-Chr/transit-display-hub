@@ -38,6 +38,8 @@ spring:
     enabled: false
 
 app:
+  data-loader:
+    enabled: true
   jwt:
     secret: dev-secret-key-for-jwt-token-generation-must-be-at-least-256-bits-long
     expiration-hours: 8
@@ -63,6 +65,8 @@ spring:
     locations: classpath:db/migration
 
 app:
+  data-loader:
+    enabled: false
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8

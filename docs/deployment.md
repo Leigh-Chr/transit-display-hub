@@ -48,9 +48,9 @@ ls build/libs/transit-display-hub-*.jar
 ```bash
 cd frontend
 npm install
-npm run build -- --configuration=production
+npm run build
 
-# Files are in dist/transit-display-hub/
+# Files are in dist/transit-display-hub/browser/
 ```
 
 ### 4. Backend Configuration
@@ -190,7 +190,7 @@ sudo systemctl reload nginx
 
 ```bash
 # Copy the files
-sudo cp -r frontend/dist/transit-display-hub/* \
+sudo cp -r frontend/dist/transit-display-hub/browser/* \
   /var/www/transit-hub/
 sudo chown -R www-data:www-data /var/www/transit-hub
 ```
@@ -199,126 +199,72 @@ sudo chown -R www-data:www-data /var/www/transit-hub
 
 ## Option 2: Docker Deployment
 
-### Backend Dockerfile
+The repository includes ready-to-use Docker configuration:
 
-`backend/Dockerfile`:
+- `backend/Dockerfile` — Multi-stage build (JDK for compilation, JRE for runtime, non-root user)
+- `frontend/Dockerfile` — Multi-stage build (Node for compilation, nginx for serving)
+- `frontend/nginx.conf` — SPA fallback, API/WebSocket proxy, gzip, cache headers
+- `docker-compose.yml` — PostgreSQL + backend + frontend with healthchecks
 
-```dockerfile
-FROM eclipse-temurin:21-jre-alpine
-
-WORKDIR /app
-
-COPY build/libs/transit-display-hub-*.jar app.jar
-
-EXPOSE 8080
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-### Frontend Dockerfile
-
-`frontend/Dockerfile`:
-
-```dockerfile
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build -- --configuration=production
-
-FROM nginx:alpine
-COPY --from=build /app/dist/transit-display-hub \
-  /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-```
-
-### Docker Compose
-
-`docker-compose.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: transitdb
-      POSTGRES_USER: transit
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - transit-network
-
-  backend:
-    build: ./backend
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DATABASE_URL: jdbc:postgresql://postgres:5432/transitdb
-      DATABASE_USER: transit
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      - postgres
-    networks:
-      - transit-network
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - transit-network
-
-volumes:
-  postgres_data:
-
-networks:
-  transit-network:
-    driver: bridge
-```
+### Quick Start
 
 ```bash
-# Build and start
-docker-compose build
-docker-compose up -d
+# 1. Create your .env from the template
+cp .env.example .env
 
-# Check logs
-docker-compose logs -f
+# 2. Edit .env with your secrets
+#    - DATABASE_PASSWORD: a strong password
+#    - JWT_SECRET: at least 32 characters
+
+# 3. Build and start all services
+docker compose up --build -d
+
+# 4. Check logs
+docker compose logs -f
+
+# 5. Open http://localhost in your browser
+```
+
+### Service Details
+
+| Service    | Image              | Port | Notes                              |
+|------------|--------------------| ---- |------------------------------------|
+| `postgres` | postgres:15-alpine | 5432 | Persistent volume, healthcheck     |
+| `backend`  | custom (Spring Boot) | 8080 | Waits for postgres healthy         |
+| `frontend` | custom (nginx)     | 80   | Proxies `/api/` and `/ws` to backend |
+
+### Useful Commands
+
+```bash
+# Rebuild a single service
+docker compose build backend
+
+# View backend logs
+docker compose logs -f backend
+
+# Stop everything
+docker compose down
+
+# Stop and remove data volume
+docker compose down -v
 ```
 
 ---
 
 ## Database Migrations
 
-### Flyway (recommended for production)
+### Flyway
 
-Flyway is already included in the project dependencies
-(`flyway-core` and `flyway-database-postgresql`). In
-`prod` profile, migrations run automatically on startup
-with `baseline-on-migrate: true`.
+Flyway is included in the project dependencies. The initial schema migration is at:
 
-Migration structure:
-
-```text
-src/main/resources/db/migration/
-+-- V1__create_lines_table.sql
-+-- V2__create_stops_table.sql
-+-- V3__create_schedules_table.sql
-+-- V4__create_itineraries_table.sql
-+-- ...
+```
+backend/src/main/resources/db/migration/V1__initial_schema.sql
 ```
 
-### Running Migrations
+- **Dev profile**: Flyway is disabled. Hibernate `create-drop` manages the schema, and the DataLoader seeds sample data.
+- **Prod profile**: Flyway runs automatically on startup with `baseline-on-migrate: true`. The DataLoader is disabled.
 
-Migrations are applied automatically on startup in prod
-profile. In dev profile, Flyway is disabled (DDL managed
-by Hibernate `create-drop`).
+To add future migrations, create files following the naming convention `V2__description.sql`, `V3__description.sql`, etc.
 
 ---
 
@@ -330,8 +276,6 @@ Never store secrets in configuration files:
 
 ```bash
 # .env file (not versioned)
-DATABASE_URL=jdbc:postgresql://localhost:5432/transitdb
-DATABASE_USER=transit
 DATABASE_PASSWORD=super-secret-password
 JWT_SECRET=256-bit-secret-key-at-least-32-chars
 ```
@@ -379,7 +323,7 @@ curl https://transit.example.com/actuator/health
 sudo journalctl -u transit-hub -f
 
 # Backend (Docker)
-docker logs -f transit-hub-backend-1
+docker compose logs -f backend
 ```
 
 ### Metrics
@@ -388,7 +332,6 @@ Available Actuator endpoints:
 
 - `/actuator/health` - Health status
 - `/actuator/info` - Application information
-- `/actuator/metrics` - Metrics (Prometheus compatible)
 
 ---
 
