@@ -24,6 +24,7 @@ import { DisplayState } from '@shared/models';
       @if (displayState()) {
         <!-- Header: Stop name with line badges + Current time -->
         <header class="header">
+          <img src="assets/logo.png" alt="" class="header-logo">
           <div class="stop-info">
             <h1 class="stop-name">{{ displayState()!.stopName }}</h1>
             <div class="header-lines">
@@ -217,6 +218,15 @@ import { DisplayState } from '@shared/models';
       padding-bottom: 1.5vh;
       border-bottom: 0.4vh solid var(--app-kiosk-border);
       margin-bottom: 1.5vh;
+      gap: 2vw;
+    }
+
+    .header-logo {
+      width: 5vh;
+      height: 5vh;
+      flex-shrink: 0;
+      filter: brightness(0) invert(1);
+      opacity: 0.9;
     }
 
     .stop-name {

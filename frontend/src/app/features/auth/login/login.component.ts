@@ -27,9 +27,7 @@ import { AuthService } from '@core/auth/auth.service';
       <mat-card class="login-card">
         <mat-card-header>
           <div class="login-brand">
-            <div class="brand-icon">
-              <mat-icon>directions_transit</mat-icon>
-            </div>
+            <img src="assets/logo.png" alt="Transit Display Hub logo" class="brand-logo">
             <h1 class="login-title">Transit Display Hub</h1>
           </div>
         </mat-card-header>
@@ -118,21 +116,9 @@ import { AuthService } from '@core/auth/auth.service';
       width: 100%;
     }
 
-    .brand-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: var(--app-radius-lg);
-      background: linear-gradient(135deg, var(--app-primary), var(--app-sidebar-active));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #FFFFFF;
-
-      mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
-      }
+    .brand-logo {
+      width: 72px;
+      height: 72px;
     }
 
     .login-title {

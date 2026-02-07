@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="not-found">
-      <mat-icon class="not-found-icon">explore_off</mat-icon>
+      <img src="assets/logo.png" alt="Transit Display Hub" class="not-found-logo">
       <h1>Page not found</h1>
       <p>The page you are looking for does not exist.</p>
       <a mat-flat-button color="primary" routerLink="/admin/dashboard">
@@ -30,11 +30,10 @@ import { MatIconModule } from '@angular/material/icon';
       padding: 32px;
     }
 
-    .not-found-icon {
-      font-size: 72px;
+    .not-found-logo {
       width: 72px;
       height: 72px;
-      color: var(--app-on-surface-muted, #999);
+      opacity: 0.5;
       margin-bottom: 16px;
     }
 

@@ -45,6 +45,7 @@ import {
         aria-label="Main navigation"
       >
         <div class="sidenav-header">
+          <img src="assets/logo.png" alt="Transit Display Hub logo" class="sidenav-logo">
           <h1>Transit Display Hub</h1>
         </div>
 
@@ -212,6 +213,16 @@ import {
     .sidenav-header {
       padding: 24px 20px;
       border-bottom: 1px solid var(--app-sidebar-border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidenav-logo {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      filter: brightness(0) invert(1);
     }
 
     .sidenav-header h1 {

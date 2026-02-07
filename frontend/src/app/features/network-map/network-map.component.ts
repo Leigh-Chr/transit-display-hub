@@ -40,7 +40,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
     <div class="network-map-page">
       <header class="page-header">
         <div class="title-row">
-          <mat-icon>map</mat-icon>
+          <img src="assets/logo.png" alt="Transit Display Hub" class="header-logo">
           <h1>Network Map</h1>
         </div>
         <p class="subtitle">{{ subtitle() }}</p>
@@ -192,6 +192,11 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
       font-size: 1.75rem;
       font-weight: 600;
       color: var(--app-map-on-surface);
+    }
+
+    .header-logo {
+      width: 32px;
+      height: 32px;
     }
 
     .page-header mat-icon {
