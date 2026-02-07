@@ -1,0 +1,38 @@
+echo "Running pre-push checks..."
+
+REMOTE_SHA=$(git rev-parse @{u} 2>/dev/null || git rev-parse HEAD~1)
+CHANGED_FILES=$(git diff --name-only "$REMOTE_SHA"..HEAD)
+
+FRONTEND_CHANGED=$(echo "$CHANGED_FILES" | grep -c '^frontend/' || true)
+BACKEND_CHANGED=$(echo "$CHANGED_FILES" | grep -c '^backend/' || true)
+
+PIDS=""
+EXIT_CODE=0
+
+if [ "$FRONTEND_CHANGED" -gt 0 ]; then
+  echo "  -> Running frontend tests..."
+  (cd frontend && npm test) &
+  PIDS="$PIDS $!"
+fi
+
+if [ "$BACKEND_CHANGED" -gt 0 ]; then
+  echo "  -> Running backend tests..."
+  (cd backend && ./gradlew test --no-daemon -q) &
+  PIDS="$PIDS $!"
+fi
+
+if [ -z "$PIDS" ]; then
+  echo "  -> No frontend/backend changes, skipping tests."
+  exit 0
+fi
+
+for PID in $PIDS; do
+  wait "$PID" || EXIT_CODE=1
+done
+
+if [ "$EXIT_CODE" -ne 0 ]; then
+  echo "Pre-push checks FAILED. Push aborted."
+  exit 1
+fi
+
+echo "Pre-push checks passed."

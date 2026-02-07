@@ -1,0 +1,9 @@
+# Lint staged frontend files (fast: only staged files)
+npx lint-staged
+
+# Check backend compilation only if Java files were staged
+BACKEND_STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- 'backend/src/**/*.java' | head -1)
+if [ -n "$BACKEND_STAGED" ]; then
+  echo "Backend Java files staged — running compilation check..."
+  cd backend && ./gradlew compileJava --no-daemon -q
+fi
