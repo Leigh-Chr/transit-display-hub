@@ -223,6 +223,7 @@ docker compose up --build -d
 docker compose logs -f
 
 # 5. Open http://localhost in your browser
+#    Default login: admin / admin123 (change immediately)
 ```
 
 ### Service Details
