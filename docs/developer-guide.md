@@ -562,6 +562,48 @@ export class WebSocketService {
    }
    ```
 
+4. **Imports explicites** : Ne jamais utiliser
+   d'imports wildcard (`*`). Toujours lister
+   les classes importees individuellement.
+
+   ```java
+   // Correct
+   import jakarta.persistence.Entity;
+   import jakarta.persistence.Id;
+   import jakarta.persistence.Table;
+
+   // Interdit
+   import jakarta.persistence.*;
+   ```
+
+5. **Log guards** : Entourer les appels de log
+   avec un guard de niveau
+
+   ```java
+   if (log.isInfoEnabled()) {
+       log.info("Processing stop: {}",
+           stop.getName());
+   }
+   ```
+
+6. **Accolades obligatoires** : Toujours utiliser
+   des accolades pour les blocs `if`, `else`,
+   `for`, `while`, meme sur une seule ligne.
+
+7. **Comparaisons de chaines** : Placer le
+   litteral en premier pour eviter les NPE
+
+   ```java
+   // Correct
+   if ("desc".equalsIgnoreCase(sortDir)) {}
+
+   // Interdit
+   if (sortDir.equalsIgnoreCase("desc")) {}
+   ```
+
+8. **Switch exhaustifs** : Toujours ajouter un
+   `default` dans les switch statements.
+
 ### Frontend (bonnes pratiques)
 
 1. **Lazy loading** : Charger les composants a la
