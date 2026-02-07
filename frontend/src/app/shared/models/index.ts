@@ -229,6 +229,23 @@ export interface MessageInfo {
   severity: MessageSeverity;
 }
 
+// Hub Display State
+export interface HubDisplayState {
+  hubName: string;
+  lines: LineInfo[];
+  arrivals: HubArrivalInfo[];
+  messages: MessageInfo[];
+  version: number;
+  generatedAt: string;
+}
+
+export interface HubArrivalInfo {
+  scheduledTime: string;
+  destinationName: string;
+  platform: string;
+  line: LineInfo;
+}
+
 // Network Map
 export interface NetworkMap {
   lines: NetworkLine[];
