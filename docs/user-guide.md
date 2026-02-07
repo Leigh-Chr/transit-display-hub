@@ -54,7 +54,7 @@ The dashboard displays a summary tailored to your role.
 - **Online Devices**: Number of connected screens / total
 - **Overview**: Network lines overview and device health
 - **Quick Actions**: Direct access to line, stop, schedule,
-  device, and user management
+  device, user management, and hub display
 
 ### Agent View
 
@@ -405,9 +405,43 @@ The map is publicly accessible at `/map`
 
 ---
 
+## Hub Display
+
+The hub display aggregates departures from multiple stops on a
+single screen, ideal for interchange stations or transport hubs.
+
+### Opening the Hub Display
+
+The hub display can be opened from three places in the admin
+interface (administrator only):
+
+1. **Sidebar**: Click "Hub Display" in the navigation
+2. **Dashboard**: Use the "Hub Display" quick action button
+3. **Stops page**: Click the "Hub Display" button in the toolbar
+
+Each opens a configuration dialog where you can:
+
+- **Filter by line**: Show only stops served by a specific line
+- **Search**: Find stops by name
+- **Select stops**: Check at least 2 stops to include
+- **Name the hub**: Auto-generated from selected stop names,
+  editable
+
+Click "Open Hub Display" to open the hub view in a new tab.
+
+### Displayed Elements
+
+1. **Header**: Hub name and all served lines
+2. **Next departures**: Combined list from all selected stops
+   with line, direction, scheduled time, and platform (stop name)
+3. **Messages**: Alerts affecting the selected stops
+4. **Footer**: Current time and connection status
+
+---
+
 ## Kiosk Display
 
-The kiosk screen displays passenger information.
+The kiosk screen displays passenger information for a single stop.
 
 ### Displayed Elements
 

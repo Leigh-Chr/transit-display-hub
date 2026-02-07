@@ -21,6 +21,11 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import {
+  HubDisplayDialogComponent,
+  HubDisplayDialogData,
+  HubDisplayDialogResult,
+} from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
@@ -77,6 +82,15 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
           [initialValue]="search"
           (searchChange)="onSearchChange($event)"
         />
+
+        <button
+          mat-stroked-button
+          (click)="openHubDisplay()"
+          matTooltip="Open multi-stop hub display"
+        >
+          <mat-icon>hub</mat-icon>
+          Hub Display
+        </button>
       </div>
 
       @if (loading()) {
@@ -498,6 +512,23 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
     });
+  }
+
+  openHubDisplay(): void {
+    this.dialog
+      .open(HubDisplayDialogComponent, {
+        data: { lines: this.lines() } as HubDisplayDialogData,
+        width: '550px',
+      })
+      .afterClosed()
+      .subscribe((result: HubDisplayDialogResult | undefined) => {
+        if (result) {
+          const params = new URLSearchParams();
+          params.set('stopIds', result.stopIds.join(','));
+          params.set('name', result.hubName);
+          window.open(`/hub?${params.toString()}`, '_blank');
+        }
+      });
   }
 
   openKioskPreview(stopId: string): void {

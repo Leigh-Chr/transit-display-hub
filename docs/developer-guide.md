@@ -329,6 +329,7 @@ src/app/
 |   |   +-- devices/
 |   |   +-- users/
 |   +-- display/
+|   |   +-- hub/
 |   |   +-- kiosk/
 |   +-- network-map/
 |       +-- network-map.component.ts
@@ -381,6 +382,7 @@ src/app/
 },
 // Public routes
 { path: 'map', loadComponent: () => ... },
+{ path: 'hub', loadComponent: () => ... },
 { path: 'display', loadComponent: () => ... },
 { path: 'display/:stopId',
   loadComponent: () => ... },

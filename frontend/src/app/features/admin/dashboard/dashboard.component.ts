@@ -5,9 +5,15 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
+import {
+  HubDisplayDialogComponent,
+  HubDisplayDialogData,
+  HubDisplayDialogResult,
+} from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { AuthService } from '@core/auth/auth.service';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
@@ -324,6 +330,10 @@ import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skelet
                 <span>Network Map</span>
               </a>
               @if (isAdmin()) {
+                <button mat-stroked-button class="action-btn" (click)="openHubDisplay()">
+                  <mat-icon>hub</mat-icon>
+                  <span>Hub Display</span>
+                </button>
                 <a mat-stroked-button routerLink="/admin/users" class="action-btn">
                   <mat-icon>people</mat-icon>
                   <span>Manage Users</span>
@@ -899,6 +909,7 @@ export class DashboardComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly deviceService = inject(DeviceService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   readonly isAdmin = this.authService.isAdmin;
 
@@ -998,6 +1009,23 @@ export class DashboardComponent implements OnInit {
         },
       });
     }
+  }
+
+  openHubDisplay(): void {
+    this.dialog
+      .open(HubDisplayDialogComponent, {
+        data: { lines: this.lines() } as HubDisplayDialogData,
+        width: '550px',
+      })
+      .afterClosed()
+      .subscribe((result: HubDisplayDialogResult | undefined) => {
+        if (result) {
+          const params = new URLSearchParams();
+          params.set('stopIds', result.stopIds.join(','));
+          params.set('name', result.hubName);
+          window.open(`/hub?${params.toString()}`, '_blank');
+        }
+      });
   }
 
   getMessageStatus(message: BroadcastMessage): 'active' | 'scheduled' | 'expired' {
