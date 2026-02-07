@@ -16,6 +16,7 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 
 @RestControllerAdvice
 @Slf4j
@@ -34,19 +35,25 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(EntityNotFoundException ex, WebRequest request) {
-        log.warn("Entity not found: {}", ex.getMessage());
+        if (log.isWarnEnabled()) {
+            log.warn("Entity not found: {}", ex.getMessage());
+        }
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), null, request);
     }
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiError> handleValidation(ValidationException ex, WebRequest request) {
-        log.warn("Validation error: {}", ex.getMessage());
+        if (log.isWarnEnabled()) {
+            log.warn("Validation error: {}", ex.getMessage());
+        }
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
-        log.warn("Illegal argument: {}", ex.getMessage());
+        if (log.isWarnEnabled()) {
+            log.warn("Illegal argument: {}", ex.getMessage());
+        }
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
     }
 
@@ -59,18 +66,22 @@ public class GlobalExceptionHandler {
                 })
                 .toList();
 
-        log.warn("Validation failed: {} errors", fieldErrors.size());
+        if (log.isWarnEnabled()) {
+            log.warn("Validation failed: {} errors", fieldErrors.size());
+        }
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", fieldErrors, request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, WebRequest request) {
-        log.warn("Data integrity violation: {}", ex.getMessage());
+        if (log.isWarnEnabled()) {
+            log.warn("Data integrity violation: {}", ex.getMessage());
+        }
         String message = "Data conflict: a record with this value already exists";
         Throwable cause = ex.getMostSpecificCause();
         String causeMessage = cause.getMessage();
         if (causeMessage != null) {
-            String lower = causeMessage.toLowerCase();
+            String lower = causeMessage.toLowerCase(Locale.ROOT);
             if (lower.contains("foreign key") || lower.contains("fk_") || lower.contains("references")) {
                 message = "Cannot complete operation: this record is referenced by other data";
             } else if (lower.contains("not null") || lower.contains("not-null")) {
@@ -82,13 +93,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
-        log.warn("Access denied: {}", ex.getMessage());
+        if (log.isWarnEnabled()) {
+            log.warn("Access denied: {}", ex.getMessage());
+        }
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions", null, request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, WebRequest request) {
-        log.warn("Authentication failed: {}", ex.getMessage());
+        if (log.isWarnEnabled()) {
+            log.warn("Authentication failed: {}", ex.getMessage());
+        }
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials", null, request);
     }
 

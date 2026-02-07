@@ -1,14 +1,16 @@
-# Guide de Déploiement
+# Guide de Deploiement
 
-## Prérequis
+## Prerequis
 
 ### Serveur
+
 - **OS** : Linux (Ubuntu 22.04+, Debian 11+, RHEL 8+)
-- **RAM** : 2 Go minimum, 4 Go recommandé
+- **RAM** : 2 Go minimum, 4 Go recommande
 - **CPU** : 2 cores minimum
 - **Disque** : 20 Go minimum
 
 ### Logiciels
+
 - Java 21 JRE
 - PostgreSQL 15+
 - Nginx (reverse proxy)
@@ -16,15 +18,15 @@
 
 ---
 
-## Option 1 : Déploiement manuel
+## Option 1 : Deploiement manuel
 
-### 1. Préparer la base de données
+### 1. Preparer la base de donnees
 
-```bash
-# Se connecter à PostgreSQL
-sudo -u postgres psql
+```sql
+-- Se connecter a PostgreSQL
+-- sudo -u postgres psql
 
-# Créer l'utilisateur et la base
+-- Creer l'utilisateur et la base
 CREATE USER transit WITH PASSWORD 'your-secure-password';
 CREATE DATABASE transitdb OWNER transit;
 GRANT ALL PRIVILEGES ON DATABASE transitdb TO transit;
@@ -53,7 +55,7 @@ npm run build -- --configuration=production
 
 ### 4. Configuration du backend
 
-Créer le fichier `/opt/transit-hub/application-prod.yml` :
+Creer le fichier `/opt/transit-hub/application-prod.yml` :
 
 ```yaml
 spring:
@@ -83,7 +85,7 @@ server:
 
 ### 5. Service systemd
 
-Créer `/etc/systemd/system/transit-hub.service` :
+Creer `/etc/systemd/system/transit-hub.service` :
 
 ```ini
 [Unit]
@@ -112,17 +114,17 @@ WantedBy=multi-user.target
 # Recharger systemd
 sudo systemctl daemon-reload
 
-# Démarrer le service
+# Demarrer le service
 sudo systemctl start transit-hub
 sudo systemctl enable transit-hub
 
-# Vérifier le status
+# Verifier le status
 sudo systemctl status transit-hub
 ```
 
 ### 6. Configuration Nginx
 
-Créer `/etc/nginx/sites-available/transit-hub` :
+Creer `/etc/nginx/sites-available/transit-hub` :
 
 ```nginx
 server {
@@ -178,22 +180,24 @@ server {
 
 ```bash
 # Activer le site
-sudo ln -s /etc/nginx/sites-available/transit-hub /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/transit-hub \
+  /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 7. Déployer le frontend
+### 7. Deployer le frontend
 
 ```bash
 # Copier les fichiers
-sudo cp -r frontend/dist/transit-display-hub/* /var/www/transit-hub/
+sudo cp -r frontend/dist/transit-display-hub/* \
+  /var/www/transit-hub/
 sudo chown -R www-data:www-data /var/www/transit-hub
 ```
 
 ---
 
-## Option 2 : Déploiement Docker
+## Option 2 : Deploiement Docker
 
 ### Dockerfile Backend
 
@@ -224,7 +228,8 @@ COPY . .
 RUN npm run build -- --configuration=production
 
 FROM nginx:alpine
-COPY --from=build /app/dist/transit-display-hub /usr/share/nginx/html
+COPY --from=build /app/dist/transit-display-hub \
+  /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 ```
@@ -279,47 +284,53 @@ networks:
 ```
 
 ```bash
-# Build et démarrage
+# Build et demarrage
 docker-compose build
 docker-compose up -d
 
-# Vérifier les logs
+# Verifier les logs
 docker-compose logs -f
 ```
 
 ---
 
-## Migrations de base de données
+## Migrations de base de donnees
 
-### Flyway (recommandé pour production)
+### Flyway (recommande pour production)
 
-Flyway est déjà inclus dans les dépendances du projet (`flyway-core` et `flyway-database-postgresql`). En profil `prod`, les migrations s'exécutent automatiquement au démarrage avec `baseline-on-migrate: true`.
+Flyway est deja inclus dans les dependances du projet
+(`flyway-core` et `flyway-database-postgresql`). En
+profil `prod`, les migrations s'executent automatiquement
+au demarrage avec `baseline-on-migrate: true`.
 
 Structure des migrations :
 
-```
+```text
 src/main/resources/db/migration/
-├── V1__create_lines_table.sql
-├── V2__create_stops_table.sql
-├── V3__create_schedules_table.sql
-├── V4__create_itineraries_table.sql
-└── ...
++-- V1__create_lines_table.sql
++-- V2__create_stops_table.sql
++-- V3__create_schedules_table.sql
++-- V4__create_itineraries_table.sql
++-- ...
 ```
 
-### Exécution des migrations
+### Execution des migrations
 
-Les migrations sont appliquées automatiquement au démarrage en profil prod. En profil dev, Flyway est désactivé (DDL géré par Hibernate `create-drop`).
+Les migrations sont appliquees automatiquement au
+demarrage en profil prod. En profil dev, Flyway est
+desactive (DDL gere par Hibernate `create-drop`).
 
 ---
 
-## Sécurité en production
+## Securite en production
 
 ### 1. Variables d'environnement
 
-Ne jamais stocker les secrets dans les fichiers de config :
+Ne jamais stocker les secrets dans les fichiers de
+config :
 
 ```bash
-# Fichier .env (non versionné)
+# Fichier .env (non versionne)
 DATABASE_URL=jdbc:postgresql://localhost:5432/transitdb
 DATABASE_USER=transit
 DATABASE_PASSWORD=super-secret-password
@@ -343,7 +354,7 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 ```
 
-### 4. Mises à jour automatiques
+### 4. Mises a jour automatiques
 
 ```bash
 # Ubuntu/Debian
@@ -358,7 +369,7 @@ sudo dpkg-reconfigure -plow unattended-upgrades
 ### Health Check
 
 ```bash
-# Vérifier la santé de l'application
+# Verifier la sante de l'application
 curl https://transit.example.com/actuator/health
 ```
 
@@ -372,18 +383,19 @@ sudo journalctl -u transit-hub -f
 docker logs -f transit-hub-backend-1
 ```
 
-### Métriques
+### Metriques
 
 Endpoints Actuator disponibles :
-- `/actuator/health` - État de santé
+
+- `/actuator/health` - Etat de sante
 - `/actuator/info` - Informations application
-- `/actuator/metrics` - Métriques (Prometheus compatible)
+- `/actuator/metrics` - Metriques (Prometheus compatible)
 
 ---
 
 ## Sauvegarde
 
-### Base de données
+### Base de donnees (sauvegarde)
 
 ```bash
 # Backup
@@ -403,14 +415,15 @@ BACKUP_DIR="/opt/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 # Backup PostgreSQL
-pg_dump -U transit transitdb | gzip > $BACKUP_DIR/db_$DATE.sql.gz
+pg_dump -U transit transitdb \
+  | gzip > $BACKUP_DIR/db_$DATE.sql.gz
 
 # Nettoyer les backups > 30 jours
 find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 ```
 
 ```bash
-# Cron (tous les jours à 3h)
+# Cron (tous les jours a 3h)
 0 3 * * * /opt/scripts/backup.sh
 ```
 
@@ -418,33 +431,34 @@ find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 
 ## Rollback
 
-### Revenir à une version précédente
+### Revenir a une version precedente
 
 ```bash
-# Arrêter le service
+# Arreter le service
 sudo systemctl stop transit-hub
 
-# Restaurer le JAR précédent
-cp /opt/transit-hub/backup/transit-display-hub-old.jar /opt/transit-hub/transit-display-hub.jar
+# Restaurer le JAR precedent
+cp /opt/transit-hub/backup/transit-display-hub-old.jar \
+  /opt/transit-hub/transit-display-hub.jar
 
-# Restaurer la base si nécessaire
+# Restaurer la base si necessaire
 psql -U transit transitdb < backup_previous.sql
 
-# Redémarrer
+# Redemarrer
 sudo systemctl start transit-hub
 ```
 
 ---
 
-## Checklist de déploiement
+## Checklist de deploiement
 
-- [ ] Base de données créée et configurée
-- [ ] Variables d'environnement définies
-- [ ] Backend buildé et déployé
-- [ ] Frontend buildé et déployé
-- [ ] Nginx configuré avec SSL
-- [ ] Service systemd activé
+- [ ] Base de donnees creee et configuree
+- [ ] Variables d'environnement definies
+- [ ] Backend builde et deploye
+- [ ] Frontend builde et deploye
+- [ ] Nginx configure avec SSL
+- [ ] Service systemd active
 - [ ] Health check fonctionnel
-- [ ] Backup automatique configuré
+- [ ] Backup automatique configure
 - [ ] Monitoring en place
-- [ ] Pare-feu configuré
+- [ ] Pare-feu configure

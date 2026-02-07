@@ -1,41 +1,43 @@
-# Guide Développeur
+# Guide Developpeur
 
 ## Architecture
 
 ### Vue d'ensemble
 
-Transit Display Hub suit une architecture en couches inspirée du Domain-Driven Design avec séparation claire des responsabilités.
+Transit Display Hub suit une architecture en couches
+inspiree du Domain-Driven Design avec separation claire
+des responsabilites.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Angular 21)                  │
-├─────────────────────────────────────────────────────────┤
-│  Features         │  Core Services   │  Shared           │
-│  - Admin          │  - AuthService   │  - Models         │
-│  - Display        │  - ApiServices   │  - Components     │
-│  - Network Map    │  - WebSocket     │                   │
-│  - Auth           │  - Theme         │  - Pipes          │
-│                   │  - Breakpoints   │                   │
-└───────────────────┴──────────────────┴───────────────────┘
-                            │
+```text
++---------------------------------------------------------+
+|                    Frontend (Angular 21)                 |
++---------------------------------------------------------+
+|  Features         |  Core Services   |  Shared          |
+|  - Admin          |  - AuthService   |  - Models        |
+|  - Display        |  - ApiServices   |  - Components    |
+|  - Network Map    |  - WebSocket     |                  |
+|  - Auth           |  - Theme         |  - Pipes         |
+|                   |  - Breakpoints   |                  |
++-------------------+------------------+------------------+
+                            |
                        HTTP / WS
-                            │
-┌─────────────────────────────────────────────────────────┐
-│                Backend (Spring Boot 4.0.2)                │
-├─────────────────────────────────────────────────────────┤
-│  API Layer             │  Application Layer              │
-│  - REST Controllers    │  - Services métier              │
-│  - Exception Advice    │  - DTOs (request/response)      │
-│                        │  - Exceptions                   │
-├────────────────────────┴────────────────────────────────┤
-│  Domain Layer          │  Infrastructure Layer           │
-│  - Entities (model/)   │  - Security (JWT)               │
-│  - Enums               │  - WebSocket Config             │
-│  - Events              │  - Persistence (Repositories)   │
-│  - Domain Services     │  - Cache Config                 │
-│                        │  - Data Loader                  │
-└────────────────────────┴────────────────────────────────┘
-                            │
+                            |
++---------------------------------------------------------+
+|                Backend (Spring Boot 4.0.2)              |
++---------------------------------------------------------+
+|  API Layer             |  Application Layer             |
+|  - REST Controllers    |  - Services metier             |
+|  - Exception Advice    |  - DTOs (request/response)     |
+|                        |  - Exceptions                  |
++------------------------+--------------------------------+
+|  Domain Layer          |  Infrastructure Layer          |
+|  - Entities (model/)   |  - Security (JWT)              |
+|  - Enums               |  - WebSocket Config            |
+|  - Events              |  - Persistence (Repositories)  |
+|  - Domain Services     |  - Cache Config                |
+|                        |  - Data Loader                 |
++------------------------+--------------------------------+
+                            |
                      H2 / PostgreSQL
 ```
 
@@ -45,101 +47,103 @@ Transit Display Hub suit une architecture en couches inspirée du Domain-Driven 
 
 ### Structure des packages
 
-```
+```text
 com.transit.hub/
-├── TransitDisplayHubApplication.java    # Point d'entrée
-├── domain/
-│   ├── model/                           # Entités JPA
-│   │   ├── Line.java
-│   │   ├── Stop.java
-│   │   ├── Itinerary.java
-│   │   ├── ItineraryStop.java
-│   │   ├── Schedule.java
-│   │   ├── BroadcastMessage.java
-│   │   ├── Device.java
-│   │   ├── User.java
-│   │   └── enums/
-│   │       ├── LineType.java            # METRO, BUS, TRAM, TRAIN
-│   │       ├── MessageSeverity.java     # INFO, WARNING, CRITICAL
-│   │       ├── MessageScope.java        # NETWORK, LINE, STOP
-│   │       ├── DeviceStatus.java        # ONLINE, OFFLINE
-│   │       └── UserRole.java            # ADMIN, AGENT
-│   ├── event/                           # Événements domaine
-│   │   ├── ScheduleChangedEvent.java
-│   │   ├── MessageChangedEvent.java
-│   │   └── NetworkChangedEvent.java
-│   └── service/
-│       └── DisplayStateCalculator.java  # Calcul de l'état d'affichage
-├── application/
-│   ├── service/                         # Services métier
-│   │   ├── AuthService.java
-│   │   ├── LineService.java
-│   │   ├── StopService.java
-│   │   ├── ItineraryService.java
-│   │   ├── ScheduleService.java
-│   │   ├── MessageService.java
-│   │   ├── DeviceService.java
-│   │   ├── UserService.java
-│   │   ├── DisplayStateService.java
-│   │   └── NetworkMapService.java
-│   ├── dto/
-│   │   ├── request/                     # DTOs d'entrée (records avec validation)
-│   │   └── response/                    # DTOs de sortie (records)
-│   └── exception/                       # Exceptions métier
-├── infrastructure/
-│   ├── security/
-│   │   ├── JwtService.java
-│   │   ├── JwtAuthenticationFilter.java
-│   │   └── SecurityConfig.java
-│   ├── websocket/
-│   │   ├── WebSocketConfig.java
-│   │   └── ActiveDisplayTracker.java
-│   ├── persistence/                     # Repositories JPA
-│   │   ├── LineRepository.java
-│   │   ├── StopRepository.java
-│   │   ├── ItineraryRepository.java
-│   │   ├── ItineraryStopRepository.java
-│   │   ├── ScheduleRepository.java
-│   │   ├── BroadcastMessageRepository.java
-│   │   ├── DeviceRepository.java
-│   │   └── UserRepository.java
-│   ├── config/
-│   │   └── CacheConfig.java            # Configuration Caffeine
-│   └── DataLoader.java                 # Données initiales (utilisateurs)
-└── api/
-    ├── rest/                            # REST Controllers
-    │   ├── AuthController.java
-    │   ├── LineController.java
-    │   ├── StopController.java
-    │   ├── ItineraryController.java
-    │   ├── ScheduleController.java
-    │   ├── MessageController.java
-    │   ├── DeviceController.java
-    │   ├── UserController.java
-    │   ├── DisplayController.java
-    │   └── NetworkMapController.java
-    └── advice/
-        └── GlobalExceptionHandler.java  # Gestion centralisée des erreurs
++-- TransitDisplayHubApplication.java    # Point d'entree
++-- domain/
+|   +-- model/                           # Entites JPA
+|   |   +-- Line.java
+|   |   +-- Stop.java
+|   |   +-- Itinerary.java
+|   |   +-- ItineraryStop.java
+|   |   +-- Schedule.java
+|   |   +-- BroadcastMessage.java
+|   |   +-- Device.java
+|   |   +-- User.java
+|   |   +-- enums/
+|   |       +-- LineType.java            # METRO, BUS, TRAM, TRAIN
+|   |       +-- MessageSeverity.java     # INFO, WARNING, CRITICAL
+|   |       +-- MessageScope.java        # NETWORK, LINE, STOP
+|   |       +-- DeviceStatus.java        # ONLINE, OFFLINE
+|   |       +-- UserRole.java            # ADMIN, AGENT
+|   +-- event/                           # Evenements domaine
+|   |   +-- ScheduleChangedEvent.java
+|   |   +-- MessageChangedEvent.java
+|   |   +-- NetworkChangedEvent.java
+|   +-- service/
+|       +-- DisplayStateCalculator.java  # Calcul de l'etat
++-- application/
+|   +-- service/                         # Services metier
+|   |   +-- AuthService.java
+|   |   +-- LineService.java
+|   |   +-- StopService.java
+|   |   +-- ItineraryService.java
+|   |   +-- ScheduleService.java
+|   |   +-- MessageService.java
+|   |   +-- DeviceService.java
+|   |   +-- UserService.java
+|   |   +-- DisplayStateService.java
+|   |   +-- NetworkMapService.java
+|   +-- dto/
+|   |   +-- request/                     # DTOs d'entree
+|   |   +-- response/                    # DTOs de sortie
+|   +-- exception/                       # Exceptions metier
++-- infrastructure/
+|   +-- security/
+|   |   +-- JwtService.java
+|   |   +-- JwtAuthenticationFilter.java
+|   |   +-- SecurityConfig.java
+|   +-- websocket/
+|   |   +-- WebSocketConfig.java
+|   |   +-- ActiveDisplayTracker.java
+|   +-- persistence/                     # Repositories JPA
+|   |   +-- LineRepository.java
+|   |   +-- StopRepository.java
+|   |   +-- ItineraryRepository.java
+|   |   +-- ItineraryStopRepository.java
+|   |   +-- ScheduleRepository.java
+|   |   +-- BroadcastMessageRepository.java
+|   |   +-- DeviceRepository.java
+|   |   +-- UserRepository.java
+|   +-- config/
+|   |   +-- CacheConfig.java            # Configuration Caffeine
+|   +-- DataLoader.java                 # Donnees initiales
++-- api/
+    +-- rest/                            # REST Controllers
+    |   +-- AuthController.java
+    |   +-- LineController.java
+    |   +-- StopController.java
+    |   +-- ItineraryController.java
+    |   +-- ScheduleController.java
+    |   +-- MessageController.java
+    |   +-- DeviceController.java
+    |   +-- UserController.java
+    |   +-- DisplayController.java
+    |   +-- NetworkMapController.java
+    +-- advice/
+        +-- GlobalExceptionHandler.java  # Gestion des erreurs
 ```
 
-### Entités
+### Entites
 
 #### Relations
 
-```
-Line (N) ──── (M) Stop         # ManyToMany via table stop_lines
-Line (1) ──── (N) Itinerary
-Itinerary (1) ──── (N) ItineraryStop ──── Stop
-Stop (1) ──── (N) Schedule
-Stop (1) ──── (N) Device
-Schedule ──── Itinerary         # ManyToOne
+```text
+Line (N) ---- (M) Stop         # ManyToMany via table stop_lines
+Line (1) ---- (N) Itinerary
+Itinerary (1) ---- (N) ItineraryStop ---- Stop
+Stop (1) ---- (N) Schedule
+Stop (1) ---- (N) Device
+Schedule ---- Itinerary         # ManyToOne
 
-BroadcastMessage ── scopeType ── NETWORK | LINE (scopeId=lineId) | STOP (scopeId=stopId)
+BroadcastMessage -- scopeType -- NETWORK | LINE | STOP
 ```
 
 #### Stop
 
-Un arrêt peut appartenir à plusieurs lignes (ManyToMany). Il possède des coordonnées GPS optionnelles et des coordonnées schématiques pour la carte du réseau.
+Un arret peut appartenir a plusieurs lignes (ManyToMany).
+Il possede des coordonnees GPS optionnelles et des
+coordonnees schematiques pour la carte du reseau.
 
 ```java
 @Entity
@@ -167,7 +171,9 @@ public class Stop {
 
 #### Schedule
 
-Un horaire lie une heure de départ à un arrêt et un itinéraire. L'itinéraire détermine la ligne et la direction (terminus).
+Un horaire lie une heure de depart a un arret et un
+itineraire. L'itineraire determine la ligne et la
+direction (terminus).
 
 ```java
 @Entity
@@ -187,7 +193,8 @@ public class Schedule {
 
 ### Services
 
-Les services encapsulent la logique métier et publient des événements domaine.
+Les services encapsulent la logique metier et publient
+des evenements domaine.
 
 ```java
 @Service
@@ -205,36 +212,40 @@ public class LineService {
         line.setType(request.type());
 
         Line saved = lineRepository.save(line);
-        eventPublisher.publishEvent(new NetworkChangedEvent(this));
+        eventPublisher.publishEvent(
+            new NetworkChangedEvent(this)
+        );
 
         return LineResponse.from(saved);
     }
 }
 ```
 
-### Événements domaine
+### Evenements domaine
 
-Les événements déclenchent le recalcul de l'état d'affichage (DisplayState) et sa diffusion via WebSocket.
+Les evenements declenchent le recalcul de l'etat
+d'affichage (DisplayState) et sa diffusion via WebSocket.
 
 ```java
-// Événements publiés par les services
+// Evenements publies par les services
 public record NetworkChangedEvent(Object source) {}
 public record ScheduleChangedEvent(Object source) {}
 public record MessageChangedEvent(Object source) {}
 
-// Écoute et diffusion via DisplayStateService
+// Ecoute et diffusion via DisplayStateService
 @Component
 @RequiredArgsConstructor
 public class DisplayStateService {
 
     @EventListener
-    public void onNetworkChanged(NetworkChangedEvent event) {
+    public void onNetworkChanged(
+            NetworkChangedEvent event) {
         recalculateAndPushAllStates();
     }
 }
 ```
 
-### Sécurité JWT
+### Securite JWT
 
 ```java
 @Component
@@ -245,7 +256,8 @@ public class JwtService {
             .subject(user.getUsername())
             .claim("role", user.getRole().name())
             .issuedAt(new Date())
-            .expiration(new Date(System.currentTimeMillis() + expiration))
+            .expiration(new Date(
+                System.currentTimeMillis() + expiration))
             .signWith(getSigningKey())
             .compact();
     }
@@ -270,67 +282,67 @@ public class JwtService {
 
 ### Structure
 
-```
+```text
 src/app/
-├── app.component.ts              # Composant racine
-├── app.config.ts                 # Configuration Angular (providers)
-├── app.routes.ts                 # Définition des routes
-├── core/
-│   ├── auth/
-│   │   ├── auth.service.ts       # Gestion authentification (Signals)
-│   │   ├── auth.guard.ts         # Protection des routes (authentification)
-│   │   ├── role.guard.ts         # Protection des routes (autorisation par rôle)
-│   │   └── auth.interceptor.ts   # Ajout token JWT, gestion erreurs (401, 403, réseau)
-│   ├── api/
-│   │   ├── line.service.ts
-│   │   ├── stop.service.ts
-│   │   ├── itinerary.service.ts
-│   │   ├── schedule.service.ts
-│   │   ├── message.service.ts
-│   │   ├── device.service.ts
-│   │   ├── user.service.ts
-│   │   └── display.service.ts
-│   ├── websocket/
-│   │   └── websocket.service.ts  # Client STOMP
-│   └── services/
-│       ├── theme.service.ts      # Gestion du thème
-│       └── breakpoint.service.ts # Détection responsive
-├── shared/
-│   ├── models/
-│   │   └── index.ts              # Interfaces et types TypeScript
-│   ├── components/
-│   │   ├── confirm-dialog/
-│   │   ├── empty-state/
-│   │   ├── search-input/
-│   │   └── skeleton/             # Composants de chargement
-│   └── pipes/
-├── features/
-│   ├── auth/
-│   │   └── login/
-│   ├── admin/
-│   │   ├── dashboard/
-│   │   ├── lines/
-│   │   ├── stops/
-│   │   ├── itineraries/
-│   │   ├── schedules/
-│   │   ├── messages/
-│   │   ├── devices/
-│   │   └── users/
-│   ├── display/
-│   │   └── kiosk/
-│   └── network-map/
-│       ├── network-map.component.ts
-│       ├── services/
-│       ├── components/
-│       │   ├── schematic-map/
-│       │   ├── schematic-line/
-│       │   ├── schematic-stop/
-│       │   ├── stop-popup/
-│       │   └── route-search-bar/
-│       └── utils/
-└── layouts/
-    ├── admin-layout/
-    └── display-layout/
++-- app.component.ts              # Composant racine
++-- app.config.ts                 # Configuration Angular
++-- app.routes.ts                 # Definition des routes
++-- core/
+|   +-- auth/
+|   |   +-- auth.service.ts       # Gestion authentification
+|   |   +-- auth.guard.ts         # Protection des routes
+|   |   +-- role.guard.ts         # Autorisation par role
+|   |   +-- auth.interceptor.ts   # Ajout token JWT
+|   +-- api/
+|   |   +-- line.service.ts
+|   |   +-- stop.service.ts
+|   |   +-- itinerary.service.ts
+|   |   +-- schedule.service.ts
+|   |   +-- message.service.ts
+|   |   +-- device.service.ts
+|   |   +-- user.service.ts
+|   |   +-- display.service.ts
+|   +-- websocket/
+|   |   +-- websocket.service.ts  # Client STOMP
+|   +-- services/
+|       +-- theme.service.ts      # Gestion du theme
+|       +-- breakpoint.service.ts # Detection responsive
++-- shared/
+|   +-- models/
+|   |   +-- index.ts              # Interfaces TypeScript
+|   +-- components/
+|   |   +-- confirm-dialog/
+|   |   +-- empty-state/
+|   |   +-- search-input/
+|   |   +-- skeleton/             # Composants de chargement
+|   +-- pipes/
++-- features/
+|   +-- auth/
+|   |   +-- login/
+|   +-- admin/
+|   |   +-- dashboard/
+|   |   +-- lines/
+|   |   +-- stops/
+|   |   +-- itineraries/
+|   |   +-- schedules/
+|   |   +-- messages/
+|   |   +-- devices/
+|   |   +-- users/
+|   +-- display/
+|   |   +-- kiosk/
+|   +-- network-map/
+|       +-- network-map.component.ts
+|       +-- services/
+|       +-- components/
+|       |   +-- schematic-map/
+|       |   +-- schematic-line/
+|       |   +-- schematic-stop/
+|       |   +-- stop-popup/
+|       |   +-- route-search-bar/
+|       +-- utils/
++-- layouts/
+    +-- admin-layout/
+    +-- display-layout/
 ```
 
 ### Routes
@@ -338,32 +350,53 @@ src/app/
 ```typescript
 // Routes principales
 { path: '', redirectTo: '/admin', pathMatch: 'full' },
-{ path: 'login', loadComponent: () => import('./features/auth/login/...') },
-{ path: 'admin', canActivate: [authGuard], loadComponent: () => ...,
+{ path: 'login', loadComponent: () =>
+    import('./features/auth/login/...') },
+{ path: 'admin', canActivate: [authGuard],
+  loadComponent: () => ...,
   children: [
-    { path: 'dashboard', loadComponent: () => ... },                              // ADMIN + AGENT
-    { path: 'messages', loadComponent: () => ... },                               // ADMIN + AGENT
-    { path: 'lines', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } }, // ADMIN only
-    { path: 'stops', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
-    { path: 'itineraries', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
-    { path: 'schedules', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
-    { path: 'devices', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
-    { path: 'users', canActivate: [roleGuard], data: { requiredRole: 'ADMIN' } },
+    // ADMIN + AGENT
+    { path: 'dashboard', loadComponent: () => ... },
+    { path: 'messages', loadComponent: () => ... },
+    // ADMIN only
+    { path: 'lines',
+      canActivate: [roleGuard],
+      data: { requiredRole: 'ADMIN' } },
+    { path: 'stops',
+      canActivate: [roleGuard],
+      data: { requiredRole: 'ADMIN' } },
+    { path: 'itineraries',
+      canActivate: [roleGuard],
+      data: { requiredRole: 'ADMIN' } },
+    { path: 'schedules',
+      canActivate: [roleGuard],
+      data: { requiredRole: 'ADMIN' } },
+    { path: 'devices',
+      canActivate: [roleGuard],
+      data: { requiredRole: 'ADMIN' } },
+    { path: 'users',
+      canActivate: [roleGuard],
+      data: { requiredRole: 'ADMIN' } },
   ]
 },
-{ path: 'map', loadComponent: () => ... },      // Carte réseau (public)
-{ path: 'display', loadComponent: () => ... },   // Kiosque (public)
-{ path: 'display/:stopId', loadComponent: () => ... },
-{ path: '**', loadComponent: () => import('./features/not-found/...') }, // Page 404
+// Public routes
+{ path: 'map', loadComponent: () => ... },
+{ path: 'display', loadComponent: () => ... },
+{ path: 'display/:stopId',
+  loadComponent: () => ... },
+{ path: '**', loadComponent: () =>
+    import('./features/not-found/...') },
 ```
 
 ### Configuration Angular
 
 ```typescript
 // app.config.ts - Providers principaux
-provideZonelessChangeDetection()    // Détection de changements sans Zone.js
+provideZonelessChangeDetection()
 provideRouter(routes)
-provideHttpClient(withInterceptors([authInterceptor]))
+provideHttpClient(
+  withInterceptors([authInterceptor])
+)
 ```
 
 ### Services API
@@ -378,23 +411,35 @@ export class LineService {
     return this.http.get<Line[]>(this.baseUrl);
   }
 
-  create(request: CreateLineRequest): Observable<Line> {
-    return this.http.post<Line>(this.baseUrl, request);
+  create(
+    request: CreateLineRequest
+  ): Observable<Line> {
+    return this.http.post<Line>(
+      this.baseUrl, request
+    );
   }
 
-  update(id: string, request: CreateLineRequest): Observable<Line> {
-    return this.http.put<Line>(`${this.baseUrl}/${id}`, request);
+  update(
+    id: string,
+    request: CreateLineRequest
+  ): Observable<Line> {
+    return this.http.put<Line>(
+      `${this.baseUrl}/${id}`, request
+    );
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(
+      `${this.baseUrl}/${id}`
+    );
   }
 }
 ```
 
 ### Composants standalone
 
-Angular 21 utilise des composants standalone et la syntaxe de contrôle de flux.
+Angular 21 utilise des composants standalone et la
+syntaxe de controle de flux.
 
 ```typescript
 @Component({
@@ -411,12 +456,13 @@ Angular 21 utilise des composants standalone et la syntaxe de contrôle de flux.
   `
 })
 export class LinesComponent {
-  private readonly lineService = inject(LineService);
+  private readonly lineService =
+    inject(LineService);
   lines = signal<Line[]>([]);
 
   ngOnInit(): void {
-    this.lineService.getAll().subscribe(lines =>
-      this.lines.set(lines)
+    this.lineService.getAll().subscribe(
+      lines => this.lines.set(lines)
     );
   }
 }
@@ -424,16 +470,17 @@ export class LinesComponent {
 
 ### Signals
 
-Le projet utilise les Signals d'Angular pour la réactivité.
+Le projet utilise les Signals d'Angular pour la
+reactivite.
 
 ```typescript
-// Définir un signal
+// Definir un signal
 lines = signal<Line[]>([]);
 
-// Mettre à jour
+// Mettre a jour
 this.lines.set(newLines);
 
-// Signal dérivé (computed)
+// Signal derive (computed)
 lineCount = computed(() => this.lines().length);
 
 // Lire la valeur
@@ -446,22 +493,29 @@ console.log(this.lines());
 @Injectable({ providedIn: 'root' })
 export class WebSocketService {
   private client: Client | null = null;
-  private connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
+  private connectionStateSignal =
+    signal<ConnectionState>('DISCONNECTED');
 
-  connectionState = this.connectionStateSignal.asReadonly();
+  connectionState =
+    this.connectionStateSignal.asReadonly();
 
-  connect(stopId: string): Observable<DisplayState> {
+  connect(
+    stopId: string
+  ): Observable<DisplayState> {
     this.client = new Client({
       webSocketFactory: () => new SockJS('/ws'),
       reconnectDelay: 5000,
       onConnect: () => {
-        this.connectionStateSignal.set('CONNECTED');
+        this.connectionStateSignal.set(
+          'CONNECTED'
+        );
         this.subscribeToStop(stopId);
       }
     });
 
     this.client.activate();
-    return this.displayStateSubject.asObservable();
+    return this.displayStateSubject
+      .asObservable();
   }
 }
 ```
@@ -470,52 +524,67 @@ export class WebSocketService {
 
 ## Bonnes pratiques
 
-### Backend
+### Backend (bonnes pratiques)
 
-1. **Immutabilité des DTOs** : Utiliser des records Java
+1. **Immutabilite des DTOs** : Utiliser des records Java
+
    ```java
    public record CreateLineRequest(
        @NotBlank String code,
        @NotBlank String name,
-       @NotBlank @Pattern(regexp = "^#[0-9A-Fa-f]{6}$") String color,
+       @NotBlank
+       @Pattern(regexp = "^#[0-9A-Fa-f]{6}$")
+       String color,
        @NotNull LineType type
    ) {}
    ```
 
 2. **Validation** : Utiliser Bean Validation
+
    ```java
    @PostMapping
-   public ResponseEntity<LineResponse> create(@Valid @RequestBody CreateLineRequest request) {
-       return ResponseEntity.status(HttpStatus.CREATED).body(lineService.createLine(request));
+   public ResponseEntity<LineResponse> create(
+       @Valid @RequestBody
+       CreateLineRequest request) {
+       return ResponseEntity
+           .status(HttpStatus.CREATED)
+           .body(lineService.createLine(request));
    }
    ```
 
-3. **Transactions** : Annoter les méthodes de service
+3. **Transactions** : Annoter les methodes de service
+
    ```java
    @Transactional
-   public LineResponse updateLine(UUID id, CreateLineRequest request) {
+   public LineResponse updateLine(
+       UUID id, CreateLineRequest request) {
        // ...
    }
    ```
 
-### Frontend
+### Frontend (bonnes pratiques)
 
-1. **Lazy loading** : Charger les composants à la demande
+1. **Lazy loading** : Charger les composants a la
+   demande
+
    ```typescript
    {
      path: 'admin',
-     loadComponent: () => import('./layouts/admin-layout')
-       .then(m => m.AdminLayoutComponent)
+     loadComponent: () =>
+       import('./layouts/admin-layout')
+         .then(m => m.AdminLayoutComponent)
    }
    ```
 
-2. **Gestion d'état** : Utiliser les Signals
+2. **Gestion d'etat** : Utiliser les Signals
+
    ```typescript
-   // Préférer les signals aux BehaviorSubject
+   // Preferer les signals aux BehaviorSubject
    currentUser = signal<User | null>(null);
    ```
 
-3. **Typage strict** : Définir les interfaces
+3. **Typage strict** : Definir les interfaces
+
    ```typescript
    export interface Line {
      id: string;
@@ -532,10 +601,10 @@ export class WebSocketService {
 
 ## Tests
 
-### Backend
+### Backend (tests)
 
 ```bash
-# Exécuter tous les tests
+# Executer tous les tests
 cd backend
 ./gradlew test
 
@@ -543,9 +612,11 @@ cd backend
 ./gradlew test jacocoTestReport
 ```
 
-Tests unitaires et d'intégration pour : services, repositories, sécurité JWT, filtre d'authentification, tracker de connexions.
+Tests unitaires et d'integration pour : services,
+repositories, securite JWT, filtre d'authentification,
+tracker de connexions.
 
-### Frontend
+### Frontend (tests)
 
 ```bash
 cd frontend
@@ -560,15 +631,17 @@ npm run test:coverage
 npm run e2e
 ```
 
-Tests de composants et services avec configuration zoneless (`provideZonelessChangeDetection`).
+Tests de composants et services avec configuration
+zoneless (`provideZonelessChangeDetection`).
 
 ---
 
 ## Debugging
 
-### Backend
+### Backend (debugging)
 
 1. **Logs** : Configurer le niveau de log
+
    ```yaml
    logging:
      level:
@@ -576,14 +649,14 @@ Tests de composants et services avec configuration zoneless (`provideZonelessCha
        org.springframework.security: DEBUG
    ```
 
-2. **Console H2** : http://localhost:8080/h2-console
+2. **Console H2** : <http://localhost:8080/h2-console>
 
-3. **Actuator** : http://localhost:8080/actuator/health
+3. **Actuator** : <http://localhost:8080/actuator/health>
 
-### Frontend
+### Frontend (debugging)
 
 1. **Angular DevTools** : Extension Chrome/Firefox
 
-2. **Console navigateur** : Vérifier les erreurs réseau
+2. **Console navigateur** : Verifier les erreurs reseau
 
-3. **Source maps** : Activées par défaut en développement
+3. **Source maps** : Activees par defaut en developpement

@@ -35,9 +35,13 @@ public class DisplayStateService {
             DisplayState state = displayStateCalculator.calculateForStop(stopId);
             String destination = "/topic/display/" + stopId;
             messagingTemplate.convertAndSend(destination, state);
-            log.debug("Pushed DisplayState to {}, version {}", destination, state.version());
+            if (log.isDebugEnabled()) {
+                log.debug("Pushed DisplayState to {}, version {}", destination, state.version());
+            }
         } catch (Exception e) {
-            log.error("Failed to push DisplayState for stop {}", stopId, e);
+            if (log.isErrorEnabled()) {
+                log.error("Failed to push DisplayState for stop {}", stopId, e);
+            }
         }
     }
 
@@ -49,19 +53,25 @@ public class DisplayStateService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onScheduleChanged(ScheduleChangedEvent event) {
-        log.info("Schedule changed for stop {}", event.getStopId());
+        if (log.isInfoEnabled()) {
+            log.info("Schedule changed for stop {}", event.getStopId());
+        }
         recalculateAndPush(event.getStopId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageChanged(MessageChangedEvent event) {
-        log.info("Message changed, affecting {} stops", event.getAffectedStopIds().size());
+        if (log.isInfoEnabled()) {
+            log.info("Message changed, affecting {} stops", event.getAffectedStopIds().size());
+        }
         recalculateAndPushAll(event.getAffectedStopIds());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onNetworkChanged(NetworkChangedEvent event) {
-        log.info("Network changed, affecting {} stops", event.getAffectedStopIds().size());
+        if (log.isInfoEnabled()) {
+            log.info("Network changed, affecting {} stops", event.getAffectedStopIds().size());
+        }
         recalculateAndPushAll(event.getAffectedStopIds());
     }
 
@@ -69,7 +79,9 @@ public class DisplayStateService {
     public void refreshActiveDisplays() {
         Set<UUID> activeStopIds = activeDisplayTracker.getActiveStopIds();
         if (!activeStopIds.isEmpty()) {
-            log.debug("Refreshing {} active displays", activeStopIds.size());
+            if (log.isDebugEnabled()) {
+                log.debug("Refreshing {} active displays", activeStopIds.size());
+            }
             recalculateAndPushAll(activeStopIds);
         }
     }

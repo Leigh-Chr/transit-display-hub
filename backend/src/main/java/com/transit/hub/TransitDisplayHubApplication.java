@@ -8,7 +8,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
-public class TransitDisplayHubApplication {
+public final class TransitDisplayHubApplication {
+
+    private TransitDisplayHubApplication() {
+        // Utility class - prevent instantiation
+    }
 
     public static void main(String[] args) {
         SpringApplication.run(TransitDisplayHubApplication.class, args);

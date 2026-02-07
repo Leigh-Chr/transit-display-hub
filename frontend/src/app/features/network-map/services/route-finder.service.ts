@@ -88,58 +88,90 @@ interface PqEntry {
   cost: number;
 }
 
+interface AdjacencyEdge {
+  key: string;
+  node: GraphNode;
+  cost: number;
+}
+
+interface GraphBuildResult {
+  adj: Map<string, AdjacencyEdge[]>;
+  stopToLines: Map<string, Set<string>>;
+}
+
+interface PathStep {
+  stopId: string;
+  lineId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RouteFinderService {
+
+  private static readonly TRANSFER_COST = 10000;
 
   findRoute(networkMap: NetworkMap, fromStopId: string, toStopId: string): RouteResult | null {
     if (fromStopId === toStopId) {return null;}
 
-    // Build adjacency: key = "stopId|lineId", value = [{ neighbor key, cost }]
-    const adj = new Map<string, { key: string; node: GraphNode; cost: number }[]>();
+    const { adj, stopToLines } = this.buildGraph(networkMap);
 
-    const getKey = (stopId: string, lineId: string): string => `${stopId}|${lineId}`;
+    const startLines = stopToLines.get(fromStopId);
+    if (!startLines || startLines.size === 0) {return null;}
 
-    const ensureNode = (key: string): void => {
-      if (!adj.has(key)) {adj.set(key, []);}
-    };
+    const targetLines = stopToLines.get(toStopId);
+    if (!targetLines || targetLines.size === 0) {return null;}
 
-    const addEdge = (fromKey: string, toKey: string, toNode: GraphNode, cost: number): void => {
-      ensureNode(fromKey);
-      adj.get(fromKey)?.push({ key: toKey, node: toNode, cost });
-    };
+    return this.runDijkstra(adj, startLines, targetLines, fromStopId, toStopId, networkMap);
+  }
 
-    // Track which lines serve each stop
+  /** Build adjacency graph with same-line edges and transfer edges */
+  private buildGraph(networkMap: NetworkMap): GraphBuildResult {
+    const adj = new Map<string, AdjacencyEdge[]>();
     const stopToLines = new Map<string, Set<string>>();
 
     for (const line of networkMap.lines) {
       const itinerary = line.itineraries[0];
       if (!itinerary || itinerary.length === 0) {continue;}
 
-      // Register stop-line associations
-      for (const stopId of itinerary) {
-        if (!stopToLines.has(stopId)) {stopToLines.set(stopId, new Set());}
-        stopToLines.get(stopId)?.add(line.id);
-      }
-
-      // Same-line edges (cost 1) — bidirectional
-      // Transfer edges will cost TRANSFER_COST, so transfers are heavily penalized
-      // while still minimizing total stops as a tiebreaker
-      for (let i = 0; i < itinerary.length - 1; i++) {
-        const a = itinerary[i];
-        const b = itinerary[i + 1];
-        if (a === undefined || b === undefined) {continue;}
-        const keyA = getKey(a, line.id);
-        const keyB = getKey(b, line.id);
-        const nodeA: GraphNode = { stopId: a, lineId: line.id };
-        const nodeB: GraphNode = { stopId: b, lineId: line.id };
-
-        addEdge(keyA, keyB, nodeB, 1);
-        addEdge(keyB, keyA, nodeA, 1);
-      }
+      this.registerStopLineAssociations(itinerary, line.id, stopToLines);
+      this.addSameLineEdges(itinerary, line.id, adj);
     }
 
-    // Transfer edges — same stop, different line
-    const TRANSFER_COST = 10000;
+    this.addTransferEdges(stopToLines, adj);
+
+    return { adj, stopToLines };
+  }
+
+  /** Register which lines serve each stop */
+  private registerStopLineAssociations(
+    itinerary: string[], lineId: string, stopToLines: Map<string, Set<string>>
+  ): void {
+    for (const stopId of itinerary) {
+      if (!stopToLines.has(stopId)) {stopToLines.set(stopId, new Set());}
+      stopToLines.get(stopId)?.add(lineId);
+    }
+  }
+
+  /** Add bidirectional edges between consecutive stops on the same line (cost 1) */
+  private addSameLineEdges(
+    itinerary: string[], lineId: string, adj: Map<string, AdjacencyEdge[]>
+  ): void {
+    for (let i = 0; i < itinerary.length - 1; i++) {
+      const a = itinerary[i];
+      const b = itinerary[i + 1];
+      if (a === undefined || b === undefined) {continue;}
+
+      const keyA = this.getKey(a, lineId);
+      const keyB = this.getKey(b, lineId);
+
+      this.addEdge(adj, keyA, keyB, { stopId: b, lineId }, 1);
+      this.addEdge(adj, keyB, keyA, { stopId: a, lineId }, 1);
+    }
+  }
+
+  /** Add transfer edges between different lines at the same stop */
+  private addTransferEdges(
+    stopToLines: Map<string, Set<string>>, adj: Map<string, AdjacencyEdge[]>
+  ): void {
     for (const [stopId, lineIds] of stopToLines) {
       const lines = [...lineIds];
       for (let i = 0; i < lines.length; i++) {
@@ -147,44 +179,44 @@ export class RouteFinderService {
           const lineI = lines[i];
           const lineJ = lines[j];
           if (lineI === undefined || lineJ === undefined) {continue;}
-          const keyA = getKey(stopId, lineI);
-          const keyB = getKey(stopId, lineJ);
-          const nodeA: GraphNode = { stopId, lineId: lineI };
-          const nodeB: GraphNode = { stopId, lineId: lineJ };
 
-          addEdge(keyA, keyB, nodeB, TRANSFER_COST);
-          addEdge(keyB, keyA, nodeA, TRANSFER_COST);
+          const keyA = this.getKey(stopId, lineI);
+          const keyB = this.getKey(stopId, lineJ);
+
+          this.addEdge(adj, keyA, keyB, { stopId, lineId: lineJ }, RouteFinderService.TRANSFER_COST);
+          this.addEdge(adj, keyB, keyA, { stopId, lineId: lineI }, RouteFinderService.TRANSFER_COST);
         }
       }
     }
+  }
 
-    // Dijkstra with binary min-heap priority queue
+  /** Run Dijkstra's algorithm from all start lines to any target line */
+  private runDijkstra(
+    adj: Map<string, AdjacencyEdge[]>,
+    startLines: Set<string>,
+    targetLines: Set<string>,
+    fromStopId: string,
+    toStopId: string,
+    networkMap: NetworkMap,
+  ): RouteResult | null {
     const dist = new Map<string, number>();
     const prev = new Map<string, string | null>();
-
     const pq = new MinHeap<PqEntry>((a, b) => a.cost - b.cost);
 
-    // Start from all lines at the departure stop
-    const startLines = stopToLines.get(fromStopId);
-    if (!startLines || startLines.size === 0) {return null;}
-
     for (const lineId of startLines) {
-      const key = getKey(fromStopId, lineId);
+      const key = this.getKey(fromStopId, lineId);
       dist.set(key, 0);
       prev.set(key, null);
       pq.push({ node: { stopId: fromStopId, lineId }, cost: 0 });
     }
 
-    // Target keys
-    const targetLines = stopToLines.get(toStopId);
-    if (!targetLines || targetLines.size === 0) {return null;}
-    const targetKeys = new Set([...targetLines].map(lid => getKey(toStopId, lid)));
+    const targetKeys = new Set([...targetLines].map(lid => this.getKey(toStopId, lid)));
 
     while (pq.size > 0) {
       const popped = pq.pop();
       if (!popped) {break;}
       const { node, cost } = popped;
-      const key = getKey(node.stopId, node.lineId);
+      const key = this.getKey(node.stopId, node.lineId);
 
       if (cost > (dist.get(key) ?? Infinity)) {continue;}
 
@@ -192,8 +224,7 @@ export class RouteFinderService {
         return this.reconstructRoute(key, prev, networkMap);
       }
 
-      const neighbors = adj.get(key) ?? [];
-      for (const edge of neighbors) {
+      for (const edge of (adj.get(key) ?? [])) {
         const newCost = cost + edge.cost;
         if (newCost < (dist.get(edge.key) ?? Infinity)) {
           dist.set(edge.key, newCost);
@@ -211,8 +242,27 @@ export class RouteFinderService {
     prev: Map<string, string | null>,
     networkMap: NetworkMap,
   ): RouteResult {
-    // Trace back path
-    const path: { stopId: string; lineId: string }[] = [];
+    const path = this.tracePath(endKey, prev);
+    const lineMap = this.buildLineMap(networkMap);
+    const stopNameMap = this.buildStopNameMap(networkMap);
+
+    const segments = this.groupPathIntoSegments(path, lineMap, stopNameMap);
+    this.computeSegmentDirections(segments, lineMap, stopNameMap);
+
+    const transferStopIds = this.extractTransferStopIds(segments);
+    const allStopIds = this.collectAllStopIds(segments);
+
+    return {
+      segments,
+      transfers: Math.max(0, segments.length - 1),
+      transferStopIds,
+      allStopIds,
+    };
+  }
+
+  /** Trace the prev-map backwards from endKey to build the ordered path */
+  private tracePath(endKey: string, prev: Map<string, string | null>): PathStep[] {
+    const path: PathStep[] = [];
     let current: string | null = endKey;
 
     while (current !== null) {
@@ -223,17 +273,33 @@ export class RouteFinderService {
       current = prev.get(current) ?? null;
     }
 
-    // Build line lookup + stop name lookup
+    return path;
+  }
+
+  /** Build a lookup map of line ID to NetworkLine */
+  private buildLineMap(networkMap: NetworkMap): Map<string, NetworkLine> {
     const lineMap = new Map<string, NetworkLine>();
     for (const line of networkMap.lines) {
       lineMap.set(line.id, line);
     }
+    return lineMap;
+  }
+
+  /** Build a lookup map of stop ID to stop name */
+  private buildStopNameMap(networkMap: NetworkMap): Map<string, string> {
     const stopNameMap = new Map<string, string>();
     for (const stop of networkMap.stops) {
       stopNameMap.set(stop.id, stop.name);
     }
+    return stopNameMap;
+  }
 
-    // Group into segments by lineId
+  /** Group consecutive path steps with the same lineId into RouteSegments */
+  private groupPathIntoSegments(
+    path: PathStep[],
+    lineMap: Map<string, NetworkLine>,
+    stopNameMap: Map<string, string>,
+  ): RouteSegment[] {
     const segments: RouteSegment[] = [];
     let currentSegment: RouteSegment | null = null;
 
@@ -256,7 +322,15 @@ export class RouteFinderService {
       }
     }
 
-    // Compute direction for each segment
+    return segments;
+  }
+
+  /** Compute the direction name for each segment based on itinerary order */
+  private computeSegmentDirections(
+    segments: RouteSegment[],
+    lineMap: Map<string, NetworkLine>,
+    stopNameMap: Map<string, string>,
+  ): void {
     for (const segment of segments) {
       const line = lineMap.get(segment.lineId);
       if (!line) {continue;}
@@ -275,8 +349,10 @@ export class RouteFinderService {
         segment.directionName = stopNameMap.get(lastStopId) ?? '';
       }
     }
+  }
 
-    // Build transfer stop IDs (stops where segments change)
+  /** Extract IDs of stops where a line transfer occurs */
+  private extractTransferStopIds(segments: RouteSegment[]): string[] {
     const transferStopIds: string[] = [];
     for (let i = 1; i < segments.length; i++) {
       const seg = segments[i];
@@ -286,8 +362,11 @@ export class RouteFinderService {
         transferStopIds.push(transferStop);
       }
     }
+    return transferStopIds;
+  }
 
-    // Build deduplicated ordered list of all stops
+  /** Build a deduplicated ordered list of all stop IDs across segments */
+  private collectAllStopIds(segments: RouteSegment[]): string[] {
     const allStopIds: string[] = [];
     for (const segment of segments) {
       for (const stopId of segment.stopIds) {
@@ -296,12 +375,17 @@ export class RouteFinderService {
         }
       }
     }
+    return allStopIds;
+  }
 
-    return {
-      segments,
-      transfers: Math.max(0, segments.length - 1),
-      transferStopIds,
-      allStopIds,
-    };
+  private getKey(stopId: string, lineId: string): string {
+    return `${stopId}|${lineId}`;
+  }
+
+  private addEdge(
+    adj: Map<string, AdjacencyEdge[]>, fromKey: string, toKey: string, toNode: GraphNode, cost: number
+  ): void {
+    if (!adj.has(fromKey)) {adj.set(fromKey, []);}
+    adj.get(fromKey)?.push({ key: toKey, node: toNode, cost });
   }
 }

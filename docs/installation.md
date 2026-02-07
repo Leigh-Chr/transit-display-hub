@@ -1,19 +1,22 @@
 # Guide d'installation
 
-## Prérequis système
+## Prerequis systeme
 
-### Backend
-- **Java** : JDK 21 ou supérieur
+### Backend (prerequis)
+
+- **Java** : JDK 21 ou superieur
 - **Gradle** : 8.x+ (wrapper inclus)
 
-### Frontend
-- **Node.js** : 20.x ou supérieur
-- **npm** : 10.x ou supérieur
+### Frontend (prerequis)
 
-### Base de données (Production)
-- **PostgreSQL** : 15.x ou supérieur
+- **Node.js** : 20.x ou superieur
+- **npm** : 10.x ou superieur
 
-## Installation pour le développement
+### Base de donnees (Production)
+
+- **PostgreSQL** : 15.x ou superieur
+
+## Installation pour le developpement
 
 ### 1. Cloner le repository
 
@@ -28,10 +31,10 @@ cd transit-display-hub
 cd backend
 ```
 
-#### Avec SDKMAN (recommandé pour Java)
+#### Avec SDKMAN (recommande pour Java)
 
 ```bash
-# Installer SDKMAN si nécessaire
+# Installer SDKMAN si necessaire
 curl -s "https://get.sdkman.io" | bash
 source ~/.sdkman/bin/sdkman-init.sh
 
@@ -39,20 +42,20 @@ source ~/.sdkman/bin/sdkman-init.sh
 sdk install java 21.0.5-tem
 ```
 
-#### Vérifier l'installation
+#### Verifier l'installation
 
 ```bash
 java --version
 # Doit afficher: openjdk 21.x.x
 ```
 
-#### Démarrer le backend
+#### Demarrer le backend
 
 ```bash
 ./gradlew bootRun
 ```
 
-Le serveur démarre sur http://localhost:8080
+Le serveur demarre sur <http://localhost:8080>
 
 ### 3. Configuration du Frontend
 
@@ -61,31 +64,35 @@ cd frontend
 npm install
 ```
 
-#### Démarrer le frontend
+#### Demarrer le frontend
 
 ```bash
 npm start
 ```
 
-L'application démarre sur http://localhost:4200
+L'application demarre sur <http://localhost:4200>
 
 ## Configuration
 
 ### Backend - application.yml
 
-Le fichier de configuration se trouve dans `backend/src/main/resources/application.yml`.
+Le fichier de configuration se trouve dans
+`backend/src/main/resources/application.yml`.
 
 #### Variables d'environnement
 
-| Variable | Description | Défaut |
-|----------|-------------|--------|
-| `SPRING_PROFILES_ACTIVE` | Profil actif (dev, prod) | dev |
-| `DATABASE_URL` | URL de connexion PostgreSQL | `jdbc:postgresql://localhost:5432/transit` |
-| `DATABASE_USER` | Utilisateur PostgreSQL | `transit` |
-| `DATABASE_PASSWORD` | Mot de passe PostgreSQL | `transit` |
-| `JWT_SECRET` | Clé secrète JWT (min 256 bits) | (obligatoire en prod) |
+- `SPRING_PROFILES_ACTIVE` : Profil actif (dev, prod).
+  Defaut : `dev`
+- `DATABASE_URL` : URL de connexion PostgreSQL.
+  Defaut : `jdbc:postgresql://localhost:5432/transit`
+- `DATABASE_USER` : Utilisateur PostgreSQL.
+  Defaut : `transit`
+- `DATABASE_PASSWORD` : Mot de passe PostgreSQL.
+  Defaut : `transit`
+- `JWT_SECRET` : Cle secrete JWT (min 256 bits).
+  Obligatoire en prod
 
-#### Profil développement (défaut)
+#### Profil developpement (defaut)
 
 ```yaml
 spring:
@@ -105,7 +112,7 @@ app:
     expiration-hours: 8
 ```
 
-Console H2 accessible sur http://localhost:8080/h2-console
+Console H2 accessible sur <http://localhost:8080/h2-console>
 
 #### Profil production
 
@@ -131,7 +138,8 @@ app:
 
 ### Frontend - proxy.conf.json
 
-Le proxy de développement redirige les appels API vers le backend :
+Le proxy de developpement redirige les appels API vers
+le backend :
 
 ```json
 {
@@ -140,15 +148,15 @@ Le proxy de développement redirige les appels API vers le backend :
 }
 ```
 
-## Vérification de l'installation
+## Verification de l'installation
 
 ### 1. Tester le backend
 
 ```bash
-# Vérifier que l'API répond
+# Verifier que l'API repond
 curl http://localhost:8080/actuator/health
 
-# Réponse attendue:
+# Reponse attendue:
 # {"status":"UP"}
 ```
 
@@ -160,20 +168,21 @@ curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
-# Réponse avec token JWT
+# Reponse avec token JWT
 ```
 
-### 3. Accéder à l'interface
+### 3. Acceder a l'interface
 
-1. Ouvrir http://localhost:4200
+1. Ouvrir <http://localhost:4200>
 2. Se connecter avec admin / admin123
 3. Le dashboard doit s'afficher
 
-## Résolution des problèmes
+## Resolution des problemes
 
-### Le backend ne démarre pas
+### Le backend ne demarre pas
 
-**Erreur : Port 8080 déjà utilisé**
+#### Erreur : Port 8080 deja utilise
+
 ```bash
 # Trouver le processus
 lsof -i :8080
@@ -181,9 +190,10 @@ lsof -i :8080
 ./gradlew bootRun --args='--server.port=8081'
 ```
 
-**Erreur : Java version incorrecte**
+#### Erreur : Java version incorrecte
+
 ```bash
-# Vérifier la version
+# Verifier la version
 java --version
 # Installer Java 21 avec SDKMAN
 sdk install java 21.0.5-tem
@@ -192,35 +202,43 @@ sdk use java 21.0.5-tem
 
 ### Le frontend ne compile pas
 
-**Erreur : Modules non trouvés**
+#### Erreur : Modules non trouves
+
 ```bash
-# Supprimer node_modules et réinstaller
+# Supprimer node_modules et reinstaller
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-**Erreur : Version Node.js incorrecte**
+#### Erreur : Version Node.js incorrecte
+
 ```bash
-# Vérifier la version
+# Verifier la version
 node --version
 # Utiliser nvm pour changer de version
 nvm install 20
 nvm use 20
 ```
 
-### Problèmes de connexion API
+### Problemes de connexion API
 
-**Erreur CORS**
-- Vérifier que le proxy Angular est configuré
-- En dev, les requêtes `/api/*` sont redirigées vers le backend
+#### Erreur CORS
 
-**Erreur 401 Unauthorized**
-- Le token JWT a expiré (durée de validité : 8 heures)
+- Verifier que le proxy Angular est configure
+- En dev, les requetes `/api/*` sont redirigees vers
+  le backend
+
+#### Erreur 401 Unauthorized
+
+- Le token JWT a expire (duree de validite : 8 heures)
 - Le token est manquant ou invalide
 - Se reconnecter pour obtenir un nouveau token
-- L'API retourne une réponse JSON structurée (pas du HTML)
+- L'API retourne une reponse JSON structuree
+  (pas du HTML)
 
-**Erreur 403 Forbidden**
-- Permissions insuffisantes pour accéder à l'endpoint
-- L'utilisateur n'a pas le rôle requis (ex: endpoint ADMIN pour un AGENT)
+#### Erreur 403 Forbidden
+
+- Permissions insuffisantes pour acceder a l'endpoint
+- L'utilisateur n'a pas le role requis
+  (ex: endpoint ADMIN pour un AGENT)
 - Une notification s'affiche dans le frontend

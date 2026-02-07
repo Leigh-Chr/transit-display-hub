@@ -78,6 +78,7 @@ public class NetworkMapService {
                 case NETWORK -> networkAlerts.add(alertMsg);
                 case LINE -> lineAlerts.computeIfAbsent(message.getScopeId(), k -> new ArrayList<>()).add(alertMsg);
                 case STOP -> stopAlerts.computeIfAbsent(message.getScopeId(), k -> new ArrayList<>()).add(alertMsg);
+                default -> { /* no action for unknown scope types */ }
             }
         }
 
@@ -96,7 +97,9 @@ public class NetworkMapService {
                     .sorted(Comparator.comparing(ItineraryStop::getPosition))
                     .toList();
 
-            if (orderedStops.isEmpty()) continue;
+            if (orderedStops.isEmpty()) {
+                continue;
+            }
 
             itineraries.add(orderedStops.stream()
                     .map(is -> is.getStop().getId())
@@ -136,7 +139,9 @@ public class NetworkMapService {
             evictCache("networkMap");
             evictCache("networkAlerts");
         } catch (Exception e) {
-            log.warn("Failed to evict cache on network change: {}", e.getMessage());
+            if (log.isWarnEnabled()) {
+                log.warn("Failed to evict cache on network change: {}", e.getMessage());
+            }
         }
         pushNetworkMapUpdate();
     }
@@ -146,7 +151,9 @@ public class NetworkMapService {
         try {
             evictCache("networkAlerts");
         } catch (Exception e) {
-            log.warn("Failed to evict cache on message change: {}", e.getMessage());
+            if (log.isWarnEnabled()) {
+                log.warn("Failed to evict cache on message change: {}", e.getMessage());
+            }
         }
         pushAlertsUpdate();
     }

@@ -1,8 +1,25 @@
 package com.transit.hub.infrastructure;
 
-import com.transit.hub.domain.model.*;
-import com.transit.hub.domain.model.enums.*;
-import com.transit.hub.infrastructure.persistence.*;
+import com.transit.hub.domain.model.BroadcastMessage;
+import com.transit.hub.domain.model.Device;
+import com.transit.hub.domain.model.Itinerary;
+import com.transit.hub.domain.model.ItineraryStop;
+import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Schedule;
+import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.User;
+import com.transit.hub.domain.model.enums.DeviceStatus;
+import com.transit.hub.domain.model.enums.LineType;
+import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.domain.model.enums.MessageSeverity;
+import com.transit.hub.domain.model.enums.UserRole;
+import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.DeviceRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryRepository;
+import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -108,7 +125,9 @@ public class DataLoader implements CommandLineRunner {
                 .enabled(false)
                 .build());
 
-        log.info("Created {} users (3 admins, 4 agents, 2 disabled)", userRepository.count());
+        if (log.isInfoEnabled()) {
+            log.info("Created {} users (3 admins, 4 agents, 2 disabled)", userRepository.count());
+        }
     }
 
     private Map<String, Line> createLines() {
@@ -176,7 +195,9 @@ public class DataLoader implements CommandLineRunner {
                 .type(LineType.BUS)
                 .build()));
 
-        log.info("Created {} lines", lines.size());
+        if (log.isInfoEnabled()) {
+            log.info("Created {} lines", lines.size());
+        }
         return lines;
     }
 
@@ -270,7 +291,9 @@ public class DataLoader implements CommandLineRunner {
         // Assign geographic and schematic coordinates to all stops
         assignCoordinates(stops);
 
-        log.info("Created {} stops across {} lines", stops.size(), lines.size());
+        if (log.isInfoEnabled()) {
+            log.info("Created {} stops across {} lines", stops.size(), lines.size());
+        }
         return stops;
     }
 
@@ -300,7 +323,9 @@ public class DataLoader implements CommandLineRunner {
             stop.addLine(line);
             stopRepository.save(stop);
         } else {
-            log.warn("Stop key '{}' not found for line sharing with '{}'", key, line.getCode());
+            if (log.isWarnEnabled()) {
+                log.warn("Stop key '{}' not found for line sharing with '{}'", key, line.getCode());
+            }
         }
     }
 
@@ -398,7 +423,9 @@ public class DataLoader implements CommandLineRunner {
             }
         }
 
-        log.info("Assigned coordinates to {} stops", coords.size());
+        if (log.isInfoEnabled()) {
+            log.info("Assigned coordinates to {} stops", coords.size());
+        }
     }
 
     private Map<String, Itinerary> createItineraries(Map<String, Line> lines, Map<String, Stop> stops) {
@@ -486,7 +513,9 @@ public class DataLoader implements CommandLineRunner {
                 stops, "M2-North Station", "M2-Sports Complex", "M2-Shopping Mall", "B1-Marketplace",
                 "Convention Center", "University", "B1-Campus Gardens", "T2-Research Park", "T2-Hospital"));
 
-        log.info("Created {} itineraries", itineraries.size());
+        if (log.isInfoEnabled()) {
+            log.info("Created {} itineraries", itineraries.size());
+        }
         return itineraries;
     }
 
@@ -511,7 +540,9 @@ public class DataLoader implements CommandLineRunner {
                 itinerary.getItineraryStops().add(itineraryStop);
                 position++;
             } else {
-                log.warn("Stop key '{}' not found for itinerary '{}' (line '{}')", key, name, line.getCode());
+                if (log.isWarnEnabled()) {
+                    log.warn("Stop key '{}' not found for itinerary '{}' (line '{}')", key, name, line.getCode());
+                }
             }
         }
 
@@ -531,7 +562,9 @@ public class DataLoader implements CommandLineRunner {
                     .sorted(Comparator.comparing(ItineraryStop::getPosition))
                     .toList();
 
-            if (orderedStops.isEmpty()) continue;
+            if (orderedStops.isEmpty()) {
+                continue;
+            }
 
             // Compute cumulative travel time based on line type
             int travelTimePerStop = getTravelTimePerStop(itinerary.getLine().getType());
@@ -548,7 +581,9 @@ public class DataLoader implements CommandLineRunner {
                 for (int i = 0; i < orderedStops.size(); i++) {
                     LocalTime stopTime = baseTime.plusMinutes(cumulativeMinutes[i]);
                     // Skip if time wraps past midnight
-                    if (i > 0 && stopTime.isBefore(baseTime)) break;
+                    if (i > 0 && stopTime.isBefore(baseTime)) {
+                        break;
+                    }
 
                     scheduleRepository.save(Schedule.builder()
                             .time(stopTime)
@@ -564,7 +599,9 @@ public class DataLoader implements CommandLineRunner {
     }
 
     private int getTravelTimePerStop(LineType type) {
-        if (type == null) return 3;
+        if (type == null) {
+            return 3;
+        }
         return switch (type) {
             case METRO -> 2;
             case TRAIN -> 4;
@@ -577,13 +614,14 @@ public class DataLoader implements CommandLineRunner {
         List<LocalTime> times = new ArrayList<>();
 
         // Different frequencies based on line type
-        int peakInterval, offPeakInterval;
+        int peakInterval;
+        int offPeakInterval;
 
         if (lineCode.startsWith("M")) {
             // Metro: high frequency
             peakInterval = 8;
             offPeakInterval = 15;
-        } else if (lineCode.equals("A1")) {
+        } else if ("A1".equals(lineCode)) {
             // Airport Express: moderate frequency
             peakInterval = 15;
             offPeakInterval = 20;
@@ -689,17 +727,21 @@ public class DataLoader implements CommandLineRunner {
                             .map(Line::getCode)
                             .sorted()
                             .collect(Collectors.joining(", "));
-                    log.info("Sample device token for {} ({}): {}",
-                            stop.getName(), lineCodes, token);
+                    if (log.isInfoEnabled()) {
+                        log.info("Sample device token for {} ({}): {}",
+                                stop.getName(), lineCodes, token);
+                    }
                 }
             }
         }
 
-        log.info("Created {} devices ({} online, {} offline, {} stops without device)",
-                deviceCount,
-                deviceRepository.findByStatus(DeviceStatus.ONLINE).size(),
-                deviceRepository.findByStatus(DeviceStatus.OFFLINE).size(),
-                skippedStops);
+        if (log.isInfoEnabled()) {
+            log.info("Created {} devices ({} online, {} offline, {} stops without device)",
+                    deviceCount,
+                    deviceRepository.findByStatus(DeviceStatus.ONLINE).size(),
+                    deviceRepository.findByStatus(DeviceStatus.OFFLINE).size(),
+                    skippedStops);
+        }
     }
 
     private String generateDeviceToken() {
@@ -983,26 +1025,30 @@ public class DataLoader implements CommandLineRunner {
                 .endTime(now.plus(30, ChronoUnit.DAYS))
                 .build());
 
-        log.info("Created {} messages (network: {}, line: {}, stop: {})",
-                messageRepository.count(),
-                messageRepository.findAll().stream().filter(m -> m.getScopeType() == MessageScope.NETWORK).count(),
-                messageRepository.findAll().stream().filter(m -> m.getScopeType() == MessageScope.LINE).count(),
-                messageRepository.findAll().stream().filter(m -> m.getScopeType() == MessageScope.STOP).count());
+        if (log.isInfoEnabled()) {
+            log.info("Created {} messages (network: {}, line: {}, stop: {})",
+                    messageRepository.count(),
+                    messageRepository.findAll().stream().filter(m -> m.getScopeType() == MessageScope.NETWORK).count(),
+                    messageRepository.findAll().stream().filter(m -> m.getScopeType() == MessageScope.LINE).count(),
+                    messageRepository.findAll().stream().filter(m -> m.getScopeType() == MessageScope.STOP).count());
+        }
     }
 
     private void logSummary() {
-        log.info("========================================");
-        log.info("         DATA SEEDING SUMMARY          ");
-        log.info("========================================");
-        log.info("Users:          {}", userRepository.count());
-        log.info("Lines:          {}", lineRepository.count());
-        log.info("Itineraries:    {}", itineraryRepository.count());
-        log.info("Stops:          {}", stopRepository.count());
-        log.info("Schedules:      {}", scheduleRepository.count());
-        log.info("Devices:        {}", deviceRepository.count());
-        log.info("Messages:       {}", messageRepository.count());
-        log.info("========================================");
-        log.info("Default login: admin / admin123");
-        log.info("========================================");
+        if (log.isInfoEnabled()) {
+            log.info("========================================");
+            log.info("         DATA SEEDING SUMMARY          ");
+            log.info("========================================");
+            log.info("Users:          {}", userRepository.count());
+            log.info("Lines:          {}", lineRepository.count());
+            log.info("Itineraries:    {}", itineraryRepository.count());
+            log.info("Stops:          {}", stopRepository.count());
+            log.info("Schedules:      {}", scheduleRepository.count());
+            log.info("Devices:        {}", deviceRepository.count());
+            log.info("Messages:       {}", messageRepository.count());
+            log.info("========================================");
+            log.info("Default login: admin / admin123");
+            log.info("========================================");
+        }
     }
 }

@@ -185,6 +185,8 @@ public class MessageService {
                     throw new EntityNotFoundException("Stop", request.scopeId());
                 }
                 break;
+            default:
+                break;
         }
     }
 
