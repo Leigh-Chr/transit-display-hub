@@ -1,61 +1,61 @@
-# Guide de Deploiement
+# Deployment Guide
 
-## Prerequis
+## Prerequisites
 
-### Serveur
+### Server
 
-- **OS** : Linux (Ubuntu 22.04+, Debian 11+, RHEL 8+)
-- **RAM** : 2 Go minimum, 4 Go recommande
-- **CPU** : 2 cores minimum
-- **Disque** : 20 Go minimum
+- **OS**: Linux (Ubuntu 22.04+, Debian 11+, RHEL 8+)
+- **RAM**: 2 GB minimum, 4 GB recommended
+- **CPU**: 2 cores minimum
+- **Disk**: 20 GB minimum
 
-### Logiciels
+### Software
 
 - Java 21 JRE
 - PostgreSQL 15+
 - Nginx (reverse proxy)
-- Docker (optionnel)
+- Docker (optional)
 
 ---
 
-## Option 1 : Deploiement manuel
+## Option 1: Manual Deployment
 
-### 1. Preparer la base de donnees
+### 1. Prepare the Database
 
 ```sql
--- Se connecter a PostgreSQL
+-- Connect to PostgreSQL
 -- sudo -u postgres psql
 
--- Creer l'utilisateur et la base
+-- Create the user and database
 CREATE USER transit WITH PASSWORD 'your-secure-password';
 CREATE DATABASE transitdb OWNER transit;
 GRANT ALL PRIVILEGES ON DATABASE transitdb TO transit;
 \q
 ```
 
-### 2. Build du backend
+### 2. Build the Backend
 
 ```bash
 cd backend
 ./gradlew build -x test
 
-# Le JAR est dans build/libs/
+# The JAR is in build/libs/
 ls build/libs/transit-display-hub-*.jar
 ```
 
-### 3. Build du frontend
+### 3. Build the Frontend
 
 ```bash
 cd frontend
 npm install
 npm run build -- --configuration=production
 
-# Les fichiers sont dans dist/transit-display-hub/
+# Files are in dist/transit-display-hub/
 ```
 
-### 4. Configuration du backend
+### 4. Backend Configuration
 
-Creer le fichier `/opt/transit-hub/application-prod.yml` :
+Create the file `/opt/transit-hub/application-prod.yml`:
 
 ```yaml
 spring:
@@ -83,9 +83,9 @@ server:
   port: 8080
 ```
 
-### 5. Service systemd
+### 5. Systemd Service
 
-Creer `/etc/systemd/system/transit-hub.service` :
+Create `/etc/systemd/system/transit-hub.service`:
 
 ```ini
 [Unit]
@@ -111,27 +111,27 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-# Recharger systemd
+# Reload systemd
 sudo systemctl daemon-reload
 
-# Demarrer le service
+# Start the service
 sudo systemctl start transit-hub
 sudo systemctl enable transit-hub
 
-# Verifier le status
+# Check the status
 sudo systemctl status transit-hub
 ```
 
-### 6. Configuration Nginx
+### 6. Nginx Configuration
 
-Creer `/etc/nginx/sites-available/transit-hub` :
+Create `/etc/nginx/sites-available/transit-hub`:
 
 ```nginx
 server {
     listen 80;
     server_name transit.example.com;
 
-    # Redirection HTTPS
+    # HTTPS redirect
     return 301 https://$server_name$request_uri;
 }
 
@@ -169,7 +169,7 @@ server {
         proxy_read_timeout 86400;
     }
 
-    # Actuator (restreint)
+    # Actuator (restricted)
     location /actuator/ {
         allow 10.0.0.0/8;
         deny all;
@@ -179,17 +179,17 @@ server {
 ```
 
 ```bash
-# Activer le site
+# Enable the site
 sudo ln -s /etc/nginx/sites-available/transit-hub \
   /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 7. Deployer le frontend
+### 7. Deploy the Frontend
 
 ```bash
-# Copier les fichiers
+# Copy the files
 sudo cp -r frontend/dist/transit-display-hub/* \
   /var/www/transit-hub/
 sudo chown -R www-data:www-data /var/www/transit-hub
@@ -197,11 +197,11 @@ sudo chown -R www-data:www-data /var/www/transit-hub
 
 ---
 
-## Option 2 : Deploiement Docker
+## Option 2: Docker Deployment
 
-### Dockerfile Backend
+### Backend Dockerfile
 
-`backend/Dockerfile` :
+`backend/Dockerfile`:
 
 ```dockerfile
 FROM eclipse-temurin:21-jre-alpine
@@ -215,9 +215,9 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-### Dockerfile Frontend
+### Frontend Dockerfile
 
-`frontend/Dockerfile` :
+`frontend/Dockerfile`:
 
 ```dockerfile
 FROM node:20-alpine AS build
@@ -236,7 +236,7 @@ EXPOSE 80
 
 ### Docker Compose
 
-`docker-compose.yml` :
+`docker-compose.yml`:
 
 ```yaml
 version: '3.8'
@@ -284,26 +284,26 @@ networks:
 ```
 
 ```bash
-# Build et demarrage
+# Build and start
 docker-compose build
 docker-compose up -d
 
-# Verifier les logs
+# Check logs
 docker-compose logs -f
 ```
 
 ---
 
-## Migrations de base de donnees
+## Database Migrations
 
-### Flyway (recommande pour production)
+### Flyway (recommended for production)
 
-Flyway est deja inclus dans les dependances du projet
-(`flyway-core` et `flyway-database-postgresql`). En
-profil `prod`, les migrations s'executent automatiquement
-au demarrage avec `baseline-on-migrate: true`.
+Flyway is already included in the project dependencies
+(`flyway-core` and `flyway-database-postgresql`). In
+`prod` profile, migrations run automatically on startup
+with `baseline-on-migrate: true`.
 
-Structure des migrations :
+Migration structure:
 
 ```text
 src/main/resources/db/migration/
@@ -314,37 +314,36 @@ src/main/resources/db/migration/
 +-- ...
 ```
 
-### Execution des migrations
+### Running Migrations
 
-Les migrations sont appliquees automatiquement au
-demarrage en profil prod. En profil dev, Flyway est
-desactive (DDL gere par Hibernate `create-drop`).
+Migrations are applied automatically on startup in prod
+profile. In dev profile, Flyway is disabled (DDL managed
+by Hibernate `create-drop`).
 
 ---
 
-## Securite en production
+## Production Security
 
-### 1. Variables d'environnement
+### 1. Environment Variables
 
-Ne jamais stocker les secrets dans les fichiers de
-config :
+Never store secrets in configuration files:
 
 ```bash
-# Fichier .env (non versionne)
+# .env file (not versioned)
 DATABASE_URL=jdbc:postgresql://localhost:5432/transitdb
 DATABASE_USER=transit
 DATABASE_PASSWORD=super-secret-password
 JWT_SECRET=256-bit-secret-key-at-least-32-chars
 ```
 
-### 2. Certificat SSL
+### 2. SSL Certificate
 
 ```bash
-# Avec Let's Encrypt
+# With Let's Encrypt
 sudo certbot --nginx -d transit.example.com
 ```
 
-### 3. Pare-feu
+### 3. Firewall
 
 ```bash
 # UFW
@@ -354,7 +353,7 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 ```
 
-### 4. Mises a jour automatiques
+### 4. Automatic Updates
 
 ```bash
 # Ubuntu/Debian
@@ -369,7 +368,7 @@ sudo dpkg-reconfigure -plow unattended-upgrades
 ### Health Check
 
 ```bash
-# Verifier la sante de l'application
+# Check application health
 curl https://transit.example.com/actuator/health
 ```
 
@@ -383,19 +382,19 @@ sudo journalctl -u transit-hub -f
 docker logs -f transit-hub-backend-1
 ```
 
-### Metriques
+### Metrics
 
-Endpoints Actuator disponibles :
+Available Actuator endpoints:
 
-- `/actuator/health` - Etat de sante
-- `/actuator/info` - Informations application
-- `/actuator/metrics` - Metriques (Prometheus compatible)
+- `/actuator/health` - Health status
+- `/actuator/info` - Application information
+- `/actuator/metrics` - Metrics (Prometheus compatible)
 
 ---
 
-## Sauvegarde
+## Backup
 
-### Base de donnees (sauvegarde)
+### Database Backup
 
 ```bash
 # Backup
@@ -405,7 +404,7 @@ pg_dump -U transit transitdb > backup_$(date +%Y%m%d).sql
 psql -U transit transitdb < backup_20260201.sql
 ```
 
-### Script de backup automatique
+### Automated Backup Script
 
 ```bash
 #!/bin/bash
@@ -414,16 +413,16 @@ psql -U transit transitdb < backup_20260201.sql
 BACKUP_DIR="/opt/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
-# Backup PostgreSQL
+# PostgreSQL backup
 pg_dump -U transit transitdb \
   | gzip > $BACKUP_DIR/db_$DATE.sql.gz
 
-# Nettoyer les backups > 30 jours
+# Clean up backups older than 30 days
 find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 ```
 
 ```bash
-# Cron (tous les jours a 3h)
+# Cron (daily at 3 AM)
 0 3 * * * /opt/scripts/backup.sh
 ```
 
@@ -431,34 +430,34 @@ find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
 
 ## Rollback
 
-### Revenir a une version precedente
+### Revert to a Previous Version
 
 ```bash
-# Arreter le service
+# Stop the service
 sudo systemctl stop transit-hub
 
-# Restaurer le JAR precedent
+# Restore the previous JAR
 cp /opt/transit-hub/backup/transit-display-hub-old.jar \
   /opt/transit-hub/transit-display-hub.jar
 
-# Restaurer la base si necessaire
+# Restore the database if needed
 psql -U transit transitdb < backup_previous.sql
 
-# Redemarrer
+# Restart
 sudo systemctl start transit-hub
 ```
 
 ---
 
-## Checklist de deploiement
+## Deployment Checklist
 
-- [ ] Base de donnees creee et configuree
-- [ ] Variables d'environnement definies
-- [ ] Backend builde et deploye
-- [ ] Frontend builde et deploye
-- [ ] Nginx configure avec SSL
-- [ ] Service systemd active
-- [ ] Health check fonctionnel
-- [ ] Backup automatique configure
-- [ ] Monitoring en place
-- [ ] Pare-feu configure
+- [ ] Database created and configured
+- [ ] Environment variables defined
+- [ ] Backend built and deployed
+- [ ] Frontend built and deployed
+- [ ] Nginx configured with SSL
+- [ ] Systemd service enabled
+- [ ] Health check working
+- [ ] Automated backup configured
+- [ ] Monitoring in place
+- [ ] Firewall configured

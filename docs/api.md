@@ -1,21 +1,21 @@
-# Documentation API
+# API Documentation
 
-## Vue d'ensemble
+## Overview
 
-L'API REST de Transit Display Hub fournit les endpoints
-pour gerer le reseau de transport, les itineraires, les
-horaires, les messages broadcast, les appareils, les
-utilisateurs et l'affichage temps reel.
+The Transit Display Hub REST API provides endpoints to
+manage the transport network, itineraries, schedules,
+broadcast messages, devices, users, and the real-time
+display.
 
-**URL de base** : `http://localhost:8080/api`
+**Base URL**: `http://localhost:8080/api`
 
-## Authentification
+## Authentication
 
 ### JWT Token
 
-L'API utilise l'authentification JWT (JSON Web Token).
-Le token doit etre inclus dans le header `Authorization`
-pour toutes les requetes protegees.
+The API uses JWT (JSON Web Token) authentication. The
+token must be included in the `Authorization` header for
+all protected requests.
 
 ```text
 Authorization: Bearer <token>
@@ -33,7 +33,7 @@ Content-Type: application/json
 }
 ```
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 {
@@ -44,9 +44,9 @@ Content-Type: application/json
 }
 ```
 
-### Permissions par endpoint
+### Endpoint Permissions
 
-| Endpoint                                   | Acces        |
+| Endpoint                                   | Access       |
 | ------------------------------------------ | ------------ |
 | `/api/auth/**`                             | Public       |
 | `/api/display/**`                          | Public       |
@@ -64,33 +64,32 @@ Content-Type: application/json
 
 ---
 
-## Lignes
+## Lines
 
-### Lister les lignes
+### List Lines
 
 ```http
 GET /api/lines
 Authorization: Bearer <token>
 ```
 
-**Parametres de pagination** (optionnels) :
+**Pagination parameters** (optional):
 
-- `page` : Numero de page (0-indexed, active la
-  pagination)
-- `size` : Taille de page (defaut : 10)
-- `sortBy` : Champ de tri (defaut : `code`)
-- `sortDir` : Direction du tri (`asc` ou `desc`,
-  defaut : `asc`)
-- `search` : Recherche textuelle
+- `page`: Page number (0-indexed, enables pagination)
+- `size`: Page size (default: 10)
+- `sortBy`: Sort field (default: `code`)
+- `sortDir`: Sort direction (`asc` or `desc`,
+  default: `asc`)
+- `search`: Text search
 
-**Reponse sans pagination** (200 OK) :
+**Response without pagination** (200 OK):
 
 ```json
 [
   {
     "id": "uuid",
     "code": "M1",
-    "name": "Metro Ligne 1",
+    "name": "Metro Line 1",
     "color": "#3B82F6",
     "type": "METRO",
     "stopCount": 12,
@@ -99,7 +98,7 @@ Authorization: Bearer <token>
 ]
 ```
 
-**Reponse avec pagination** (200 OK) :
+**Response with pagination** (200 OK):
 
 ```json
 {
@@ -111,14 +110,14 @@ Authorization: Bearer <token>
 }
 ```
 
-### Obtenir une ligne
+### Get a Line
 
 ```http
 GET /api/lines/{id}
 Authorization: Bearer <token>
 ```
 
-### Creer une ligne
+### Create a Line
 
 ```http
 POST /api/lines
@@ -127,25 +126,25 @@ Content-Type: application/json
 
 {
   "code": "M2",
-  "name": "Metro Ligne 2",
+  "name": "Metro Line 2",
   "color": "#10B981",
   "type": "METRO"
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `code` (requis) : Identifiant court, max 10
-  caracteres, unique
-- `name` (requis) : Nom complet, max 100 caracteres
-- `color` (requis) : Couleur hexadecimale
-  (ex: `#FF5733`)
-- `type` (requis) : Type de ligne
+- `code` (required): Short identifier, max 10
+  characters, unique
+- `name` (required): Full name, max 100 characters
+- `color` (required): Hexadecimal color
+  (e.g., `#FF5733`)
+- `type` (required): Line type
   (`METRO`, `BUS`, `TRAM`, `TRAIN`)
 
-**Reponse** (201 Created)
+**Response** (201 Created)
 
-### Modifier une ligne
+### Update a Line
 
 ```http
 PUT /api/lines/{id}
@@ -154,29 +153,29 @@ Content-Type: application/json
 
 {
   "code": "M2",
-  "name": "Metro Ligne 2 - Express",
+  "name": "Metro Line 2 - Express",
   "color": "#059669",
   "type": "METRO"
 }
 ```
 
-### Supprimer une ligne
+### Delete a Line
 
 ```http
 DELETE /api/lines/{id}
 Authorization: Bearer <token>
 ```
 
-**Reponse** (204 No Content)
+**Response** (204 No Content)
 
-> **Attention** : Supprimer une ligne supprime egalement
-> ses itineraires et horaires associes.
+> **Warning**: Deleting a line also deletes its associated
+> itineraries and schedules.
 
 ---
 
-## Arrets
+## Stops
 
-### Lister les arrets
+### List Stops
 
 ```http
 GET /api/stops
@@ -184,27 +183,26 @@ GET /api/stops?lineId={lineId}
 Authorization: Bearer <token>
 ```
 
-**Parametres** :
+**Parameters**:
 
-- `lineId` (optionnel) : Filtrer par ligne
-- `page`, `size`, `sortBy`, `sortDir`, `search` :
-  Pagination (meme format que les lignes, tri par
-  defaut : `name`)
+- `lineId` (optional): Filter by line
+- `page`, `size`, `sortBy`, `sortDir`, `search`:
+  Pagination (same format as lines, default sort: `name`)
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 [
   {
     "id": "uuid",
-    "name": "Gare Centrale",
+    "name": "Central Station",
     "latitude": 48.8566,
     "longitude": 2.3522,
     "lines": [
       {
         "id": "uuid",
         "code": "M1",
-        "name": "Metro Ligne 1",
+        "name": "Metro Line 1",
         "color": "#3B82F6"
       }
     ],
@@ -214,7 +212,7 @@ Authorization: Bearer <token>
 ]
 ```
 
-### Creer un arret
+### Create a Stop
 
 ```http
 POST /api/stops
@@ -222,22 +220,21 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "name": "Place du Marche",
+  "name": "Market Square",
   "lineIds": ["line-uuid-1", "line-uuid-2"],
   "latitude": 48.8580,
   "longitude": 2.3540
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `name` (requis) : Nom de l'arret, max 100 caracteres
-- `lineIds` (requis) : Ensemble d'IDs de lignes
-  (au moins une)
-- `latitude` (optionnel) : Coordonnee GPS
-- `longitude` (optionnel) : Coordonnee GPS
+- `name` (required): Stop name, max 100 characters
+- `lineIds` (required): Set of line IDs (at least one)
+- `latitude` (optional): GPS coordinate
+- `longitude` (optional): GPS coordinate
 
-### Modifier un arret
+### Update a Stop
 
 ```http
 PUT /api/stops/{id}
@@ -245,14 +242,14 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "name": "Place du Marche - Centre",
+  "name": "Market Square - Center",
   "lineIds": ["line-uuid-1"],
   "latitude": 48.8580,
   "longitude": 2.3540
 }
 ```
 
-### Supprimer un arret
+### Delete a Stop
 
 ```http
 DELETE /api/stops/{id}
@@ -261,55 +258,54 @@ Authorization: Bearer <token>
 
 ---
 
-## Itineraires
+## Itineraries
 
-Un itineraire represente un parcours ordonne d'arrets
-sur une ligne (ex: direction "Aeroport").
+An itinerary represents an ordered route of stops on a
+line (e.g., direction "Airport").
 
-### Lister les itineraires
+### List Itineraries
 
 ```http
 GET /api/itineraries
 GET /api/itineraries?lineId={lineId}
 ```
 
-> Les requetes GET sont publiques (pas d'authentification
-> requise).
+> GET requests are public (no authentication required).
 
-**Parametres** :
+**Parameters**:
 
-- `lineId` (optionnel) : Filtrer par ligne
-- `page`, `size`, `sortBy`, `sortDir`, `search` :
-  Pagination (tri par defaut : `name`)
+- `lineId` (optional): Filter by line
+- `page`, `size`, `sortBy`, `sortDir`, `search`:
+  Pagination (default sort: `name`)
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 [
   {
     "id": "uuid",
-    "name": "Direction Aeroport",
-    "terminusName": "Aeroport",
+    "name": "To Airport",
+    "terminusName": "Airport",
     "line": {
       "id": "uuid",
       "code": "M1",
-      "name": "Metro Ligne 1",
+      "name": "Metro Line 1",
       "color": "#3B82F6"
     },
     "stops": [
       {
         "id": "stop-uuid",
-        "name": "Gare Centrale",
+        "name": "Central Station",
         "position": 0
       },
       {
         "id": "stop-uuid",
-        "name": "Place du Marche",
+        "name": "Market Square",
         "position": 1
       },
       {
         "id": "stop-uuid",
-        "name": "Aeroport",
+        "name": "Airport",
         "position": 2
       }
     ]
@@ -317,13 +313,13 @@ GET /api/itineraries?lineId={lineId}
 ]
 ```
 
-### Obtenir un itineraire
+### Get an Itinerary
 
 ```http
 GET /api/itineraries/{id}
 ```
 
-### Creer un itineraire
+### Create an Itinerary
 
 ```http
 POST /api/itineraries
@@ -332,21 +328,20 @@ Content-Type: application/json
 
 {
   "lineId": "line-uuid",
-  "name": "Direction Aeroport",
+  "name": "To Airport",
   "stopIds": ["stop-uuid-1", "stop-uuid-2", "stop-uuid-3"]
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `lineId` (requis) : ID de la ligne
-- `name` (requis) : Nom de l'itineraire, max 100
-  caracteres
-- `stopIds` (optionnel) : Liste ordonnee d'IDs d'arrets
+- `lineId` (required): Line ID
+- `name` (required): Itinerary name, max 100 characters
+- `stopIds` (optional): Ordered list of stop IDs
 
-**Reponse** (201 Created)
+**Response** (201 Created)
 
-### Modifier un itineraire
+### Update an Itinerary
 
 ```http
 PUT /api/itineraries/{id}
@@ -355,20 +350,20 @@ Content-Type: application/json
 
 {
   "lineId": "line-uuid",
-  "name": "Direction Aeroport - Express"
+  "name": "To Airport - Express"
 }
 ```
 
-### Supprimer un itineraire
+### Delete an Itinerary
 
 ```http
 DELETE /api/itineraries/{id}
 Authorization: Bearer <token>
 ```
 
-### Gerer les arrets d'un itineraire
+### Manage Itinerary Stops
 
-#### Remplacer tous les arrets
+#### Replace All Stops
 
 ```http
 PUT /api/itineraries/{id}/stops
@@ -380,7 +375,7 @@ Content-Type: application/json
 }
 ```
 
-#### Ajouter un arret a un itineraire
+#### Add a Stop to an Itinerary
 
 ```http
 POST /api/itineraries/{id}/stops
@@ -393,7 +388,7 @@ Content-Type: application/json
 }
 ```
 
-#### Retirer un arret d'un itineraire
+#### Remove a Stop from an Itinerary
 
 ```http
 DELETE /api/itineraries/{id}/stops/{stopId}
@@ -402,21 +397,20 @@ Authorization: Bearer <token>
 
 ---
 
-## Horaires
+## Schedules
 
-Les horaires sont bases sur le modele itineraire :
-chaque horaire associe une heure de depart a un arret
-et un itineraire.
+Schedules are based on the itinerary model: each schedule
+associates a departure time with a stop and an itinerary.
 
-### Lister les horaires d'un arret
+### List Schedules for a Stop
 
 ```http
 GET /api/stops/{stopId}/schedules
 ```
 
-> Cet endpoint est public.
+> This endpoint is public.
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 [
@@ -426,12 +420,12 @@ GET /api/stops/{stopId}/schedules
     "stopId": "stop-uuid",
     "itinerary": {
       "id": "itinerary-uuid",
-      "name": "Direction Aeroport",
-      "terminusName": "Aeroport",
+      "name": "To Airport",
+      "terminusName": "Airport",
       "line": {
         "id": "line-uuid",
         "code": "M1",
-        "name": "Metro Ligne 1",
+        "name": "Metro Line 1",
         "color": "#3B82F6"
       }
     }
@@ -439,7 +433,7 @@ GET /api/stops/{stopId}/schedules
 ]
 ```
 
-### Creer un horaire
+### Create a Schedule
 
 ```http
 POST /api/stops/{stopId}/schedules
@@ -452,13 +446,13 @@ Content-Type: application/json
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `time` (requis) : Heure de depart au format `HH:mm`
-- `itineraryId` (requis) : ID de l'itineraire
-  (determine la ligne et la direction)
+- `time` (required): Departure time in `HH:mm` format
+- `itineraryId` (required): Itinerary ID (determines
+  line and direction)
 
-### Modifier un horaire
+### Update a Schedule
 
 ```http
 PUT /api/schedules/{id}
@@ -471,7 +465,7 @@ Content-Type: application/json
 }
 ```
 
-### Supprimer un horaire
+### Delete a Schedule
 
 ```http
 DELETE /api/schedules/{id}
@@ -480,9 +474,9 @@ Authorization: Bearer <token>
 
 ---
 
-## Messages Broadcast
+## Broadcast Messages
 
-### Lister les messages
+### List Messages
 
 ```http
 GET /api/messages
@@ -491,37 +485,36 @@ GET /api/messages?severity=CRITICAL
 Authorization: Bearer <token>
 ```
 
-**Parametres** :
+**Parameters**:
 
-- `active` (optionnel) : `true` pour les messages
-  actifs uniquement
-- `severity` (optionnel) : Filtrer par severite
+- `active` (optional): `true` for active messages only
+- `severity` (optional): Filter by severity
   (`INFO`, `WARNING`, `CRITICAL`)
-- `page`, `size`, `sortBy`, `sortDir`, `search` :
-  Pagination (tri par defaut : `startTime` desc)
+- `page`, `size`, `sortBy`, `sortDir`, `search`:
+  Pagination (default sort: `startTime` desc)
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 [
   {
     "id": "uuid",
-    "title": "Travaux en cours",
-    "content": "La ligne M1 est perturbee.",
+    "title": "Ongoing works",
+    "content": "Line M1 is disrupted.",
     "severity": "WARNING",
     "startTime": "2026-02-01T10:00:00Z",
     "endTime": "2026-02-01T14:00:00Z",
     "scopeType": "LINE",
     "scopeId": "line-uuid",
     "scopeInfo": {
-      "name": "Metro Ligne 1"
+      "name": "Metro Line 1"
     },
     "active": true
   }
 ]
 ```
 
-### Creer un message
+### Create a Message
 
 ```http
 POST /api/messages
@@ -529,8 +522,8 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "title": "Service interrompu",
-  "content": "Accident sur la voie. Service suspendu.",
+  "title": "Service interrupted",
+  "content": "Track incident. Service suspended.",
   "severity": "CRITICAL",
   "startTime": "2026-02-01T15:00:00Z",
   "endTime": "2026-02-01T18:00:00Z",
@@ -539,18 +532,18 @@ Content-Type: application/json
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `title` (requis) : Titre, max 100 caracteres
-- `content` (requis) : Contenu, max 500 caracteres
-- `severity` (requis) : `INFO`, `WARNING` ou `CRITICAL`
-- `startTime` (requis) : Date/heure de debut (ISO 8601)
-- `endTime` (requis) : Date/heure de fin (ISO 8601)
-- `scopeType` (requis) : `NETWORK`, `LINE` ou `STOP`
-- `scopeId` (optionnel) : ID de la ligne ou de l'arret
-  (requis si scope LINE ou STOP)
+- `title` (required): Title, max 100 characters
+- `content` (required): Content, max 500 characters
+- `severity` (required): `INFO`, `WARNING`, or `CRITICAL`
+- `startTime` (required): Start date/time (ISO 8601)
+- `endTime` (required): End date/time (ISO 8601)
+- `scopeType` (required): `NETWORK`, `LINE`, or `STOP`
+- `scopeId` (optional): Line or stop ID (required if
+  scope is LINE or STOP)
 
-### Modifier un message
+### Update a Message
 
 ```http
 PUT /api/messages/{id}
@@ -558,7 +551,7 @@ Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
-### Supprimer un message
+### Delete a Message
 
 ```http
 DELETE /api/messages/{id}
@@ -567,9 +560,9 @@ Authorization: Bearer <token>
 
 ---
 
-## Appareils
+## Devices
 
-### Lister les appareils
+### List Devices
 
 ```http
 GET /api/devices
@@ -577,23 +570,23 @@ GET /api/devices?status=ONLINE
 Authorization: Bearer <token>
 ```
 
-**Parametres** :
+**Parameters**:
 
-- `status` (optionnel) : `ONLINE` ou `OFFLINE`
+- `status` (optional): `ONLINE` or `OFFLINE`
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 [
   {
     "id": "uuid",
     "stopId": "stop-uuid",
-    "stopName": "Gare Centrale",
+    "stopName": "Central Station",
     "lines": [
       {
         "id": "line-uuid",
         "code": "M1",
-        "name": "Metro Ligne 1",
+        "name": "Metro Line 1",
         "color": "#3B82F6"
       }
     ],
@@ -603,14 +596,14 @@ Authorization: Bearer <token>
 ]
 ```
 
-### Obtenir un appareil
+### Get a Device
 
 ```http
 GET /api/devices/{id}
 Authorization: Bearer <token>
 ```
 
-### Enregistrer un appareil
+### Register a Device
 
 ```http
 POST /api/devices
@@ -622,21 +615,21 @@ Content-Type: application/json
 }
 ```
 
-**Reponse** (201 Created) :
+**Response** (201 Created):
 
 ```json
 {
   "id": "device-uuid",
   "token": "generated-token-to-save",
   "stopId": "stop-uuid",
-  "stopName": "Gare Centrale"
+  "stopName": "Central Station"
 }
 ```
 
-> **Important** : Le `token` n'est affiche qu'une seule
-> fois. Il doit etre configure sur l'appareil.
+> **Important**: The `token` is only displayed once. It
+> must be configured on the device.
 
-### Modifier un appareil
+### Update a Device
 
 ```http
 PUT /api/devices/{id}
@@ -648,14 +641,14 @@ Content-Type: application/json
 }
 ```
 
-### Supprimer un appareil
+### Delete a Device
 
 ```http
 DELETE /api/devices/{id}
 Authorization: Bearer <token>
 ```
 
-### Authentifier un appareil
+### Authenticate a Device
 
 ```http
 POST /api/devices/authenticate
@@ -666,20 +659,20 @@ Content-Type: application/json
 }
 ```
 
-> Cet endpoint est public.
+> This endpoint is public.
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 {
   "valid": true,
   "stopId": "stop-uuid",
-  "stopName": "Gare Centrale",
+  "stopName": "Central Station",
   "lines": [
     {
       "id": "line-uuid",
       "code": "M1",
-      "name": "Metro Ligne 1",
+      "name": "Metro Line 1",
       "color": "#3B82F6"
     }
   ]
@@ -688,21 +681,21 @@ Content-Type: application/json
 
 ---
 
-## Utilisateurs
+## Users
 
-### Lister les utilisateurs
+### List Users
 
 ```http
 GET /api/users
 Authorization: Bearer <token>
 ```
 
-**Parametres** :
+**Parameters**:
 
-- `page`, `size`, `sortBy`, `sortDir`, `search` :
-  Pagination (tri par defaut : `username`)
+- `page`, `size`, `sortBy`, `sortDir`, `search`:
+  Pagination (default sort: `username`)
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 [
@@ -715,14 +708,14 @@ Authorization: Bearer <token>
 ]
 ```
 
-### Obtenir un utilisateur
+### Get a User
 
 ```http
 GET /api/users/{id}
 Authorization: Bearer <token>
 ```
 
-### Creer un utilisateur
+### Create a User
 
 ```http
 POST /api/users
@@ -730,21 +723,21 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "username": "operateur1",
+  "username": "operator1",
   "password": "password123",
   "role": "AGENT"
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `username` (requis) : 3 a 50 caracteres
-- `password` (requis) : 6 a 100 caracteres
-- `role` (requis) : `ADMIN` ou `AGENT`
+- `username` (required): 3 to 50 characters
+- `password` (required): 6 to 100 characters
+- `role` (required): `ADMIN` or `AGENT`
 
-**Reponse** (201 Created)
+**Response** (201 Created)
 
-### Modifier un utilisateur
+### Update a User
 
 ```http
 PUT /api/users/{id}
@@ -758,94 +751,93 @@ Content-Type: application/json
 }
 ```
 
-**Champs** :
+**Fields**:
 
-- `password` (optionnel) : Nouveau mot de passe
-  (6 a 100 caracteres)
-- `role` (requis) : `ADMIN` ou `AGENT`
-- `enabled` (requis) : Activer/desactiver le compte
+- `password` (optional): New password (6 to 100
+  characters)
+- `role` (required): `ADMIN` or `AGENT`
+- `enabled` (required): Enable/disable the account
 
-### Supprimer un utilisateur
+### Delete a User
 
 ```http
 DELETE /api/users/{id}
 Authorization: Bearer <token>
 ```
 
-**Reponse** (204 No Content)
+**Response** (204 No Content)
 
 ---
 
-## Carte du reseau
+## Network Map
 
-### Obtenir la carte complete
+### Get the Complete Map
 
 ```http
 GET /api/network-map
 ```
 
-> Cet endpoint est public.
+> This endpoint is public.
 
-**Reponse** (200 OK) : Donnees completes du reseau
-(lignes, arrets, coordonnees schematiques) pour le
-rendu de la carte interactive.
+**Response** (200 OK): Complete network data (lines,
+stops, schematic coordinates) for interactive map
+rendering.
 
-### Obtenir les alertes
+### Get Alerts
 
 ```http
 GET /api/network-map/alerts
 ```
 
-> Cet endpoint est public.
+> This endpoint is public.
 
-**Reponse** (200 OK) : Messages d'alerte actifs affiches
-sur la carte.
+**Response** (200 OK): Active alert messages displayed
+on the map.
 
 ---
 
-## Affichage (Display)
+## Display
 
-### Obtenir l'etat d'affichage par arret
+### Get Display State by Stop
 
 ```http
 GET /api/display/{stopId}
 ```
 
-> Cet endpoint est public (pas d'authentification
-> requise).
+> This endpoint is public (no authentication required).
 
-### Obtenir l'etat d'affichage par token appareil
+### Get Display State by Device Token
 
 ```http
 GET /api/display
 X-Device-Token: <device-token>
 ```
 
-> Utilise le token de l'appareil pour determiner l'arret
-> associe. Retourne 401 si le token est invalide.
+> Uses the device token to determine the associated stop.
+> Returns 401 if the token is invalid.
 
-**Reponse** (200 OK) :
+**Response** (200 OK):
 
 ```json
 {
   "stopId": "stop-uuid",
-  "stopName": "Gare Centrale",
+  "stopName": "Central Station",
   "lines": [
     {
       "id": "line-uuid",
       "code": "M1",
-      "name": "Metro Ligne 1",
+      "name": "Metro Line 1",
       "color": "#3B82F6"
     }
   ],
   "arrivals": [
     {
       "scheduledTime": "14:30",
-      "destinationName": "Aeroport",
+      "destinationName": "Airport",
       "line": {
         "id": "line-uuid",
         "code": "M1",
-        "name": "Metro Ligne 1",
+        "name": "Metro Line 1",
         "color": "#3B82F6"
       }
     }
@@ -853,7 +845,7 @@ X-Device-Token: <device-token>
   "messages": [
     {
       "title": "Information",
-      "content": "Pensez a valider votre titre.",
+      "content": "Remember to validate your travel pass.",
       "severity": "INFO"
     }
   ],
@@ -866,18 +858,18 @@ X-Device-Token: <device-token>
 
 ## WebSocket
 
-### Connexion
+### Connection
 
 ```javascript
 const socket = new SockJS('/ws');
 const stompClient = Stomp.over(socket);
 
 stompClient.connect({}, () => {
-  // Connexion etablie
+  // Connection established
 });
 ```
 
-### Souscription aux mises a jour
+### Subscribe to Updates
 
 ```javascript
 stompClient.subscribe(
@@ -885,12 +877,12 @@ stompClient.subscribe(
   (message) => {
     const displayState =
       JSON.parse(message.body);
-    // Mettre a jour l'affichage
+    // Update the display
   }
 );
 ```
 
-### Heartbeat appareil
+### Device Heartbeat
 
 ```javascript
 stompClient.send(
@@ -902,48 +894,48 @@ stompClient.send(
 
 ---
 
-## Codes d'erreur
+## Error Codes
 
 | Code | Description                                    |
 | ---- | ---------------------------------------------- |
-| 400  | Bad Request - Donnees invalides                |
-| 401  | Unauthorized - Token manquant ou invalide      |
-| 403  | Forbidden - Permissions insuffisantes          |
-| 404  | Not Found - Ressource inexistante              |
-| 409  | Conflict - Ex: code ligne deja utilise         |
-| 500  | Internal Server Error - Erreur serveur         |
+| 400  | Bad Request - Invalid data                     |
+| 401  | Unauthorized - Missing or invalid token        |
+| 403  | Forbidden - Insufficient permissions           |
+| 404  | Not Found - Resource does not exist            |
+| 409  | Conflict - E.g., line code already in use      |
+| 500  | Internal Server Error                          |
 
-### Format des erreurs
+### Error Format
 
-Toutes les erreurs (y compris 401 et 403) retournent
-une reponse JSON structuree :
+All errors (including 401 and 403) return a structured
+JSON response:
 
 ```json
 {
   "timestamp": "2026-02-01T12:00:00Z",
   "status": 400,
   "error": "Bad Request",
-  "message": "Le code de ligne est requis",
+  "message": "Line code is required",
   "errors": [
     {
       "field": "code",
-      "message": "ne doit pas etre vide"
+      "message": "must not be blank"
     }
   ],
   "path": "/api/lines"
 }
 ```
 
-Le champ `errors` est present uniquement pour les
-erreurs de validation (400).
+The `errors` field is only present for validation
+errors (400).
 
-### Messages d'erreur 409
+### 409 Error Messages
 
-Selon le type de violation :
+Depending on the type of violation:
 
-- **Contrainte d'unicite** : Data conflict: a record
+- **Uniqueness constraint**: Data conflict: a record
   with this value already exists
-- **Cle etrangere** : Cannot complete operation: this
+- **Foreign key**: Cannot complete operation: this
   record is referenced by other data
-- **Champ requis manquant** : A required field is
+- **Missing required field**: A required field is
   missing

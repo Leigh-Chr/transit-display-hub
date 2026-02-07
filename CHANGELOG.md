@@ -1,75 +1,75 @@
 # Changelog
 
-Toutes les modifications notables de ce projet sont documentées dans ce fichier.
+All notable changes to this project are documented in this file.
 
-Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
-et ce projet adhère au [Versionnement Sémantique](https://semver.org/lang/fr/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.1.0] - 2026-02-01
 
-### Ajouté
+### Added
 
 #### Backend
-- Initialisation du projet Spring Boot 3.3.5 avec Java 21
-- Entités de domaine : Line, Stop, TimedEntry, BroadcastMessage, Device, User
-- Repositories JPA pour toutes les entités
-- Services métier : LineService, StopService, ScheduleService, MessageService, DeviceService
-- Service DisplayState avec calcul temps réel des arrivées
-- Authentification JWT avec JwtService et filtre de sécurité
-- Configuration WebSocket STOMP pour les mises à jour temps réel
-- Événements domaine pour déclencher le recalcul des états d'affichage
-- Controllers REST : Auth, Lines, Stops, Schedules, Messages, Devices, Display
-- GlobalExceptionHandler pour la gestion unifiée des erreurs
-- DataLoader créant les utilisateurs admin et agent par défaut
-- Support H2 (développement) et PostgreSQL (production)
+- Initialized Spring Boot 3.3.5 project with Java 21
+- Domain entities: Line, Stop, TimedEntry, BroadcastMessage, Device, User
+- JPA repositories for all entities
+- Business services: LineService, StopService, ScheduleService, MessageService, DeviceService
+- DisplayState service with real-time arrival calculation
+- JWT authentication with JwtService and security filter
+- STOMP WebSocket configuration for real-time updates
+- Domain events to trigger display state recalculation
+- REST controllers: Auth, Lines, Stops, Schedules, Messages, Devices, Display
+- GlobalExceptionHandler for unified error handling
+- DataLoader creating default admin and agent users
+- H2 (development) and PostgreSQL (production) support
 
 #### Frontend
-- Initialisation du projet Angular 18 avec composants standalone
-- Configuration Tailwind CSS pour le styling
-- Service d'authentification avec gestion JWT
-- Guard et interceptor pour la protection des routes
-- Services API pour toutes les ressources (Lines, Stops, Schedules, Messages, Devices, Display)
-- Service WebSocket avec reconnexion automatique
-- Layout admin avec navigation latérale
-- Dashboard avec statistiques et alertes
-- Écran de gestion des lignes (CRUD)
-- Écran de gestion des arrêts avec filtrage par ligne
-- Écran de gestion des horaires avec sélection des jours
-- Écran de gestion des messages broadcast avec scope
-- Écran de gestion des appareils avec affichage du token
-- Composant Kiosk pour l'affichage public temps réel
-- Support des Signals Angular pour la réactivité
+- Initialized Angular 18 project with standalone components
+- Tailwind CSS configuration for styling
+- Authentication service with JWT management
+- Guard and interceptor for route protection
+- API services for all resources (Lines, Stops, Schedules, Messages, Devices, Display)
+- WebSocket service with automatic reconnection
+- Admin layout with sidebar navigation
+- Dashboard with statistics and alerts
+- Line management screen (CRUD)
+- Stop management screen with line filtering
+- Schedule management screen with day selection
+- Broadcast message management screen with scope
+- Device management screen with token display
+- Kiosk component for real-time public display
+- Angular Signals support for reactivity
 
 #### Documentation
-- README principal du projet
-- Guide d'installation
-- Documentation API REST
-- Guide développeur
-- Guide de déploiement
-- Guide utilisateur
+- Main project README
+- Installation guide
+- REST API documentation
+- Developer guide
+- Deployment guide
+- User guide
 
 #### BMad Artifacts
 - PRD (Product Requirements Document)
 - UX Design Specification
 - Architecture Document
-- 10 Epics avec 37 Stories
+- 10 Epics with 37 Stories
 - Implementation Readiness Report
 - Sprint Status tracking
 
-### Technique
-- Gradle 9.3.1 pour le build backend
-- Angular CLI pour le build frontend
+### Technical
+- Gradle 9.3.1 for backend build
+- Angular CLI for frontend build
 - TypeScript strict mode
-- Validation Bean Validation (backend)
-- Signals et computed pour la réactivité (frontend)
+- Bean Validation (backend)
+- Signals and computed for reactivity (frontend)
 
 ---
 
-## Types de changements
+## Change Types
 
-- `Ajouté` : nouvelles fonctionnalités
-- `Modifié` : changements dans les fonctionnalités existantes
-- `Déprécié` : fonctionnalités bientôt supprimées
-- `Supprimé` : fonctionnalités supprimées
-- `Corrigé` : corrections de bugs
-- `Sécurité` : corrections de vulnérabilités
+- `Added`: new features
+- `Changed`: changes to existing features
+- `Deprecated`: features soon to be removed
+- `Removed`: removed features
+- `Fixed`: bug fixes
+- `Security`: vulnerability fixes

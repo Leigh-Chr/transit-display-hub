@@ -1,56 +1,56 @@
-# Guide de contribution
+# Contributing Guide
 
-Merci de votre intérêt pour contribuer à Transit Display Hub !
+Thank you for your interest in contributing to Transit Display Hub!
 
-## Code de conduite
+## Code of Conduct
 
-Ce projet et toutes les personnes qui y participent sont régis par notre code de conduite. En participant, vous vous engagez à respecter ce code.
+This project and everyone participating in it are governed by our code of conduct. By participating, you agree to uphold this code.
 
-## Comment contribuer
+## How to Contribute
 
-### Signaler un bug
+### Reporting a Bug
 
-1. Vérifiez que le bug n'a pas déjà été signalé
-2. Créez une issue avec :
-   - Description claire du problème
-   - Étapes pour reproduire
-   - Comportement attendu vs observé
-   - Captures d'écran si applicable
-   - Version de l'application
+1. Check that the bug has not already been reported
+2. Create an issue with:
+   - Clear description of the problem
+   - Steps to reproduce
+   - Expected vs observed behavior
+   - Screenshots if applicable
+   - Application version
 
-### Proposer une fonctionnalité
+### Proposing a Feature
 
-1. Vérifiez que la fonctionnalité n'existe pas déjà
-2. Créez une issue avec :
-   - Description de la fonctionnalité
-   - Cas d'usage
-   - Impact sur l'existant
+1. Check that the feature does not already exist
+2. Create an issue with:
+   - Feature description
+   - Use cases
+   - Impact on existing functionality
 
-### Soumettre du code
+### Submitting Code
 
-1. Fork le repository
-2. Créez une branche (`git checkout -b feature/ma-fonctionnalite`)
-3. Faites vos modifications
-4. Committez (`git commit -m 'Ajout de ma fonctionnalité'`)
-5. Pushez (`git push origin feature/ma-fonctionnalite`)
-6. Ouvrez une Pull Request
+1. Fork the repository
+2. Create a branch (`git checkout -b feature/my-feature`)
+3. Make your changes
+4. Commit (`git commit -m 'Add my feature'`)
+5. Push (`git push origin feature/my-feature`)
+6. Open a Pull Request
 
-## Standards de code
+## Code Standards
 
 ### Backend (Java)
 
-- Suivre les conventions Java standard
-- Utiliser Lombok pour réduire le boilerplate
-- Documenter les méthodes publiques avec Javadoc
-- Écrire des tests unitaires pour les nouvelles fonctionnalités
+- Follow standard Java conventions
+- Use Lombok to reduce boilerplate
+- Document public methods with Javadoc
+- Write unit tests for new features
 
 ```java
 /**
- * Crée une nouvelle ligne de transport.
+ * Creates a new transit line.
  *
- * @param request les données de la ligne
- * @return la ligne créée
- * @throws IllegalArgumentException si le code est déjà utilisé
+ * @param request the line data
+ * @return the created line
+ * @throws IllegalArgumentException if the code is already in use
  */
 public Line create(CreateLineRequest request) {
     // ...
@@ -59,15 +59,15 @@ public Line create(CreateLineRequest request) {
 
 ### Frontend (TypeScript)
 
-- Utiliser TypeScript strict mode
-- Suivre le style Angular
-- Utiliser les Signals pour la réactivité
-- Documenter les composants et services
+- Use TypeScript strict mode
+- Follow Angular style guide
+- Use Signals for reactivity
+- Document components and services
 
 ```typescript
 /**
- * Service de gestion des lignes.
- * Fournit les opérations CRUD pour les lignes de transport.
+ * Line management service.
+ * Provides CRUD operations for transit lines.
  */
 @Injectable({ providedIn: 'root' })
 export class LineService {
@@ -75,34 +75,34 @@ export class LineService {
 }
 ```
 
-## Messages de commit
+## Commit Messages
 
-Utilisez des messages de commit descriptifs :
+Use descriptive commit messages:
 
 ```
-type(scope): description courte
+type(scope): short description
 
-Description détaillée si nécessaire.
+Detailed description if needed.
 
 Refs: #123
 ```
 
-Types :
-- `feat` : nouvelle fonctionnalité
-- `fix` : correction de bug
-- `docs` : documentation
-- `style` : formatage, pas de changement de code
-- `refactor` : refactoring
-- `test` : ajout ou modification de tests
-- `chore` : maintenance
+Types:
+- `feat`: new feature
+- `fix`: bug fix
+- `docs`: documentation
+- `style`: formatting, no code changes
+- `refactor`: refactoring
+- `test`: adding or modifying tests
+- `chore`: maintenance
 
-## Processus de revue
+## Review Process
 
-1. La PR sera revue par au moins un mainteneur
-2. Les commentaires doivent être résolus avant le merge
-3. Les tests CI doivent passer
-4. Le code doit respecter les standards
+1. The PR will be reviewed by at least one maintainer
+2. Comments must be resolved before merging
+3. CI tests must pass
+4. Code must meet the standards
 
 ## Questions
 
-Pour toute question, ouvrez une issue avec le label `question`.
+For any questions, open an issue with the `question` label.

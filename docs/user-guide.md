@@ -1,505 +1,491 @@
-# Guide Utilisateur
+# User Guide
 
-Ce guide explique comment utiliser l'interface
-d'administration de Transit Display Hub.
+This guide explains how to use the Transit Display Hub
+administration interface.
 
 ---
 
-## Connexion
+## Login
 
-### Se connecter
+### Logging In
 
-1. Ouvrez l'application dans votre navigateur
-2. Entrez votre **nom d'utilisateur** et **mot de passe**
-3. Cliquez sur **Se connecter**
+1. Open the application in your browser
+2. Enter your **username** and **password**
+3. Click **Log in**
 
-### Comptes par defaut
+### Default Accounts
 
-| Utilisateur | Mot de passe | Role                        |
-| ----------- | ------------ | --------------------------- |
-| admin       | admin123     | Administrateur complet      |
-| agent       | agent123     | Agent (messages uniquement) |
+| Username | Password | Role                    |
+| -------- | -------- | ----------------------- |
+| admin    | admin123 | Full Administrator      |
+| agent    | agent123 | Agent (messages only)   |
 
-> **Important** : Changez les mots de passe par defaut
-> en production.
+> **Important**: Change the default passwords in
+> production.
 
 ### Roles
 
-- **Administrateur** : Acces complet (lignes, arrets,
-  itineraires, horaires, messages, appareils, utilisateurs)
-- **Agent** : Gestion des messages broadcast, consultation
-  du dashboard (messages et alertes), acces a la carte du
-  reseau. Le menu lateral affiche uniquement Dashboard,
-  Messages et Carte du reseau. Les listes de lignes et
-  d'arrets sont accessibles en lecture seule pour le
-  ciblage des messages (scope Ligne/Arret).
+- **Administrator**: Full access (lines, stops,
+  itineraries, schedules, messages, devices, users)
+- **Agent**: Broadcast message management, dashboard
+  viewing (messages and alerts), network map access.
+  The sidebar only shows Dashboard, Messages, and
+  Network Map. Line and stop lists are accessible in
+  read-only mode for message targeting (Line/Stop scope).
 
-### Se deconnecter
+### Logging Out
 
-Cliquez sur **Logout** dans le coin superieur droit.
+Click **Logout** in the upper right corner.
 
 ---
 
 ## Dashboard
 
-Le tableau de bord affiche un resume adapte a votre role.
+The dashboard displays a summary tailored to your role.
 
-### Vue Administrateur
+### Administrator View
 
-- **Lignes** : Nombre total de lignes configurees
-- **Arrets** : Nombre total d'arrets
-- **Messages actifs** : Messages broadcast actuellement
-  diffuses
-- **Appareils en ligne** : Nombre d'ecrans connectes /
-  total
-- **Vue d'ensemble** : Apercu des lignes du reseau et
-  sante des appareils
-- **Actions rapides** : Acces direct a la gestion des
-  lignes, arrets, horaires, appareils et utilisateurs
+- **Lines**: Total number of configured lines
+- **Stops**: Total number of stops
+- **Active Messages**: Currently broadcasting messages
+- **Online Devices**: Number of connected screens / total
+- **Overview**: Network lines overview and device health
+- **Quick Actions**: Direct access to line, stop, schedule,
+  device, and user management
 
-### Vue Agent
+### Agent View
 
-- **Messages actifs** : Messages broadcast actuellement
-  diffuses
-- **Actions rapides** : Creer un message, acceder a la
-  carte du reseau
+- **Active Messages**: Currently broadcasting messages
+- **Quick Actions**: Create a message, access network map
 
-### Alertes
+### Alerts
 
-Les alertes (messages critiques et messages recents) sont
-visibles par tous les roles. Les alertes d'appareils hors
-ligne ne sont visibles que par les administrateurs.
+Alerts (critical messages and recent messages) are visible
+to all roles. Offline device alerts are only visible to
+administrators.
 
 ---
 
-## Gestion des Lignes
+## Line Management
 
-### Voir les lignes
+### View Lines
 
-1. Cliquez sur **Lignes** dans le menu lateral
-2. La liste affiche toutes les lignes avec leur code,
-   nom, type, couleur et nombre d'arrets
-3. Utilisez la barre de recherche pour filtrer
+1. Click **Lines** in the sidebar
+2. The list displays all lines with their code, name,
+   type, color, and stop count
+3. Use the search bar to filter
 
-### Creer une ligne
+### Create a Line
 
-1. Cliquez sur **+ Nouvelle Ligne**
-2. Remplissez les champs :
-   - **Code** : Identifiant court (ex: M1, B2, T3)
-   - **Nom** : Nom complet (ex: Metro Ligne 1 - Centre)
-   - **Type** : Metro, Bus, Tram ou Train
-   - **Couleur** : Choisissez une couleur d'identification
-3. Cliquez sur **Creer**
+1. Click **+ New Line**
+2. Fill in the fields:
+   - **Code**: Short identifier (e.g., M1, B2, T3)
+   - **Name**: Full name (e.g., Metro Line 1 - Center)
+   - **Type**: Metro, Bus, Tram, or Train
+   - **Color**: Choose an identification color
+3. Click **Create**
 
-### Modifier une ligne
+### Edit a Line
 
-1. Cliquez sur **Modifier** a cote de la ligne
-2. Modifiez les informations
-3. Cliquez sur **Enregistrer**
+1. Click **Edit** next to the line
+2. Modify the information
+3. Click **Save**
 
-### Supprimer une ligne
+### Delete a Line
 
-1. Cliquez sur **Supprimer**
-2. Confirmez la suppression
+1. Click **Delete**
+2. Confirm the deletion
 
-> **Attention** : Supprimer une ligne supprime egalement
-> ses itineraires et horaires associes.
-
----
-
-## Gestion des Arrets
-
-### Voir les arrets
-
-1. Cliquez sur **Arrets** dans le menu
-2. Utilisez le filtre par ligne si necessaire
-
-### Creer un arret
-
-1. Cliquez sur **+ Nouvel Arret**
-2. Entrez le **Nom** de l'arret
-3. Selectionnez une ou plusieurs **Lignes** (un arret
-   peut desservir plusieurs lignes)
-4. Optionnellement, renseignez les coordonnees GPS
-   (**Latitude** et **Longitude**)
-5. Cliquez sur **Creer**
-
-### Modifier un arret
-
-1. Cliquez sur **Modifier**
-2. Modifiez le nom, les lignes ou les coordonnees
-3. Cliquez sur **Enregistrer**
-
-### Supprimer un arret
-
-1. Cliquez sur **Supprimer**
-2. Confirmez
-
-> Supprimer un arret supprime egalement tous ses horaires
-> et retire les appareils associes.
+> **Warning**: Deleting a line also deletes its associated
+> itineraries and schedules.
 
 ---
 
-## Gestion des Itineraires
+## Stop Management
 
-Un itineraire represente un parcours ordonne d'arrets sur
-une ligne, correspondant a une direction
-(ex: "Direction Aeroport", "Direction Centre-Ville").
+### View Stops
 
-### Voir les itineraires
+1. Click **Stops** in the menu
+2. Use the line filter if needed
 
-1. Cliquez sur **Itineraires** dans le menu
-2. Filtrez par ligne si necessaire
-3. Chaque itineraire affiche sa ligne, son nom et la
-   liste ordonnee de ses arrets
+### Create a Stop
 
-### Creer un itineraire
+1. Click **+ New Stop**
+2. Enter the stop **Name**
+3. Select one or more **Lines** (a stop can serve
+   multiple lines)
+4. Optionally, enter the GPS coordinates
+   (**Latitude** and **Longitude**)
+5. Click **Create**
 
-1. Cliquez sur **+ Nouvel Itineraire**
-2. Selectionnez la **Ligne**
-3. Entrez le **Nom** (ex: Direction Aeroport)
-4. Ajoutez les **Arrets** dans l'ordre du parcours
-5. Cliquez sur **Creer**
+### Edit a Stop
 
-### Modifier un itineraire
+1. Click **Edit**
+2. Modify the name, lines, or coordinates
+3. Click **Save**
 
-1. Cliquez sur **Modifier**
-2. Modifiez le nom ou reordonnez les arrets
-3. Cliquez sur **Enregistrer**
+### Delete a Stop
 
-### Gerer les arrets d'un itineraire
+1. Click **Delete**
+2. Confirm
 
-- **Ajouter un arret** : Selectionnez un arret et sa
-  position dans la sequence
-- **Reordonner** : Modifiez l'ordre des arrets par
-  glisser-deposer ou en changeant les positions
-- **Retirer un arret** : Supprimez un arret de
-  l'itineraire sans supprimer l'arret lui-meme
-
-### Supprimer un itineraire
-
-1. Cliquez sur **Supprimer**
-2. Confirmez
-
-> **Attention** : Supprimer un itineraire supprime
-> egalement tous les horaires qui y font reference.
+> Deleting a stop also deletes all its schedules and
+> removes associated devices.
 
 ---
 
-## Gestion des Horaires
+## Itinerary Management
 
-### Acceder aux horaires
+An itinerary represents an ordered route of stops on a
+line, corresponding to a direction
+(e.g., "To Airport", "To City Center").
 
-1. Cliquez sur **Horaires** dans le menu
-2. Selectionnez un **Arret**
+### View Itineraries
 
-Les horaires de l'arret s'affichent tries par heure.
+1. Click **Itineraries** in the menu
+2. Filter by line if needed
+3. Each itinerary displays its line, name, and ordered
+   list of stops
 
-### Creer un horaire
+### Create an Itinerary
 
-1. Cliquez sur **+ Nouvel Horaire**
-2. Remplissez :
-   - **Heure de depart** : Format HH:MM
-   - **Itineraire** : Selectionnez l'itineraire
-     (determine la ligne et la direction)
-3. Cliquez sur **Creer**
+1. Click **+ New Itinerary**
+2. Select the **Line**
+3. Enter the **Name** (e.g., To Airport)
+4. Add **Stops** in route order
+5. Click **Create**
 
-> L'itineraire selectionne determine automatiquement la
-> ligne et le terminus affiche aux voyageurs.
+### Edit an Itinerary
 
-### Modifier un horaire
+1. Click **Edit**
+2. Modify the name or reorder stops
+3. Click **Save**
 
-1. Cliquez sur **Modifier**
-2. Modifiez l'heure ou l'itineraire
-3. Cliquez sur **Enregistrer**
+### Manage Itinerary Stops
 
-### Supprimer un horaire
+- **Add a stop**: Select a stop and its position in
+  the sequence
+- **Reorder**: Change the stop order by drag-and-drop
+  or by modifying positions
+- **Remove a stop**: Remove a stop from the itinerary
+  without deleting the stop itself
 
-1. Cliquez sur **Supprimer**
-2. Confirmez
+### Delete an Itinerary
+
+1. Click **Delete**
+2. Confirm
+
+> **Warning**: Deleting an itinerary also deletes all
+> schedules that reference it.
 
 ---
 
-## Messages Broadcast
+## Schedule Management
 
-Les messages broadcast permettent de communiquer avec
-les voyageurs.
+### Access Schedules
 
-### Types de messages
+1. Click **Schedules** in the menu
+2. Select a **Stop**
 
-| Severite     | Usage                 | Affichage                      |
-| ------------ | --------------------- | ------------------------------ |
-| **Info**     | Information generale  | Panneau lateral                |
-| **Warning**  | Perturbation moderee  | Panneau lateral, mise en avant |
-| **Critical** | Urgence, interruption | Banniere rouge clignotante     |
+The stop's schedules are displayed sorted by time.
 
-### Portee des messages
+### Create a Schedule
 
-- **Reseau** : Affiche sur tous les ecrans
-- **Ligne** : Affiche sur les arrets de cette ligne
-- **Arret** : Affiche uniquement sur cet arret
+1. Click **+ New Schedule**
+2. Fill in:
+   - **Departure time**: HH:MM format
+   - **Itinerary**: Select the itinerary
+     (determines line and direction)
+3. Click **Create**
 
-### Creer un message
+> The selected itinerary automatically determines the
+> line and terminus displayed to passengers.
 
-1. Cliquez sur **Messages** dans le menu
-2. Cliquez sur **+ Nouveau Message**
-3. Remplissez :
-   - **Titre** : Resume court
-   - **Contenu** : Details du message
-   - **Severite** : Info, Warning ou Critical
-   - **Portee** : Reseau, Ligne ou Arret
-   - **Date de debut** : Quand le message apparait
-   - **Date de fin** : Quand le message disparait
-4. Cliquez sur **Creer**
+### Edit a Schedule
 
-### Exemple de messages
+1. Click **Edit**
+2. Modify the time or itinerary
+3. Click **Save**
+
+### Delete a Schedule
+
+1. Click **Delete**
+2. Confirm
+
+---
+
+## Broadcast Messages
+
+Broadcast messages allow you to communicate with
+passengers.
+
+### Message Types
+
+| Severity     | Usage                | Display                      |
+| ------------ | -------------------- | ---------------------------- |
+| **Info**     | General information  | Side panel                   |
+| **Warning**  | Moderate disruption  | Side panel, highlighted      |
+| **Critical** | Emergency, shutdown  | Flashing red banner          |
+
+### Message Scope
+
+- **Network**: Displayed on all screens
+- **Line**: Displayed at stops on this line
+- **Stop**: Displayed only at this stop
+
+### Create a Message
+
+1. Click **Messages** in the menu
+2. Click **+ New Message**
+3. Fill in:
+   - **Title**: Short summary
+   - **Content**: Message details
+   - **Severity**: Info, Warning, or Critical
+   - **Scope**: Network, Line, or Stop
+   - **Start date**: When the message appears
+   - **End date**: When the message disappears
+4. Click **Create**
+
+### Message Examples
 
 #### Info
 
-- Titre : "Pensez a valider"
-- Contenu : "N'oubliez pas de valider votre titre
-  de transport."
+- Title: "Remember to validate"
+- Content: "Don't forget to validate your travel pass."
 
 #### Warning
 
-- Titre : "Travaux en cours"
-- Contenu : "Temps de trajet rallonge de 5 minutes
-  sur la section Centre-Gare."
+- Title: "Ongoing works"
+- Content: "Travel time extended by 5 minutes on the
+  Center-Station section."
 
 #### Critical
 
-- Titre : "Service interrompu"
-- Contenu : "Suite a un incident, aucun train ne
-  circule entre Gare et Aeroport. Des bus de
-  substitution sont en place."
+- Title: "Service interrupted"
+- Content: "Due to an incident, no trains are running
+  between Station and Airport. Replacement buses are
+  in service."
 
-### Filtrer les messages
+### Filter Messages
 
-- Filtrez par statut **Actifs uniquement** pour voir
-  les messages en cours
-- Filtrez par **Severite** pour cibler un type specifique
+- Filter by **Active only** status to see current messages
+- Filter by **Severity** to target a specific type
 
-### Modifier un message
+### Edit a Message
 
-1. Cliquez sur **Modifier**
-2. Modifiez les informations
-3. Cliquez sur **Enregistrer**
+1. Click **Edit**
+2. Modify the information
+3. Click **Save**
 
-### Supprimer un message
+### Delete a Message
 
-1. Cliquez sur **Supprimer**
-2. Confirmez
+1. Click **Delete**
+2. Confirm
 
 ---
 
-## Gestion des Appareils
+## Device Management
 
-Les appareils sont les ecrans d'affichage installes aux
-arrets.
+Devices are display screens installed at stops.
 
-### Voir les appareils
+### View Devices
 
-1. Cliquez sur **Appareils** dans le menu
-2. Chaque carte affiche :
-   - Nom de l'arret
-   - Lignes desservies
-   - Statut (En ligne / Hors ligne)
-   - Derniere connexion
+1. Click **Devices** in the menu
+2. Each card displays:
+   - Stop name
+   - Served lines
+   - Status (Online / Offline)
+   - Last connection
 
-### Filtrer par statut
+### Filter by Status
 
-Utilisez le menu deroulant pour filtrer :
+Use the dropdown menu to filter:
 
-- **Tous** : Tous les appareils
-- **En ligne** : Appareils connectes
-- **Hors ligne** : Appareils deconnectes
+- **All**: All devices
+- **Online**: Connected devices
+- **Offline**: Disconnected devices
 
-### Enregistrer un appareil
+### Register a Device
 
-1. Cliquez sur **+ Enregistrer un appareil**
-2. Selectionnez l'**Arret**
-3. Cliquez sur **Enregistrer**
-4. **Copiez le token** affiche
+1. Click **+ Register a device**
+2. Select the **Stop**
+3. Click **Register**
+4. **Copy the token** displayed
 
-> **Important** : Le token n'est affiche qu'une seule
-> fois. Conservez-le precieusement.
+> **Important**: The token is only displayed once.
+> Keep it safe.
 
-### Configurer l'ecran
+### Configure the Screen
 
-Sur l'appareil d'affichage, configurez l'URL :
+On the display device, configure the URL:
 
 ```text
-https://transit.example.com/display?token=VOTRE_TOKEN
+https://transit.example.com/display?token=YOUR_TOKEN
 ```
 
-Ou pour un acces direct par arret (test) :
+Or for direct access by stop (testing):
 
 ```text
 https://transit.example.com/display/STOP_ID
 ```
 
-### Supprimer un appareil
+### Delete a Device
 
-1. Cliquez sur **Supprimer**
-2. Confirmez
+1. Click **Delete**
+2. Confirm
 
-> L'ecran affichera une erreur jusqu'a ce qu'il soit
-> reenregistre.
-
----
-
-## Gestion des Utilisateurs
-
-### Voir les utilisateurs
-
-1. Cliquez sur **Utilisateurs** dans le menu
-2. La liste affiche tous les comptes avec leur nom,
-   role et statut
-
-### Creer un utilisateur
-
-1. Cliquez sur **+ Nouvel Utilisateur**
-2. Remplissez :
-   - **Nom d'utilisateur** : 3 a 50 caracteres
-   - **Mot de passe** : 6 caracteres minimum
-   - **Role** : Administrateur ou Agent
-3. Cliquez sur **Creer**
-
-### Modifier un utilisateur
-
-1. Cliquez sur **Modifier**
-2. Modifiez le role, le mot de passe ou
-   activez/desactivez le compte
-3. Cliquez sur **Enregistrer**
-
-### Desactiver un compte
-
-Pour empecher un utilisateur de se connecter sans
-supprimer son compte :
-
-1. Cliquez sur **Modifier**
-2. Decochez **Active**
-3. Cliquez sur **Enregistrer**
-
-### Supprimer un utilisateur
-
-1. Cliquez sur **Supprimer**
-2. Confirmez
+> The screen will display an error until it is
+> re-registered.
 
 ---
 
-## Carte du Reseau
+## User Management
 
-La carte du reseau offre une visualisation interactive
-de l'ensemble du reseau de transport.
+### View Users
 
-### Acceder a la carte
+1. Click **Users** in the menu
+2. The list displays all accounts with their name,
+   role, and status
 
-La carte est accessible publiquement a l'adresse `/map`
-(pas d'authentification requise).
+### Create a User
 
-### Fonctionnalites
+1. Click **+ New User**
+2. Fill in:
+   - **Username**: 3 to 50 characters
+   - **Password**: 6 characters minimum
+   - **Role**: Administrator or Agent
+3. Click **Create**
 
-- **Vue schematique** : Visualisation claire du reseau
-  avec les lignes et arrets
-- **Informations arret** : Cliquez sur un arret pour
-  voir les prochains departs et les lignes desservies
-- **Recherche d'itineraire** : Utilisez la barre de
-  recherche pour trouver un trajet entre deux arrets
-- **Alertes actives** : Les messages d'alerte en cours
-  sont affiches sur la carte
+### Edit a User
 
----
+1. Click **Edit**
+2. Modify the role, password, or
+   enable/disable the account
+3. Click **Save**
 
-## Affichage Kiosque
+### Disable an Account
 
-L'ecran kiosque affiche les informations voyageurs.
+To prevent a user from logging in without deleting
+their account:
 
-### Elements affiches
+1. Click **Edit**
+2. Uncheck **Active**
+3. Click **Save**
 
-1. **En-tete** : Nom de l'arret et lignes desservies
-2. **Prochains departs** : Liste des prochaines courses
-   avec :
-   - Ligne et direction (terminus)
-   - Heure programmee
-3. **Messages** : Alertes et informations
-4. **Pied de page** : Heure actuelle et statut de
-   connexion
+### Delete a User
 
-### Statut de connexion
-
-- **Connecte** (vert) : Mises a jour en temps reel via
-  WebSocket
-- **Deconnecte** (rouge) : Tentative de reconnexion
-  automatique
+1. Click **Delete**
+2. Confirm
 
 ---
 
-## Bonnes pratiques
+## Network Map
 
-### Messages (bonnes pratiques)
+The network map offers an interactive visualization of
+the entire transport network.
 
-1. **Soyez concis** : Les voyageurs lisent rapidement
-2. **Utilisez le bon niveau** : Reservez CRITICAL aux
-   vraies urgences
-3. **Definissez une fin** : Evitez les messages qui
-   restent indefiniment
+### Access the Map
 
-### Horaires (bonnes pratiques)
+The map is publicly accessible at `/map`
+(no authentication required).
 
-1. **Creez d'abord les itineraires** : Les horaires
-   referencent un itineraire existant
-2. **Un itineraire par direction** : Creez un itineraire
-   "Direction A" et un "Direction B" pour chaque ligne
+### Features
 
-### Appareils (bonnes pratiques)
-
-1. **Surveillez les deconnexions** : Un appareil hors
-   ligne n'affiche pas les mises a jour
-2. **Securisez les tokens** : Ne partagez pas les tokens
-   publiquement
+- **Schematic view**: Clear network visualization with
+  lines and stops
+- **Stop information**: Click a stop to see upcoming
+  departures and served lines
+- **Route search**: Use the search bar to find a route
+  between two stops
+- **Active alerts**: Current alert messages are displayed
+  on the map
 
 ---
 
-## Raccourcis clavier
+## Kiosk Display
 
-| Raccourci | Action                     |
-| --------- | -------------------------- |
-| `Echap`   | Fermer la fenetre modale   |
-| `Entree`  | Valider un formulaire      |
+The kiosk screen displays passenger information.
+
+### Displayed Elements
+
+1. **Header**: Stop name and served lines
+2. **Next departures**: List of upcoming services with:
+   - Line and direction (terminus)
+   - Scheduled time
+3. **Messages**: Alerts and information
+4. **Footer**: Current time and connection status
+
+### Connection Status
+
+- **Connected** (green): Real-time updates via WebSocket
+- **Disconnected** (red): Automatic reconnection attempt
+
+---
+
+## Best Practices
+
+### Messages (best practices)
+
+1. **Be concise**: Passengers read quickly
+2. **Use the right level**: Reserve CRITICAL for real
+   emergencies
+3. **Set an end time**: Avoid messages that stay
+   indefinitely
+
+### Schedules (best practices)
+
+1. **Create itineraries first**: Schedules reference an
+   existing itinerary
+2. **One itinerary per direction**: Create a
+   "To A" and a "To B" itinerary for each line
+
+### Devices (best practices)
+
+1. **Monitor disconnections**: An offline device does
+   not display updates
+2. **Secure tokens**: Do not share tokens publicly
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action              |
+| -------- | ------------------- |
+| `Escape` | Close modal window  |
+| `Enter`  | Submit a form       |
 
 ---
 
 ## FAQ
 
-### L'ecran affiche "Chargement..."
+### The screen displays "Loading..."
 
-1. Verifiez la connexion internet de l'appareil
-2. Verifiez que le token est correct
-3. Verifiez que le serveur backend fonctionne
+1. Check the device's internet connection
+2. Check that the token is correct
+3. Check that the backend server is running
 
-### Un message n'apparait pas sur l'ecran
+### A message does not appear on the screen
 
-1. Verifiez la portee du message (Reseau/Ligne/Arret)
-2. Verifiez les dates de debut et fin
-3. Le message doit etre actif (entre debut et fin)
+1. Check the message scope (Network/Line/Stop)
+2. Check the start and end dates
+3. The message must be active (between start and end)
 
-### Les horaires ne s'affichent pas
+### Schedules are not displayed
 
-1. Verifiez que des horaires sont crees pour cet arret
-2. Verifiez que l'heure de depart n'est pas deja passee
-3. Verifiez que l'itineraire associe est bien configure
+1. Check that schedules are created for this stop
+2. Check that the departure time has not already passed
+3. Check that the associated itinerary is properly
+   configured
 
-### Comment changer un mot de passe ?
+### How to change a password?
 
-1. Connectez-vous en tant qu'administrateur
-2. Allez dans **Utilisateurs**
-3. Cliquez sur **Modifier** a cote de l'utilisateur
-4. Entrez le nouveau mot de passe
-5. Cliquez sur **Enregistrer**
+1. Log in as an administrator
+2. Go to **Users**
+3. Click **Edit** next to the user
+4. Enter the new password
+5. Click **Save**
 
-### Comment affecter un arret a plusieurs lignes ?
+### How to assign a stop to multiple lines?
 
-Lors de la creation ou modification d'un arret,
-selectionnez plusieurs lignes. Un arret peut desservir
-autant de lignes que necessaire (correspondance).
+When creating or editing a stop, select multiple lines.
+A stop can serve as many lines as needed (interchange).

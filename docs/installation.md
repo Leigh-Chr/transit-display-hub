@@ -1,98 +1,98 @@
-# Guide d'installation
+# Installation Guide
 
-## Prerequis systeme
+## System Prerequisites
 
-### Backend (prerequis)
+### Backend (prerequisites)
 
-- **Java** : JDK 21 ou superieur
-- **Gradle** : 8.x+ (wrapper inclus)
+- **Java**: JDK 21 or higher
+- **Gradle**: 8.x+ (wrapper included)
 
-### Frontend (prerequis)
+### Frontend (prerequisites)
 
-- **Node.js** : 20.x ou superieur
-- **npm** : 10.x ou superieur
+- **Node.js**: 20.x or higher
+- **npm**: 10.x or higher
 
-### Base de donnees (Production)
+### Database (Production)
 
-- **PostgreSQL** : 15.x ou superieur
+- **PostgreSQL**: 15.x or higher
 
-## Installation pour le developpement
+## Development Installation
 
-### 1. Cloner le repository
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd transit-display-hub
 ```
 
-### 2. Configuration du Backend
+### 2. Backend Setup
 
 ```bash
 cd backend
 ```
 
-#### Avec SDKMAN (recommande pour Java)
+#### With SDKMAN (recommended for Java)
 
 ```bash
-# Installer SDKMAN si necessaire
+# Install SDKMAN if needed
 curl -s "https://get.sdkman.io" | bash
 source ~/.sdkman/bin/sdkman-init.sh
 
-# Installer Java 21
+# Install Java 21
 sdk install java 21.0.5-tem
 ```
 
-#### Verifier l'installation
+#### Verify Installation
 
 ```bash
 java --version
-# Doit afficher: openjdk 21.x.x
+# Should display: openjdk 21.x.x
 ```
 
-#### Demarrer le backend
+#### Start the Backend
 
 ```bash
 ./gradlew bootRun
 ```
 
-Le serveur demarre sur <http://localhost:8080>
+The server starts at <http://localhost:8080>
 
-### 3. Configuration du Frontend
+### 3. Frontend Setup
 
 ```bash
 cd frontend
 npm install
 ```
 
-#### Demarrer le frontend
+#### Start the Frontend
 
 ```bash
 npm start
 ```
 
-L'application demarre sur <http://localhost:4200>
+The application starts at <http://localhost:4200>
 
 ## Configuration
 
 ### Backend - application.yml
 
-Le fichier de configuration se trouve dans
+The configuration file is located at
 `backend/src/main/resources/application.yml`.
 
-#### Variables d'environnement
+#### Environment Variables
 
-- `SPRING_PROFILES_ACTIVE` : Profil actif (dev, prod).
-  Defaut : `dev`
-- `DATABASE_URL` : URL de connexion PostgreSQL.
-  Defaut : `jdbc:postgresql://localhost:5432/transit`
-- `DATABASE_USER` : Utilisateur PostgreSQL.
-  Defaut : `transit`
-- `DATABASE_PASSWORD` : Mot de passe PostgreSQL.
-  Defaut : `transit`
-- `JWT_SECRET` : Cle secrete JWT (min 256 bits).
-  Obligatoire en prod
+- `SPRING_PROFILES_ACTIVE`: Active profile (dev, prod).
+  Default: `dev`
+- `DATABASE_URL`: PostgreSQL connection URL.
+  Default: `jdbc:postgresql://localhost:5432/transit`
+- `DATABASE_USER`: PostgreSQL user.
+  Default: `transit`
+- `DATABASE_PASSWORD`: PostgreSQL password.
+  Default: `transit`
+- `JWT_SECRET`: JWT secret key (min 256 bits).
+  Required in prod
 
-#### Profil developpement (defaut)
+#### Development Profile (default)
 
 ```yaml
 spring:
@@ -112,9 +112,9 @@ app:
     expiration-hours: 8
 ```
 
-Console H2 accessible sur <http://localhost:8080/h2-console>
+H2 console accessible at <http://localhost:8080/h2-console>
 
-#### Profil production
+#### Production Profile
 
 ```yaml
 spring:
@@ -138,8 +138,7 @@ app:
 
 ### Frontend - proxy.conf.json
 
-Le proxy de developpement redirige les appels API vers
-le backend :
+The development proxy redirects API calls to the backend:
 
 ```json
 {
@@ -148,97 +147,95 @@ le backend :
 }
 ```
 
-## Verification de l'installation
+## Verifying the Installation
 
-### 1. Tester le backend
+### 1. Test the Backend
 
 ```bash
-# Verifier que l'API repond
+# Check that the API responds
 curl http://localhost:8080/actuator/health
 
-# Reponse attendue:
+# Expected response:
 # {"status":"UP"}
 ```
 
-### 2. Tester l'authentification
+### 2. Test Authentication
 
 ```bash
-# Se connecter
+# Log in
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
-# Reponse avec token JWT
+# Response with JWT token
 ```
 
-### 3. Acceder a l'interface
+### 3. Access the Interface
 
-1. Ouvrir <http://localhost:4200>
-2. Se connecter avec admin / admin123
-3. Le dashboard doit s'afficher
+1. Open <http://localhost:4200>
+2. Log in with admin / admin123
+3. The dashboard should appear
 
-## Resolution des problemes
+## Troubleshooting
 
-### Le backend ne demarre pas
+### Backend Won't Start
 
-#### Erreur : Port 8080 deja utilise
+#### Error: Port 8080 already in use
 
 ```bash
-# Trouver le processus
+# Find the process
 lsof -i :8080
-# Tuer le processus ou utiliser un autre port
+# Kill the process or use a different port
 ./gradlew bootRun --args='--server.port=8081'
 ```
 
-#### Erreur : Java version incorrecte
+#### Error: Incorrect Java version
 
 ```bash
-# Verifier la version
+# Check the version
 java --version
-# Installer Java 21 avec SDKMAN
+# Install Java 21 with SDKMAN
 sdk install java 21.0.5-tem
 sdk use java 21.0.5-tem
 ```
 
-### Le frontend ne compile pas
+### Frontend Won't Compile
 
-#### Erreur : Modules non trouves
+#### Error: Modules not found
 
 ```bash
-# Supprimer node_modules et reinstaller
+# Delete node_modules and reinstall
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-#### Erreur : Version Node.js incorrecte
+#### Error: Incorrect Node.js version
 
 ```bash
-# Verifier la version
+# Check the version
 node --version
-# Utiliser nvm pour changer de version
+# Use nvm to switch versions
 nvm install 20
 nvm use 20
 ```
 
-### Problemes de connexion API
+### API Connection Issues
 
-#### Erreur CORS
+#### CORS Error
 
-- Verifier que le proxy Angular est configure
-- En dev, les requetes `/api/*` sont redirigees vers
-  le backend
+- Check that the Angular proxy is configured
+- In dev, `/api/*` requests are redirected to the backend
 
-#### Erreur 401 Unauthorized
+#### 401 Unauthorized Error
 
-- Le token JWT a expire (duree de validite : 8 heures)
-- Le token est manquant ou invalide
-- Se reconnecter pour obtenir un nouveau token
-- L'API retourne une reponse JSON structuree
-  (pas du HTML)
+- The JWT token has expired (validity: 8 hours)
+- The token is missing or invalid
+- Log in again to get a new token
+- The API returns a structured JSON response (not HTML)
 
-#### Erreur 403 Forbidden
+#### 403 Forbidden Error
 
-- Permissions insuffisantes pour acceder a l'endpoint
-- L'utilisateur n'a pas le role requis
-  (ex: endpoint ADMIN pour un AGENT)
-- Une notification s'affiche dans le frontend
+- Insufficient permissions to access the endpoint
+- The user does not have the required role
+  (e.g., ADMIN endpoint for an AGENT)
+- A notification is displayed in the frontend

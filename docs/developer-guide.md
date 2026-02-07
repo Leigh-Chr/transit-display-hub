@@ -1,12 +1,12 @@
-# Guide Developpeur
+# Developer Guide
 
 ## Architecture
 
-### Vue d'ensemble
+### Overview
 
-Transit Display Hub suit une architecture en couches
-inspiree du Domain-Driven Design avec separation claire
-des responsabilites.
+Transit Display Hub follows a layered architecture
+inspired by Domain-Driven Design with a clear separation
+of concerns.
 
 ```text
 +---------------------------------------------------------+
@@ -26,7 +26,7 @@ des responsabilites.
 |                Backend (Spring Boot 4.0.2)              |
 +---------------------------------------------------------+
 |  API Layer             |  Application Layer             |
-|  - REST Controllers    |  - Services metier             |
+|  - REST Controllers    |  - Business services           |
 |  - Exception Advice    |  - DTOs (request/response)     |
 |                        |  - Exceptions                  |
 +------------------------+--------------------------------+
@@ -45,13 +45,13 @@ des responsabilites.
 
 ## Backend
 
-### Structure des packages
+### Package Structure
 
 ```text
 com.transit.hub/
-+-- TransitDisplayHubApplication.java    # Point d'entree
++-- TransitDisplayHubApplication.java    # Entry point
 +-- domain/
-|   +-- model/                           # Entites JPA
+|   +-- model/                           # JPA Entities
 |   |   +-- Line.java
 |   |   +-- Stop.java
 |   |   +-- Itinerary.java
@@ -66,14 +66,14 @@ com.transit.hub/
 |   |       +-- MessageScope.java        # NETWORK, LINE, STOP
 |   |       +-- DeviceStatus.java        # ONLINE, OFFLINE
 |   |       +-- UserRole.java            # ADMIN, AGENT
-|   +-- event/                           # Evenements domaine
+|   +-- event/                           # Domain events
 |   |   +-- ScheduleChangedEvent.java
 |   |   +-- MessageChangedEvent.java
 |   |   +-- NetworkChangedEvent.java
 |   +-- service/
-|       +-- DisplayStateCalculator.java  # Calcul de l'etat
+|       +-- DisplayStateCalculator.java  # State calculation
 +-- application/
-|   +-- service/                         # Services metier
+|   +-- service/                         # Business services
 |   |   +-- AuthService.java
 |   |   +-- LineService.java
 |   |   +-- StopService.java
@@ -85,9 +85,9 @@ com.transit.hub/
 |   |   +-- DisplayStateService.java
 |   |   +-- NetworkMapService.java
 |   +-- dto/
-|   |   +-- request/                     # DTOs d'entree
-|   |   +-- response/                    # DTOs de sortie
-|   +-- exception/                       # Exceptions metier
+|   |   +-- request/                     # Input DTOs
+|   |   +-- response/                    # Output DTOs
+|   +-- exception/                       # Business exceptions
 +-- infrastructure/
 |   +-- security/
 |   |   +-- JwtService.java
@@ -96,7 +96,7 @@ com.transit.hub/
 |   +-- websocket/
 |   |   +-- WebSocketConfig.java
 |   |   +-- ActiveDisplayTracker.java
-|   +-- persistence/                     # Repositories JPA
+|   +-- persistence/                     # JPA Repositories
 |   |   +-- LineRepository.java
 |   |   +-- StopRepository.java
 |   |   +-- ItineraryRepository.java
@@ -106,8 +106,8 @@ com.transit.hub/
 |   |   +-- DeviceRepository.java
 |   |   +-- UserRepository.java
 |   +-- config/
-|   |   +-- CacheConfig.java            # Configuration Caffeine
-|   +-- DataLoader.java                 # Donnees initiales
+|   |   +-- CacheConfig.java            # Caffeine configuration
+|   +-- DataLoader.java                 # Initial data
 +-- api/
     +-- rest/                            # REST Controllers
     |   +-- AuthController.java
@@ -121,15 +121,15 @@ com.transit.hub/
     |   +-- DisplayController.java
     |   +-- NetworkMapController.java
     +-- advice/
-        +-- GlobalExceptionHandler.java  # Gestion des erreurs
+        +-- GlobalExceptionHandler.java  # Error handling
 ```
 
-### Entites
+### Entities
 
-#### Relations
+#### Relationships
 
 ```text
-Line (N) ---- (M) Stop         # ManyToMany via table stop_lines
+Line (N) ---- (M) Stop         # ManyToMany via stop_lines table
 Line (1) ---- (N) Itinerary
 Itinerary (1) ---- (N) ItineraryStop ---- Stop
 Stop (1) ---- (N) Schedule
@@ -141,9 +141,9 @@ BroadcastMessage -- scopeType -- NETWORK | LINE | STOP
 
 #### Stop
 
-Un arret peut appartenir a plusieurs lignes (ManyToMany).
-Il possede des coordonnees GPS optionnelles et des
-coordonnees schematiques pour la carte du reseau.
+A stop can belong to multiple lines (ManyToMany). It has
+optional GPS coordinates and schematic coordinates for the
+network map.
 
 ```java
 @Entity
@@ -171,9 +171,9 @@ public class Stop {
 
 #### Schedule
 
-Un horaire lie une heure de depart a un arret et un
-itineraire. L'itineraire determine la ligne et la
-direction (terminus).
+A schedule links a departure time to a stop and an
+itinerary. The itinerary determines the line and direction
+(terminus).
 
 ```java
 @Entity
@@ -193,8 +193,8 @@ public class Schedule {
 
 ### Services
 
-Les services encapsulent la logique metier et publient
-des evenements domaine.
+Services encapsulate business logic and publish domain
+events.
 
 ```java
 @Service
@@ -221,18 +221,18 @@ public class LineService {
 }
 ```
 
-### Evenements domaine
+### Domain Events
 
-Les evenements declenchent le recalcul de l'etat
-d'affichage (DisplayState) et sa diffusion via WebSocket.
+Events trigger display state (DisplayState) recalculation
+and broadcasting via WebSocket.
 
 ```java
-// Evenements publies par les services
+// Events published by services
 public record NetworkChangedEvent(Object source) {}
 public record ScheduleChangedEvent(Object source) {}
 public record MessageChangedEvent(Object source) {}
 
-// Ecoute et diffusion via DisplayStateService
+// Listening and broadcasting via DisplayStateService
 @Component
 @RequiredArgsConstructor
 public class DisplayStateService {
@@ -245,7 +245,7 @@ public class DisplayStateService {
 }
 ```
 
-### Securite JWT
+### JWT Security
 
 ```java
 @Component
@@ -284,15 +284,15 @@ public class JwtService {
 
 ```text
 src/app/
-+-- app.component.ts              # Composant racine
-+-- app.config.ts                 # Configuration Angular
-+-- app.routes.ts                 # Definition des routes
++-- app.component.ts              # Root component
++-- app.config.ts                 # Angular configuration
++-- app.routes.ts                 # Route definitions
 +-- core/
 |   +-- auth/
-|   |   +-- auth.service.ts       # Gestion authentification
-|   |   +-- auth.guard.ts         # Protection des routes
-|   |   +-- role.guard.ts         # Autorisation par role
-|   |   +-- auth.interceptor.ts   # Ajout token JWT
+|   |   +-- auth.service.ts       # Authentication management
+|   |   +-- auth.guard.ts         # Route protection
+|   |   +-- role.guard.ts         # Role-based authorization
+|   |   +-- auth.interceptor.ts   # JWT token injection
 |   +-- api/
 |   |   +-- line.service.ts
 |   |   +-- stop.service.ts
@@ -303,18 +303,18 @@ src/app/
 |   |   +-- user.service.ts
 |   |   +-- display.service.ts
 |   +-- websocket/
-|   |   +-- websocket.service.ts  # Client STOMP
+|   |   +-- websocket.service.ts  # STOMP client
 |   +-- services/
-|       +-- theme.service.ts      # Gestion du theme
-|       +-- breakpoint.service.ts # Detection responsive
+|       +-- theme.service.ts      # Theme management
+|       +-- breakpoint.service.ts # Responsive detection
 +-- shared/
 |   +-- models/
-|   |   +-- index.ts              # Interfaces TypeScript
+|   |   +-- index.ts              # TypeScript interfaces
 |   +-- components/
 |   |   +-- confirm-dialog/
 |   |   +-- empty-state/
 |   |   +-- search-input/
-|   |   +-- skeleton/             # Composants de chargement
+|   |   +-- skeleton/             # Loading components
 |   +-- pipes/
 +-- features/
 |   +-- auth/
@@ -348,7 +348,7 @@ src/app/
 ### Routes
 
 ```typescript
-// Routes principales
+// Main routes
 { path: '', redirectTo: '/admin', pathMatch: 'full' },
 { path: 'login', loadComponent: () =>
     import('./features/auth/login/...') },
@@ -388,10 +388,10 @@ src/app/
     import('./features/not-found/...') },
 ```
 
-### Configuration Angular
+### Angular Configuration
 
 ```typescript
-// app.config.ts - Providers principaux
+// app.config.ts - Main providers
 provideZonelessChangeDetection()
 provideRouter(routes)
 provideHttpClient(
@@ -399,7 +399,7 @@ provideHttpClient(
 )
 ```
 
-### Services API
+### API Services
 
 ```typescript
 @Injectable({ providedIn: 'root' })
@@ -436,10 +436,10 @@ export class LineService {
 }
 ```
 
-### Composants standalone
+### Standalone Components
 
-Angular 21 utilise des composants standalone et la
-syntaxe de controle de flux.
+Angular 21 uses standalone components and the control
+flow syntax.
 
 ```typescript
 @Component({
@@ -470,20 +470,19 @@ export class LinesComponent {
 
 ### Signals
 
-Le projet utilise les Signals d'Angular pour la
-reactivite.
+The project uses Angular Signals for reactivity.
 
 ```typescript
-// Definir un signal
+// Define a signal
 lines = signal<Line[]>([]);
 
-// Mettre a jour
+// Update
 this.lines.set(newLines);
 
-// Signal derive (computed)
+// Computed signal
 lineCount = computed(() => this.lines().length);
 
-// Lire la valeur
+// Read the value
 console.log(this.lines());
 ```
 
@@ -522,11 +521,11 @@ export class WebSocketService {
 
 ---
 
-## Bonnes pratiques
+## Best Practices
 
-### Backend (bonnes pratiques)
+### Backend (best practices)
 
-1. **Immutabilite des DTOs** : Utiliser des records Java
+1. **DTO immutability**: Use Java records
 
    ```java
    public record CreateLineRequest(
@@ -539,7 +538,7 @@ export class WebSocketService {
    ) {}
    ```
 
-2. **Validation** : Utiliser Bean Validation
+2. **Validation**: Use Bean Validation
 
    ```java
    @PostMapping
@@ -552,7 +551,7 @@ export class WebSocketService {
    }
    ```
 
-3. **Transactions** : Annoter les methodes de service
+3. **Transactions**: Annotate service methods
 
    ```java
    @Transactional
@@ -562,9 +561,8 @@ export class WebSocketService {
    }
    ```
 
-4. **Imports explicites** : Ne jamais utiliser
-   d'imports wildcard (`*`). Toujours lister
-   les classes importees individuellement.
+4. **Explicit imports**: Never use wildcard imports
+   (`*`). Always list imported classes individually.
 
    ```java
    // Correct
@@ -572,12 +570,11 @@ export class WebSocketService {
    import jakarta.persistence.Id;
    import jakarta.persistence.Table;
 
-   // Interdit
+   // Forbidden
    import jakarta.persistence.*;
    ```
 
-5. **Log guards** : Entourer les appels de log
-   avec un guard de niveau
+5. **Log guards**: Wrap log calls with a level guard
 
    ```java
    if (log.isInfoEnabled()) {
@@ -586,28 +583,27 @@ export class WebSocketService {
    }
    ```
 
-6. **Accolades obligatoires** : Toujours utiliser
-   des accolades pour les blocs `if`, `else`,
-   `for`, `while`, meme sur une seule ligne.
+6. **Mandatory braces**: Always use braces for `if`,
+   `else`, `for`, `while` blocks, even for single
+   lines.
 
-7. **Comparaisons de chaines** : Placer le
-   litteral en premier pour eviter les NPE
+7. **String comparisons**: Place the literal first to
+   avoid NPEs
 
    ```java
    // Correct
    if ("desc".equalsIgnoreCase(sortDir)) {}
 
-   // Interdit
+   // Forbidden
    if (sortDir.equalsIgnoreCase("desc")) {}
    ```
 
-8. **Switch exhaustifs** : Toujours ajouter un
-   `default` dans les switch statements.
+8. **Exhaustive switches**: Always add a `default`
+   case in switch statements.
 
-### Frontend (bonnes pratiques)
+### Frontend (best practices)
 
-1. **Lazy loading** : Charger les composants a la
-   demande
+1. **Lazy loading**: Load components on demand
 
    ```typescript
    {
@@ -618,14 +614,14 @@ export class WebSocketService {
    }
    ```
 
-2. **Gestion d'etat** : Utiliser les Signals
+2. **State management**: Use Signals
 
    ```typescript
-   // Preferer les signals aux BehaviorSubject
+   // Prefer signals over BehaviorSubject
    currentUser = signal<User | null>(null);
    ```
 
-3. **Typage strict** : Definir les interfaces
+3. **Strict typing**: Define interfaces
 
    ```typescript
    export interface Line {
@@ -646,35 +642,34 @@ export class WebSocketService {
 ### Backend (tests)
 
 ```bash
-# Executer tous les tests
+# Run all tests
 cd backend
 ./gradlew test
 
-# Tests avec rapport de couverture
+# Tests with coverage report
 ./gradlew test jacocoTestReport
 ```
 
-Tests unitaires et d'integration pour : services,
-repositories, securite JWT, filtre d'authentification,
-tracker de connexions.
+Unit and integration tests for: services, repositories,
+JWT security, authentication filter, connection tracker.
 
 ### Frontend (tests)
 
 ```bash
 cd frontend
 
-# Tests unitaires (Vitest)
+# Unit tests (Vitest)
 npm test
 
-# Tests avec couverture
+# Tests with coverage
 npm run test:coverage
 
-# Tests e2e (Playwright)
+# E2E tests (Playwright)
 npm run e2e
 ```
 
-Tests de composants et services avec configuration
-zoneless (`provideZonelessChangeDetection`).
+Component and service tests with zoneless configuration
+(`provideZonelessChangeDetection`).
 
 ---
 
@@ -682,7 +677,7 @@ zoneless (`provideZonelessChangeDetection`).
 
 ### Backend (debugging)
 
-1. **Logs** : Configurer le niveau de log
+1. **Logs**: Configure log level
 
    ```yaml
    logging:
@@ -691,14 +686,14 @@ zoneless (`provideZonelessChangeDetection`).
        org.springframework.security: DEBUG
    ```
 
-2. **Console H2** : <http://localhost:8080/h2-console>
+2. **H2 Console**: <http://localhost:8080/h2-console>
 
-3. **Actuator** : <http://localhost:8080/actuator/health>
+3. **Actuator**: <http://localhost:8080/actuator/health>
 
 ### Frontend (debugging)
 
-1. **Angular DevTools** : Extension Chrome/Firefox
+1. **Angular DevTools**: Chrome/Firefox extension
 
-2. **Console navigateur** : Verifier les erreurs reseau
+2. **Browser console**: Check for network errors
 
-3. **Source maps** : Activees par defaut en developpement
+3. **Source maps**: Enabled by default in development

@@ -1,47 +1,44 @@
 # Transit Display Hub
 
-Plateforme d'information voyageurs en temps reel pour
-les reseaux de transport public.
+Real-time passenger information platform for public
+transport networks.
 
-## Apercu
+## Overview
 
-Transit Display Hub permet aux operateurs de transport
-de gerer leur reseau (lignes, arrets, itineraires,
-horaires), de diffuser des messages d'alerte, et
-d'afficher les informations en temps reel sur des ecrans
-aux arrets.
+Transit Display Hub allows transport operators to manage
+their network (lines, stops, itineraries, schedules),
+broadcast alert messages, and display real-time information
+on screens at stops.
 
-### Fonctionnalites principales
+### Key Features
 
-- **Gestion du reseau** : Configuration des lignes
-  (metro, bus, tram, train), arrets, itineraires et
-  horaires
-- **Messages broadcast** : Diffusion d'alertes (Info,
-  Avertissement, Critique) avec ciblage par scope
-  (reseau, ligne, arret)
-- **Affichage temps reel** : Ecrans kiosques avec mise
-  a jour automatique via WebSocket
-- **Carte du reseau** : Visualisation interactive du
-  reseau avec recherche d'itineraires
-- **Gestion des appareils** : Enregistrement et
-  monitoring des ecrans d'affichage
-- **Gestion des utilisateurs** : Administration des
-  comptes (Admin, Agent)
+- **Network management**: Configure lines (metro, bus,
+  tram, train), stops, itineraries, and schedules
+- **Broadcast messages**: Send alerts (Info, Warning,
+  Critical) with scope targeting (network, line, stop)
+- **Real-time display**: Kiosk screens with automatic
+  updates via WebSocket
+- **Network map**: Interactive network visualization with
+  route search
+- **Device management**: Registration and monitoring of
+  display screens
+- **User management**: Account administration (Admin,
+  Agent)
 
-## Stack technique
+## Tech Stack
 
-| Composant        | Technologie                                |
-| ---------------- | ------------------------------------------ |
-| Backend          | Spring Boot 4.0.2, Java 21                 |
-| Frontend         | Angular 21, Tailwind CSS, Angular Material |
-| Base de donnees  | H2 (dev), PostgreSQL (prod)                |
-| Temps reel       | WebSocket avec STOMP                       |
-| Authentification | JWT                                        |
-| Tests            | JUnit 5, Vitest, Playwright                |
+| Component      | Technology                                 |
+| -------------- | ------------------------------------------ |
+| Backend        | Spring Boot 4.0.2, Java 21                 |
+| Frontend       | Angular 21, Tailwind CSS, Angular Material |
+| Database       | H2 (dev), PostgreSQL (prod)                |
+| Real-time      | WebSocket with STOMP                       |
+| Authentication | JWT                                        |
+| Tests          | JUnit 5, Vitest, Playwright                |
 
-## Demarrage rapide
+## Quick Start
 
-### Prerequis
+### Prerequisites
 
 - Java 21 (JDK)
 - Node.js 20+
@@ -50,7 +47,7 @@ aux arrets.
 ### Installation
 
 ```bash
-# Cloner le repository
+# Clone the repository
 git clone <repository-url>
 cd transit-display-hub
 
@@ -58,64 +55,64 @@ cd transit-display-hub
 cd backend
 ./gradlew bootRun
 
-# Frontend (nouveau terminal)
+# Frontend (new terminal)
 cd frontend
 npm install
 npm start
 ```
 
-### Acces
+### Access
 
-- **Interface Admin** : <http://localhost:4200>
-- **API Backend** : <http://localhost:8080>
-- **Carte du reseau** : <http://localhost:4200/map>
-- **Affichage Kiosque** :
+- **Admin Interface**: <http://localhost:4200>
+- **Backend API**: <http://localhost:8080>
+- **Network Map**: <http://localhost:4200/map>
+- **Kiosk Display**:
   `http://localhost:4200/display/{stopId}`
 
-### Identifiants par defaut
+### Default Credentials
 
-| Utilisateur | Mot de passe | Role           |
-| ----------- | ------------ | -------------- |
-| admin       | admin123     | Administrateur |
-| agent       | agent123     | Agent          |
+| Username | Password | Role          |
+| -------- | -------- | ------------- |
+| admin    | admin123 | Administrator |
+| agent    | agent123 | Agent         |
 
-## Structure du projet
+## Project Structure
 
 ```text
 transit-display-hub/
-+-- backend/                 # API Spring Boot
++-- backend/                 # Spring Boot API
 |   +-- src/main/java/
 |   |   +-- com/transit/hub/
-|   |       +-- domain/      # Entites, enums, events
+|   |       +-- domain/      # Entities, enums, events
 |   |       +-- application/ # Services, DTOs, exceptions
-|   |       +-- infrastructure/ # Securite, WebSocket
-|   |       +-- api/         # Controllers REST
+|   |       +-- infrastructure/ # Security, WebSocket
+|   |       +-- api/         # REST Controllers
 |   +-- build.gradle.kts
-+-- frontend/                # Application Angular
++-- frontend/                # Angular Application
 |   +-- src/app/
 |   |   +-- core/           # Services, auth, WebSocket
-|   |   +-- shared/         # Modeles, composants
-|   |   +-- features/       # Admin, affichage, carte
-|   |   +-- layouts/        # Layouts admin/display
+|   |   +-- shared/         # Models, components
+|   |   +-- features/       # Admin, display, map
+|   |   +-- layouts/        # Admin/display layouts
 |   +-- package.json
 +-- docs/                    # Documentation
 ```
 
 ## Documentation
 
-- [Guide d'installation](docs/installation.md) -
-  Configurer l'environnement de developpement
-- [Documentation API](docs/api.md) -
-  Reference complete de l'API REST
-- [Guide developpeur](docs/developer-guide.md) -
-  Architecture et bonnes pratiques
-- [Guide de deploiement](docs/deployment.md) -
-  Mise en production
-- [Guide utilisateur](docs/user-guide.md) -
-  Utilisation de l'interface admin
-- [Changelog](CHANGELOG.md) - Historique des versions
-- [Contribuer](CONTRIBUTING.md) - Guide de contribution
+- [Installation Guide](docs/installation.md) -
+  Set up the development environment
+- [API Documentation](docs/api.md) -
+  Complete REST API reference
+- [Developer Guide](docs/developer-guide.md) -
+  Architecture and best practices
+- [Deployment Guide](docs/deployment.md) -
+  Production deployment
+- [User Guide](docs/user-guide.md) -
+  Admin interface usage
+- [Changelog](CHANGELOG.md) - Version history
+- [Contributing](CONTRIBUTING.md) - Contribution guide
 
-## Licence
+## License
 
-Proprietaire - Tous droits reserves
+Proprietary - All rights reserved
