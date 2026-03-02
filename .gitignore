@@ -32,6 +32,10 @@ frontend/screenshots/
 frontend/test-results/
 frontend/visual-test.mjs
 
+# Website - Landing page
+website/node_modules/
+website/dist/
+
 # Test coverage
 coverage/
 *.lcov
