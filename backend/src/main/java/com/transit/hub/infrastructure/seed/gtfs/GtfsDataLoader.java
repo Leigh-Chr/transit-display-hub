@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ public class GtfsDataLoader implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final GtfsDownloader downloader;
     private final GtfsImportService importer;
+    private final CacheManager cacheManager;
 
     @Value("${app.data-loader.gtfs.url}")
     private String feedUrl;
@@ -51,6 +53,10 @@ public class GtfsDataLoader implements CommandLineRunner {
         try {
             Path feed = downloader.downloadOrCached(feedUrl);
             GtfsImportService.ImportResult result = importer.importFromZip(feed);
+            // The frontend may have hit /api/network-map while routes/stops were
+            // still being persisted, caching an empty snapshot. Drop those caches
+            // so the next request rebuilds from the populated database.
+            evictNetworkCaches();
             logSummary(result);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -98,6 +104,13 @@ public class GtfsDataLoader implements CommandLineRunner {
                 .build());
 
         log.info("Created {} users", userRepository.count());
+    }
+
+    private void evictNetworkCaches() {
+        for (String name : new String[]{"networkMap", "networkAlerts"}) {
+            var cache = cacheManager.getCache(name);
+            if (cache != null) {cache.clear();}
+        }
     }
 
     private void logSummary(GtfsImportService.ImportResult r) {
