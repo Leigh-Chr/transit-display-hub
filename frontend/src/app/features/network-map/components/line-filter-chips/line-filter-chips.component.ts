@@ -18,8 +18,8 @@ import { MessageSeverity, NetworkLine } from '@shared/models';
           [class.active]="visibleSet().has(line.code)"
           [style.--chip-color]="line.color"
           [attr.title]="'Click to toggle ' + line.code + ' · Double-click to focus'"
-          (click)="toggle.emit(line.code)"
-          (dblclick)="focus.emit(line.code)"
+          (click)="lineToggle.emit(line.code)"
+          (dblclick)="focusLine.emit(line.code)"
         >{{ line.code }}@if (alertSeverityFor(line.id); as sev) {<span class="chip-alert-dot" [class]="'chip-alert-dot-' + sev.toLowerCase()"></span>}</button>
       }
     </div>
@@ -133,9 +133,9 @@ export class LineFilterChipsComponent {
   /** lineId -> highest active alert severity, used for the dot indicator. */
   alertSeverityByLineId = input<Map<string, MessageSeverity>>(new Map());
 
-  toggle = output<string>();
-  toggleAll = output<void>();
-  focus = output<string>();
+  lineToggle = output<string>();
+  toggleAll = output();
+  focusLine = output<string>();
 
   visibleSet = computed(() => new Set(this.visibleLineCodes()));
 

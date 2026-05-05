@@ -76,8 +76,8 @@ import { MatIconModule } from '@angular/material/icon';
   `,
 })
 export class ZoomControlsComponent {
-  zoomIn = output<void>();
-  zoomOut = output<void>();
-  resetView = output<void>();
-  exportSvg = output<void>();
+  zoomIn = output();
+  zoomOut = output();
+  resetView = output();
+  exportSvg = output();
 }

@@ -75,9 +75,9 @@ function hashStopId(s: string): number {
         [lines]="sortedLines()"
         [visibleLineCodes]="visibleLineCodes()"
         [alertSeverityByLineId]="lineAlertSeverityMap()"
-        (toggle)="toggleLine($event)"
+        (lineToggle)="toggleLine($event)"
         (toggleAll)="toggleAllLines()"
-        (focus)="showOnlyLine($event)"
+        (focusLine)="showOnlyLine($event)"
       />
 
       @if (visibleLineCodes().length === 0) {
@@ -772,7 +772,8 @@ export class SchematicMapComponent {
   private readonly layoutSignature = computed(() => {
     const lines = this.visibleLines();
     if (lines.length === 0) {return 'empty';}
-    if (lines.length === 1) {return 'single:' + lines[0]?.id;}
+    const first = lines[0];
+    if (lines.length === 1 && first) {return 'single:' + first.id;}
     return 'multi';
   });
 
@@ -906,7 +907,7 @@ export class SchematicMapComponent {
   lineAlertSeverityMap = computed<Map<string, MessageSeverity>>(() => {
     const map = new Map<string, MessageSeverity>();
     for (const [lineId, messages] of Object.entries(this.alerts().lineAlerts)) {
-      if (!messages?.length) {continue;}
+      if (!messages.length) {continue;}
       const max = messages.reduce<MessageSeverity | null>((best, m) =>
         best === null || severityRank(m.severity) > severityRank(best) ? m.severity : best,
         null,
