@@ -274,12 +274,13 @@ function hashStopId(s: string): number {
                   </g>
                 }
 
-                <!-- Badges for hidden lines passing through this stop (cap at 4, then +N) -->
+                <!-- Badges for every hidden line passing through this stop —
+                     no cap, every correspondence is shown. The grid wraps to a
+                     new row every 4 columns. -->
                 @if (!hasRoute() && hiddenLinesMap().get(s.stop.id); as hiddenCodes) {
-                  @let displayCount = getHiddenBadgeDisplayCount(hiddenCodes.length);
                   <g [attr.transform]="'translate(0, ' + (isSingleLineMode() ? 28 : 30) + ')'">
-                    @for (code of hiddenCodes.slice(0, displayCount); track code; let j = $index) {
-                      <g [attr.transform]="getBadgeTransform(j, displayCount + (hiddenCodes.length > displayCount ? 1 : 0))">
+                    @for (code of hiddenCodes; track code; let j = $index) {
+                      <g [attr.transform]="getBadgeTransform(j, hiddenCodes.length)">
                         <circle r="16" [attr.fill]="getLineColor(code)" />
                         <text
                           text-anchor="middle"
@@ -288,19 +289,6 @@ function hashStopId(s: string): number {
                           font-size="15"
                           font-weight="bold"
                         >{{ code }}</text>
-                      </g>
-                    }
-                    @if (hiddenCodes.length > displayCount) {
-                      <g [attr.transform]="getBadgeTransform(displayCount, displayCount + 1)">
-                        <title>{{ hiddenCodes.slice(displayCount).join(', ') }}</title>
-                        <circle r="16" fill="var(--app-map-on-surface-muted, #888)" />
-                        <text
-                          text-anchor="middle"
-                          dominant-baseline="central"
-                          fill="white"
-                          font-size="15"
-                          font-weight="bold"
-                        >+{{ hiddenCodes.length - displayCount }}</text>
                       </g>
                     }
                   </g>
@@ -741,45 +729,21 @@ export class SchematicMapComponent {
     return `M ${x},${minY} Q ${cx},${midY} ${x},${maxY}`;
   }
 
-  /** Labels for stops, with dedup per (stopId × orientation):
-   *  - single-line: alternate by stop index so adjacent labels fan in opposite
-   *    diagonals (the line's two terminuses always go up);
-   *  - multi-line: a stop shared by N rows used to push N identical "up"
-   *    labels at the same X, stacking vertically. We now keep at most one
-   *    up label per stop (anchored on the top-most row hosting it) and one
-   *    down label (only ever produced by the bottom-most row). Each line
-   *    keeps its colored stop circle and the dashed connector still tells
-   *    the cross-line story between the two label anchors.
-   */
+  /** Labels for stops. All labels go up so the area below each stop is
+   *  reserved for the hidden-line correspondence badges. Each stop gets a
+   *  single label, anchored on the top-most row that hosts it. */
   networkStopLabels = computed<NetworkStopLabel[]>(() => {
     const rows = this.networkLineRows();
     const seen = new Set<string>();
     const labels: NetworkStopLabel[] = [];
-    const single = this.isSingleLineMode();
-    const lastRowIdx = rows.length - 1;
 
-    rows.forEach((row, rowIdx) => {
-      const stops = row.stops;
-      const isBottomRow = !single && rowIdx === lastRowIdx;
-
-      stops.forEach(({ stop, x }, stopIdx) => {
-        let orientation: 'up' | 'down';
-        if (single) {
-          const isEdge = stopIdx === 0 || stopIdx === stops.length - 1;
-          orientation = isEdge ? 'up' : (stopIdx % 2 === 0 ? 'up' : 'down');
-        } else if (isBottomRow) {
-          orientation = 'down';
-        } else {
-          orientation = 'up';
-        }
-
-        const key = stop.id + ':' + orientation;
-        if (seen.has(key)) {return;}
-        seen.add(key);
-
-        labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation });
-      });
-    });
+    for (const row of rows) {
+      for (const { stop, x } of row.stops) {
+        if (seen.has(stop.id)) {continue;}
+        seen.add(stop.id);
+        labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation: 'up' });
+      }
+    }
 
     return labels;
   });
@@ -1097,15 +1061,6 @@ export class SchematicMapComponent {
     const x = col * GAP - (colsInRow - 1) * GAP / 2;
     const y = row * GAP;
     return `translate(${x}, ${y})`;
-  }
-
-  private static readonly MAX_HIDDEN_BADGES = 3;
-
-  /** Number of full badges to render before collapsing the rest into a +N pill */
-  getHiddenBadgeDisplayCount(total: number): number {
-    return total <= SchematicMapComponent.MAX_HIDDEN_BADGES
-      ? total
-      : SchematicMapComponent.MAX_HIDDEN_BADGES - 1;
   }
 
   onStopClick(stop: LayoutStop, event: Event): void {

@@ -394,10 +394,8 @@ describe('SchematicMapComponent', () => {
     });
   });
 
-  describe('label orientation and deduplication', () => {
-    it('alternates labels up/down in single-line mode with terminuses pinned up', () => {
-      // 5 stops, single-line: indices 0 and 4 are edges (forced up),
-      // 1=down, 2=up, 3=down by alternation.
+  describe('label generation', () => {
+    it('orients every label up in single-line mode (down is reserved for correspondences)', () => {
       const longerLine: NetworkLine = {
         id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null,
         itineraries: [['a1', 'a2', 'a3', 'a4', 'a5']],
@@ -416,37 +414,22 @@ describe('SchematicMapComponent', () => {
       fixture.detectChanges();
 
       const labels = component.networkStopLabels();
-      const byStop = new Map(labels.map(l => [l.stop.id, l.orientation]));
-
-      expect(byStop.get('a1')).toBe('up');   // edge → up
-      expect(byStop.get('a2')).toBe('down'); // odd index
-      expect(byStop.get('a3')).toBe('up');   // even index
-      expect(byStop.get('a4')).toBe('down'); // odd index
-      expect(byStop.get('a5')).toBe('up');   // edge → up
+      expect(labels.map(l => l.orientation)).toEqual(['up', 'up', 'up', 'up', 'up']);
     });
 
-    it('puts bottom-row labels down in multi-line mode', () => {
+    it('orients every label up in multi-line mode', () => {
       fixture.detectChanges();
-
-      const labels = component.networkStopLabels();
-      const lineL2BottomStops = labels.filter(l => l.lineId === 'line2');
-      // Mock has line1 (top) and line2 (bottom). All line2 labels must be 'down'.
-      expect(lineL2BottomStops.length).toBeGreaterThan(0);
-      for (const label of lineL2BottomStops) {
-        expect(label.orientation).toBe('down');
+      for (const label of component.networkStopLabels()) {
+        expect(label.orientation).toBe('up');
       }
     });
 
-    it('deduplicates a shared stop to one up + at most one down label', () => {
-      // The mock has s2 shared by L1 (top) and L2 (bottom). After dedup the
-      // stop should yield exactly two labels: one up on the top row, one
-      // down on the bottom row — never duplicate ups stacked vertically.
+    it('emits a single label per stop, anchored on the top-most row', () => {
+      // s2 is shared by line1 (top) and line2: only one label, on line1.
       fixture.detectChanges();
-
       const labelsForS2 = component.networkStopLabels().filter(l => l.stop.id === 's2');
-      expect(labelsForS2.length).toBe(2);
-      const orientations = labelsForS2.map(l => l.orientation).sort();
-      expect(orientations).toEqual(['down', 'up']);
+      expect(labelsForS2.length).toBe(1);
+      expect(labelsForS2[0]!.lineId).toBe('line1');
     });
   });
 
