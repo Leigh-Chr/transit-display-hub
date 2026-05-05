@@ -1,5 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { signal, Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -328,6 +328,50 @@ describe('NetworkMapComponent', () => {
 
       expect(component.arrivalStop()).toEqual(mockStops[1]!);
       expect(component.routeResult()).toBeNull();
+    });
+
+    it('writes ?from when departure changes and clears it on null', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      component.onDepartureChanged(mockStops[0]!);
+      await fixture.whenStable();
+      expect(TestBed.inject(Router).url).toMatch(/[?&]from=s1/);
+
+      component.onDepartureChanged(null);
+      await fixture.whenStable();
+      expect(TestBed.inject(Router).url).not.toMatch(/[?&]from=/);
+    });
+
+    it('writes ?from and ?to when a route is searched', async () => {
+      mockRouteFinder.findRoute = vi.fn().mockReturnValue({
+        segments: [{ lineId: 'line1', lineCode: 'L1', lineColor: '#FF0000',
+                     stopIds: ['s1', 's2'], stopNames: ['Alpha', 'Bravo'], directionName: 'Bravo' }],
+        transfers: 0, transferStopIds: [], allStopIds: ['s1', 's2'],
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      component.onRouteSearch({ from: 's1', to: 's2' });
+      await fixture.whenStable();
+
+      const url = TestBed.inject(Router).url;
+      expect(url).toMatch(/[?&]from=s1/);
+      expect(url).toMatch(/[?&]to=s2/);
+    });
+
+    it('clears ?from and ?to on onRouteClear', async () => {
+      fixture.detectChanges();
+      component.onDepartureChanged(mockStops[0]!);
+      component.onArrivalChanged(mockStops[1]!);
+      await fixture.whenStable();
+
+      component.onRouteClear();
+      await fixture.whenStable();
+
+      const url = TestBed.inject(Router).url;
+      expect(url).not.toMatch(/[?&]from=/);
+      expect(url).not.toMatch(/[?&]to=/);
     });
   });
 

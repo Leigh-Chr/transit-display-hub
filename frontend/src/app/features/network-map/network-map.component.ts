@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, computed, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, computed, effect, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -584,6 +584,15 @@ export class NetworkMapComponent implements OnInit {
   /** Query param ?cat=TRAM — null means "all categories" */
   readonly categoryParam = linkedQueryParam('cat');
 
+  /** Trip endpoints. Both must be set to trigger findRoute; clearing
+   *  either drops the route. */
+  private readonly fromParam = linkedQueryParam('from');
+  private readonly toParam = linkedQueryParam('to');
+
+  /** Stop currently being inspected via the popup. Lets the user share
+   *  a deep link to "departures from this stop". */
+  private readonly stopParam = linkedQueryParam('stop');
+
   allLines = computed(() => this.networkMap()?.lines ?? []);
 
   attribution = computed(() => this.networkMap()?.attribution ?? null);
@@ -679,6 +688,19 @@ export class NetworkMapComponent implements OnInit {
     return map;
   });
 
+  /** Map stop id → LayoutStop, used to resolve URL params back to stops. */
+  private readonly stopById = computed(() => {
+    const map = new Map<string, LayoutStop>();
+    for (const stop of this.layoutStops()) {
+      map.set(stop.id, stop);
+    }
+    return map;
+  });
+
+  /** Tracks which stop's popup is currently mounted so we can detect
+   *  no-op URL → state syncs and avoid re-opening the same dialog. */
+  private openedStopPopupId: string | null = null;
+
   constructor() {
     this.stopSearchCtrl.valueChanges.pipe(takeUntilDestroyed()).subscribe(val => {
       if (typeof val === 'string') {
@@ -691,6 +713,77 @@ export class NetworkMapComponent implements OnInit {
         clearTimeout(this.highlightTimer);
       }
       this.networkMapWs.disconnect();
+    });
+
+    // ?from / ?to → restore departure/arrival and trigger findRoute.
+    // Runs whenever the URL changes (deep link, back/forward) and
+    // whenever stops finish loading. Idempotent: writes only when
+    // the resolved stop differs from the current state, which
+    // breaks the cycle with the state→URL writes below.
+    effect(() => {
+      const stopMap = this.stopById();
+      if (stopMap.size === 0) {return;}
+
+      const fromId = this.fromParam();
+      const toId = this.toParam();
+      const wantedDep = fromId !== null ? stopMap.get(fromId) ?? null : null;
+      const wantedArr = toId !== null ? stopMap.get(toId) ?? null : null;
+
+      // Drop URL ids that don't match any stop in the current network
+      // (renamed/removed stop, wrong feed) instead of leaving the URL
+      // in an inconsistent "?from=ghost" state.
+      if (fromId !== null && !wantedDep) {this.fromParam.set(null);}
+      if (toId !== null && !wantedArr) {this.toParam.set(null);}
+
+      const currentDep = this.departureStop();
+      const currentArr = this.arrivalStop();
+      if (wantedDep?.id !== currentDep?.id) {
+        this.departureStop.set(wantedDep);
+      }
+      if (wantedArr?.id !== currentArr?.id) {
+        this.arrivalStop.set(wantedArr);
+      }
+
+      // Recompute the route only when both endpoints are present and
+      // distinct, and the current routeResult does not already match.
+      if (wantedDep && wantedArr && wantedDep.id !== wantedArr.id) {
+        const map = this.networkMap();
+        if (!map) {return;}
+        const result = this.routeResult();
+        const matchesCurrent = result !== null
+          && result.allStopIds[0] === wantedDep.id
+          && result.allStopIds[result.allStopIds.length - 1] === wantedArr.id;
+        if (!matchesCurrent) {
+          this.routeResult.set(this.routeFinder.findRoute(map, wantedDep.id, wantedArr.id));
+        }
+      } else if (this.routeResult() !== null) {
+        this.routeResult.set(null);
+      }
+    });
+
+    // ?stop → open / close the popup for that stop.
+    effect(() => {
+      const stopMap = this.stopById();
+      if (stopMap.size === 0) {return;}
+      const stopId = this.stopParam();
+
+      if (stopId === null) {
+        if (this.openedStopPopupId !== null) {
+          this.stopDialogRef?.close();
+        }
+        return;
+      }
+
+      const stop = stopMap.get(stopId);
+      if (!stop) {
+        // Unknown id — drop it from the URL so the user can't bookmark a
+        // broken link they'd then need to manually clear.
+        this.stopParam.set(null);
+        return;
+      }
+      if (this.openedStopPopupId !== stopId) {
+        this.openStopPopup(stop);
+      }
     });
   }
 
@@ -802,6 +895,8 @@ export class NetworkMapComponent implements OnInit {
 
     const result = this.routeFinder.findRoute(map, event.from, event.to);
     this.routeResult.set(result);
+    this.fromParam.set(event.from);
+    this.toParam.set(event.to);
   }
 
   onRouteClear(): void {
@@ -809,18 +904,22 @@ export class NetworkMapComponent implements OnInit {
     this.departureStop.set(null);
     this.arrivalStop.set(null);
     this.showFullNetwork.set(false);
+    this.fromParam.set(null);
+    this.toParam.set(null);
   }
 
   onDepartureChanged(stop: LayoutStop | null): void {
     this.departureStop.set(stop);
     this.routeResult.set(null);
     this.showFullNetwork.set(false);
+    this.fromParam.set(stop?.id ?? null);
   }
 
   onArrivalChanged(stop: LayoutStop | null): void {
     this.arrivalStop.set(stop);
     this.routeResult.set(null);
     this.showFullNetwork.set(false);
+    this.toParam.set(stop?.id ?? null);
   }
 
   // --- Stop search ---
@@ -867,7 +966,10 @@ export class NetworkMapComponent implements OnInit {
   }
 
   private openStopPopup(stop: LayoutStop): void {
+    if (this.openedStopPopupId === stop.id && this.stopDialogRef) {return;}
     this.stopDialogRef?.close();
+    this.openedStopPopupId = stop.id;
+    this.stopParam.set(stop.id);
 
     this.stopDialogRef = this.dialog.open(StopPopupComponent, {
       data: {
@@ -886,6 +988,14 @@ export class NetworkMapComponent implements OnInit {
 
     this.stopDialogRef.afterClosed().subscribe(() => {
       this.stopDialogRef = null;
+      // Only clear the URL if this dialog's stop is still the active
+      // one — opening another stop overwrote stopParam already.
+      if (this.openedStopPopupId === stop.id) {
+        this.openedStopPopupId = null;
+        if (this.stopParam() === stop.id) {
+          this.stopParam.set(null);
+        }
+      }
     });
   }
 
