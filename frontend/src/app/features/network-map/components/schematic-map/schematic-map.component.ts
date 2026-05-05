@@ -62,6 +62,7 @@ function severityRank(s: MessageSeverity): number {
             class="filter-chip"
             [class.active]="visibleCodeSet().has(line.code)"
             [style.--chip-color]="line.color"
+            [attr.title]="'Click to toggle ' + line.code + ' · Double-click to focus'"
             (click)="toggleLine(line.code)"
             (dblclick)="showOnlyLine(line.code)"
           >{{ line.code }}@if (getLineAlertSeverity(line.id); as sev) {<span class="chip-alert-dot" [class]="'chip-alert-dot-' + sev.toLowerCase()"></span>}</button>

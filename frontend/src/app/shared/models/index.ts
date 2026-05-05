@@ -259,6 +259,7 @@ export interface NetworkLine {
   name: string;
   color: string;
   type: LineType | null;
+  category?: string | null;
   itineraries: string[][];
 }
 

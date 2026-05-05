@@ -49,6 +49,35 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
         </button>
       </header>
 
+      @if (categories().length > 1) {
+        <nav class="category-tabs" role="tablist" aria-label="Network category">
+          <button
+            type="button"
+            role="tab"
+            class="category-tab"
+            [class.active]="selectedCategory() === null"
+            [attr.aria-selected]="selectedCategory() === null"
+            (click)="setCategory(null)"
+          >
+            <span class="tab-label">All</span>
+            <span class="tab-count">{{ allLines().length }}</span>
+          </button>
+          @for (cat of categories(); track cat.key) {
+            <button
+              type="button"
+              role="tab"
+              class="category-tab"
+              [class.active]="selectedCategory() === cat.key"
+              [attr.aria-selected]="selectedCategory() === cat.key"
+              (click)="setCategory(cat.key)"
+            >
+              <span class="tab-label">{{ cat.key }}</span>
+              <span class="tab-count">{{ cat.count }}</span>
+            </button>
+          }
+        </nav>
+      }
+
       <main class="map-wrapper">
         @if (loading()) {
           <div class="loading-state">
@@ -210,6 +239,63 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
       margin: 0;
       color: var(--app-map-on-surface-variant);
       font-size: 0.9375rem;
+    }
+
+    .category-tabs {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 4px;
+      background: var(--app-map-overlay-bg);
+      border: 1px solid var(--app-map-outline);
+      border-radius: var(--app-radius-md);
+    }
+
+    .category-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--app-map-on-surface-variant);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .category-tab:hover {
+      background: var(--app-map-surface-container-high);
+      color: var(--app-map-on-surface);
+    }
+
+    .category-tab.active {
+      background: var(--app-map-accent);
+      color: var(--app-map-on-accent, #fff);
+    }
+
+    .category-tab .tab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 9px;
+      background: var(--app-map-surface-container-high);
+      color: var(--app-map-on-surface-variant);
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .category-tab.active .tab-count {
+      background: rgba(255, 255, 255, 0.25);
+      color: inherit;
     }
 
     .map-wrapper {
@@ -455,15 +541,44 @@ export class NetworkMapComponent implements OnInit {
     stringify: (v: string[] | null) => v === null ? null : v.join(','),
   });
 
-  lines = computed(() => this.networkMap()?.lines ?? []);
+  /** Query param ?cat=TRAM — null means "all categories" */
+  readonly categoryParam = linkedQueryParam('cat');
+
+  allLines = computed(() => this.networkMap()?.lines ?? []);
+
+  /** Categories present in the network, ordered by line count desc */
+  categories = computed(() => {
+    const counts = new Map<string, number>();
+    for (const line of this.allLines()) {
+      const key = line.category ?? 'Other';
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count);
+  });
+
+  /** Currently selected category — null when the param is missing or invalid */
+  selectedCategory = computed(() => {
+    const param = this.categoryParam();
+    if (!param) {return null;}
+    return this.categories().some(c => c.key === param) ? param : null;
+  });
+
+  /** Lines after applying the category filter (used by the line filter bar) */
+  lines = computed(() => {
+    const cat = this.selectedCategory();
+    if (!cat) {return this.allLines();}
+    return this.allLines().filter(l => (l.category ?? 'Other') === cat);
+  });
 
   allLineCodes = computed(() => this.lines().map(l => l.code));
 
-  /** Resolves null (no param) → all codes; filters out invalid codes */
+  /** Resolves null (no param) → all codes within the active category */
   private readonly userVisibleLineCodes = computed(() => {
+    const valid = new Set(this.allLineCodes());
     const param = this.linesParam();
     if (param === null) {return this.allLineCodes();}
-    const valid = new Set(this.allLineCodes());
     return param.filter(code => valid.has(code));
   });
 
@@ -488,14 +603,17 @@ export class NetworkMapComponent implements OnInit {
     if (!map) {
       return { stops: [], bounds: { minX: 0, minY: 0, maxX: 1000, maxY: 1000, width: 1000, height: 1000 } };
     }
-    return this.layoutService.calculateLayout(map.stops, map.bounds, map.lines);
+    // Pass only the category-filtered lines so the layout has exactly N rows for N visible lines
+    return this.layoutService.calculateLayout(map.stops, map.bounds, this.lines());
   });
 
   layoutStops = computed(() => this.layoutData().stops);
 
+  // Use allLines() so colors/ids of interchange lines outside the active
+  // category still resolve correctly in popups and badges.
   lineColorMap = computed(() => {
     const map = new Map<string, string>();
-    for (const line of this.lines()) {
+    for (const line of this.allLines()) {
       map.set(line.code, line.color);
     }
     return map;
@@ -504,7 +622,7 @@ export class NetworkMapComponent implements OnInit {
   /** Map line code → line id for reverse lookups */
   private readonly lineIdByCode = computed(() => {
     const map = new Map<string, string>();
-    for (const line of this.lines()) {
+    for (const line of this.allLines()) {
       map.set(line.code, line.id);
     }
     return map;
@@ -584,6 +702,17 @@ export class NetworkMapComponent implements OnInit {
 
   toggleNetworkView(): void {
     this.showFullNetwork.update(v => !v);
+  }
+
+  setCategory(category: string | null): void {
+    // Reset line filter when switching category to avoid lingering invalid codes
+    this.linesParam.set(null);
+    this.categoryParam.set(category);
+  }
+
+  /** Focus a single line: set lines param to just this code, keep category if set */
+  focusLine(code: string): void {
+    this.linesParam.set([code]);
   }
 
   private stopDialogRef: MatDialogRef<StopPopupComponent> | null = null;
