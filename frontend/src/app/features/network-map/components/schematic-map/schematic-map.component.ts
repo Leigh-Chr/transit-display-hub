@@ -7,12 +7,14 @@ import {
   computed,
   ElementRef,
   viewChild,
-  effect
+  effect,
+  inject,
 } from '@angular/core';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MessageSeverity, NetworkLine, NetworkMapAlerts } from '@shared/models';
 import { LayoutStop } from '../../services/schematic-layout.service';
+import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
 import { SvgPanZoom } from '../../utils/svg-pan-zoom';
 import { exportSvgToFile } from '../../utils/svg-export';
@@ -130,7 +132,7 @@ function severityRank(s: MessageSeverity): number {
                 class="route-active-path"
               />
             }
-            @for (arrow of routeDirectionArrows(); track $index) {
+            @for (arrow of routeDirectionArrows(); track arrow.x + ':' + arrow.y) {
               <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ')'" class="route-arrow">
                 <polygon
                   [attr.points]="arrow.right ? '-5,-4 5,0 -5,4' : '5,-4 -5,0 5,4'"
@@ -307,7 +309,7 @@ function severityRank(s: MessageSeverity): number {
             @if (alerts().networkAlerts.length > 0) {
               <div class="alert-section-label">Network</div>
               <mat-accordion multi>
-                @for (alert of alerts().networkAlerts; track $index) {
+                @for (alert of alerts().networkAlerts; track alert.title) {
                   <mat-expansion-panel [class]="'alert-panel alert-' + alert.severity.toLowerCase()">
                     <mat-expansion-panel-header>
                       <mat-panel-title>
@@ -326,7 +328,7 @@ function severityRank(s: MessageSeverity): number {
               <div class="alert-section-label">Lines</div>
               <mat-accordion multi>
                 @for (entry of visibleLineAlerts(); track entry.line.id) {
-                  @for (alert of entry.alerts; track $index) {
+                  @for (alert of entry.alerts; track alert.title) {
                     <mat-expansion-panel [class]="'alert-panel alert-' + alert.severity.toLowerCase()">
                       <mat-expansion-panel-header>
                         <mat-panel-title>
@@ -448,6 +450,7 @@ export class SchematicMapComponent {
 
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
+  private readonly rowLayout = inject(NetworkRowLayoutService);
 
   sortedLines = computed(() => {
     return [...this.lines()].sort((a, b) => {
@@ -657,15 +660,9 @@ export class SchematicMapComponent {
    * so that vertical connectors stay aligned across rows.
    */
   private readonly networkStopPositions = computed<Map<string, Map<string, number>>>(() => {
-    const lines = this.visibleLines();
     const pad = this.NETWORK_PADDING;
     const size = 1000 - 2 * pad;
-
-    const desiredPos = this.computeDesiredPositions(lines, pad, size);
-    const interchangeX = this.computeInterchangePositions(lines, desiredPos);
-    const minGap = this.enforceMinimumInterchangeSpacing(lines, interchangeX, size);
-
-    return this.pinAndRedistribute(lines, interchangeX, minGap, pad, size);
+    return this.rowLayout.layout(this.visibleLines(), { padding: pad, size }).positions;
   });
 
   /** Each line as a horizontal row with its stops positioned across the full width */
@@ -1013,165 +1010,6 @@ export class SchematicMapComponent {
   onStopClick(stop: LayoutStop, event: Event): void {
     event.stopPropagation();
     this.stopSelected.emit(stop);
-  }
-
-  /** Evenly distribute stops between two X bounds (exclusive of fixed endpoints) */
-  private distributeSegment(
-    itinerary: string[], fromIdx: number, toIdx: number,
-    fromX: number, toX: number, out: Map<string, number>
-  ): void {
-    const count = toIdx - fromIdx;
-    if (count <= 0) {return;}
-    const totalSlots = count + 1;
-    const spacing = (toX - fromX) / totalSlots;
-    for (let i = 0; i < count; i++) {
-      const stopId = itinerary[fromIdx + i];
-      if (stopId) {
-        out.set(stopId, fromX + (i + 1) * spacing);
-      }
-    }
-  }
-
-  /** Step 1: compute desired even spacing per line (full width) */
-  private computeDesiredPositions(
-    lines: NetworkLine[], pad: number, size: number
-  ): Map<string, Map<string, number>> {
-    const desiredPos = new Map<string, Map<string, number>>();
-    for (const line of lines) {
-      const it = line.itineraries[0] ?? [];
-      if (it.length === 0) {continue;}
-      const spacing = it.length > 1 ? size / (it.length - 1) : 0;
-      const m = new Map<string, number>();
-      it.forEach((id, i) => m.set(id, pad + i * spacing));
-      desiredPos.set(line.id, m);
-    }
-    return desiredPos;
-  }
-
-  /** Step 2: find interchange stops and compute their average X position */
-  private computeInterchangePositions(
-    lines: NetworkLine[], desiredPos: Map<string, Map<string, number>>
-  ): Map<string, number> {
-    const stopLineIds = new Map<string, string[]>();
-    for (const line of lines) {
-      for (const id of (line.itineraries[0] ?? [])) {
-        if (!stopLineIds.has(id)) {stopLineIds.set(id, []);}
-        stopLineIds.get(id)?.push(line.id);
-      }
-    }
-
-    const interchangeX = new Map<string, number>();
-    for (const [stopId, lineIds] of stopLineIds) {
-      if (lineIds.length <= 1) {continue;}
-      let sum = 0;
-      for (const lid of lineIds) {sum += desiredPos.get(lid)?.get(stopId) ?? 0;}
-      interchangeX.set(stopId, sum / lineIds.length);
-    }
-    return interchangeX;
-  }
-
-  /** Step 2.5: enforce minimum spacing between interchange positions globally */
-  private enforceMinimumInterchangeSpacing(
-    lines: NetworkLine[], interchangeX: Map<string, number>, size: number
-  ): number {
-    const maxStops = Math.max(...lines.map(l => (l.itineraries[0] ?? []).length), 1);
-    const minGap = Math.max(40, size / (maxStops * 1.5));
-
-    for (const line of lines) {
-      const it = line.itineraries[0] ?? [];
-      const ixInOrder: string[] = it.filter(id => interchangeX.has(id));
-      if (ixInOrder.length < 2) {continue;}
-
-      for (let i = 1; i < ixInOrder.length; i++) {
-        const prevId = ixInOrder[i - 1];
-        const curId = ixInOrder[i];
-        if (!prevId || !curId) {continue;}
-        const prevX = interchangeX.get(prevId);
-        const curX = interchangeX.get(curId);
-        if (prevX !== undefined && curX !== undefined && curX - prevX < minGap) {
-          interchangeX.set(curId, prevX + minGap);
-        }
-      }
-    }
-
-    return minGap;
-  }
-
-  /** Step 3: pin edge/interchange stops and redistribute intermediate stops */
-  private pinAndRedistribute(
-    lines: NetworkLine[], interchangeX: Map<string, number>,
-    minGap: number, pad: number, size: number
-  ): Map<string, Map<string, number>> {
-    const result = new Map<string, Map<string, number>>();
-    const leftX = pad;
-    const rightX = pad + size;
-
-    for (const line of lines) {
-      const it = line.itineraries[0] ?? [];
-      if (it.length === 0) {continue;}
-
-      const lineMap = this.positionLineStops(it, interchangeX, minGap, leftX, rightX, size);
-      result.set(line.id, lineMap);
-    }
-
-    return result;
-  }
-
-  /** Position all stops for a single line, pinning interchanges and distributing the rest */
-  private positionLineStops(
-    itinerary: string[], interchangeX: Map<string, number>,
-    minGap: number, leftX: number, rightX: number, size: number
-  ): Map<string, number> {
-    const lineMap = new Map<string, number>();
-
-    if (itinerary.length === 1) {
-      const firstId = itinerary[0];
-      if (firstId) {
-        const ix = interchangeX.get(firstId);
-        lineMap.set(firstId, ix ?? leftX + size / 2);
-      }
-      return lineMap;
-    }
-
-    const anchors: { idx: number; x: number }[] = [];
-
-    const firstId = itinerary[0] ?? '';
-    const firstIx = interchangeX.get(firstId);
-    const firstX = firstIx ?? leftX;
-    anchors.push({ idx: 0, x: firstX });
-    lineMap.set(firstId, firstX);
-
-    for (let i = 1; i < itinerary.length - 1; i++) {
-      const stopId = itinerary[i];
-      if (!stopId) {continue;}
-      const ix = interchangeX.get(stopId);
-      if (ix !== undefined) {
-        const prev = anchors[anchors.length - 1];
-        if (!prev) {continue;}
-        const x = Math.max(ix, prev.x + minGap);
-        anchors.push({ idx: i, x });
-        lineMap.set(stopId, x);
-      }
-    }
-
-    const lastId = itinerary[itinerary.length - 1] ?? '';
-    const lastIx = interchangeX.get(lastId);
-    const lastAnchor = anchors[anchors.length - 1];
-    const lastX = lastIx !== undefined && lastAnchor ? Math.max(lastIx, lastAnchor.x + minGap) : rightX;
-    anchors.push({ idx: itinerary.length - 1, x: lastX });
-    lineMap.set(lastId, lastX);
-
-    for (let a = 0; a < anchors.length - 1; a++) {
-      const anchorA = anchors[a];
-      const anchorB = anchors[a + 1];
-      if (!anchorA || !anchorB) {continue;}
-      this.distributeSegment(
-        itinerary, anchorA.idx + 1, anchorB.idx,
-        anchorA.x, anchorB.x, lineMap
-      );
-    }
-
-    return lineMap;
   }
 
   // --- Zoom / Pan ---
