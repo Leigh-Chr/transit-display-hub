@@ -40,6 +40,8 @@ interface NetworkStopLabel {
   lineId: string;
   x: number;
   y: number;
+  /** Whether the rotated label fans up-right (above the row) or down-right (below). */
+  orientation: 'up' | 'down';
 }
 
 function severityRank(s: MessageSeverity): number {
@@ -296,7 +298,7 @@ function hashStopId(s: string): number {
               <g [attr.transform]="'translate(' + label.x + ',' + label.y + ')'"
                  [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(label.stop.id, label.lineId)">
                 <text
-                  transform="rotate(-45) translate(8, -8)"
+                  [attr.transform]="label.orientation === 'down' ? 'rotate(45) translate(8, 8)' : 'rotate(-45) translate(8, -8)'"
                   class="stop-name"
                   [class.network-stop-name]="!isSingleLineMode()"
                   [class.interchange]="isInterchange(label.stop)"
@@ -529,8 +531,12 @@ export class SchematicMapComponent {
     }
 
     const sideMargin = 80;
-    const topMargin = 120;  // rotated labels
-    const bottomMargin = this.isSingleLineMode() ? 80 : 50; // interchange badges in single-line
+    // Rotated labels span ~150 SVG units along their axis for the longest French
+    // stop names. We reserve that on every side that can host them: top is always
+    // populated by upward labels; bottom now also receives the bottom row's
+    // downward labels in multi-line, plus alternating downward labels in single-line.
+    const topMargin = 160;
+    const bottomMargin = 160;
 
     const contentW = Math.max((maxX - minX) + sideMargin * 2, 200);
     const w = contentW / 0.6;  // content occupies ~60% of the view width
@@ -657,21 +663,42 @@ export class SchematicMapComponent {
     return `M ${x},${minY} Q ${cx},${midY} ${x},${maxY}`;
   }
 
-  /** Labels for stops. Interchange stops appear on every row; others only once (topmost). */
+  /** Labels for stops. Interchange stops appear on every row; others only once (topmost).
+   *  Each label carries an 'up'/'down' orientation:
+   *  - single-line: alternate by stop index so adjacent labels fan in opposite
+   *    diagonals (terminus stays up for visual hierarchy);
+   *  - multi-line: bottom-most row sends labels down so they no longer cross
+   *    the rows above; every other row keeps the upward orientation. */
   networkStopLabels = computed<NetworkStopLabel[]>(() => {
     const rows = this.networkLineRows();
     const seen = new Set<string>();
     const labels: NetworkStopLabel[] = [];
+    const single = this.isSingleLineMode();
+    const lastRowIdx = rows.length - 1;
 
-    for (const row of rows) {
-      for (const { stop, x } of row.stops) {
+    rows.forEach((row, rowIdx) => {
+      const stops = row.stops;
+      const isBottomRow = !single && rowIdx === lastRowIdx;
+
+      stops.forEach(({ stop, x }, stopIdx) => {
         const isIc = stop.lineCodes.length > 1;
         if (isIc || !seen.has(stop.id)) {
           seen.add(stop.id);
-          labels.push({ stop, lineId: row.line.id, x, y: row.y });
+
+          let orientation: 'up' | 'down';
+          if (isBottomRow) {
+            orientation = 'down';
+          } else if (single) {
+            const isEdge = stopIdx === 0 || stopIdx === stops.length - 1;
+            orientation = isEdge ? 'up' : (stopIdx % 2 === 0 ? 'up' : 'down');
+          } else {
+            orientation = 'up';
+          }
+
+          labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation });
         }
-      }
-    }
+      });
+    });
 
     return labels;
   });
