@@ -57,6 +57,10 @@ public class Line {
     @Column(length = 10)
     private LineType type;
 
+    @Size(max = 50, message = "Category must be at most 50 characters")
+    @Column(length = 50)
+    private String category;
+
     @ManyToMany(mappedBy = "lines")
     @Builder.Default
     private Set<Stop> stops = new HashSet<>();

@@ -18,6 +18,7 @@ public record NetworkMapResponse(
             String name,
             String color,
             LineType type,
+            String category,
             List<List<UUID>> itineraries
     ) {}
 

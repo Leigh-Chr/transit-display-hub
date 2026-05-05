@@ -112,6 +112,7 @@ public class NetworkMapService {
                 line.getName(),
                 line.getColor(),
                 line.getType(),
+                line.getCategory(),
                 itineraries
         );
     }

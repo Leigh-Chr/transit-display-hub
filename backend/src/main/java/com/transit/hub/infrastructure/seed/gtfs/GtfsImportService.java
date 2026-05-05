@@ -44,6 +44,7 @@ public class GtfsImportService {
 
     private static final int LINE_CODE_MAX_LENGTH = 10;
     private static final int LINE_NAME_MAX_LENGTH = 100;
+    private static final int LINE_CATEGORY_MAX_LENGTH = 50;
     private static final int STOP_NAME_MAX_LENGTH = 100;
     private static final String DEFAULT_COLOR = "#888888";
     private static final double SCHEMATIC_SIZE = 1000.0;
@@ -111,21 +112,34 @@ public class GtfsImportService {
                 String longName = optional(record, "route_long_name");
                 String color = optional(record, "route_color");
                 int routeType = parseInt(record.get("route_type"), 3);
+                String networkId = optional(record, "network_id");
 
                 String code = truncate(firstNonBlank(shortName, longName, routeId), LINE_CODE_MAX_LENGTH);
                 String name = truncate(firstNonBlank(longName, shortName, routeId), LINE_NAME_MAX_LENGTH);
                 LineType type = mapRouteType(routeType);
+                String category = truncate(deriveCategory(networkId, routeType), LINE_CATEGORY_MAX_LENGTH);
 
                 Line line = lineRepository.save(Line.builder()
                         .code(uniqueCode(code, result.values()))
                         .name(name)
                         .color(formatColor(color))
                         .type(type)
+                        .category(category)
                         .build());
                 result.put(routeId, line);
             }
         }
-        log.info("GTFS import: {} lines created", result.size());
+        // Collapse to route-type labels when network_id is absent or degenerate (single bucket)
+        long distinctCategories = result.values().stream().map(Line::getCategory).distinct().count();
+        if (distinctCategories <= 1) {
+            for (Line line : result.values()) {
+                line.setCategory(routeTypeLabel(line.getType()));
+                lineRepository.save(line);
+            }
+        }
+        log.info("GTFS import: {} lines created across {} categories",
+                result.size(),
+                result.values().stream().map(Line::getCategory).distinct().count());
         return result;
     }
 
@@ -378,6 +392,25 @@ public class GtfsImportService {
                 .setIgnoreEmptyLines(true)
                 .build()
                 .parse(Files.newBufferedReader(file, StandardCharsets.UTF_8));
+    }
+
+    private static String deriveCategory(String networkId, int routeType) {
+        if (!isBlank(networkId)) {
+            return networkId.trim();
+        }
+        return routeTypeLabel(mapRouteType(routeType));
+    }
+
+    private static String routeTypeLabel(LineType type) {
+        if (type == null) {
+            return "Bus";
+        }
+        return switch (type) {
+            case TRAM -> "Tram";
+            case METRO -> "Metro";
+            case TRAIN -> "Train";
+            case BUS -> "Bus";
+        };
     }
 
     private static LineType mapRouteType(int routeType) {
