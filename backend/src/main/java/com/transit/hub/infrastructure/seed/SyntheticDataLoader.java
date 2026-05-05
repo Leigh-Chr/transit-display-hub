@@ -1,4 +1,4 @@
-package com.transit.hub.infrastructure;
+package com.transit.hub.infrastructure.seed;
 
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Device;
@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "app.data-loader.enabled", havingValue = "true", matchIfMissing = false)
-public class DataLoader implements CommandLineRunner {
+@ConditionalOnProperty(name = "app.data-loader.source", havingValue = "synthetic")
+public class SyntheticDataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final LineRepository lineRepository;
