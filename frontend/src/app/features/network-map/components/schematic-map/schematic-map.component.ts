@@ -104,22 +104,19 @@ function hashStopId(s: string): number {
           preserveAspectRatio="xMidYMid meet"
           class="line-diagram network-diagram"
         >
-          <!-- Interchange connectors (gently curved dashed paths) — multi-line only.
-               vector-effect=non-scaling-stroke pins the dash width to screen
-               pixels so the dashes don't blow up at high zoom. -->
+          <!-- Interchange connectors (gently curved dashed paths) — multi-line only -->
           @if (!isSingleLineMode()) {
             @for (conn of interchangeConnectors(); track conn.stopId) {
               <path
                 [attr.d]="conn.path"
                 fill="none"
-                vector-effect="non-scaling-stroke"
                 class="interchange-connector"
                 [class.route-dimmed]="hasRoute() && !routeTransferIds().has(conn.stopId)"
               />
             }
           }
 
-          <!-- Line paths — strokes pinned to screen pixels via non-scaling-stroke -->
+          <!-- Line paths -->
           @for (row of networkLineRows(); track row.line.id) {
             <path
               [attr.d]="row.path"
@@ -127,7 +124,6 @@ function hashStopId(s: string): number {
               [attr.stroke-width]="getLineStrokeWidth(row.line)"
               fill="none"
               stroke-linecap="round"
-              vector-effect="non-scaling-stroke"
               class="network-line-path"
               [class.route-dimmed]="hasRoute()"
             />
@@ -142,12 +138,11 @@ function hashStopId(s: string): number {
                 [attr.stroke-width]="getRouteStrokeWidth(overlay.lineId)"
                 fill="none"
                 stroke-linecap="round"
-                vector-effect="non-scaling-stroke"
                 class="route-active-path"
               />
             }
             @for (arrow of routeDirectionArrows(); track arrow.x + ':' + arrow.y) {
-              <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ') scale(' + invZoom() + ')'" class="route-arrow">
+              <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ')'" class="route-arrow">
                 <polygon
                   [attr.points]="arrow.right ? '-5,-4 5,0 -5,4' : '5,-4 -5,0 5,4'"
                   fill="white"
@@ -157,36 +152,35 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Line code badges + name (left of each row), pinned at constant
-               screen size so they neither shrink at low zoom nor explode at high. -->
+          <!-- Line code badges + name (left of each row) -->
           @for (row of networkLineRows(); track row.line.id) {
             @if (row.stops.length > 0) {
-              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 30) + ',' + row.y + ') scale(' + invZoom() + ')'"
+              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 40) + ',' + row.y + ')'"
                  [class.route-dimmed]="hasRoute() && !routeActiveEdges().has(row.line.id)">
                 <rect
-                  [attr.x]="-22"
-                  [attr.y]="-12"
+                  [attr.x]="-30"
+                  [attr.y]="-16"
                   [attr.width]="getLineBadgeWidth(row.line.code)"
-                  height="24"
-                  rx="5"
+                  height="32"
+                  rx="6"
                   [attr.fill]="row.line.color"
                   class="line-badge-bg"
                 />
                 <text
-                  [attr.x]="getLineBadgeWidth(row.line.code) / 2 - 22"
+                  [attr.x]="getLineBadgeWidth(row.line.code) / 2 - 30"
                   dominant-baseline="central"
                   text-anchor="middle"
                   class="line-badge-text"
                 >{{ row.line.code }}</text>
                 @if (row.line.name && row.line.name !== row.line.code) {
-                  <g [attr.transform]="'translate(-22, 26)'">
+                  <g [attr.transform]="'translate(-30, 32)'">
                     @if (row.line.type) {
-                      <g transform="translate(0, -7) scale(0.7)" class="line-type-icon">
+                      <g transform="translate(0, -9) scale(0.9)" class="line-type-icon">
                         <path [attr.d]="getTransportIcon(row.line.type)"/>
                       </g>
                     }
                     <text
-                      [attr.x]="row.line.type ? 18 : 0"
+                      [attr.x]="row.line.type ? 22 : 0"
                       dominant-baseline="central"
                       class="line-name-label"
                     >{{ row.line.name }}</text>
@@ -196,14 +190,13 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Stop circles — the whole stop-group (circle, rings, route markers,
-               alert badge, hidden-line dots) is wrapped in scale(1/zoom) so each
-               icon keeps a fixed screen size. The translate stays in SVG units so
-               positioning along the line stays geometrically correct. -->
+          <!-- Stop circles. Geometry scales with zoom (Google Maps style only
+               applies to labels above) so multi-line views render at a
+               readable size at default zoom. -->
           @for (row of networkLineRows(); track row.line.id) {
             @for (s of row.stops; track s.stop.id) {
               <g
-                [attr.transform]="'translate(' + s.x + ',' + row.y + ') scale(' + invZoom() + ')'"
+                [attr.transform]="'translate(' + s.x + ',' + row.y + ')'"
                 class="stop-group"
                 [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(s.stop.id, row.line.id)"
                 (click)="onStopClick(s.stop, $event)"
@@ -220,13 +213,13 @@ function hashStopId(s: string): number {
                 />
                 @if (isRowTerminus(s.stop.id, row)) {
                   <circle
-                    [attr.r]="isSingleLineMode() ? 8 : 7"
+                    [attr.r]="isSingleLineMode() ? 8 : 10"
                     [attr.fill]="isInterchange(s.stop) ? row.line.color : 'white'"
                   />
                 }
                 @if (isInterchange(s.stop) && !isRowTerminus(s.stop.id, row)) {
                   <circle
-                    [attr.r]="isSingleLineMode() ? 5 : 4"
+                    [attr.r]="isSingleLineMode() ? 5 : 6"
                     fill="#333"
                   />
                 }
@@ -261,24 +254,24 @@ function hashStopId(s: string): number {
                 @if (!hasRoute() && alertSeverityMap().get(s.stop.id); as severity) {
                   <g [attr.transform]="'translate(' + getAlertOffset() + ',' + (-getAlertOffset()) + ')'"
                      [class]="'alert-badge alert-badge-' + severity.toLowerCase()">
-                    <circle r="8" stroke="white" stroke-width="2" />
+                    <circle r="11" stroke="white" stroke-width="2.5" />
                     <text text-anchor="middle" dominant-baseline="central" fill="white"
-                          font-size="10" font-weight="bold">!</text>
+                          font-size="14" font-weight="bold">!</text>
                   </g>
                 }
 
                 <!-- Badges for hidden lines passing through this stop (cap at 4, then +N) -->
                 @if (!hasRoute() && hiddenLinesMap().get(s.stop.id); as hiddenCodes) {
                   @let displayCount = getHiddenBadgeDisplayCount(hiddenCodes.length);
-                  <g [attr.transform]="'translate(0, ' + (isSingleLineMode() ? 28 : 22) + ')'">
+                  <g [attr.transform]="'translate(0, ' + (isSingleLineMode() ? 28 : 30) + ')'">
                     @for (code of hiddenCodes.slice(0, displayCount); track code; let j = $index) {
                       <g [attr.transform]="getBadgeTransform(j, displayCount + (hiddenCodes.length > displayCount ? 1 : 0))">
-                        <circle r="13" [attr.fill]="getLineColor(code)" />
+                        <circle r="16" [attr.fill]="getLineColor(code)" />
                         <text
                           text-anchor="middle"
                           dominant-baseline="central"
                           fill="white"
-                          font-size="12"
+                          font-size="15"
                           font-weight="bold"
                         >{{ code }}</text>
                       </g>
@@ -286,12 +279,12 @@ function hashStopId(s: string): number {
                     @if (hiddenCodes.length > displayCount) {
                       <g [attr.transform]="getBadgeTransform(displayCount, displayCount + 1)">
                         <title>{{ hiddenCodes.slice(displayCount).join(', ') }}</title>
-                        <circle r="13" fill="var(--app-map-on-surface-muted, #888)" />
+                        <circle r="16" fill="var(--app-map-on-surface-muted, #888)" />
                         <text
                           text-anchor="middle"
                           dominant-baseline="central"
                           fill="white"
-                          font-size="12"
+                          font-size="15"
                           font-weight="bold"
                         >+{{ hiddenCodes.length - displayCount }}</text>
                       </g>
@@ -907,20 +900,18 @@ export class SchematicMapComponent {
     this.filterChange.emit([code]);
   }
 
-  /** Stroke width for line paths. Now expressed in *screen pixels* via
-   *  vector-effect="non-scaling-stroke", so these values map directly to
-   *  what the user sees regardless of zoom level.
-   *  Trunk modes (METRO, TRAM, TRAIN) get a heavier weight than buses so
-   *  the structuring backbone of the network reads at a glance. */
+  /** Stroke width for line paths in SVG user units. Trunk modes (METRO,
+   *  TRAM, TRAIN) get a heavier weight than buses so the structuring
+   *  backbone of the network reads at a glance. */
   getLineStrokeWidth(line: NetworkLine): number {
     if (this.isSingleLineMode()) {return 8;}
-    return this.isTrunkLine(line) ? 7 : 5;
+    return this.isTrunkLine(line) ? 10 : 7;
   }
 
   getRouteStrokeWidth(lineId: string): number {
     if (this.isSingleLineMode()) {return 10;}
     const line = this.lines().find(l => l.id === lineId);
-    return line && this.isTrunkLine(line) ? 9 : 7;
+    return line && this.isTrunkLine(line) ? 13 : 10;
   }
 
   private isTrunkLine(line: NetworkLine): boolean {
@@ -934,9 +925,9 @@ export class SchematicMapComponent {
     if (this.isSingleLineMode()) {
       return terminus ? 14 : 12;
     }
-    // Multi-line values bumped to compensate for the wider view-box: at
-    // ~0.66 screen-px / SVG-unit, a 6-unit circle was barely 4 px on screen.
-    return terminus ? 13 : 10;
+    // Multi-line: scale-with-zoom, so values must already render at a
+    // readable size at default zoom (~0.66 screen-px / SVG-unit).
+    return terminus ? 18 : 14;
   }
 
   isNetworkTerminus(stop: LayoutStop): boolean {
@@ -977,7 +968,7 @@ export class SchematicMapComponent {
   }
 
   getLineBadgeWidth(code: string): number {
-    return Math.max(48, code.length * 12 + 20);
+    return Math.max(64, code.length * 14 + 24);
   }
 
   /** In multi-line views the row gap is too tight (120 SVG units) for the
@@ -1014,7 +1005,7 @@ export class SchematicMapComponent {
   }
 
   getAlertOffset(): number {
-    return this.isSingleLineMode() ? 10 : 9;
+    return this.isSingleLineMode() ? 10 : 12;
   }
 
   hasStopAlerts(): boolean {
@@ -1047,7 +1038,7 @@ export class SchematicMapComponent {
 
   getBadgeTransform(index: number, total: number): string {
     const COLS = 4;
-    const GAP = 28; // SVG units between hidden-line badges (was 20 when r=9)
+    const GAP = 36; // SVG units between hidden-line badges (sized for r=16)
     const col = index % COLS;
     const row = Math.floor(index / COLS);
     const colsInRow = row < Math.floor(total / COLS) ? COLS : total % COLS || COLS;

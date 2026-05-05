@@ -165,9 +165,9 @@ describe('SchematicMapComponent', () => {
 
   describe('helper methods', () => {
     it('should return correct line badge width', () => {
-      // min 48 + 12 px per char extra above 2 chars
-      expect(component.getLineBadgeWidth('L1')).toBe(48);
-      expect(component.getLineBadgeWidth('LONG')).toBe(68);
+      // min 64 SVG units, 14 per char + 24 above the floor
+      expect(component.getLineBadgeWidth('L1')).toBe(64);
+      expect(component.getLineBadgeWidth('LONG')).toBe(80);
     });
 
     it('should return correct line color', () => {
@@ -192,7 +192,7 @@ describe('SchematicMapComponent', () => {
 
       fixture.componentRef.setInput('visibleLineCodes', ['L1', 'L2']);
       fixture.detectChanges();
-      expect(component.getAlertOffset()).toBe(9);
+      expect(component.getAlertOffset()).toBe(12);
     });
 
     it('should compute badge transform correctly', () => {
