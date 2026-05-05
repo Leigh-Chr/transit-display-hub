@@ -158,9 +158,10 @@
 
 .stop-name {
   // Sized in SVG user units. Because the diagram view-box is wider than the
-  // viewport (~1666 → ~1100 px), 1 SVG unit ≈ 0.7 screen px at default zoom.
-  // Bumped from 12 / 10 to 18 / 16 so labels stay legible (≈ 12–14 screen px)
-  // when the zoom-invariant transform pins them at constant screen size.
+  // viewport (~1666 → ~1100 px), 1 SVG unit ≈ 0.7 screen px in single-line
+  // mode and even less in multi-line where the view-box also grows in height
+  // for the extra rows. Multi-line labels are bumped well above their
+  // single-line counterparts so the perceived screen size stays comparable.
   font-size: 18px;
   font-family: system-ui, -apple-system, sans-serif;
   fill: var(--app-map-on-surface);
@@ -172,7 +173,7 @@
 }
 
 .network-stop-name {
-  font-size: 16px;
+  font-size: 22px;
 }
 
 .stop-name.interchange {
@@ -186,11 +187,11 @@
 }
 
 .network-stop-name.interchange {
-  font-size: 17px;
+  font-size: 24px;
 }
 
 .network-stop-name.terminus {
-  font-size: 17px;
+  font-size: 24px;
 }
 
 :host-context(.dark-theme) {
