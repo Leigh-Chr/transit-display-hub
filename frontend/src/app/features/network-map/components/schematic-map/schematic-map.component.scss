@@ -157,7 +157,11 @@
 .alert-badge-info circle { fill: var(--app-info); }
 
 .stop-name {
-  font-size: 12px;
+  // Sized in SVG user units. Because the diagram view-box is wider than the
+  // viewport (~1666 → ~1100 px), 1 SVG unit ≈ 0.7 screen px at default zoom.
+  // Bumped from 12 / 10 to 18 / 16 so labels stay legible (≈ 12–14 screen px)
+  // when the zoom-invariant transform pins them at constant screen size.
+  font-size: 18px;
   font-family: system-ui, -apple-system, sans-serif;
   fill: var(--app-map-on-surface);
   paint-order: stroke;
@@ -168,25 +172,25 @@
 }
 
 .network-stop-name {
-  font-size: 10px;
+  font-size: 16px;
 }
 
 .stop-name.interchange {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 19px;
 }
 
 .stop-name.terminus {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 19px;
 }
 
 .network-stop-name.interchange {
-  font-size: 11px;
+  font-size: 17px;
 }
 
 .network-stop-name.terminus {
-  font-size: 11px;
+  font-size: 17px;
 }
 
 :host-context(.dark-theme) {
