@@ -34,7 +34,8 @@ interface NetworkLineRow {
 interface InterchangeConnector {
   stopId: string;
   name: string;
-  /** SVG path data for the bow between the two interchange endpoints. */
+  /** SVG path data for the straight vertical line between the topmost
+   *  and bottommost row that hosts this interchange. */
   path: string;
 }
 
@@ -49,16 +50,6 @@ interface NetworkStopLabel {
 
 function severityRank(s: MessageSeverity): number {
   switch (s) { case 'INFO': return 0; case 'WARNING': return 1; case 'CRITICAL': return 2; }
-}
-
-/** Stable, fast 32-bit hash. Used to pick a deterministic bow direction
- *  for interchange connectors so the same stop always curves the same way. */
-function hashStopId(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
-  }
-  return h < 0 ? -h : h;
 }
 
 @Component({
@@ -697,12 +688,10 @@ export class SchematicMapComponent {
     });
   });
 
-  /** Curved dashed connectors between rows for interchange stops. The bow
-   *  is alternated left/right based on a deterministic hash of the stop id
-   *  so adjacent connectors visually fan out instead of stacking into a
-   *  single dense vertical column. We track minY/maxY incrementally so a
-   *  network with 50+ visible rows stays O(rows × stops) instead of paying
-   *  an extra O(rows) spread on Math.min/max per interchange. */
+  /** Straight dashed connectors between rows for interchange stops. We
+   *  track minY/maxY incrementally so a network with 50+ visible rows
+   *  stays O(rows × stops) instead of paying an extra O(rows) spread on
+   *  Math.min/max per interchange. */
   interchangeConnectors = computed<InterchangeConnector[]>(() => {
     const rows = this.networkLineRows();
     const positions = new Map<string, { name: string; x: number; minY: number; maxY: number; count: number }>();
@@ -726,25 +715,11 @@ export class SchematicMapComponent {
       result.push({
         stopId,
         name: v.name,
-        path: this.buildConnectorPath(stopId, v.x, v.minY, v.maxY),
+        path: `M ${v.x},${v.minY} L ${v.x},${v.maxY}`,
       });
     }
     return result;
   });
-
-  private buildConnectorPath(stopId: string, x: number, minY: number, maxY: number): string {
-    const span = maxY - minY;
-    if (span < 1) {
-      return `M ${x},${minY} L ${x},${maxY}`;
-    }
-    // Bow magnitude grows with span but is capped so cross-row connectors
-    // still read as vertical, not as wild loops.
-    const bow = Math.min(28, span * 0.12);
-    const direction = hashStopId(stopId) % 2 === 0 ? 1 : -1;
-    const midY = (minY + maxY) / 2;
-    const cx = x + bow * direction;
-    return `M ${x},${minY} Q ${cx},${midY} ${x},${maxY}`;
-  }
 
   /** Labels for stops. All labels go up so the area below each stop is
    *  reserved for the hidden-line correspondence badges. Each stop gets a
