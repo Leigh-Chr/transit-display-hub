@@ -367,6 +367,15 @@ export class SchematicMapComponent {
 
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
+  /** Default canvas inner extent. Used as the lower bound for the
+   *  horizontal axis and as the constant vertical extent — only the
+   *  horizontal side grows for long lines. */
+  private readonly DEFAULT_INNER_SIZE = 840;
+  /** Minimum horizontal distance between two adjacent stops on a line.
+   *  Below this, labels collide and the diagram becomes unreadable even
+   *  with the constant-size LOD pruning. The diagram canvas grows
+   *  horizontally to keep this guarantee. */
+  private readonly MIN_STOP_SPACING = 50;
   private readonly rowLayout = inject(NetworkRowLayoutService);
 
   /** ?z=2.5 — current zoom factor. Cleared from the URL once the user
@@ -635,15 +644,29 @@ export class SchematicMapComponent {
 
   // --- Network computed (now always active, filtered by visibleLines) ---
 
+  /** Horizontal extent of the diagram, expanded so every line gets at
+   *  least MIN_STOP_SPACING units between adjacent stops. Falls back to
+   *  the default 840 for short networks (≤ 18 stops on the longest line). */
+  private readonly horizontalInnerSize = computed(() => {
+    let maxStops = 0;
+    for (const line of this.visibleLines()) {
+      const len = line.itineraries[0]?.length ?? 0;
+      if (len > maxStops) {maxStops = len;}
+    }
+    if (maxStops <= 1) {return this.DEFAULT_INNER_SIZE;}
+    return Math.max(this.DEFAULT_INNER_SIZE, this.MIN_STOP_SPACING * (maxStops - 1));
+  });
+
   /**
    * Per-line stop X positions. Each line stretches across the full width.
    * Interchange stops are fixed to a shared X (average of desired positions)
    * so that vertical connectors stay aligned across rows.
    */
   private readonly networkStopPositions = computed<Map<string, Map<string, number>>>(() => {
-    const pad = this.NETWORK_PADDING;
-    const size = 1000 - 2 * pad;
-    return this.rowLayout.layout(this.visibleLines(), { padding: pad, size }).positions;
+    return this.rowLayout.layout(this.visibleLines(), {
+      padding: this.NETWORK_PADDING,
+      size: this.horizontalInnerSize(),
+    }).positions;
   });
 
   /** Each line as a horizontal row with its stops positioned across the full width */
@@ -653,11 +676,14 @@ export class SchematicMapComponent {
     const posMap = this.networkStopPositions();
 
     const pad = this.NETWORK_PADDING;
-    const size = 1000 - 2 * pad;
+    // Vertical axis stays at the default extent — only the horizontal
+    // side grows for long lines. Stretching rows vertically would
+    // disperse them needlessly when the network is dense.
+    const verticalSize = this.DEFAULT_INNER_SIZE;
     const maxRowSpacing = 120;
-    const rowSpacing = lines.length > 1 ? Math.min(maxRowSpacing, size / (lines.length - 1)) : 0;
+    const rowSpacing = lines.length > 1 ? Math.min(maxRowSpacing, verticalSize / (lines.length - 1)) : 0;
     const totalHeight = (lines.length - 1) * rowSpacing;
-    const baseY = pad + (size - totalHeight) / 2;
+    const baseY = pad + (verticalSize - totalHeight) / 2;
 
     return lines.map((line, idx) => {
       const y = baseY + idx * rowSpacing;

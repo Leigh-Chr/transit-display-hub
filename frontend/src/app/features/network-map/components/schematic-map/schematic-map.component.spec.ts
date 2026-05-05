@@ -268,6 +268,45 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('horizontal spacing', () => {
+    it('keeps the default 840 inner extent for short lines', () => {
+      fixture.detectChanges();
+      const rows = component.networkLineRows();
+      const xs = rows[0]!.stops.map(s => s.x);
+      // Mock data has 3 stops on line1 at positions {80, 500, 920} → first/last
+      // pinned at the canvas edges.
+      expect(Math.min(...xs)).toBeCloseTo(80);
+      expect(Math.max(...xs)).toBeCloseTo(920);
+    });
+
+    it('expands the inner extent so adjacent stops stay at least MIN_STOP_SPACING apart on long lines', () => {
+      const stopCount = 30;
+      const longStops: LayoutStop[] = Array.from({ length: stopCount }, (_, i) => ({
+        id: `s${i}`, name: `Stop ${i}`, latitude: null, longitude: null,
+        schematicX: null, schematicY: null, lineCodes: ['LX'], x: 0, y: 0,
+      }));
+      const longLine: NetworkLine = {
+        id: 'lineX', code: 'LX', name: 'Long line', color: '#000', type: null,
+        itineraries: [longStops.map(s => s.id)],
+      };
+
+      fixture.componentRef.setInput('lines', [longLine]);
+      fixture.componentRef.setInput('stops', longStops);
+      fixture.componentRef.setInput('visibleLineCodes', ['LX']);
+      fixture.detectChanges();
+
+      const rows = component.networkLineRows();
+      const xs = rows[0]!.stops.map(s => s.x);
+      // 30 stops × MIN_STOP_SPACING (50) = 1450 inner extent → first stop
+      // sits at the padding (80), last at 80 + 1450 = 1530.
+      expect(xs[0]).toBeCloseTo(80);
+      expect(xs[xs.length - 1]!).toBeGreaterThanOrEqual(80 + 50 * (stopCount - 1) - 0.001);
+      for (let i = 1; i < xs.length; i++) {
+        expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(50 - 0.001);
+      }
+    });
+  });
+
   describe('keyboard navigation', () => {
     function key(k: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
       return { key: k, shiftKey: false, preventDefault: vi.fn(), ...modifiers } as unknown as KeyboardEvent;
