@@ -251,6 +251,7 @@ export interface NetworkMap {
   lines: NetworkLine[];
   stops: NetworkStop[];
   bounds: NetworkBounds;
+  attribution?: string | null;
 }
 
 export interface NetworkLine {

@@ -18,6 +18,7 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -40,6 +41,9 @@ public class NetworkMapService {
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
 
+    @Value("${app.data-loader.gtfs.attribution:}")
+    private String attribution;
+
     @Cacheable("networkMap")
     @Transactional(readOnly = true)
     public NetworkMapResponse getNetworkMap() {
@@ -56,7 +60,8 @@ public class NetworkMapService {
 
         Bounds bounds = calculateBounds(networkStops);
 
-        return new NetworkMapResponse(networkLines, networkStops, bounds);
+        String attr = attribution == null || attribution.isBlank() ? null : attribution;
+        return new NetworkMapResponse(networkLines, networkStops, bounds, attr);
     }
 
     @Cacheable("networkAlerts")

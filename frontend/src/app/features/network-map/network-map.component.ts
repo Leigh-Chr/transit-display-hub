@@ -81,6 +81,11 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
       }
 
       <main class="map-wrapper">
+        @if (attribution()) {
+          <span class="attribution" [attr.aria-label]="'Data attribution: ' + attribution()">
+            {{ attribution() }}
+          </span>
+        }
         @if (loading()) {
           <div class="loading-state">
             <mat-spinner diameter="48"></mat-spinner>
@@ -312,6 +317,27 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
       border-radius: var(--app-radius-md);
       overflow: hidden;
       box-shadow: 0 4px 20px var(--app-map-shadow);
+    }
+
+    .attribution {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      pointer-events: none;
+      padding: 2px 8px;
+      border-radius: var(--app-radius-xs);
+      background: var(--app-map-overlay-bg);
+      color: var(--app-map-on-surface-muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(6px);
+      max-width: calc(100% - 200px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .route-search-overlay {
@@ -552,6 +578,8 @@ export class NetworkMapComponent implements OnInit {
   readonly categoryParam = linkedQueryParam('cat');
 
   allLines = computed(() => this.networkMap()?.lines ?? []);
+
+  attribution = computed(() => this.networkMap()?.attribution ?? null);
 
   /** Categories present in the network, ordered by line count desc */
   categories = computed(() => {

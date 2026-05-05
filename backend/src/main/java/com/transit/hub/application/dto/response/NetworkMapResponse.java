@@ -10,7 +10,8 @@ import java.util.UUID;
 public record NetworkMapResponse(
         List<NetworkLine> lines,
         List<NetworkStop> stops,
-        Bounds bounds
+        Bounds bounds,
+        String attribution
 ) {
     public record NetworkLine(
             UUID id,
