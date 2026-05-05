@@ -69,12 +69,43 @@ export class SvgPanZoom {
     this._panY = sy - base.y - h / 2;
   }
 
-  onWheel(event: WheelEvent, svgRect: DOMRect, base: ViewBox): void {
+  /** Wheel handling follows the Figma/Excalidraw convention:
+   *   - plain wheel → pan (deltaY scrolls vertically, deltaX horizontally;
+   *     trackpads emit both naturally)
+   *   - ctrlKey/metaKey + wheel → zoom centred on the cursor
+   *   - browser-synthesised pinch on trackpads also lands here with
+   *     ctrlKey:true, so pinch zoom keeps working without extra code.
+   *
+   *  Returns whether the gesture was a zoom — useful for the caller that
+   *  wants to surface a "Ctrl + scroll to zoom" hint on the first plain
+   *  scroll. */
+  onWheel(event: WheelEvent, svgRect: DOMRect, base: ViewBox): { zoomed: boolean } {
     event.preventDefault();
-    const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
-    const mx = (event.clientX - svgRect.left) / svgRect.width;
-    const my = (event.clientY - svgRect.top) / svgRect.height;
-    this.applyZoomAt(this._zoom * factor, mx, my, base);
+
+    if (event.ctrlKey || event.metaKey) {
+      const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const mx = (event.clientX - svgRect.left) / svgRect.width;
+      const my = (event.clientY - svgRect.top) / svgRect.height;
+      this.applyZoomAt(this._zoom * factor, mx, my, base);
+      return { zoomed: true };
+    }
+
+    this.panByScreenPx(event.deltaX, event.deltaY, base, svgRect);
+    return { zoomed: false };
+  }
+
+  /** Pan by an arbitrary screen-pixel delta. Used by both wheel pan and
+   *  keyboard arrow keys so a 50px keystroke feels the same regardless of
+   *  zoom level. Tolerates non-finite deltas (some synthetic wheel events
+   *  omit one axis) by treating them as zero. */
+  panByScreenPx(dxScreen: number, dyScreen: number, base: ViewBox, svgRect: DOMRect): void {
+    if (svgRect.width <= 0 || svgRect.height <= 0) {return;}
+    const dx = Number.isFinite(dxScreen) ? dxScreen : 0;
+    const dy = Number.isFinite(dyScreen) ? dyScreen : 0;
+    const scaleX = (base.w / this._zoom) / svgRect.width;
+    const scaleY = (base.h / this._zoom) / svgRect.height;
+    this._panX += dx * scaleX;
+    this._panY += dy * scaleY;
   }
 
   onPointerDown(event: MouseEvent): boolean {

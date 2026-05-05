@@ -268,6 +268,81 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('keyboard navigation', () => {
+    function key(k: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
+      return { key: k, shiftKey: false, preventDefault: vi.fn(), ...modifiers } as unknown as KeyboardEvent;
+    }
+
+    /** jsdom returns 0×0 for getBoundingClientRect, which makes the
+     *  pan-by-screen-pixels code abandon (division-by-zero guard). Force a
+     *  realistic rect so the keyboard tests actually exercise the pan. */
+    function mockSvgRect(): void {
+      const svg = component.svgElement()?.nativeElement;
+      if (svg) {
+        svg.getBoundingClientRect = (): DOMRect => ({
+          left: 0, top: 0, right: 1000, bottom: 800,
+          width: 1000, height: 800, x: 0, y: 0, toJSON: () => ({}),
+        }) as DOMRect;
+      }
+    }
+
+    it('shifts the viewBox horizontally on ArrowRight', () => {
+      fixture.detectChanges();
+      mockSvgRect();
+      const before = component.currentViewBox();
+      component.onKeyDown(key('ArrowRight'));
+      expect(component.currentViewBox()).not.toBe(before);
+    });
+
+    it('shifts the viewBox vertically on ArrowDown', () => {
+      fixture.detectChanges();
+      mockSvgRect();
+      const before = component.currentViewBox();
+      component.onKeyDown(key('ArrowDown'));
+      expect(component.currentViewBox()).not.toBe(before);
+    });
+
+    it('zooms in on +', () => {
+      fixture.detectChanges();
+      const before = component.zoomLevel();
+      component.onKeyDown(key('+'));
+      expect(component.zoomLevel()).toBeGreaterThan(before);
+    });
+
+    it('zooms out on -', () => {
+      fixture.detectChanges();
+      component.zoomIn();
+      const before = component.zoomLevel();
+      component.onKeyDown(key('-'));
+      expect(component.zoomLevel()).toBeLessThan(before);
+    });
+
+    it('resets the view on 0', () => {
+      fixture.detectChanges();
+      component.zoomIn();
+      component.onKeyDown(key('0'));
+      // Reset puts zoom back to 1.
+      expect(component.zoomLevel()).toBeCloseTo(1, 5);
+    });
+
+    it('ignores unrelated keys', () => {
+      fixture.detectChanges();
+      const before = component.currentViewBox();
+      component.onKeyDown(key('a'));
+      expect(component.currentViewBox()).toBe(before);
+    });
+
+    it('preventDefault is called only on handled keys', () => {
+      fixture.detectChanges();
+      const handled = key('ArrowUp');
+      const unhandled = key('a');
+      component.onKeyDown(handled);
+      component.onKeyDown(unhandled);
+      expect(handled.preventDefault).toHaveBeenCalled();
+      expect(unhandled.preventDefault).not.toHaveBeenCalled();
+    });
+  });
+
   describe('empty selection state', () => {
     it('should show empty selection message when no lines visible', async () => {
       fixture.componentRef.setInput('visibleLineCodes', []);

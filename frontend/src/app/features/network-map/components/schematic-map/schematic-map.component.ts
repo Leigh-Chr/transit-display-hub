@@ -90,7 +90,9 @@ function hashStopId(s: string): number {
       <!-- Diagram with zoom/pan -->
       <div
         class="line-diagram-wrapper"
+        tabindex="0"
         (wheel)="onWheel($event)"
+        (keydown)="onKeyDown($event)"
         (mousedown)="onPointerDown($event)"
         (mousemove)="onPointerMove($event)"
         (mouseup)="onPointerUp()"
@@ -335,6 +337,12 @@ function hashStopId(s: string): number {
           (resetView)="resetView()"
           (exportSvg)="exportSvg()"
         />
+
+        @if (wheelHintVisible()) {
+          <div class="wheel-hint" role="status" aria-live="polite">
+            <kbd>Ctrl</kbd> + scroll to zoom
+          </div>
+        }
       </div>
 
       }
@@ -360,6 +368,11 @@ export class SchematicMapComponent {
   container = viewChild<ElementRef<HTMLDivElement>>('container');
 
   isPanning = signal(false);
+  /** Shown once per browser the first time the user scrolls the wheel
+   *  without Ctrl/Cmd, to teach the new "Ctrl + scroll = zoom" gesture. */
+  wheelHintVisible = signal(false);
+  private wheelHintTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly WHEEL_HINT_KEY = 'transit-hub.wheel-hint-seen';
 
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
@@ -894,6 +907,26 @@ export class SchematicMapComponent {
       ro.observe(svg);
       destroyRef.onDestroy(() => ro.disconnect());
     });
+
+    destroyRef.onDestroy(() => {
+      if (this.wheelHintTimer) {clearTimeout(this.wheelHintTimer);}
+    });
+  }
+
+  private maybeShowWheelHint(): void {
+    try {
+      if (localStorage.getItem(SchematicMapComponent.WHEEL_HINT_KEY)) {return;}
+      localStorage.setItem(SchematicMapComponent.WHEEL_HINT_KEY, '1');
+    } catch {
+      // Private mode / disabled storage — show the hint once this session
+      // and skip persistence rather than failing.
+    }
+    this.wheelHintVisible.set(true);
+    if (this.wheelHintTimer) {clearTimeout(this.wheelHintTimer);}
+    this.wheelHintTimer = setTimeout(() => {
+      this.wheelHintVisible.set(false);
+      this.wheelHintTimer = null;
+    }, 3000);
   }
 
   // --- Filter methods ---
@@ -1123,7 +1156,34 @@ export class SchematicMapComponent {
   onWheel(event: WheelEvent): void {
     const svg = this.svgElement()?.nativeElement;
     if (!svg) {return;}
-    this.panZoom.onWheel(event, svg.getBoundingClientRect(), this.baseViewBox());
+    const result = this.panZoom.onWheel(event, svg.getBoundingClientRect(), this.baseViewBox());
+    this.updateViewBox();
+    if (!result.zoomed) {this.maybeShowWheelHint();}
+  }
+
+  /** Keyboard navigation: arrows pan, +/- zoom, 0 reset. The wrapper has
+   *  tabindex="0" so the user can Tab to it and pilot the diagram without
+   *  a pointer. */
+  onKeyDown(event: KeyboardEvent): void {
+    const svg = this.svgElement()?.nativeElement;
+    if (!svg) {return;}
+    const rect = svg.getBoundingClientRect();
+    const base = this.baseViewBox();
+    const step = event.shiftKey ? 200 : 50;
+
+    switch (event.key) {
+      case 'ArrowLeft':  this.panZoom.panByScreenPx(-step, 0, base, rect); break;
+      case 'ArrowRight': this.panZoom.panByScreenPx(step, 0, base, rect); break;
+      case 'ArrowUp':    this.panZoom.panByScreenPx(0, -step, base, rect); break;
+      case 'ArrowDown':  this.panZoom.panByScreenPx(0, step, base, rect); break;
+      case '+':
+      case '=':          this.panZoom.zoomIn(base); break;
+      case '-':
+      case '_':          this.panZoom.zoomOut(base); break;
+      case '0':          this.panZoom.reset(); break;
+      default: return;
+    }
+    event.preventDefault();
     this.updateViewBox();
   }
 

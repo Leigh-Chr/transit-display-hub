@@ -192,72 +192,111 @@ describe('SvgPanZoom', () => {
   describe('onWheel()', () => {
     const svgRect = { left: 0, top: 0, width: 1000, height: 800 } as DOMRect;
 
-    it('should call preventDefault', () => {
-      const event = {
-        deltaY: -100,
+    function wheel(extra: Partial<WheelEvent> & { deltaY?: number; deltaX?: number }): WheelEvent {
+      return {
+        deltaX: 0,
+        deltaY: 0,
         clientX: 500,
         clientY: 400,
+        ctrlKey: false,
+        metaKey: false,
         preventDefault: vi.fn(),
+        ...extra,
       } as unknown as WheelEvent;
+    }
 
+    it('should call preventDefault', () => {
+      const event = wheel({ deltaY: -100 });
       pz.onWheel(event, svgRect, base);
       expect(event.preventDefault).toHaveBeenCalled();
     });
 
-    it('should zoom in when deltaY < 0 (scroll up)', () => {
-      const event = {
-        deltaY: -100,
-        clientX: 500,
-        clientY: 400,
-        preventDefault: vi.fn(),
-      } as unknown as WheelEvent;
+    describe('plain wheel pans (Figma-style)', () => {
+      it('translates deltaY into vertical pan, no zoom change', () => {
+        pz.onWheel(wheel({ deltaY: 100 }), svgRect, base);
+        const parts = pz.computeViewBox(base).split(' ').map(Number);
+        // visible width still = base width (no zoom)
+        expect(parts[2]).toBe(1000);
+        expect(parts[3]).toBe(800);
+        // panY shifted down (deltaY scaled by base.h / svgRect.h = 1)
+        expect(parts[1]).toBeCloseTo(100);
+      });
 
-      pz.onWheel(event, svgRect, base);
-      const parts = pz.computeViewBox(base).split(' ').map(Number);
-      expect(parts[2]).toBeLessThan(1000);
-      expect(parts[3]).toBeLessThan(800);
+      it('translates deltaX into horizontal pan', () => {
+        pz.onWheel(wheel({ deltaX: 80 }), svgRect, base);
+        const parts = pz.computeViewBox(base).split(' ').map(Number);
+        expect(parts[0]).toBeCloseTo(80);
+      });
+
+      it('returns zoomed:false on plain scroll', () => {
+        const result = pz.onWheel(wheel({ deltaY: 50 }), svgRect, base);
+        expect(result.zoomed).toBe(false);
+      });
     });
 
-    it('should zoom out when deltaY > 0 (scroll down)', () => {
-      const event = {
-        deltaY: 100,
-        clientX: 500,
-        clientY: 400,
-        preventDefault: vi.fn(),
-      } as unknown as WheelEvent;
+    describe('Ctrl/Cmd + wheel zooms', () => {
+      it('zooms in when ctrlKey is held and deltaY < 0', () => {
+        pz.onWheel(wheel({ deltaY: -100, ctrlKey: true }), svgRect, base);
+        const parts = pz.computeViewBox(base).split(' ').map(Number);
+        expect(parts[2]).toBeLessThan(1000);
+        expect(parts[3]).toBeLessThan(800);
+      });
 
-      pz.onWheel(event, svgRect, base);
+      it('zooms out when ctrlKey is held and deltaY > 0', () => {
+        pz.onWheel(wheel({ deltaY: 100, ctrlKey: true }), svgRect, base);
+        const parts = pz.computeViewBox(base).split(' ').map(Number);
+        expect(parts[2]).toBeGreaterThan(1000);
+        expect(parts[3]).toBeGreaterThan(800);
+      });
+
+      it('zooms when metaKey is held (mac trackpad pinch synthesises this)', () => {
+        pz.onWheel(wheel({ deltaY: -50, metaKey: true }), svgRect, base);
+        const parts = pz.computeViewBox(base).split(' ').map(Number);
+        expect(parts[2]).toBeLessThan(1000);
+      });
+
+      it('returns zoomed:true on a zoom gesture', () => {
+        const result = pz.onWheel(wheel({ deltaY: -100, ctrlKey: true }), svgRect, base);
+        expect(result.zoomed).toBe(true);
+      });
+
+      it('zooms toward the cursor position', () => {
+        const pz2 = new SvgPanZoom();
+        pz.onWheel(wheel({ deltaY: -100, ctrlKey: true, clientX: 0, clientY: 0 }), svgRect, base);
+        pz2.onWheel(wheel({ deltaY: -100, ctrlKey: true, clientX: 1000, clientY: 800 }), svgRect, base);
+        const a = pz.computeViewBox(base).split(' ').map(Number);
+        const b = pz2.computeViewBox(base).split(' ').map(Number);
+        expect(a[0]!).not.toBeCloseTo(b[0]!, 0);
+      });
+    });
+  });
+
+  describe('panByScreenPx()', () => {
+    const svgRect = { left: 0, top: 0, width: 1000, height: 800 } as DOMRect;
+
+    it('shifts the viewBox by the requested screen pixels at zoom 1', () => {
+      pz.panByScreenPx(120, -60, base, svgRect);
       const parts = pz.computeViewBox(base).split(' ').map(Number);
-      expect(parts[2]).toBeGreaterThan(1000);
-      expect(parts[3]).toBeGreaterThan(800);
+      expect(parts[0]).toBeCloseTo(120);
+      expect(parts[1]).toBeCloseTo(-60);
     });
 
-    it('should zoom towards the mouse position', () => {
-      // Zoom at top-left corner
-      const topLeftEvent = {
-        deltaY: -100,
-        clientX: 0,
-        clientY: 0,
-        preventDefault: vi.fn(),
-      } as unknown as WheelEvent;
+    it('compensates for zoom so a 50px keystroke covers a smaller SVG distance when zoomed in', () => {
+      pz.zoomIn(base); // zoom = 1.4
+      const before = pz.computeViewBox(base).split(' ').map(Number);
+      pz.panByScreenPx(50, 0, base, svgRect);
+      const after = pz.computeViewBox(base).split(' ').map(Number);
+      // Compare the delta from the pan, not the absolute pan: zoomIn itself
+      // shifts the pan to keep the anchor centred.
+      const dx = after[0]! - before[0]!;
+      expect(dx).toBeLessThan(50);
+      expect(dx).toBeGreaterThan(0);
+    });
 
-      const pz2 = new SvgPanZoom();
-      pz.onWheel(topLeftEvent, svgRect, base);
-      const vbTopLeft = pz.computeViewBox(base).split(' ').map(Number);
-
-      // Zoom at bottom-right corner
-      const bottomRightEvent = {
-        deltaY: -100,
-        clientX: 1000,
-        clientY: 800,
-        preventDefault: vi.fn(),
-      } as unknown as WheelEvent;
-
-      pz2.onWheel(bottomRightEvent, svgRect, base);
-      const vbBottomRight = pz2.computeViewBox(base).split(' ').map(Number);
-
-      // Pan offsets should differ based on zoom anchor point
-      expect(vbTopLeft[0]!).not.toBeCloseTo(vbBottomRight[0]!, 0);
+    it('is a no-op when svgRect has zero size (avoids division by zero)', () => {
+      const before = pz.computeViewBox(base);
+      pz.panByScreenPx(100, 100, base, { left: 0, top: 0, width: 0, height: 0 } as DOMRect);
+      expect(pz.computeViewBox(base)).toBe(before);
     });
   });
 
