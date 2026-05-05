@@ -18,7 +18,6 @@ import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
 import { SvgPanZoom } from '../../utils/svg-pan-zoom';
-import { exportSvgToFile } from '../../utils/svg-export';
 import { AlertOverlayComponent, VisibleLineAlert } from '../alert-overlay/alert-overlay.component';
 import { LineFilterChipsComponent } from '../line-filter-chips/line-filter-chips.component';
 import { MapLegendComponent } from '../map-legend/map-legend.component';
@@ -346,7 +345,6 @@ function readableTextColor(bgHex: string): string {
           (zoomIn)="zoomIn()"
           (zoomOut)="zoomOut()"
           (resetView)="resetView()"
-          (exportSvg)="exportSvg()"
         />
 
         @if (wheelHintVisible()) {
@@ -1185,18 +1183,6 @@ export class SchematicMapComponent {
 
     this.panZoom.centerOn(sx, sy, this.baseViewBox());
     this.updateViewBox();
-  }
-
-  exportSvg(): void {
-    const svgEl = this.svgElement()?.nativeElement;
-    if (!svgEl) {return;}
-
-    exportSvgToFile({
-      svgElement: svgEl,
-      baseViewBox: this.baseViewBox(),
-      visibleLineCodes: this.visibleLineCodes(),
-      allLineCodes: this.sortedLines().map(l => l.code),
-    });
   }
 
   onWheel(event: WheelEvent): void {

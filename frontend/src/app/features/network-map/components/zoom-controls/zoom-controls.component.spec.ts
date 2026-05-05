@@ -19,9 +19,9 @@ describe('ZoomControlsComponent', () => {
     btn.click();
   }
 
-  it('renders four control buttons', () => {
+  it('renders three control buttons', () => {
     const buttons = fixture.nativeElement.querySelectorAll('button.zoom-btn');
-    expect(buttons.length).toBe(4);
+    expect(buttons.length).toBe(3);
   });
 
   it('emits zoomIn when the + button is clicked', () => {
@@ -42,13 +42,6 @@ describe('ZoomControlsComponent', () => {
     const spy = vi.fn();
     component.resetView.subscribe(spy);
     clickButton('Reset view');
-    expect(spy).toHaveBeenCalledTimes(1);
-  });
-
-  it('emits exportSvg when the download button is clicked', () => {
-    const spy = vi.fn();
-    component.exportSvg.subscribe(spy);
-    clickButton('Download SVG');
     expect(spy).toHaveBeenCalledTimes(1);
   });
 });

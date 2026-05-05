@@ -17,9 +17,6 @@ import { MatIconModule } from '@angular/material/icon';
       <button class="zoom-btn" (click)="zoomOut.emit()" title="Zoom out">
         <mat-icon>remove</mat-icon>
       </button>
-      <button class="zoom-btn" (click)="exportSvg.emit()" title="Download SVG">
-        <mat-icon>download</mat-icon>
-      </button>
     </div>
   `,
   styles: `
@@ -79,5 +76,4 @@ export class ZoomControlsComponent {
   zoomIn = output();
   zoomOut = output();
   resetView = output();
-  exportSvg = output();
 }
