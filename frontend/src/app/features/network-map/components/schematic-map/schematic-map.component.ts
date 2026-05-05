@@ -110,7 +110,7 @@ function severityRank(s: MessageSeverity): number {
             <path
               [attr.d]="row.path"
               [attr.stroke]="row.line.color"
-              [attr.stroke-width]="isSingleLineMode() ? 8 : 4"
+              [attr.stroke-width]="getLineStrokeWidth(row.line)"
               fill="none"
               stroke-linecap="round"
               class="network-line-path"
@@ -124,7 +124,7 @@ function severityRank(s: MessageSeverity): number {
               <path
                 [attr.d]="overlay.path"
                 [attr.stroke]="overlay.color"
-                [attr.stroke-width]="isSingleLineMode() ? 10 : 6"
+                [attr.stroke-width]="getRouteStrokeWidth(overlay.lineId)"
                 fill="none"
                 stroke-linecap="round"
                 class="route-active-path"
@@ -188,6 +188,7 @@ function severityRank(s: MessageSeverity): number {
                 [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(s.stop.id, row.line.id)"
                 (click)="onStopClick(s.stop, $event)"
               >
+                <title>{{ s.stop.name }}</title>
                 <circle
                   [attr.r]="getStopRadius(s.stop.id, row)"
                   [attr.fill]="isInterchange(s.stop) ? 'white' : row.line.color"
@@ -246,11 +247,12 @@ function severityRank(s: MessageSeverity): number {
                   </g>
                 }
 
-                <!-- Badges for hidden lines passing through this stop -->
+                <!-- Badges for hidden lines passing through this stop (cap at 4, then +N) -->
                 @if (!hasRoute() && hiddenLinesMap().get(s.stop.id); as hiddenCodes) {
+                  @let displayCount = getHiddenBadgeDisplayCount(hiddenCodes.length);
                   <g [attr.transform]="'translate(0, ' + (isSingleLineMode() ? 28 : 18) + ')'">
-                    @for (code of hiddenCodes; track code; let j = $index) {
-                      <g [attr.transform]="getBadgeTransform(j, hiddenCodes.length)">
+                    @for (code of hiddenCodes.slice(0, displayCount); track code; let j = $index) {
+                      <g [attr.transform]="getBadgeTransform(j, displayCount + (hiddenCodes.length > displayCount ? 1 : 0))">
                         <circle r="9" [attr.fill]="getLineColor(code)" />
                         <text
                           text-anchor="middle"
@@ -259,6 +261,19 @@ function severityRank(s: MessageSeverity): number {
                           font-size="8"
                           font-weight="bold"
                         >{{ code }}</text>
+                      </g>
+                    }
+                    @if (hiddenCodes.length > displayCount) {
+                      <g [attr.transform]="getBadgeTransform(displayCount, displayCount + 1)">
+                        <title>{{ hiddenCodes.slice(displayCount).join(', ') }}</title>
+                        <circle r="9" fill="var(--app-map-on-surface-muted, #888)" />
+                        <text
+                          text-anchor="middle"
+                          dominant-baseline="central"
+                          fill="white"
+                          font-size="8"
+                          font-weight="bold"
+                        >+{{ hiddenCodes.length - displayCount }}</text>
                       </g>
                     }
                   </g>
@@ -789,6 +804,24 @@ export class SchematicMapComponent {
     this.filterChange.emit([code]);
   }
 
+  /** Stroke width for line paths, scaled by mode and line importance.
+   *  Trunk modes (METRO, TRAM, TRAIN) get a heavier weight than buses so
+   *  that the structuring backbone of the network reads at a glance. */
+  getLineStrokeWidth(line: NetworkLine): number {
+    if (this.isSingleLineMode()) {return 8;}
+    return this.isTrunkLine(line) ? 5 : 3;
+  }
+
+  getRouteStrokeWidth(lineId: string): number {
+    if (this.isSingleLineMode()) {return 10;}
+    const line = this.lines().find(l => l.id === lineId);
+    return line && this.isTrunkLine(line) ? 7 : 5;
+  }
+
+  private isTrunkLine(line: NetworkLine): boolean {
+    return line.type === 'TRAM' || line.type === 'METRO' || line.type === 'TRAIN';
+  }
+
   // --- Stop helpers ---
 
   getStopRadius(stopId: string, row: NetworkLineRow): number {
@@ -878,6 +911,15 @@ export class SchematicMapComponent {
     const x = col * GAP - (colsInRow - 1) * GAP / 2;
     const y = row * GAP;
     return `translate(${x}, ${y})`;
+  }
+
+  private static readonly MAX_HIDDEN_BADGES = 4;
+
+  /** Number of full badges to render before collapsing the rest into a +N pill */
+  getHiddenBadgeDisplayCount(total: number): number {
+    return total <= SchematicMapComponent.MAX_HIDDEN_BADGES
+      ? total
+      : SchematicMapComponent.MAX_HIDDEN_BADGES - 1;
   }
 
   onStopClick(stop: LayoutStop, event: Event): void {
