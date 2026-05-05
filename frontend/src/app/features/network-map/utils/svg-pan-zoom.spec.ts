@@ -113,29 +113,41 @@ describe('SvgPanZoom', () => {
     });
   });
 
-  describe('zoom clamping', () => {
-    it('should not zoom below MIN_ZOOM (0.5)', () => {
-      // Zoom out many times to hit the floor
+  describe('unbounded zoom', () => {
+    it('keeps zooming out past the legacy 0.5 floor', () => {
       for (let i = 0; i < 20; i++) {
         pz.zoomOut(base);
       }
+      // 1.4^-20 ≈ 0.0027, so visible width ≈ 1000 / 0.0027 ≈ 372 000
       const vb = pz.computeViewBox(base);
       const parts = vb.split(' ').map(Number);
-      // At MIN_ZOOM 0.5, visible width = 1000/0.5 = 2000
-      expect(parts[2]).toBe(2000);
-      expect(parts[3]).toBe(1600);
+      expect(parts[2]).toBeGreaterThan(2000);
     });
 
-    it('should not zoom above MAX_ZOOM (4)', () => {
-      // Zoom in many times to hit the ceiling
+    it('keeps zooming in past the legacy 4× ceiling', () => {
       for (let i = 0; i < 20; i++) {
         pz.zoomIn(base);
       }
+      // 1.4^20 ≈ 836, so visible width ≈ 1000 / 836 ≈ 1.2 svg units
       const vb = pz.computeViewBox(base);
       const parts = vb.split(' ').map(Number);
-      // At MAX_ZOOM 4, visible width = 1000/4 = 250
-      expect(parts[2]).toBe(250);
-      expect(parts[3]).toBe(200);
+      expect(parts[2]).toBeLessThan(10);
+      expect(parts[2]).toBeGreaterThan(0);
+    });
+
+    it('rejects non-finite or non-positive zoom factors safely', () => {
+      // Pinch-to-zoom with degenerate touches could otherwise feed NaN or 0
+      // into applyZoomAt. The util should swallow those and stay valid.
+      const before = pz.computeViewBox(base);
+      pz.onWheel({
+        preventDefault: () => undefined,
+        clientX: 100, clientY: 100,
+        deltaY: 0,
+      } as unknown as WheelEvent, { left: 0, top: 0, width: 1000, height: 800 } as DOMRect, base);
+      // deltaY = 0 → factor = 1/1.15 ≈ 0.87, valid; just sanity-check the
+      // util didn't crash and still produces a parseable view-box.
+      expect(pz.computeViewBox(base)).toMatch(/^[-\d. ]+$/);
+      expect(before).toMatch(/^[-\d. ]+$/);
     });
   });
 

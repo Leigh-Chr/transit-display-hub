@@ -12,8 +12,10 @@ export class SvgPanZoom {
   private dragStart: { x: number; y: number; panX: number; panY: number } | null = null;
   private lastTouchDist = 0;
 
-  private readonly MIN_ZOOM = 0.5;
-  private readonly MAX_ZOOM = 4;
+  // No min/max — the user can zoom in or out as far as they want. We keep a
+  // tiny epsilon floor only to avoid division by zero when computing the
+  // view-box dimensions.
+  private readonly MIN_ZOOM = 1e-3;
 
   get isDragging(): boolean {
     return this.dragStart !== null;
@@ -113,7 +115,8 @@ export class SvgPanZoom {
   }
 
   private applyZoomAt(newZoom: number, anchorX: number, anchorY: number, base: ViewBox): void {
-    newZoom = Math.max(this.MIN_ZOOM, Math.min(this.MAX_ZOOM, newZoom));
+    if (!isFinite(newZoom) || newZoom <= 0) {return;}
+    newZoom = Math.max(this.MIN_ZOOM, newZoom);
 
     const oldW = base.w / this._zoom;
     const oldH = base.h / this._zoom;
