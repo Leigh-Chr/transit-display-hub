@@ -34,6 +34,8 @@ interface InterchangeConnector {
   x: number;
   minY: number;
   maxY: number;
+  /** SVG path data for a slight quadratic bow between (x, minY) and (x, maxY). */
+  path: string;
 }
 
 interface NetworkStopLabel {
@@ -45,6 +47,16 @@ interface NetworkStopLabel {
 
 function severityRank(s: MessageSeverity): number {
   switch (s) { case 'INFO': return 0; case 'WARNING': return 1; case 'CRITICAL': return 2; }
+}
+
+/** Stable, fast 32-bit hash. Used to pick a deterministic bow direction
+ *  for interchange connectors so the same stop always curves the same way. */
+function hashStopId(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+  }
+  return h < 0 ? -h : h;
 }
 
 @Component({
@@ -92,12 +104,12 @@ function severityRank(s: MessageSeverity): number {
           preserveAspectRatio="xMidYMid meet"
           class="line-diagram network-diagram"
         >
-          <!-- Interchange connectors (dashed vertical lines) — multi-line only -->
+          <!-- Interchange connectors (gently curved dashed paths) — multi-line only -->
           @if (!isSingleLineMode()) {
             @for (conn of interchangeConnectors(); track conn.stopId) {
-              <line
-                [attr.x1]="conn.x" [attr.y1]="conn.minY"
-                [attr.x2]="conn.x" [attr.y2]="conn.maxY"
+              <path
+                [attr.d]="conn.path"
+                fill="none"
                 class="interchange-connector"
                 [class.route-dimmed]="hasRoute() && !routeTransferIds().has(conn.stopId)"
               />
@@ -603,7 +615,10 @@ export class SchematicMapComponent {
     });
   });
 
-  /** Vertical dashed connectors between rows for interchange stops */
+  /** Curved dashed connectors between rows for interchange stops.
+   *  The bow is alternated left/right based on a deterministic hash of the
+   *  stop id so adjacent connectors visually fan out instead of stacking
+   *  into a single dense vertical column. */
   interchangeConnectors = computed<InterchangeConnector[]>(() => {
     const rows = this.networkLineRows();
     const positions = new Map<string, { name: string; x: number; ys: number[] }>();
@@ -617,16 +632,36 @@ export class SchematicMapComponent {
       }
     }
 
-    return [...positions.entries()]
-      .filter(([, v]) => v.ys.length > 1)
-      .map(([stopId, v]) => ({
+    const result: InterchangeConnector[] = [];
+    for (const [stopId, v] of positions) {
+      if (v.ys.length <= 1) {continue;}
+      const minY = Math.min(...v.ys);
+      const maxY = Math.max(...v.ys);
+      result.push({
         stopId,
         name: v.name,
         x: v.x,
-        minY: Math.min(...v.ys),
-        maxY: Math.max(...v.ys)
-      }));
+        minY,
+        maxY,
+        path: this.buildConnectorPath(stopId, v.x, minY, maxY),
+      });
+    }
+    return result;
   });
+
+  private buildConnectorPath(stopId: string, x: number, minY: number, maxY: number): string {
+    const span = maxY - minY;
+    if (span < 1) {
+      return `M ${x},${minY} L ${x},${maxY}`;
+    }
+    // Bow magnitude grows with span but is capped so cross-row connectors
+    // still read as vertical, not as wild loops.
+    const bow = Math.min(28, span * 0.12);
+    const direction = hashStopId(stopId) % 2 === 0 ? 1 : -1;
+    const midY = (minY + maxY) / 2;
+    const cx = x + bow * direction;
+    return `M ${x},${minY} Q ${cx},${midY} ${x},${maxY}`;
+  }
 
   /** Labels for stops. Interchange stops appear on every row; others only once (topmost). */
   networkStopLabels = computed<NetworkStopLabel[]>(() => {
