@@ -282,9 +282,9 @@ function severityRank(s: MessageSeverity): number {
             }
           }
 
-          <!-- Labels -->
-          @for (label of networkStopLabels(); track $index) {
-            @if (isStopLabelVisible(label.stop)) {
+          <!-- Labels (with zoom-aware LOD + collision pruning) -->
+          @for (label of networkStopLabels(); track label.stop.id + ':' + label.lineId) {
+            @if (isLabelRendered(label)) {
               <g [attr.transform]="'translate(' + label.x + ',' + label.y + ')'"
                  [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(label.stop.id, label.lineId)">
                 <text
@@ -637,6 +637,18 @@ export class SchematicMapComponent {
 
   currentViewBox = signal('0 0 800 220');
 
+  /** Effective zoom level: 1 = base view, 2 = zoomed-in 2x. Drives
+   *  level-of-detail decisions (which labels are worth showing) so the
+   *  full-network view stays readable at low zoom and reveals more as
+   *  the user zooms in. */
+  zoomLevel = computed(() => {
+    const parts = this.currentViewBox().split(' ').map(parseFloat);
+    const curW = parts[2];
+    const baseW = this.baseViewBox().w;
+    if (!curW || curW <= 0 || !baseW) {return 1;}
+    return baseW / curW;
+  });
+
   // --- Network computed (now always active, filtered by visibleLines) ---
 
   /**
@@ -741,6 +753,46 @@ export class SchematicMapComponent {
 
     return labels;
   });
+
+  /** Greedy decluttering: drop labels that would overlap a higher-priority
+   *  label already placed. Distance threshold scales inversely with zoom so
+   *  it tracks pixel distance regardless of how zoomed-in the view is. */
+  private readonly visibleLabelIds = computed(() => {
+    const candidates = this.networkStopLabels().filter(l => this.isStopLabelVisible(l.stop));
+    if (this.isSingleLineMode()) {
+      return new Set(candidates.map(l => l.stop.id + ':' + l.lineId));
+    }
+
+    const ranked = [...candidates].sort((a, b) => this.labelPriority(b) - this.labelPriority(a));
+    const baseGap = 60; // SVG units, corresponds to ~60px at zoom = 1
+    const minDistSq = (baseGap / Math.max(0.5, this.zoomLevel())) ** 2;
+
+    const accepted: NetworkStopLabel[] = [];
+    const acceptedKeys = new Set<string>();
+
+    for (const label of ranked) {
+      const collides = accepted.some(other => {
+        const dx = label.x - other.x;
+        const dy = label.y - other.y;
+        return dx * dx + dy * dy < minDistSq;
+      });
+      if (!collides) {
+        accepted.push(label);
+        acceptedKeys.add(label.stop.id + ':' + label.lineId);
+      }
+    }
+
+    return acceptedKeys;
+  });
+
+  private labelPriority(label: NetworkStopLabel): number {
+    const stop = label.stop;
+    if (this.alertSeverityMap().has(stop.id)) {return 4;}
+    if (this.isInterchange(stop) && this.isNetworkTerminus(stop)) {return 3;}
+    if (this.isInterchange(stop)) {return 2;}
+    if (this.isNetworkTerminus(stop)) {return 2;}
+    return 1;
+  }
 
   /** Precomputed map: stopId -> hidden line codes (lines not currently visible) */
   hiddenLinesMap = computed(() => {
@@ -870,8 +922,21 @@ export class SchematicMapComponent {
     return stop.lineCodes.length > 1;
   }
 
-  isStopLabelVisible(_stop: LayoutStop): boolean {
-    return true;
+  /** Level-of-detail filter (zoom-driven) for stop labels in multi-line mode.
+   *  Always candidate: terminus, interchange, alerted stops.
+   *  Other intermediate stops only become candidates once the user zooms in.
+   *  Single-line mode keeps everything since rows are already focused. */
+  isStopLabelVisible(stop: LayoutStop): boolean {
+    if (this.isSingleLineMode()) {return true;}
+    if (this.isInterchange(stop)) {return true;}
+    if (this.isNetworkTerminus(stop)) {return true;}
+    if (this.alertSeverityMap().has(stop.id)) {return true;}
+    return this.zoomLevel() >= 1.4;
+  }
+
+  /** Final visibility after both LOD and collision-pruning passes */
+  isLabelRendered(label: NetworkStopLabel): boolean {
+    return this.visibleLabelIds().has(label.stop.id + ':' + label.lineId);
   }
 
   /** Whether a stop is part of the active route on a specific line */

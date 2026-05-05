@@ -19,6 +19,10 @@ export class SvgPanZoom {
     return this.dragStart !== null;
   }
 
+  get zoom(): number {
+    return this._zoom;
+  }
+
   reset(): void {
     this._zoom = 1;
     this._panX = 0;
