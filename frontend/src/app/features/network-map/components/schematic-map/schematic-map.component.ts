@@ -684,32 +684,36 @@ export class SchematicMapComponent {
     });
   });
 
-  /** Curved dashed connectors between rows for interchange stops.
-   *  The bow is alternated left/right based on a deterministic hash of the
-   *  stop id so adjacent connectors visually fan out instead of stacking
-   *  into a single dense vertical column. */
+  /** Curved dashed connectors between rows for interchange stops. The bow
+   *  is alternated left/right based on a deterministic hash of the stop id
+   *  so adjacent connectors visually fan out instead of stacking into a
+   *  single dense vertical column. We track minY/maxY incrementally so a
+   *  network with 50+ visible rows stays O(rows × stops) instead of paying
+   *  an extra O(rows) spread on Math.min/max per interchange. */
   interchangeConnectors = computed<InterchangeConnector[]>(() => {
     const rows = this.networkLineRows();
-    const positions = new Map<string, { name: string; x: number; ys: number[] }>();
+    const positions = new Map<string, { name: string; x: number; minY: number; maxY: number; count: number }>();
 
     for (const row of rows) {
       for (const { stop, x } of row.stops) {
-        if (!positions.has(stop.id)) {
-          positions.set(stop.id, { name: stop.name, x, ys: [] });
+        const existing = positions.get(stop.id);
+        if (existing) {
+          if (row.y < existing.minY) {existing.minY = row.y;}
+          if (row.y > existing.maxY) {existing.maxY = row.y;}
+          existing.count++;
+        } else {
+          positions.set(stop.id, { name: stop.name, x, minY: row.y, maxY: row.y, count: 1 });
         }
-        positions.get(stop.id)?.ys.push(row.y);
       }
     }
 
     const result: InterchangeConnector[] = [];
     for (const [stopId, v] of positions) {
-      if (v.ys.length <= 1) {continue;}
-      const minY = Math.min(...v.ys);
-      const maxY = Math.max(...v.ys);
+      if (v.count <= 1) {continue;}
       result.push({
         stopId,
         name: v.name,
-        path: this.buildConnectorPath(stopId, v.x, minY, maxY),
+        path: this.buildConnectorPath(stopId, v.x, v.minY, v.maxY),
       });
     }
     return result;
