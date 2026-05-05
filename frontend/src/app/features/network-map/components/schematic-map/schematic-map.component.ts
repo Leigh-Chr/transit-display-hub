@@ -663,17 +663,15 @@ export class SchematicMapComponent {
     return `M ${x},${minY} Q ${cx},${midY} ${x},${maxY}`;
   }
 
-  /** Labels for stops. Interchange stops appear on every row that touches
-   *  them so each line carries its own labelled itinerary; non-interchange
-   *  stops are labelled only on the first row that hosts them.
-   *
-   *  Each label carries an 'up' / 'down' orientation:
+  /** Labels for stops, with dedup per (stopId × orientation):
    *  - single-line: alternate by stop index so adjacent labels fan in opposite
    *    diagonals (the line's two terminuses always go up);
-   *  - multi-line: bottom-most row sends labels down so they fall into the
-   *    bottom margin instead of climbing through every row above; every other
-   *    row keeps the upward orientation. The collision-pruning pass downstream
-   *    handles whatever overlap remains in the middle.
+   *  - multi-line: a stop shared by N rows used to push N identical "up"
+   *    labels at the same X, stacking vertically. We now keep at most one
+   *    up label per stop (anchored on the top-most row hosting it) and one
+   *    down label (only ever produced by the bottom-most row). Each line
+   *    keeps its colored stop circle and the dashed connector still tells
+   *    the cross-line story between the two label anchors.
    */
   networkStopLabels = computed<NetworkStopLabel[]>(() => {
     const rows = this.networkLineRows();
@@ -687,19 +685,19 @@ export class SchematicMapComponent {
       const isBottomRow = !single && rowIdx === lastRowIdx;
 
       stops.forEach(({ stop, x }, stopIdx) => {
-        const isIc = stop.lineCodes.length > 1;
-        if (!isIc && seen.has(stop.id)) {return;}
-        seen.add(stop.id);
-
         let orientation: 'up' | 'down';
-        if (isBottomRow) {
-          orientation = 'down';
-        } else if (single) {
+        if (single) {
           const isEdge = stopIdx === 0 || stopIdx === stops.length - 1;
           orientation = isEdge ? 'up' : (stopIdx % 2 === 0 ? 'up' : 'down');
+        } else if (isBottomRow) {
+          orientation = 'down';
         } else {
           orientation = 'up';
         }
+
+        const key = stop.id + ':' + orientation;
+        if (seen.has(key)) {return;}
+        seen.add(key);
 
         labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation });
       });

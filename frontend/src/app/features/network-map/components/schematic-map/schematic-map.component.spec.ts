@@ -301,6 +301,62 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('label orientation and deduplication', () => {
+    it('alternates labels up/down in single-line mode with terminuses pinned up', () => {
+      // 5 stops, single-line: indices 0 and 4 are edges (forced up),
+      // 1=down, 2=up, 3=down by alternation.
+      const longerLine: NetworkLine = {
+        id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null,
+        itineraries: [['a1', 'a2', 'a3', 'a4', 'a5']],
+      };
+      const longerStops: LayoutStop[] = [
+        { id: 'a1', name: 'A1', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L1'], x: 80, y: 500 },
+        { id: 'a2', name: 'A2', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L1'], x: 230, y: 500 },
+        { id: 'a3', name: 'A3', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L1'], x: 380, y: 500 },
+        { id: 'a4', name: 'A4', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L1'], x: 530, y: 500 },
+        { id: 'a5', name: 'A5', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L1'], x: 680, y: 500 },
+      ];
+
+      fixture.componentRef.setInput('lines', [longerLine]);
+      fixture.componentRef.setInput('stops', longerStops);
+      fixture.componentRef.setInput('visibleLineCodes', ['L1']);
+      fixture.detectChanges();
+
+      const labels = component.networkStopLabels();
+      const byStop = new Map(labels.map(l => [l.stop.id, l.orientation]));
+
+      expect(byStop.get('a1')).toBe('up');   // edge → up
+      expect(byStop.get('a2')).toBe('down'); // odd index
+      expect(byStop.get('a3')).toBe('up');   // even index
+      expect(byStop.get('a4')).toBe('down'); // odd index
+      expect(byStop.get('a5')).toBe('up');   // edge → up
+    });
+
+    it('puts bottom-row labels down in multi-line mode', () => {
+      fixture.detectChanges();
+
+      const labels = component.networkStopLabels();
+      const lineL2BottomStops = labels.filter(l => l.lineId === 'line2');
+      // Mock has line1 (top) and line2 (bottom). All line2 labels must be 'down'.
+      expect(lineL2BottomStops.length).toBeGreaterThan(0);
+      for (const label of lineL2BottomStops) {
+        expect(label.orientation).toBe('down');
+      }
+    });
+
+    it('deduplicates a shared stop to one up + at most one down label', () => {
+      // The mock has s2 shared by L1 (top) and L2 (bottom). After dedup the
+      // stop should yield exactly two labels: one up on the top row, one
+      // down on the bottom row — never duplicate ups stacked vertically.
+      fixture.detectChanges();
+
+      const labelsForS2 = component.networkStopLabels().filter(l => l.stop.id === 's2');
+      expect(labelsForS2.length).toBe(2);
+      const orientations = labelsForS2.map(l => l.orientation).sort();
+      expect(orientations).toEqual(['down', 'up']);
+    });
+  });
+
   describe('centerOnStop', () => {
     it('should update the viewBox when centering on a valid stop', () => {
       fixture.detectChanges();
