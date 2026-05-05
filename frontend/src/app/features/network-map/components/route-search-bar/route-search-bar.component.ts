@@ -87,6 +87,11 @@ import { RouteResult } from '../../services/route-finder.service';
 
       @if (sameStopError()) {
         <div class="error-hint">Same stop selected</div>
+      } @else if (noRouteFound()) {
+        <div class="error-hint error-hint-warning" role="alert">
+          <mat-icon class="error-icon">block</mat-icon>
+          <span>No route found between these stops</span>
+        </div>
       }
 
       @if (routeResult(); as route) {
@@ -266,6 +271,26 @@ import { RouteResult } from '../../services/route-finder.service';
       padding: 4px 4px 0;
     }
 
+    .error-hint-warning {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      padding: 6px 8px;
+      border: 1px solid var(--app-warning, #c97a17);
+      border-radius: var(--app-radius-xs);
+      background: color-mix(in srgb, var(--app-warning, #c97a17) 12%, transparent);
+      color: var(--app-warning, #c97a17);
+      font-weight: 600;
+    }
+
+    .error-hint-warning .error-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
     /* --- Route breakdown --- */
 
     .route-breakdown {
@@ -439,6 +464,16 @@ export class RouteSearchBarComponent {
     const dep = this.selectedDeparture();
     const arr = this.selectedArrival();
     return dep !== null && arr !== null && dep.id === arr.id;
+  });
+
+  /** Both endpoints picked, distinct, but the router could not connect them.
+   *  Without this hint the panel just stays silent after the search and the
+   *  user can't tell whether the calculation finished or just failed. */
+  noRouteFound = computed(() => {
+    const dep = this.selectedDeparture();
+    const arr = this.selectedArrival();
+    if (!dep || !arr || dep.id === arr.id) {return false;}
+    return this.routeResult() === null;
   });
 
   filteredDepartures = computed(() => {

@@ -118,6 +118,60 @@ describe('RouteSearchBarComponent', () => {
     expect(component.sameStopError()).toBe(false);
   });
 
+  describe('noRouteFound', () => {
+    it('flags an unreachable route once both endpoints are picked but the result is null', () => {
+      fixture.detectChanges();
+
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(mockStops[3]!);
+      // routeResult input still defaults to null — simulates router returning no path
+      expect(component.noRouteFound()).toBe(true);
+    });
+
+    it('clears the warning once a route is delivered', () => {
+      fixture.componentRef.setInput('routeResult', mockRouteResult);
+      fixture.detectChanges();
+
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(mockStops[2]!);
+
+      expect(component.noRouteFound()).toBe(false);
+    });
+
+    it('does not warn while only one endpoint is selected', () => {
+      fixture.detectChanges();
+
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(null);
+
+      expect(component.noRouteFound()).toBe(false);
+    });
+
+    it('does not warn when both endpoints are the same stop', () => {
+      fixture.detectChanges();
+
+      component.selectedDeparture.set(mockStops[0]!);
+      component.selectedArrival.set(mockStops[0]!);
+
+      expect(component.noRouteFound()).toBe(false);
+      expect(component.sameStopError()).toBe(true);
+    });
+
+    it('renders the warning hint in the panel', async () => {
+      // Drive the warning the same way the parent does — through inputs —
+      // so the sync effect leaves selectedDeparture/Arrival in place.
+      fixture.componentRef.setInput('departureStop', mockStops[0]!);
+      fixture.componentRef.setInput('arrivalStop', mockStops[3]!);
+      fixture.componentRef.setInput('routeResult', null);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const hint = fixture.nativeElement.querySelector('.error-hint-warning');
+      expect(hint).toBeTruthy();
+      expect(hint.textContent).toContain('No route found');
+    });
+  });
+
   describe('swapStops', () => {
     it('should swap departure and arrival selections', () => {
       fixture.detectChanges();
