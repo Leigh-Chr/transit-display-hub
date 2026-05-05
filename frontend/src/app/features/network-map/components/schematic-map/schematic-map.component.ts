@@ -329,8 +329,6 @@ function hashStopId(s: string): number {
           [hasStopAlerts]="hasStopAlerts()"
         />
 
-        <ng-content />
-
         <app-zoom-controls
           (zoomIn)="zoomIn()"
           (zoomOut)="zoomOut()"

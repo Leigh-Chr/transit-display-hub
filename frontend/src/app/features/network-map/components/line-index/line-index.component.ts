@@ -89,6 +89,16 @@ import { NetworkLine } from '@shared/models';
       overflow: hidden;
     }
 
+    /* The route/stop search overlay floats top-right of the map wrapper.
+       Reserve room for it on wide screens so its panels never sit on top
+       of the line cards. On narrow viewports the overlay gracefully
+       overlaps the first cards instead — they remain reachable by scroll. */
+    @media (min-width: 900px) {
+      .index-wrapper {
+        padding-right: 270px;
+      }
+    }
+
     .index-header {
       flex-shrink: 0;
       display: flex;

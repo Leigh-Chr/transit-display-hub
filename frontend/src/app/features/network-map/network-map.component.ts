@@ -120,55 +120,62 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
             [highlightedStopId]="highlightedStopId()"
             (stopSelected)="onStopSelected($event)"
             (filterChange)="onFilterChange($event)"
-          >
-            <div class="route-search-overlay">
-              <div class="stop-search-panel">
-                <div class="panel-header">
-                  <mat-icon class="panel-icon">search</mat-icon>
-                  <span class="panel-title">Find a stop</span>
-                </div>
-                <mat-form-field class="stop-search-field" appearance="fill" subscriptSizing="dynamic">
-                  <mat-icon matPrefix class="field-icon">location_on</mat-icon>
-                  <input matInput
-                    [formControl]="stopSearchCtrl"
-                    [matAutocomplete]="stopAuto"
-                    placeholder="Stop name"
-                  />
-                  @if (stopSearchCtrl.value) {
-                    <button matSuffix class="clear-btn" (click)="clearStopSearch()">
-                      <mat-icon>close</mat-icon>
-                    </button>
-                  }
-                  <mat-autocomplete #stopAuto="matAutocomplete"
-                    [displayWith]="stopDisplayFn"
-                    (optionSelected)="onStopSearchSelected($event)"
-                  >
-                    @for (stop of filteredStops(); track stop.id) {
-                      <mat-option [value]="stop">
-                        {{ stop.name }}
-                      </mat-option>
-                    }
-                  </mat-autocomplete>
-                </mat-form-field>
+          />
+        }
+
+        <!-- Stop / route search panel. Stays mounted independently of the
+             schematic vs index view, so even on a 50+ line network the user
+             can pick a departure and an arrival, and the route-finder will
+             still consider every line in the map (the route-itself collapses
+             back to the schematic view since routeLineCodes is small). -->
+        @if (!loading() && !error() && layoutStops().length > 0) {
+          <div class="route-search-overlay">
+            <div class="stop-search-panel">
+              <div class="panel-header">
+                <mat-icon class="panel-icon">search</mat-icon>
+                <span class="panel-title">Find a stop</span>
               </div>
-              <app-route-search-bar
-                [stops]="layoutStops()"
-                [departureStop]="departureStop()"
-                [arrivalStop]="arrivalStop()"
-                [routeResult]="routeResult()"
-                (searchRoute)="onRouteSearch($event)"
-                (clearRoute)="onRouteClear()"
-                (departureChanged)="onDepartureChanged($event)"
-                (arrivalChanged)="onArrivalChanged($event)"
-              />
-              @if (routeResult()) {
-                <button class="view-toggle-btn" (click)="toggleNetworkView()">
-                  <mat-icon>{{ showFullNetwork() ? 'filter_alt' : 'public' }}</mat-icon>
-                  <span>{{ showFullNetwork() ? 'Route only' : 'Full network' }}</span>
-                </button>
-              }
+              <mat-form-field class="stop-search-field" appearance="fill" subscriptSizing="dynamic">
+                <mat-icon matPrefix class="field-icon">location_on</mat-icon>
+                <input matInput
+                  [formControl]="stopSearchCtrl"
+                  [matAutocomplete]="stopAuto"
+                  placeholder="Stop name"
+                />
+                @if (stopSearchCtrl.value) {
+                  <button matSuffix class="clear-btn" (click)="clearStopSearch()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <mat-autocomplete #stopAuto="matAutocomplete"
+                  [displayWith]="stopDisplayFn"
+                  (optionSelected)="onStopSearchSelected($event)"
+                >
+                  @for (stop of filteredStops(); track stop.id) {
+                    <mat-option [value]="stop">
+                      {{ stop.name }}
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
             </div>
-          </app-schematic-map>
+            <app-route-search-bar
+              [stops]="layoutStops()"
+              [departureStop]="departureStop()"
+              [arrivalStop]="arrivalStop()"
+              [routeResult]="routeResult()"
+              (searchRoute)="onRouteSearch($event)"
+              (clearRoute)="onRouteClear()"
+              (departureChanged)="onDepartureChanged($event)"
+              (arrivalChanged)="onArrivalChanged($event)"
+            />
+            @if (routeResult()) {
+              <button class="view-toggle-btn" (click)="toggleNetworkView()">
+                <mat-icon>{{ showFullNetwork() ? 'filter_alt' : 'public' }}</mat-icon>
+                <span>{{ showFullNetwork() ? 'Route only' : 'Full network' }}</span>
+              </button>
+            }
+          </div>
         }
       </main>
     </div>
