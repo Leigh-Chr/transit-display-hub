@@ -104,19 +104,22 @@ function hashStopId(s: string): number {
           preserveAspectRatio="xMidYMid meet"
           class="line-diagram network-diagram"
         >
-          <!-- Interchange connectors (gently curved dashed paths) — multi-line only -->
+          <!-- Interchange connectors (gently curved dashed paths) — multi-line only.
+               vector-effect=non-scaling-stroke pins the dash width to screen
+               pixels so the dashes don't blow up at high zoom. -->
           @if (!isSingleLineMode()) {
             @for (conn of interchangeConnectors(); track conn.stopId) {
               <path
                 [attr.d]="conn.path"
                 fill="none"
+                vector-effect="non-scaling-stroke"
                 class="interchange-connector"
                 [class.route-dimmed]="hasRoute() && !routeTransferIds().has(conn.stopId)"
               />
             }
           }
 
-          <!-- Line paths -->
+          <!-- Line paths — strokes pinned to screen pixels via non-scaling-stroke -->
           @for (row of networkLineRows(); track row.line.id) {
             <path
               [attr.d]="row.path"
@@ -124,6 +127,7 @@ function hashStopId(s: string): number {
               [attr.stroke-width]="getLineStrokeWidth(row.line)"
               fill="none"
               stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
               class="network-line-path"
               [class.route-dimmed]="hasRoute()"
             />
@@ -138,11 +142,12 @@ function hashStopId(s: string): number {
                 [attr.stroke-width]="getRouteStrokeWidth(overlay.lineId)"
                 fill="none"
                 stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
                 class="route-active-path"
               />
             }
             @for (arrow of routeDirectionArrows(); track arrow.x + ':' + arrow.y) {
-              <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ')'" class="route-arrow">
+              <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ') scale(' + invZoom() + ')'" class="route-arrow">
                 <polygon
                   [attr.points]="arrow.right ? '-5,-4 5,0 -5,4' : '5,-4 -5,0 5,4'"
                   fill="white"
@@ -152,10 +157,11 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Line code badges + name (left of each row) -->
+          <!-- Line code badges + name (left of each row), pinned at constant
+               screen size so they neither shrink at low zoom nor explode at high. -->
           @for (row of networkLineRows(); track row.line.id) {
             @if (row.stops.length > 0) {
-              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 30) + ',' + row.y + ')'"
+              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 30) + ',' + row.y + ') scale(' + invZoom() + ')'"
                  [class.route-dimmed]="hasRoute() && !routeActiveEdges().has(row.line.id)">
                 <rect
                   [attr.x]="-16"
@@ -190,11 +196,14 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Stop circles -->
+          <!-- Stop circles — the whole stop-group (circle, rings, route markers,
+               alert badge, hidden-line dots) is wrapped in scale(1/zoom) so each
+               icon keeps a fixed screen size. The translate stays in SVG units so
+               positioning along the line stays geometrically correct. -->
           @for (row of networkLineRows(); track row.line.id) {
             @for (s of row.stops; track s.stop.id) {
               <g
-                [attr.transform]="'translate(' + s.x + ',' + row.y + ')'"
+                [attr.transform]="'translate(' + s.x + ',' + row.y + ') scale(' + invZoom() + ')'"
                 class="stop-group"
                 [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(s.stop.id, row.line.id)"
                 (click)="onStopClick(s.stop, $event)"
@@ -591,14 +600,19 @@ export class SchematicMapComponent {
     return baseW / curW;
   });
 
-  /** Transform strings that hold the rotated label at a constant screen
-   *  size: scale(1/zoom) shrinks both the text glyphs and the stop-to-text
-   *  offset in SVG units, but each unit maps to `zoom` screen pixels, so
-   *  the rendered size stays constant. The geometry around the label
-   *  (lines, stops, row spacing) keeps scaling with zoom, so zooming in
-   *  actually frees horizontal space between adjacent labels. */
-  labelTransformUp = computed(() => `rotate(-45) scale(${1 / this.zoomLevel()}) translate(8, -8)`);
-  labelTransformDown = computed(() => `rotate(45) scale(${1 / this.zoomLevel()}) translate(8, 8)`);
+  /** Inverse zoom factor used to keep the visual size of every "icon"
+   *  (stop circles, hidden-line badges, alert/route markers, line code
+   *  badges, route arrows, rotated labels) constant in screen pixels.
+   *  The underlying geometry (line paths, stop positions, row spacing)
+   *  still scales with zoom, so zooming in genuinely creates more space
+   *  for the icons rather than just blowing them up. */
+  invZoom = computed(() => 1 / this.zoomLevel());
+
+  /** Transform strings for the rotated label, sharing the same inverse
+   *  scale so a label keeps both its rendered font size and its offset
+   *  from the stop in screen pixels. */
+  labelTransformUp = computed(() => `rotate(-45) scale(${this.invZoom()}) translate(8, -8)`);
+  labelTransformDown = computed(() => `rotate(45) scale(${this.invZoom()}) translate(8, 8)`);
 
   // --- Network computed (now always active, filtered by visibleLines) ---
 
