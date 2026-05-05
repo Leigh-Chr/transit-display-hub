@@ -27,7 +27,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -179,7 +178,7 @@ public class GtfsImportService {
 
         Map<String, List<Line>> byPrefix = new LinkedHashMap<>();
         for (Line line : linesInCategory) {
-            byPrefix.computeIfAbsent(extractAlphaPrefix(line.getCode()), p -> new ArrayList<>()).add(line);
+            byPrefix.computeIfAbsent(GtfsParse.extractAlphaPrefix(line.getCode()), p -> new ArrayList<>()).add(line);
         }
 
         Set<String> significant = new HashSet<>();
@@ -205,16 +204,6 @@ public class GtfsImportService {
         }
     }
 
-    private static String extractAlphaPrefix(String code) {
-        if (isBlank(code)) {return "";}
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < code.length(); i++) {
-            char c = code.charAt(i);
-            if (Character.isLetter(c)) {sb.append(c);}
-            else {break;}
-        }
-        return sb.toString().toUpperCase();
-    }
 
     private record StopImport(
             Map<String, Stop> stopsByGtfsId,
@@ -458,7 +447,6 @@ public class GtfsImportService {
         }
     }
 
-    private static final DateTimeFormatter GTFS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final int MAX_SCHEDULE_BATCH = 5_000;
 
     private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport)
@@ -499,7 +487,7 @@ public class GtfsImportService {
                 Stop stop = stopImport.stopsByGtfsId.get(rootStopId);
                 if (stop == null) {continue;}
 
-                LocalTime time = parseGtfsTime(firstNonBlank(
+                LocalTime time = GtfsParse.parseGtfsTime(firstNonBlank(
                         optional(record, "departure_time"),
                         optional(record, "arrival_time")));
                 if (time == null) {continue;}
@@ -549,8 +537,8 @@ public class GtfsImportService {
                     if ("1".equals(optional(record, "friday"))) {days.add(DayOfWeek.FRIDAY);}
                     if ("1".equals(optional(record, "saturday"))) {days.add(DayOfWeek.SATURDAY);}
                     if ("1".equals(optional(record, "sunday"))) {days.add(DayOfWeek.SUNDAY);}
-                    LocalDate start = parseGtfsDate(optional(record, "start_date"));
-                    LocalDate end = parseGtfsDate(optional(record, "end_date"));
+                    LocalDate start = GtfsParse.parseGtfsDate(optional(record, "start_date"));
+                    LocalDate end = GtfsParse.parseGtfsDate(optional(record, "end_date"));
                     builders.computeIfAbsent(serviceId, id -> new ServiceCalendarBuilder())
                             .withWeekly(start, end, days);
                 }
@@ -562,7 +550,7 @@ public class GtfsImportService {
             try (CSVParser parser = openCsv(calendarDates)) {
                 for (CSVRecord record : parser) {
                     String serviceId = record.get("service_id");
-                    LocalDate date = parseGtfsDate(record.get("date"));
+                    LocalDate date = GtfsParse.parseGtfsDate(record.get("date"));
                     if (date == null) {continue;}
                     int exceptionType = parseInt(record.get("exception_type"), 0);
                     ServiceCalendarBuilder b = builders.computeIfAbsent(serviceId, id -> new ServiceCalendarBuilder());
@@ -636,29 +624,6 @@ public class GtfsImportService {
             if (e.getValue().isActiveOn(date)) {active.add(e.getKey());}
         }
         return active;
-    }
-
-    private static LocalDate parseGtfsDate(String s) {
-        if (isBlank(s)) {return null;}
-        try {return LocalDate.parse(s.trim(), GTFS_DATE);} catch (Exception e) {return null;}
-    }
-
-    /**
-     * Parses GTFS HH:MM:SS time, wrapping the after-midnight "25:30:00" convention back
-     * into the 0..23 range. Acceptable loss of precision for kiosk display purposes.
-     */
-    private static LocalTime parseGtfsTime(String s) {
-        if (isBlank(s)) {return null;}
-        String[] parts = s.trim().split(":");
-        if (parts.length < 2) {return null;}
-        try {
-            int h = Integer.parseInt(parts[0]) % 24;
-            int m = Integer.parseInt(parts[1]);
-            int sec = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
-            return LocalTime.of(h, m, sec);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     private void assignSchematicCoordinates(Collection<Stop> stops) {
