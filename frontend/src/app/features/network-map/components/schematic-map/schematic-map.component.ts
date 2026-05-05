@@ -276,9 +276,11 @@ function hashStopId(s: string): number {
 
                 <!-- Badges for every hidden line passing through this stop —
                      no cap, every correspondence is shown. The grid wraps to a
-                     new row every 4 columns. -->
+                     new row every 4 columns. The dedicated class is what the
+                     SVG export hooks into to strip the cluster cleanly. -->
                 @if (!hasRoute() && hiddenLinesMap().get(s.stop.id); as hiddenCodes) {
-                  <g [attr.transform]="'translate(0, ' + (isSingleLineMode() ? 28 : 30) + ')'">
+                  <g class="hidden-lines-cluster"
+                     [attr.transform]="'translate(0, ' + (isSingleLineMode() ? 28 : 30) + ')'">
                     @for (code of hiddenCodes; track code; let j = $index) {
                       <g [attr.transform]="getBadgeTransform(j, hiddenCodes.length)">
                         <circle r="16" [attr.fill]="getLineColor(code)" />

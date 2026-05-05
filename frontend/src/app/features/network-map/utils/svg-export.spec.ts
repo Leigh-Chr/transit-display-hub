@@ -37,14 +37,18 @@ describe('exportSvgToFile', () => {
     searchHighlight.classList.add('search-highlight-ring');
     svg.appendChild(searchHighlight);
 
-    // A stop-group with a hidden-line badge (last child g with matching transform)
+    // A stop-group with a hidden-line correspondence cluster (single-line mode)
     const stopGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     stopGroup.classList.add('stop-group');
     const stopCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     stopGroup.appendChild(stopCircle);
-    const hiddenBadge = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    hiddenBadge.setAttribute('transform', 'translate(0, 18)');
-    stopGroup.appendChild(hiddenBadge);
+    const hiddenCluster = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    hiddenCluster.classList.add('hidden-lines-cluster');
+    hiddenCluster.setAttribute('transform', 'translate(0, 28)');
+    const innerBadge = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    innerBadge.setAttribute('id', 'inner-hidden-badge');
+    hiddenCluster.appendChild(innerBadge);
+    stopGroup.appendChild(hiddenCluster);
     svg.appendChild(stopGroup);
 
     // Element with route-dimmed class
@@ -225,50 +229,55 @@ describe('exportSvgToFile', () => {
     });
   });
 
-  describe('hidden-line badge removal', () => {
-    it('should remove stop-group last-child g with translate(0, 18) transform', () => {
+  describe('hidden-line cluster removal', () => {
+    it('removes single-line clusters (translate offset 28)', () => {
       callExport();
       return new Promise<void>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => {
           const content = reader.result as string;
-          expect(content).not.toContain('translate(0, 18)');
+          expect(content).not.toContain('hidden-lines-cluster');
+          expect(content).not.toContain('inner-hidden-badge');
           resolve();
         };
         reader.readAsText(createdBlob!);
       });
     });
 
-    it('should remove stop-group last-child g with translate(0, 28) transform', () => {
+    it('removes multi-line clusters (translate offset 30)', () => {
       const svg = buildSvgElement();
-      // Replace the hidden badge transform with the other matching pattern
-      const stopGroup = svg.querySelector('.stop-group')!;
-      const lastChild = stopGroup.querySelector('g:last-child')!;
-      lastChild.setAttribute('transform', 'translate(0, 28)');
+      // Multi-line mode emits translate(0, 30); make sure that variant is also stripped.
+      const cluster = svg.querySelector('.hidden-lines-cluster')!;
+      cluster.setAttribute('transform', 'translate(0, 30)');
 
       callExport({ svgElement: svg });
       return new Promise<void>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => {
           const content = reader.result as string;
-          expect(content).not.toContain('translate(0, 28)');
+          expect(content).not.toContain('hidden-lines-cluster');
+          expect(content).not.toContain('translate(0, 30)');
+          expect(content).not.toContain('inner-hidden-badge');
           resolve();
         };
         reader.readAsText(createdBlob!);
       });
     });
 
-    it('should keep g elements that do not match the hidden-line badge pattern', () => {
+    it('keeps unrelated g elements inside stop-groups', () => {
       const svg = buildSvgElement();
       const stopGroup = svg.querySelector('.stop-group')!;
-      const lastChild = stopGroup.querySelector('g:last-child')!;
-      lastChild.setAttribute('transform', 'translate(10, 10)');
+      const sibling = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      sibling.setAttribute('transform', 'translate(10, 10)');
+      sibling.setAttribute('id', 'unrelated-sibling');
+      stopGroup.appendChild(sibling);
 
       callExport({ svgElement: svg });
       return new Promise<void>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => {
           const content = reader.result as string;
+          expect(content).toContain('unrelated-sibling');
           expect(content).toContain('translate(10, 10)');
           resolve();
         };

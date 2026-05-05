@@ -30,11 +30,10 @@ export function exportSvgToFile(options: SvgExportOptions): void {
     clone.querySelectorAll(sel).forEach(el => el.remove());
   }
 
-  // Remove hidden-line badges
-  clone.querySelectorAll('.stop-group > g:last-child').forEach(g => {
-    const t = g.getAttribute('transform') ?? '';
-    if (/translate\(0,\s*(18|28)\)/.test(t)) {g.remove();}
-  });
+  // Remove hidden-line correspondence clusters: an export shows the network
+  // as it stands, not the "what would be there if we re-enabled these lines"
+  // hint that only makes sense in the interactive view.
+  clone.querySelectorAll('.hidden-lines-cluster').forEach(g => g.remove());
 
   // Strip route-dimmed class so all elements render at full opacity
   clone.querySelectorAll('.route-dimmed').forEach(el => {
