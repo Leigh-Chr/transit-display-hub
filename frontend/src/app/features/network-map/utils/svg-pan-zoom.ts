@@ -25,10 +25,25 @@ export class SvgPanZoom {
     return this._zoom;
   }
 
+  get panX(): number {
+    return this._panX;
+  }
+
+  get panY(): number {
+    return this._panY;
+  }
+
   reset(): void {
     this._zoom = 1;
     this._panX = 0;
     this._panY = 0;
+  }
+
+  setState(zoom: number, panX: number, panY: number): void {
+    if (!isFinite(zoom) || zoom <= 0) {return;}
+    this._zoom = Math.max(this.MIN_ZOOM, zoom);
+    this._panX = isFinite(panX) ? panX : 0;
+    this._panY = isFinite(panY) ? panY : 0;
   }
 
   computeViewBox(base: ViewBox): string {

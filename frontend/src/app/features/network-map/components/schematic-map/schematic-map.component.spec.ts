@@ -1,4 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SchematicMapComponent } from './schematic-map.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
@@ -29,6 +30,7 @@ describe('SchematicMapComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [SchematicMapComponent],
+      providers: [provideRouter([])], // ngxtension's linkedQueryParam needs ActivatedRoute
     });
 
     fixture = TestBed.createComponent(SchematicMapComponent);
@@ -298,6 +300,35 @@ describe('SchematicMapComponent', () => {
       fixture.detectChanges();
 
       expect(component.lineAlertSeverityMap().get('line1')).toBe('CRITICAL');
+    });
+  });
+
+  describe('URL ↔ pan/zoom sync', () => {
+    it('writes ?z when the user zooms in', async () => {
+      fixture.detectChanges();
+
+      component.zoomIn();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const url = TestBed.inject(Router).url;
+      expect(url).toMatch(/[?&]z=/);
+    });
+
+    it('omits ?z and ?p once the view is reset to default', async () => {
+      fixture.detectChanges();
+
+      component.zoomIn();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      component.resetView();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const url = TestBed.inject(Router).url;
+      expect(url).not.toMatch(/[?&]z=/);
+      expect(url).not.toMatch(/[?&]p=/);
     });
   });
 

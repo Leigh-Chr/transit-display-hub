@@ -10,6 +10,7 @@ import {
   effect,
   inject,
 } from '@angular/core';
+import { linkedQueryParam } from 'ngxtension/linked-query-param';
 import { MessageSeverity, NetworkLine, NetworkMapAlerts } from '@shared/models';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
@@ -359,6 +360,32 @@ export class SchematicMapComponent {
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
   private readonly rowLayout = inject(NetworkRowLayoutService);
+
+  /** ?z=2.5 — current zoom factor. Cleared from the URL once the user
+   *  is back at the default (zoom 1) so a clean view leaves a clean URL. */
+  private readonly zoomParam = linkedQueryParam('z', {
+    parse: (v: string | null): number | null => {
+      if (v === null) {return null;}
+      const n = parseFloat(v);
+      return isFinite(n) && n > 0 ? n : null;
+    },
+    stringify: (v: number | null) => v === null ? null : v.toFixed(3).replace(/\.?0+$/, ''),
+  });
+
+  /** ?p=panX,panY — current pan offset in SVG units. Same clean-URL
+   *  contract as zoomParam — omitted when at the diagram's natural origin. */
+  private readonly panParam = linkedQueryParam('p', {
+    parse: (v: string | null): { x: number; y: number } | null => {
+      if (v === null) {return null;}
+      const parts = v.split(',');
+      if (parts.length !== 2) {return null;}
+      const x = parseFloat(parts[0] ?? '');
+      const y = parseFloat(parts[1] ?? '');
+      return isFinite(x) && isFinite(y) ? { x, y } : null;
+    },
+    stringify: (v: { x: number; y: number } | null) =>
+      v === null ? null : `${Math.round(v.x)},${Math.round(v.y)}`,
+  });
 
   sortedLines = computed(() => {
     return [...this.lines()].sort((a, b) => {
@@ -812,9 +839,33 @@ export class SchematicMapComponent {
   });
 
   constructor() {
+    // 1. URL → state. Re-applies whenever the user navigates with new ?z/?p
+    //    values (back/forward, deep link, programmatic). The diff check
+    //    breaks the loop with the URL-write side below.
     effect(() => {
-      this.layoutSignature(); // track only the structural mode change
-      this.resetView();
+      const z = this.zoomParam();
+      const p = this.panParam();
+      const targetZoom = z ?? 1;
+      const targetPanX = p?.x ?? 0;
+      const targetPanY = p?.y ?? 0;
+      if (
+        Math.abs(this.panZoom.zoom - targetZoom) > 1e-3 ||
+        Math.abs(this.panZoom.panX - targetPanX) > 0.5 ||
+        Math.abs(this.panZoom.panY - targetPanY) > 0.5
+      ) {
+        this.panZoom.setState(targetZoom, targetPanX, targetPanY);
+        this.currentViewBox.set(this.panZoom.computeViewBox(this.baseViewBox()));
+      }
+    });
+
+    // 2. Layout change → reset view, but only when the URL hasn't pinned
+    //    an explicit zoom/pan (e.g. a shared deep-link must survive a
+    //    filter-driven layout signature change).
+    effect(() => {
+      this.layoutSignature();
+      if (this.zoomParam() === null && this.panParam() === null) {
+        this.resetView();
+      }
     });
   }
 
@@ -1091,5 +1142,19 @@ export class SchematicMapComponent {
 
   private updateViewBox(): void {
     this.currentViewBox.set(this.panZoom.computeViewBox(this.baseViewBox()));
+    this.syncStateToUrl();
+  }
+
+  /** Mirror the live pan/zoom into ?z and ?p, omitting them when the
+   *  state has effectively returned to the default view. The ngxtension
+   *  signal short-circuits when the value matches what's already there,
+   *  so writing during a URL-driven update does not retrigger effects. */
+  private syncStateToUrl(): void {
+    const z = this.panZoom.zoom;
+    const px = this.panZoom.panX;
+    const py = this.panZoom.panY;
+
+    this.zoomParam.set(Math.abs(z - 1) < 1e-3 ? null : z);
+    this.panParam.set(Math.abs(px) < 0.5 && Math.abs(py) < 0.5 ? null : { x: px, y: py });
   }
 }
