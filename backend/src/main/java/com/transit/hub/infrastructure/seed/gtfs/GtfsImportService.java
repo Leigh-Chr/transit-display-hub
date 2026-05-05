@@ -3,10 +3,12 @@ package com.transit.hub.infrastructure.seed.gtfs;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,15 +24,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
@@ -53,8 +59,9 @@ public class GtfsImportService {
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
     private final ItineraryRepository itineraryRepository;
+    private final ScheduleRepository scheduleRepository;
 
-    public record ImportResult(int lines, int stops, int itineraries, int itineraryStops) {}
+    public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
     @Transactional
     public ImportResult importFromZip(Path zipPath) throws IOException {
@@ -71,13 +78,16 @@ public class GtfsImportService {
                     linesByGtfsId,
                     stopImport);
 
+            int schedules = importSchedules(workDir, itineraryImport, stopImport);
+
             assignSchematicCoordinates(stopImport.stopsByGtfsId.values());
 
             return new ImportResult(
                     linesByGtfsId.size(),
                     stopImport.stopsByGtfsId.size(),
                     itineraryImport.itineraryCount,
-                    itineraryImport.itineraryStopCount);
+                    itineraryImport.itineraryStopCount,
+                    schedules);
         } finally {
             deleteRecursively(workDir);
         }
@@ -211,9 +221,15 @@ public class GtfsImportService {
         return new StopImport(result, rootByGtfsId);
     }
 
-    private record ItineraryImport(int itineraryCount, int itineraryStopCount) {}
+    private record ItineraryImport(
+            int itineraryCount,
+            int itineraryStopCount,
+            Map<String, TripInfo> tripInfos,
+            Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
 
-    private record TripInfo(String routeId, String directionId, String headsign) {}
+    private record TripInfo(String routeId, String directionId, String serviceId, String headsign) {}
+
+    private record RouteDirKey(String routeId, String directionId) {}
 
     private ItineraryImport importItineraries(
             Path tripsFile,
@@ -228,6 +244,7 @@ public class GtfsImportService {
                 tripInfos.put(record.get("trip_id"), new TripInfo(
                         record.get("route_id"),
                         firstNonBlank(optional(record, "direction_id"), "0"),
+                        optional(record, "service_id"),
                         optional(record, "trip_headsign")));
             }
         }
@@ -243,7 +260,6 @@ public class GtfsImportService {
         }
 
         // 3. Select representative trip per (route_id, direction_id): the one with the most stops
-        record RouteDirKey(String routeId, String directionId) {}
         Map<RouteDirKey, String> bestTrip = new HashMap<>();
         Map<RouteDirKey, Integer> bestCount = new HashMap<>();
         for (Map.Entry<String, TripInfo> entry : tripInfos.entrySet()) {
@@ -285,6 +301,7 @@ public class GtfsImportService {
         int itineraryCount = 0;
         int itineraryStopCount = 0;
         Set<Stop> stopsTouched = new HashSet<>();
+        Map<RouteDirKey, Itinerary> itinerariesByRouteDir = new HashMap<>();
 
         for (Map.Entry<RouteDirKey, String> entry : bestTrip.entrySet()) {
             RouteDirKey key = entry.getKey();
@@ -331,6 +348,7 @@ public class GtfsImportService {
                 itineraryStopCount++;
             }
             itineraryRepository.save(itinerary);
+            itinerariesByRouteDir.put(key, itinerary);
             itineraryCount++;
         }
 
@@ -338,7 +356,246 @@ public class GtfsImportService {
         stopRepository.saveAll(stopsTouched);
 
         log.info("GTFS import: {} itineraries / {} itinerary stops created", itineraryCount, itineraryStopCount);
-        return new ItineraryImport(itineraryCount, itineraryStopCount);
+        return new ItineraryImport(itineraryCount, itineraryStopCount, tripInfos, itinerariesByRouteDir);
+    }
+
+    private record ServiceCalendar(
+            LocalDate startDate,
+            LocalDate endDate,
+            EnumSet<DayOfWeek> daysOfWeek,
+            Set<LocalDate> addedDates,
+            Set<LocalDate> removedDates) {
+        boolean isActiveOn(LocalDate date) {
+            if (removedDates.contains(date)) {return false;}
+            if (addedDates.contains(date)) {return true;}
+            if (startDate == null || endDate == null || daysOfWeek.isEmpty()) {return false;}
+            if (date.isBefore(startDate) || date.isAfter(endDate)) {return false;}
+            return daysOfWeek.contains(date.getDayOfWeek());
+        }
+    }
+
+    private static final class ServiceCalendarBuilder {
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private EnumSet<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
+        private final Set<LocalDate> added = new HashSet<>();
+        private final Set<LocalDate> removed = new HashSet<>();
+
+        void withWeekly(LocalDate start, LocalDate end, EnumSet<DayOfWeek> daysOfWeek) {
+            this.startDate = start;
+            this.endDate = end;
+            this.days = daysOfWeek;
+        }
+
+        void added(LocalDate date) {added.add(date);}
+        void removed(LocalDate date) {removed.add(date);}
+
+        ServiceCalendar build() {
+            return new ServiceCalendar(startDate, endDate, days, added, removed);
+        }
+    }
+
+    private static final DateTimeFormatter GTFS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int MAX_SCHEDULE_BATCH = 5_000;
+
+    private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport)
+            throws IOException {
+        Path stopTimesFile = workDir.resolve("stop_times.txt");
+        if (!Files.exists(stopTimesFile)) {
+            log.warn("GTFS import: stop_times.txt missing, skipping schedule import");
+            return 0;
+        }
+
+        Map<String, ServiceCalendar> services = loadServiceCalendars(workDir);
+        Set<String> activeServices = pickActiveServices(services);
+        if (activeServices.isEmpty()) {
+            log.warn("GTFS import: no active services found in calendar files, skipping schedule import");
+            return 0;
+        }
+
+        Map<String, TripInfo> tripInfos = itineraryImport.tripInfos;
+        Map<RouteDirKey, Itinerary> itineraries = itineraryImport.itinerariesByRouteDir;
+
+        // (stopId, itineraryId, time) dedupe key — matches uk_schedule_stop_itinerary_time
+        record ScheduleKey(java.util.UUID stopId, java.util.UUID itineraryId, LocalTime time) {}
+        Set<ScheduleKey> seen = new HashSet<>();
+        List<Schedule> batch = new ArrayList<>(MAX_SCHEDULE_BATCH);
+        int total = 0;
+
+        try (CSVParser parser = openCsv(stopTimesFile)) {
+            for (CSVRecord record : parser) {
+                String tripId = record.get("trip_id");
+                TripInfo trip = tripInfos.get(tripId);
+                if (trip == null || !activeServices.contains(trip.serviceId)) {continue;}
+
+                Itinerary itinerary = itineraries.get(new RouteDirKey(trip.routeId, trip.directionId));
+                if (itinerary == null) {continue;}
+
+                String rootStopId = stopImport.rootStopIdByGtfsId.get(record.get("stop_id"));
+                if (rootStopId == null) {continue;}
+                Stop stop = stopImport.stopsByGtfsId.get(rootStopId);
+                if (stop == null) {continue;}
+
+                LocalTime time = parseGtfsTime(firstNonBlank(
+                        optional(record, "departure_time"),
+                        optional(record, "arrival_time")));
+                if (time == null) {continue;}
+
+                ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time);
+                if (!seen.add(key)) {continue;}
+
+                batch.add(Schedule.builder()
+                        .time(time)
+                        .stop(stop)
+                        .itinerary(itinerary)
+                        .build());
+
+                if (batch.size() >= MAX_SCHEDULE_BATCH) {
+                    scheduleRepository.saveAll(batch);
+                    total += batch.size();
+                    batch.clear();
+                    if (log.isDebugEnabled()) {
+                        log.debug("GTFS import: {} schedules persisted so far", total);
+                    }
+                }
+            }
+        }
+
+        if (!batch.isEmpty()) {
+            scheduleRepository.saveAll(batch);
+            total += batch.size();
+        }
+
+        log.info("GTFS import: {} schedules created across {} active services", total, activeServices.size());
+        return total;
+    }
+
+    private Map<String, ServiceCalendar> loadServiceCalendars(Path workDir) throws IOException {
+        Map<String, ServiceCalendarBuilder> builders = new HashMap<>();
+
+        Path calendar = workDir.resolve("calendar.txt");
+        if (Files.exists(calendar)) {
+            try (CSVParser parser = openCsv(calendar)) {
+                for (CSVRecord record : parser) {
+                    String serviceId = record.get("service_id");
+                    EnumSet<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
+                    if ("1".equals(optional(record, "monday"))) {days.add(DayOfWeek.MONDAY);}
+                    if ("1".equals(optional(record, "tuesday"))) {days.add(DayOfWeek.TUESDAY);}
+                    if ("1".equals(optional(record, "wednesday"))) {days.add(DayOfWeek.WEDNESDAY);}
+                    if ("1".equals(optional(record, "thursday"))) {days.add(DayOfWeek.THURSDAY);}
+                    if ("1".equals(optional(record, "friday"))) {days.add(DayOfWeek.FRIDAY);}
+                    if ("1".equals(optional(record, "saturday"))) {days.add(DayOfWeek.SATURDAY);}
+                    if ("1".equals(optional(record, "sunday"))) {days.add(DayOfWeek.SUNDAY);}
+                    LocalDate start = parseGtfsDate(optional(record, "start_date"));
+                    LocalDate end = parseGtfsDate(optional(record, "end_date"));
+                    builders.computeIfAbsent(serviceId, id -> new ServiceCalendarBuilder())
+                            .withWeekly(start, end, days);
+                }
+            }
+        }
+
+        Path calendarDates = workDir.resolve("calendar_dates.txt");
+        if (Files.exists(calendarDates)) {
+            try (CSVParser parser = openCsv(calendarDates)) {
+                for (CSVRecord record : parser) {
+                    String serviceId = record.get("service_id");
+                    LocalDate date = parseGtfsDate(record.get("date"));
+                    if (date == null) {continue;}
+                    int exceptionType = parseInt(record.get("exception_type"), 0);
+                    ServiceCalendarBuilder b = builders.computeIfAbsent(serviceId, id -> new ServiceCalendarBuilder());
+                    if (exceptionType == 1) {b.added(date);}
+                    else if (exceptionType == 2) {b.removed(date);}
+                }
+            }
+        }
+
+        Map<String, ServiceCalendar> result = new HashMap<>();
+        for (Map.Entry<String, ServiceCalendarBuilder> e : builders.entrySet()) {
+            result.put(e.getKey(), e.getValue().build());
+        }
+        return result;
+    }
+
+    /**
+     * Pick the set of service IDs running on the most representative day available.
+     * Prefers today, falls back to scanning ±30 days, then to the busiest day in the
+     * combined feed range. Returns empty when no services are defined at all.
+     */
+    private Set<String> pickActiveServices(Map<String, ServiceCalendar> services) {
+        if (services.isEmpty()) {return Set.of();}
+
+        LocalDate today = LocalDate.now();
+        for (int offset = 0; offset <= 30; offset++) {
+            for (int sign : new int[]{1, -1}) {
+                if (offset == 0 && sign == -1) {continue;}
+                LocalDate candidate = today.plusDays(offset * (long) sign);
+                Set<String> active = activeOn(services, candidate);
+                if (!active.isEmpty()) {
+                    log.info("GTFS import: schedule reference date is {} ({} active services)",
+                            candidate, active.size());
+                    return active;
+                }
+            }
+        }
+
+        // Last-resort: pick the date with the most active services across the union of
+        // all calendar ranges. Bounded to 365 candidates to keep the search cheap.
+        LocalDate scanStart = services.values().stream()
+                .map(ServiceCalendar::startDate)
+                .filter(d -> d != null)
+                .min(LocalDate::compareTo)
+                .orElse(today);
+        LocalDate scanEnd = services.values().stream()
+                .map(ServiceCalendar::endDate)
+                .filter(d -> d != null)
+                .max(LocalDate::compareTo)
+                .orElse(today);
+
+        Set<String> best = Set.of();
+        LocalDate bestDate = null;
+        for (LocalDate d = scanStart; !d.isAfter(scanEnd) && d.isBefore(scanStart.plusDays(365)); d = d.plusDays(1)) {
+            Set<String> active = activeOn(services, d);
+            if (active.size() > best.size()) {
+                best = active;
+                bestDate = d;
+            }
+        }
+        if (!best.isEmpty()) {
+            log.info("GTFS import: schedule reference date is {} ({} active services, fallback scan)",
+                    bestDate, best.size());
+        }
+        return best;
+    }
+
+    private Set<String> activeOn(Map<String, ServiceCalendar> services, LocalDate date) {
+        Set<String> active = new HashSet<>();
+        for (Map.Entry<String, ServiceCalendar> e : services.entrySet()) {
+            if (e.getValue().isActiveOn(date)) {active.add(e.getKey());}
+        }
+        return active;
+    }
+
+    private static LocalDate parseGtfsDate(String s) {
+        if (isBlank(s)) {return null;}
+        try {return LocalDate.parse(s.trim(), GTFS_DATE);} catch (Exception e) {return null;}
+    }
+
+    /**
+     * Parses GTFS HH:MM:SS time, wrapping the after-midnight "25:30:00" convention back
+     * into the 0..23 range. Acceptable loss of precision for kiosk display purposes.
+     */
+    private static LocalTime parseGtfsTime(String s) {
+        if (isBlank(s)) {return null;}
+        String[] parts = s.trim().split(":");
+        if (parts.length < 2) {return null;}
+        try {
+            int h = Integer.parseInt(parts[0]) % 24;
+            int m = Integer.parseInt(parts[1]);
+            int sec = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
+            return LocalTime.of(h, m, sec);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void assignSchematicCoordinates(Collection<Stop> stops) {

@@ -127,6 +127,7 @@ public class GtfsDataLoader implements CommandLineRunner {
         log.info("Stops:          {}", r.stops());
         log.info("Itineraries:    {}", r.itineraries());
         log.info("Itinerary stops:{}", r.itineraryStops());
+        log.info("Schedules:      {}", r.schedules());
         log.info("========================================");
         log.info("Default login: admin / admin123");
         log.info("========================================");
