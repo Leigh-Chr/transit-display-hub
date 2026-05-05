@@ -122,7 +122,9 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Line paths -->
+          <!-- Line paths. vector-effect keeps the stroke width fixed in
+               screen pixels: the path geometry still tracks the row stops
+               but the line thickness stays constant at any zoom level. -->
           @for (row of networkLineRows(); track row.line.id) {
             <path
               [attr.d]="row.path"
@@ -130,6 +132,7 @@ function hashStopId(s: string): number {
               [attr.stroke-width]="getLineStrokeWidth(row.line)"
               fill="none"
               stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
               class="network-line-path"
               [class.route-dimmed]="hasRoute()"
             />
@@ -144,6 +147,7 @@ function hashStopId(s: string): number {
                 [attr.stroke-width]="getRouteStrokeWidth(overlay.lineId)"
                 fill="none"
                 stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
                 class="route-active-path"
               />
             }
