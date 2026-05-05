@@ -376,6 +376,10 @@ export class SchematicMapComponent {
    *  with the constant-size LOD pruning. The diagram canvas grows
    *  horizontally to keep this guarantee. */
   private readonly MIN_STOP_SPACING = 50;
+  /** Vertical pitch between two adjacent rows in multi-line mode. Fixed
+   *  rather than compressed-to-fit so rotated stop labels and hidden-line
+   *  badge clusters never bleed into the neighbouring row. */
+  private readonly ROW_SPACING = 120;
   private readonly rowLayout = inject(NetworkRowLayoutService);
 
   /** ?z=2.5 — current zoom factor. Cleared from the URL once the user
@@ -676,14 +680,19 @@ export class SchematicMapComponent {
     const posMap = this.networkStopPositions();
 
     const pad = this.NETWORK_PADDING;
-    // Vertical axis stays at the default extent — only the horizontal
-    // side grows for long lines. Stretching rows vertically would
-    // disperse them needlessly when the network is dense.
     const verticalSize = this.DEFAULT_INNER_SIZE;
-    const maxRowSpacing = 120;
-    const rowSpacing = lines.length > 1 ? Math.min(maxRowSpacing, verticalSize / (lines.length - 1)) : 0;
+    // Fixed row pitch: just enough for the rotated label of one row to
+    // clear the correspondence cluster of the row above. Mirrors the
+    // horizontal MIN_STOP_SPACING philosophy — we'd rather grow the
+    // canvas than compress rows into an unreadable stripe.
+    const rowSpacing = lines.length > 1 ? this.ROW_SPACING : 0;
     const totalHeight = (lines.length - 1) * rowSpacing;
-    const baseY = pad + (verticalSize - totalHeight) / 2;
+    // Centre rows in the default canvas while they fit; once they don't,
+    // pin them at the top padding and let the dynamic baseViewBox grow
+    // to absorb the extra height.
+    const baseY = totalHeight <= verticalSize
+      ? pad + (verticalSize - totalHeight) / 2
+      : pad;
 
     return lines.map((line, idx) => {
       const y = baseY + idx * rowSpacing;

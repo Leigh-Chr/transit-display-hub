@@ -268,6 +268,41 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('vertical row spacing', () => {
+    it('keeps a 120-unit pitch between rows on a small network', () => {
+      fixture.detectChanges();
+      const rows = component.networkLineRows();
+      // Default mock has two rows.
+      expect(rows[1]!.y - rows[0]!.y).toBeCloseTo(120);
+    });
+
+    it('keeps the 120-unit pitch even when many lines are visible (no compression)', () => {
+      const lines: NetworkLine[] = Array.from({ length: 20 }, (_, i) => ({
+        id: `l${i}`, code: `L${i}`, name: `Line ${i}`, color: '#000', type: null,
+        itineraries: [['shared', `s${i}-end`]],
+      }));
+      const stopsForLines: LayoutStop[] = [
+        { id: 'shared', name: 'Shared', latitude: null, longitude: null, schematicX: null, schematicY: null,
+          lineCodes: lines.map(l => l.code), x: 0, y: 0 },
+        ...lines.map((_, i) => ({
+          id: `s${i}-end`, name: `End ${i}`, latitude: null, longitude: null,
+          schematicX: null, schematicY: null, lineCodes: [`L${i}`], x: 0, y: 0,
+        })),
+      ];
+
+      fixture.componentRef.setInput('lines', lines);
+      fixture.componentRef.setInput('stops', stopsForLines);
+      fixture.componentRef.setInput('visibleLineCodes', lines.map(l => l.code));
+      fixture.detectChanges();
+
+      const rows = component.networkLineRows();
+      expect(rows.length).toBe(20);
+      for (let i = 1; i < rows.length; i++) {
+        expect(rows[i]!.y - rows[i - 1]!.y).toBeCloseTo(120);
+      }
+    });
+  });
+
   describe('horizontal spacing', () => {
     it('keeps the default 840 inner extent for short lines', () => {
       fixture.detectChanges();
