@@ -346,7 +346,20 @@ function severityRank(s: MessageSeverity): number {
         }
 
         <!-- Legend -->
-        <div class="legend">
+        <div class="legend" [class.collapsed]="!legendOpen()">
+          <button
+            type="button"
+            class="legend-toggle"
+            (click)="legendOpen.set(!legendOpen())"
+            [attr.aria-expanded]="legendOpen()"
+            [attr.aria-label]="legendOpen() ? 'Hide legend' : 'Show legend'"
+          >
+            <mat-icon>{{ legendOpen() ? 'expand_more' : 'info_outline' }}</mat-icon>
+            @if (legendOpen()) {
+              <span class="legend-toggle-label">Legend</span>
+            }
+          </button>
+          @if (legendOpen()) {
           <div class="legend-item">
             <svg width="18" height="18" viewBox="0 0 18 18">
               <circle cx="9" cy="9" r="6" fill="#888" stroke="white" stroke-width="2"/>
@@ -384,6 +397,7 @@ function severityRank(s: MessageSeverity): number {
               </svg>
               <span>Alert</span>
             </div>
+          }
           }
         </div>
 
@@ -430,6 +444,7 @@ export class SchematicMapComponent {
   container = viewChild<ElementRef<HTMLDivElement>>('container');
 
   isPanning = signal(false);
+  legendOpen = signal(true);
 
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
@@ -771,11 +786,19 @@ export class SchematicMapComponent {
     return ids;
   });
 
+  /** A coarse-grained fingerprint of the current layout. The view is
+   *  recentered only when this signature changes — a simple toggle in
+   *  multi-line mode no longer wipes out the user's pan/zoom. */
+  private readonly layoutSignature = computed(() => {
+    const lines = this.visibleLines();
+    if (lines.length === 0) {return 'empty';}
+    if (lines.length === 1) {return 'single:' + lines[0]?.id;}
+    return 'multi';
+  });
+
   constructor() {
-    // Reset view when layout changes
     effect(() => {
-      this.baseViewBox(); // track dependency
-      this.visibleLines(); // track dependency
+      this.layoutSignature(); // track only the structural mode change
       this.resetView();
     });
   }

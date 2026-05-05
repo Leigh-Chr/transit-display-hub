@@ -233,10 +233,51 @@
   background: var(--app-map-overlay-bg);
   border: 1px solid var(--app-map-outline);
   border-radius: var(--app-radius-sm);
-  padding: 10px 14px;
+  padding: 8px 12px;
   box-shadow: 0 1px 4px var(--app-map-shadow);
   z-index: 2;
-  pointer-events: none;
+  pointer-events: auto;
+  transition: padding 120ms ease;
+}
+
+.legend.collapsed {
+  padding: 4px;
+}
+
+.legend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  margin: -2px -2px 2px;
+  border: none;
+  border-radius: var(--app-radius-xs);
+  background: transparent;
+  color: var(--app-map-on-surface-variant);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.legend-toggle:hover {
+  background: var(--app-map-surface-container-high);
+}
+
+.legend-toggle mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.legend.collapsed .legend-toggle {
+  margin: 0;
+}
+
+.legend-toggle-label {
+  line-height: 1;
 }
 
 .legend-item {
