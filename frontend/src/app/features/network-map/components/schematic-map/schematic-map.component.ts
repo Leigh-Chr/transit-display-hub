@@ -31,10 +31,7 @@ interface NetworkLineRow {
 interface InterchangeConnector {
   stopId: string;
   name: string;
-  x: number;
-  minY: number;
-  maxY: number;
-  /** SVG path data for a slight quadratic bow between (x, minY) and (x, maxY). */
+  /** SVG path data for the bow between the two interchange endpoints. */
   path: string;
 }
 
@@ -640,9 +637,6 @@ export class SchematicMapComponent {
       result.push({
         stopId,
         name: v.name,
-        x: v.x,
-        minY,
-        maxY,
         path: this.buildConnectorPath(stopId, v.x, minY, maxY),
       });
     }
