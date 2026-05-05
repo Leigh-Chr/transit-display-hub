@@ -663,12 +663,18 @@ export class SchematicMapComponent {
     return `M ${x},${minY} Q ${cx},${midY} ${x},${maxY}`;
   }
 
-  /** Labels for stops. Interchange stops appear on every row; others only once (topmost).
-   *  Each label carries an 'up'/'down' orientation:
+  /** Labels for stops. Interchange stops appear on every row that touches
+   *  them so each line carries its own labelled itinerary; non-interchange
+   *  stops are labelled only on the first row that hosts them.
+   *
+   *  Each label carries an 'up' / 'down' orientation:
    *  - single-line: alternate by stop index so adjacent labels fan in opposite
-   *    diagonals (terminus stays up for visual hierarchy);
-   *  - multi-line: bottom-most row sends labels down so they no longer cross
-   *    the rows above; every other row keeps the upward orientation. */
+   *    diagonals (the line's two terminuses always go up);
+   *  - multi-line: bottom-most row sends labels down so they fall into the
+   *    bottom margin instead of climbing through every row above; every other
+   *    row keeps the upward orientation. The collision-pruning pass downstream
+   *    handles whatever overlap remains in the middle.
+   */
   networkStopLabels = computed<NetworkStopLabel[]>(() => {
     const rows = this.networkLineRows();
     const seen = new Set<string>();
@@ -682,21 +688,20 @@ export class SchematicMapComponent {
 
       stops.forEach(({ stop, x }, stopIdx) => {
         const isIc = stop.lineCodes.length > 1;
-        if (isIc || !seen.has(stop.id)) {
-          seen.add(stop.id);
+        if (!isIc && seen.has(stop.id)) {return;}
+        seen.add(stop.id);
 
-          let orientation: 'up' | 'down';
-          if (isBottomRow) {
-            orientation = 'down';
-          } else if (single) {
-            const isEdge = stopIdx === 0 || stopIdx === stops.length - 1;
-            orientation = isEdge ? 'up' : (stopIdx % 2 === 0 ? 'up' : 'down');
-          } else {
-            orientation = 'up';
-          }
-
-          labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation });
+        let orientation: 'up' | 'down';
+        if (isBottomRow) {
+          orientation = 'down';
+        } else if (single) {
+          const isEdge = stopIdx === 0 || stopIdx === stops.length - 1;
+          orientation = isEdge ? 'up' : (stopIdx % 2 === 0 ? 'up' : 'down');
+        } else {
+          orientation = 'up';
         }
+
+        labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation });
       });
     });
 
@@ -959,7 +964,7 @@ export class SchematicMapComponent {
     return `translate(${x}, ${y})`;
   }
 
-  private static readonly MAX_HIDDEN_BADGES = 4;
+  private static readonly MAX_HIDDEN_BADGES = 3;
 
   /** Number of full badges to render before collapsing the rest into a +N pill */
   getHiddenBadgeDisplayCount(total: number): number {
