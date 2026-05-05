@@ -1,14 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
   input,
   output,
   signal,
-  computed,
-  ElementRef,
   viewChild,
-  effect,
-  inject,
 } from '@angular/core';
 import { linkedQueryParam } from 'ngxtension/linked-query-param';
 import { MessageSeverity, NetworkLine, NetworkMapAlerts } from '@shared/models';
@@ -601,13 +603,33 @@ export class SchematicMapComponent {
     return baseW / curW;
   });
 
-  /** Inverse zoom factor used to keep the visual size of every "icon"
-   *  (stop circles, hidden-line badges, alert/route markers, line code
-   *  badges, route arrows, rotated labels) constant in screen pixels.
-   *  The underlying geometry (line paths, stop positions, row spacing)
-   *  still scales with zoom, so zooming in genuinely creates more space
-   *  for the icons rather than just blowing them up. */
-  invZoom = computed(() => 1 / this.zoomLevel());
+  /** Live size of the SVG element on screen, refreshed by a ResizeObserver
+   *  in the constructor. Drives the screen-space compensation below. */
+  private readonly svgRect = signal<{ w: number; h: number }>({ w: 0, h: 0 });
+
+  /** Natural svg-unit-to-screen-px ratio at zoom 1. Single-line is wider
+   *  than tall so the SVG ends up width-constrained (~0.7 px per unit);
+   *  dense multi-line views are taller and become height-constrained
+   *  (~0.5 px per unit), which is why icons used to feel smaller as the
+   *  number of rows grew. */
+  private readonly baseScale = computed(() => {
+    const r = this.svgRect();
+    const vb = this.baseViewBox();
+    if (r.w === 0 || r.h === 0 || vb.w === 0 || vb.h === 0) {return 1;}
+    return Math.min(r.w / vb.w, r.h / vb.h);
+  });
+
+  /** Inverse total scale used by every "icon" (stop circles, hidden-line
+   *  badges, alert/route markers, line code badges, route arrows, rotated
+   *  labels). Compensates for both the user zoom AND the view-box-to-screen
+   *  ratio, so an SVG-unit value of N gives N screen pixels regardless of
+   *  how many rows are visible or how zoomed-in the user is. The line
+   *  paths and stop positions keep scaling with zoom — only the visuals
+   *  pinned with this factor stay at constant screen size. */
+  invZoom = computed(() => {
+    const total = this.baseScale() * this.zoomLevel();
+    return total > 0 ? 1 / total : 1;
+  });
 
   /** Transform strings for the rotated label, sharing the same inverse
    *  scale so a label keeps both its rendered font size and its offset
@@ -881,6 +903,24 @@ export class SchematicMapComponent {
       if (this.zoomParam() === null && this.panParam() === null) {
         this.resetView();
       }
+    });
+
+    // 3. Track the SVG element's screen size so the icon-scaling formula
+    //    can compensate for the view-box-to-screen ratio (different in
+    //    single-line vs dense multi-line). Set up once after first render.
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const svg = this.svgElement()?.nativeElement;
+      if (!svg) {return;}
+      const update = (): void => {
+        const r = svg.getBoundingClientRect();
+        this.svgRect.set({ w: r.width, h: r.height });
+      };
+      update();
+      if (typeof ResizeObserver === 'undefined') {return;}
+      const ro = new ResizeObserver(update);
+      ro.observe(svg);
+      destroyRef.onDestroy(() => ro.disconnect());
     });
   }
 
