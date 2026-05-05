@@ -477,13 +477,28 @@
 
 @media (max-width: 600px) {
   .line-filters {
-    padding: 10px 12px;
+    padding: 8px 12px;
     gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .line-filters::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .line-filters::-webkit-scrollbar-thumb {
+    background: var(--app-map-outline);
+    border-radius: 2px;
   }
 
   .filter-chip {
     padding: 5px 10px;
     font-size: 12px;
+    flex-shrink: 0;
   }
 
   .line-diagram-wrapper {
@@ -493,6 +508,8 @@
   .legend {
     padding: 8px 10px;
     gap: 4px;
+    bottom: 8px;
+    left: 8px;
   }
 
   .legend-item {
@@ -503,5 +520,10 @@
   .legend-item svg {
     width: 14px;
     height: 14px;
+  }
+
+  .zoom-controls {
+    bottom: 8px;
+    right: 8px;
   }
 }
