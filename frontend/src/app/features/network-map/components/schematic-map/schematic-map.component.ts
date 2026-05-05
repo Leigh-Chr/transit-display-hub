@@ -299,7 +299,7 @@ function hashStopId(s: string): number {
                  [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(label.stop.id, label.lineId)">
                 <title>{{ label.stop.name }}</title>
                 <text
-                  [attr.transform]="label.orientation === 'down' ? 'rotate(45) translate(8, 8)' : 'rotate(-45) translate(8, -8)'"
+                  [attr.transform]="label.orientation === 'down' ? labelTransformDown() : labelTransformUp()"
                   class="stop-name"
                   [class.network-stop-name]="!isSingleLineMode()"
                   [class.interchange]="isInterchange(label.stop)"
@@ -563,6 +563,15 @@ export class SchematicMapComponent {
     if (!curW || curW <= 0 || !baseW) {return 1;}
     return baseW / curW;
   });
+
+  /** Transform strings that hold the rotated label at a constant screen
+   *  size: scale(1/zoom) shrinks both the text glyphs and the stop-to-text
+   *  offset in SVG units, but each unit maps to `zoom` screen pixels, so
+   *  the rendered size stays constant. The geometry around the label
+   *  (lines, stops, row spacing) keeps scaling with zoom, so zooming in
+   *  actually frees horizontal space between adjacent labels. */
+  labelTransformUp = computed(() => `rotate(-45) scale(${1 / this.zoomLevel()}) translate(8, -8)`);
+  labelTransformDown = computed(() => `rotate(45) scale(${1 / this.zoomLevel()}) translate(8, 8)`);
 
   // --- Network computed (now always active, filtered by visibleLines) ---
 

@@ -301,6 +301,34 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('zoom-invariant label transforms', () => {
+    it('produces neutral scale at default zoom = 1', () => {
+      fixture.detectChanges();
+      // Default reset view sets zoomLevel ≈ 1 — labels render at their CSS size.
+      expect(component.labelTransformUp()).toContain('scale(1)');
+      expect(component.labelTransformDown()).toContain('scale(1)');
+    });
+
+    it('inverts the scale once the user zooms in', () => {
+      fixture.detectChanges();
+
+      // Simulate a 2× zoom-in by halving the viewBox width.
+      component.zoomIn();
+      const zoom = component.zoomLevel();
+      expect(zoom).toBeGreaterThan(1);
+
+      const inv = 1 / zoom;
+      expect(component.labelTransformUp()).toContain(`scale(${inv})`);
+      expect(component.labelTransformDown()).toContain(`scale(${inv})`);
+    });
+
+    it('keeps the up label rotated -45° and the down label rotated +45°', () => {
+      fixture.detectChanges();
+      expect(component.labelTransformUp()).toMatch(/^rotate\(-45\) /);
+      expect(component.labelTransformDown()).toMatch(/^rotate\(45\) /);
+    });
+  });
+
   describe('displayLabel', () => {
     it('keeps the full name in single-line mode', () => {
       fixture.componentRef.setInput('visibleLineCodes', ['L1']);
