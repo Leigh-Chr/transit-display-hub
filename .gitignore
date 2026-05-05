@@ -35,6 +35,7 @@ frontend/visual-test.mjs
 # Playwright MCP browser artifacts (screenshots, snapshots, console logs)
 .playwright-mcp/
 frontend/.playwright-mcp/
+/*.png
 
 # Website - Landing page
 website/node_modules/
