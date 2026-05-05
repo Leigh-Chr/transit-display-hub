@@ -190,13 +190,14 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Stop circles. Geometry scales with zoom (Google Maps style only
-               applies to labels above) so multi-line views render at a
-               readable size at default zoom. -->
+          <!-- Stop circles + the cluster of badges/markers under them. The
+               outer translate plants the group on the line geometry, then an
+               inner scale(1/zoom) pins the visuals at constant screen size,
+               same trick as the labels above. -->
           @for (row of networkLineRows(); track row.line.id) {
             @for (s of row.stops; track s.stop.id) {
               <g
-                [attr.transform]="'translate(' + s.x + ',' + row.y + ')'"
+                [attr.transform]="'translate(' + s.x + ',' + row.y + ') scale(' + invZoom() + ')'"
                 class="stop-group"
                 [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(s.stop.id, row.line.id)"
                 (click)="onStopClick(s.stop, $event)"
