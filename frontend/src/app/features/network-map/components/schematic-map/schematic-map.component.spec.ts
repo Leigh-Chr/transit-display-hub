@@ -278,13 +278,13 @@ describe('SchematicMapComponent', () => {
   });
 
   describe('line alert severity', () => {
-    it('should return null for lines with no alerts', () => {
+    it('should not list lines with no alerts in the severity map', () => {
       fixture.detectChanges();
 
-      expect(component.getLineAlertSeverity('line1')).toBeNull();
+      expect(component.lineAlertSeverityMap().has('line1')).toBe(false);
     });
 
-    it('should return highest severity for lines with alerts', () => {
+    it('should expose highest severity for lines with alerts', () => {
       fixture.componentRef.setInput('alerts', {
         networkAlerts: [],
         lineAlerts: {
@@ -297,7 +297,7 @@ describe('SchematicMapComponent', () => {
       });
       fixture.detectChanges();
 
-      expect(component.getLineAlertSeverity('line1')).toBe('CRITICAL');
+      expect(component.lineAlertSeverityMap().get('line1')).toBe('CRITICAL');
     });
   });
 

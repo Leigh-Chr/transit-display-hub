@@ -10,14 +10,16 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatIconModule } from '@angular/material/icon';
 import { MessageSeverity, NetworkLine, NetworkMapAlerts } from '@shared/models';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
 import { SvgPanZoom } from '../../utils/svg-pan-zoom';
 import { exportSvgToFile } from '../../utils/svg-export';
+import { AlertOverlayComponent, VisibleLineAlert } from '../alert-overlay/alert-overlay.component';
+import { LineFilterChipsComponent } from '../line-filter-chips/line-filter-chips.component';
+import { MapLegendComponent } from '../map-legend/map-legend.component';
+import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 
 interface NetworkLineRow {
   line: NetworkLine;
@@ -48,28 +50,23 @@ function severityRank(s: MessageSeverity): number {
 @Component({
   selector: 'app-schematic-map',
   standalone: true,
-  imports: [MatExpansionModule, MatIconModule],
+  imports: [
+    AlertOverlayComponent,
+    LineFilterChipsComponent,
+    MapLegendComponent,
+    ZoomControlsComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="map-container" #container>
-      <!-- Line filter chips -->
-      <div class="line-filters">
-        <button
-          class="filter-chip all-chip"
-          [class.active]="visibleLineCodes().length === sortedLines().length"
-          (click)="toggleAllLines()"
-        >All</button>
-        @for (line of sortedLines(); track line.id) {
-          <button
-            class="filter-chip"
-            [class.active]="visibleCodeSet().has(line.code)"
-            [style.--chip-color]="line.color"
-            [attr.title]="'Click to toggle ' + line.code + ' · Double-click to focus'"
-            (click)="toggleLine(line.code)"
-            (dblclick)="showOnlyLine(line.code)"
-          >{{ line.code }}@if (getLineAlertSeverity(line.id); as sev) {<span class="chip-alert-dot" [class]="'chip-alert-dot-' + sev.toLowerCase()"></span>}</button>
-        }
-      </div>
+      <app-line-filter-chips
+        [lines]="sortedLines()"
+        [visibleLineCodes]="visibleLineCodes()"
+        [alertSeverityByLineId]="lineAlertSeverityMap()"
+        (toggle)="toggleLine($event)"
+        (toggleAll)="toggleAllLines()"
+        (focus)="showOnlyLine($event)"
+      />
 
       @if (visibleLineCodes().length === 0) {
         <div class="empty-selection">
@@ -303,124 +300,24 @@ function severityRank(s: MessageSeverity): number {
           }
         </svg>
 
-        <!-- Alert overlay -->
-        @if (alerts().networkAlerts.length > 0 || visibleLineAlerts().length > 0) {
-          <div class="alert-overlay">
-            @if (alerts().networkAlerts.length > 0) {
-              <div class="alert-section-label">Network</div>
-              <mat-accordion multi>
-                @for (alert of alerts().networkAlerts; track alert.title) {
-                  <mat-expansion-panel [class]="'alert-panel alert-' + alert.severity.toLowerCase()">
-                    <mat-expansion-panel-header>
-                      <mat-panel-title>
-                        <span class="alert-severity-dot" [class]="'dot-' + alert.severity.toLowerCase()"></span>
-                        {{ alert.title }}
-                      </mat-panel-title>
-                    </mat-expansion-panel-header>
-                    @if (alert.content) {
-                      <p class="alert-content">{{ alert.content }}</p>
-                    }
-                  </mat-expansion-panel>
-                }
-              </mat-accordion>
-            }
-            @if (visibleLineAlerts().length > 0) {
-              <div class="alert-section-label">Lines</div>
-              <mat-accordion multi>
-                @for (entry of visibleLineAlerts(); track entry.line.id) {
-                  @for (alert of entry.alerts; track alert.title) {
-                    <mat-expansion-panel [class]="'alert-panel alert-' + alert.severity.toLowerCase()">
-                      <mat-expansion-panel-header>
-                        <mat-panel-title>
-                          <span class="alert-line-badge" [style.backgroundColor]="entry.line.color">{{ entry.line.code }}</span>
-                          {{ alert.title }}
-                        </mat-panel-title>
-                      </mat-expansion-panel-header>
-                      @if (alert.content) {
-                        <p class="alert-content">{{ alert.content }}</p>
-                      }
-                    </mat-expansion-panel>
-                  }
-                }
-              </mat-accordion>
-            }
-          </div>
-        }
+        <app-alert-overlay
+          [networkAlerts]="alerts().networkAlerts"
+          [lineAlerts]="visibleLineAlerts()"
+        />
 
-        <!-- Legend -->
-        <div class="legend" [class.collapsed]="!legendOpen()">
-          <button
-            type="button"
-            class="legend-toggle"
-            (click)="legendOpen.set(!legendOpen())"
-            [attr.aria-expanded]="legendOpen()"
-            [attr.aria-label]="legendOpen() ? 'Hide legend' : 'Show legend'"
-          >
-            <mat-icon>{{ legendOpen() ? 'expand_more' : 'info_outline' }}</mat-icon>
-            @if (legendOpen()) {
-              <span class="legend-toggle-label">Legend</span>
-            }
-          </button>
-          @if (legendOpen()) {
-          <div class="legend-item">
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <circle cx="9" cy="9" r="6" fill="#888" stroke="white" stroke-width="2"/>
-            </svg>
-            <span>Stop</span>
-          </div>
-          <div class="legend-item">
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <circle cx="9" cy="9" r="7" fill="#888" stroke="white" stroke-width="2"/>
-              <circle cx="9" cy="9" r="4" fill="white"/>
-            </svg>
-            <span>Terminus</span>
-          </div>
-          <div class="legend-item">
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <circle cx="9" cy="9" r="6" fill="white" stroke="#333" stroke-width="2"/>
-              <circle cx="9" cy="9" r="2.5" fill="#333"/>
-            </svg>
-            <span>Interchange</span>
-          </div>
-          @if (hasHiddenLines()) {
-            <div class="legend-item">
-              <svg width="18" height="18" viewBox="0 0 18 18">
-                <circle cx="9" cy="9" r="8" fill="#666"/>
-                <text x="9" y="9" text-anchor="middle" dominant-baseline="central" fill="white" font-size="7" font-weight="bold">X</text>
-              </svg>
-              <span>Hidden line</span>
-            </div>
-          }
-          @if (hasStopAlerts()) {
-            <div class="legend-item legend-alert">
-              <svg width="18" height="18" viewBox="0 0 18 18" class="alert-badge-critical">
-                <circle cx="9" cy="9" r="5" stroke="white" stroke-width="1.5"/>
-                <text x="9" y="9" text-anchor="middle" dominant-baseline="central" fill="white" font-size="6" font-weight="bold">!</text>
-              </svg>
-              <span>Alert</span>
-            </div>
-          }
-          }
-        </div>
+        <app-map-legend
+          [hasHiddenLines]="hasHiddenLines()"
+          [hasStopAlerts]="hasStopAlerts()"
+        />
 
-        <!-- Projected content (search panels, etc.) -->
         <ng-content />
 
-        <!-- Zoom controls -->
-        <div class="zoom-controls">
-          <button class="zoom-btn" (click)="zoomIn()" title="Zoom in">
-            <mat-icon>add</mat-icon>
-          </button>
-          <button class="zoom-btn" (click)="resetView()" title="Reset view">
-            <mat-icon>fit_screen</mat-icon>
-          </button>
-          <button class="zoom-btn" (click)="zoomOut()" title="Zoom out">
-            <mat-icon>remove</mat-icon>
-          </button>
-          <button class="zoom-btn" (click)="exportSvg()" title="Download SVG">
-            <mat-icon>download</mat-icon>
-          </button>
-        </div>
+        <app-zoom-controls
+          (zoomIn)="zoomIn()"
+          (zoomOut)="zoomOut()"
+          (resetView)="resetView()"
+          (exportSvg)="exportSvg()"
+        />
       </div>
 
       }
@@ -446,7 +343,6 @@ export class SchematicMapComponent {
   container = viewChild<ElementRef<HTMLDivElement>>('container');
 
   isPanning = signal(false);
-  legendOpen = signal(true);
 
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
@@ -971,20 +867,28 @@ export class SchematicMapComponent {
     return Object.keys(this.alerts().stopAlerts).length > 0;
   }
 
-  getLineAlertSeverity(lineId: string): MessageSeverity | null {
-    const messages = this.alerts().lineAlerts[lineId];
-    if (!messages?.length) {return null;}
-    return messages.reduce<MessageSeverity | null>((max, m) =>
-      max === null || severityRank(m.severity) > severityRank(max) ? m.severity : max,
-      null,
-    );
-  }
+  /** lineId → highest severity for any active alert on that line */
+  lineAlertSeverityMap = computed<Map<string, MessageSeverity>>(() => {
+    const map = new Map<string, MessageSeverity>();
+    for (const [lineId, messages] of Object.entries(this.alerts().lineAlerts)) {
+      if (!messages?.length) {continue;}
+      const max = messages.reduce<MessageSeverity | null>((best, m) =>
+        best === null || severityRank(m.severity) > severityRank(best) ? m.severity : best,
+        null,
+      );
+      if (max) {map.set(lineId, max);}
+    }
+    return map;
+  });
 
-  visibleLineAlerts = computed(() => {
+  visibleLineAlerts = computed<VisibleLineAlert[]>(() => {
     const lineAlerts = this.alerts().lineAlerts;
-    return this.visibleLines()
-      .filter(line => lineAlerts[line.id]?.length)
-      .map(line => ({ line, alerts: lineAlerts[line.id] }));
+    const result: VisibleLineAlert[] = [];
+    for (const line of this.visibleLines()) {
+      const alerts = lineAlerts[line.id];
+      if (alerts?.length) {result.push({ line, alerts });}
+    }
+    return result;
   });
 
   getBadgeTransform(index: number, total: number): string {
