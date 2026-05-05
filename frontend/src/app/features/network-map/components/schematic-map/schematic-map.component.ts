@@ -104,12 +104,16 @@ function hashStopId(s: string): number {
           preserveAspectRatio="xMidYMid meet"
           class="line-diagram network-diagram"
         >
-          <!-- Interchange connectors (gently curved dashed paths) — multi-line only -->
+          <!-- Interchange connectors (gently curved dashed paths) — multi-line
+               only. vector-effect keeps the dashed stroke at constant screen
+               width regardless of zoom; the path geometry still scales with
+               the row positions. -->
           @if (!isSingleLineMode()) {
             @for (conn of interchangeConnectors(); track conn.stopId) {
               <path
                 [attr.d]="conn.path"
                 fill="none"
+                vector-effect="non-scaling-stroke"
                 class="interchange-connector"
                 [class.route-dimmed]="hasRoute() && !routeTransferIds().has(conn.stopId)"
               />
@@ -142,7 +146,8 @@ function hashStopId(s: string): number {
               />
             }
             @for (arrow of routeDirectionArrows(); track arrow.x + ':' + arrow.y) {
-              <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ')'" class="route-arrow">
+              <g [attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ') scale(' + invZoom() + ')'"
+                 class="route-arrow">
                 <polygon
                   [attr.points]="arrow.right ? '-5,-4 5,0 -5,4' : '5,-4 -5,0 5,4'"
                   fill="white"
@@ -152,10 +157,12 @@ function hashStopId(s: string): number {
             }
           }
 
-          <!-- Line code badges + name (left of each row) -->
+          <!-- Line code badges + name (left of each row). Anchored on the
+               first stop's geometry but scaled inversely with zoom so the
+               badge keeps its screen size at any zoom level. -->
           @for (row of networkLineRows(); track row.line.id) {
             @if (row.stops.length > 0) {
-              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 40) + ',' + row.y + ')'"
+              <g [attr.transform]="'translate(' + ((row.stops[0]?.x ?? 0) - 40) + ',' + row.y + ') scale(' + invZoom() + ')'"
                  [class.route-dimmed]="hasRoute() && !routeActiveEdges().has(row.line.id)">
                 <rect
                   [attr.x]="-30"
