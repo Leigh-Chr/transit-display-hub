@@ -147,10 +147,73 @@ public class GtfsImportService {
                 lineRepository.save(line);
             }
         }
+        splitOversizedBusCategories(result.values());
         log.info("GTFS import: {} lines created across {} categories",
                 result.size(),
                 result.values().stream().map(Line::getCategory).distinct().count());
         return result;
+    }
+
+    /**
+     * When a single category lumps 30+ bus lines together (e.g. Bordeaux),
+     * the line filter and category tab become unwieldy. Group them by the
+     * alphabetic prefix of their short code: significant prefixes (≥ 3 lines)
+     * become "{category} {prefix}" sub-categories; numeric-only and small
+     * prefix groups keep the original category.
+     */
+    private void splitOversizedBusCategories(Collection<Line> lines) {
+        Map<String, List<Line>> byCategory = new LinkedHashMap<>();
+        for (Line line : lines) {
+            byCategory.computeIfAbsent(line.getCategory(), c -> new ArrayList<>()).add(line);
+        }
+        for (Map.Entry<String, List<Line>> entry : byCategory.entrySet()) {
+            applyPrefixSplit(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void applyPrefixSplit(String category, List<Line> linesInCategory) {
+        if (linesInCategory.size() < 30) {return;}
+        for (Line line : linesInCategory) {
+            if (line.getType() != LineType.BUS) {return;}
+        }
+
+        Map<String, List<Line>> byPrefix = new LinkedHashMap<>();
+        for (Line line : linesInCategory) {
+            byPrefix.computeIfAbsent(extractAlphaPrefix(line.getCode()), p -> new ArrayList<>()).add(line);
+        }
+
+        Set<String> significant = new HashSet<>();
+        for (Map.Entry<String, List<Line>> entry : byPrefix.entrySet()) {
+            if (!entry.getKey().isEmpty() && entry.getValue().size() >= 3) {
+                significant.add(entry.getKey());
+            }
+        }
+        if (significant.isEmpty()) {return;}
+
+        List<Line> dirty = new ArrayList<>();
+        for (Map.Entry<String, List<Line>> entry : byPrefix.entrySet()) {
+            if (!significant.contains(entry.getKey())) {continue;}
+            String sub = truncate(category + " " + entry.getKey(), LINE_CATEGORY_MAX_LENGTH);
+            for (Line line : entry.getValue()) {
+                line.setCategory(sub);
+                dirty.add(line);
+            }
+        }
+        if (!dirty.isEmpty()) {
+            lineRepository.saveAll(dirty);
+            log.info("GTFS import: split '{}' ({} lines) into sub-categories by prefix", category, linesInCategory.size());
+        }
+    }
+
+    private static String extractAlphaPrefix(String code) {
+        if (isBlank(code)) {return "";}
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < code.length(); i++) {
+            char c = code.charAt(i);
+            if (Character.isLetter(c)) {sb.append(c);}
+            else {break;}
+        }
+        return sb.toString().toUpperCase();
     }
 
     private record StopImport(
