@@ -759,6 +759,12 @@ export class NetworkMapComponent implements OnInit {
     // Reset line filter when switching category to avoid lingering invalid codes
     this.linesParam.set(null);
     this.categoryParam.set(category);
+    // A computed route may reference lines that the new category filters out,
+    // which would render an empty diagram. Clear the route + dep/arr so the
+    // user starts a fresh search inside the new category scope.
+    if (this.routeResult() !== null || this.departureStop() !== null || this.arrivalStop() !== null) {
+      this.onRouteClear();
+    }
   }
 
   /** Focus a single line: set lines param to just this code, keep category if set */

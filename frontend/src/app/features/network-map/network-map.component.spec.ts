@@ -302,6 +302,25 @@ describe('NetworkMapComponent', () => {
       expect(component.routeResult()).toBeNull();
     });
 
+    it('should clear an active route when the category changes', () => {
+      fixture.detectChanges();
+
+      component.departureStop.set(mockStops[0]!);
+      component.arrivalStop.set(mockStops[1]!);
+      component.routeResult.set({
+        segments: [],
+        transfers: 0,
+        transferStopIds: [],
+        allStopIds: [],
+      });
+
+      component.setCategory('OTHER');
+
+      expect(component.routeResult()).toBeNull();
+      expect(component.departureStop()).toBeNull();
+      expect(component.arrivalStop()).toBeNull();
+    });
+
     it('should update arrivalStop on onArrivalChanged', () => {
       fixture.detectChanges();
 
