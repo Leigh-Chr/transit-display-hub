@@ -321,9 +321,7 @@ public class GtfsImportService {
         }
 
         // Persist stop ↔ line associations
-        for (Stop s : stopsTouched) {
-            stopRepository.save(s);
-        }
+        stopRepository.saveAll(stopsTouched);
 
         log.info("GTFS import: {} itineraries / {} itinerary stops created", itineraryCount, itineraryStopCount);
         return new ItineraryImport(itineraryCount, itineraryStopCount);
@@ -354,7 +352,7 @@ public class GtfsImportService {
         double latRange = maxLat - minLat;
         double lonRange = maxLon - minLon;
         double usable = SCHEMATIC_SIZE - 2 * SCHEMATIC_MARGIN;
-        int updated = 0;
+        List<Stop> dirty = new ArrayList<>(stops.size());
         for (Stop s : stops) {
             if (s.getLatitude() == null || s.getLongitude() == null) {
                 continue;
@@ -364,10 +362,10 @@ public class GtfsImportService {
             double y = SCHEMATIC_MARGIN + ((maxLat - s.getLatitude()) / latRange) * usable;
             s.setSchematicX(x);
             s.setSchematicY(y);
-            stopRepository.saveAndFlush(s);
-            updated++;
+            dirty.add(s);
         }
-        log.info("GTFS import: schematic coordinates assigned to {} stops", updated);
+        stopRepository.saveAll(dirty);
+        log.info("GTFS import: schematic coordinates assigned to {} stops", dirty.size());
     }
 
     // ---------- helpers ----------
