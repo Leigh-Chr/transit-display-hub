@@ -155,6 +155,36 @@ describe('RouteFinderService', () => {
       expect(result!.segments[0]!.stopIds[result!.segments[0]!.stopIds.length - 1]).toBe('branchB');
     });
 
+    it('returns a deterministic route when two paths have identical cost', () => {
+      // Two parallel direct paths from s1 to s2, each 2 hops.
+      const parallelMap: NetworkMap = {
+        lines: [
+          { id: 'lineB', code: 'LB', name: 'B', color: '#0F0', type: null,
+            itineraries: [['s1', 'midB', 's2']] },
+          { id: 'lineA', code: 'LA', name: 'A', color: '#F00', type: null,
+            itineraries: [['s1', 'midA', 's2']] },
+        ],
+        stops: [
+          { id: 's1', name: 'Origin', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['LA', 'LB'] },
+          { id: 'midA', name: 'A', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['LA'] },
+          { id: 'midB', name: 'B', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['LB'] },
+          { id: 's2', name: 'Dest', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['LA', 'LB'] },
+        ],
+        bounds: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
+      };
+
+      const first = service.findRoute(parallelMap, 's1', 's2');
+      const second = service.findRoute(parallelMap, 's1', 's2');
+
+      expect(first).not.toBeNull();
+      // Same input → same output, every time.
+      expect(first).toEqual(second);
+      // Tie-break is alphabetical on lineId, so 'lineA' wins over 'lineB'.
+      expect(first!.segments).toHaveLength(1);
+      expect(first!.segments[0]!.lineId).toBe('lineA');
+      expect(first!.segments[0]!.stopIds).toEqual(['s1', 'midA', 's2']);
+    });
+
     it('labels the direction correctly when travelling the reverse itinerary', () => {
       const oneWay: NetworkMap = {
         lines: [

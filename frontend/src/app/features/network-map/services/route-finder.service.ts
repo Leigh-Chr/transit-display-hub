@@ -213,7 +213,16 @@ export class RouteFinderService {
   ): RouteResult | null {
     const dist = new Map<string, number>();
     const prev = new Map<string, string | null>();
-    const pq = new MinHeap<PqEntry>((a, b) => a.cost - b.cost);
+    // Tie-break on lineId then stopId so two equally-cheap routes always
+    // resolve to the same one. Without this, the heap order depends on
+    // adjacency-map iteration order — re-importing GTFS in a different
+    // sort could silently flip the chosen route between L1 and L2.
+    const pq = new MinHeap<PqEntry>((a, b) => {
+      if (a.cost !== b.cost) {return a.cost - b.cost;}
+      if (a.node.lineId !== b.node.lineId) {return a.node.lineId < b.node.lineId ? -1 : 1;}
+      if (a.node.stopId !== b.node.stopId) {return a.node.stopId < b.node.stopId ? -1 : 1;}
+      return 0;
+    });
 
     for (const lineId of startLines) {
       const key = this.getKey(fromStopId, lineId);
