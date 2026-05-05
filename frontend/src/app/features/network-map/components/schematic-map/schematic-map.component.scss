@@ -121,8 +121,8 @@
 .line-badge-text {
   font-size: 18px;
   font-weight: 700;
-  fill: white;
   font-family: system-ui, -apple-system, sans-serif;
+  /* fill is set per badge via [attr.fill] for contrast against brand colors */
 }
 
 .line-name-label {

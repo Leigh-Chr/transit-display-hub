@@ -342,6 +342,65 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('line text color contrast', () => {
+    it('returns dark text on bright brand colors', () => {
+      // RATP-style yellow: too bright for white text
+      expect(component.getLineTextColor('#FFCD00')).toBe('#1a1a1a');
+      // Pastel green
+      expect(component.getLineTextColor('#bdf')).toBe('#1a1a1a');
+    });
+
+    it('returns white text on dark brand colors', () => {
+      expect(component.getLineTextColor('#003366')).toBe('#fff');
+      expect(component.getLineTextColor('#000')).toBe('#fff');
+    });
+
+    it('falls back to white for malformed input', () => {
+      expect(component.getLineTextColor('')).toBe('#fff');
+      expect(component.getLineTextColor('not-a-color')).toBe('#fff');
+      expect(component.getLineTextColor('#zzz')).toBe('#fff');
+    });
+  });
+
+  describe('wheel hint', () => {
+    beforeEach(() => {
+      try { localStorage.removeItem('transit-hub.wheel-hint-seen'); } catch { /* skip */ }
+    });
+
+    function wheel(extra: Partial<WheelEvent>): WheelEvent {
+      return {
+        deltaX: 0, deltaY: 0, clientX: 100, clientY: 100,
+        ctrlKey: false, metaKey: false,
+        preventDefault: vi.fn(),
+        ...extra,
+      } as unknown as WheelEvent;
+    }
+
+    it('shows the hint on the first plain wheel scroll', () => {
+      fixture.detectChanges();
+      expect(component.wheelHintVisible()).toBe(false);
+      component.onWheel(wheel({ deltaY: 50 }));
+      expect(component.wheelHintVisible()).toBe(true);
+    });
+
+    it('does not show the hint on Ctrl+wheel zoom', () => {
+      fixture.detectChanges();
+      component.onWheel(wheel({ deltaY: -50, ctrlKey: true }));
+      expect(component.wheelHintVisible()).toBe(false);
+    });
+
+    it('does not re-show the hint once flagged in localStorage', () => {
+      fixture.detectChanges();
+      component.onWheel(wheel({ deltaY: 50 }));
+      expect(component.wheelHintVisible()).toBe(true);
+
+      // Simulate the timer dismissing the hint, then scroll again.
+      component.wheelHintVisible.set(false);
+      component.onWheel(wheel({ deltaY: 50 }));
+      expect(component.wheelHintVisible()).toBe(false);
+    });
+  });
+
   describe('keyboard navigation', () => {
     function key(k: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
       return { key: k, shiftKey: false, preventDefault: vi.fn(), ...modifiers } as unknown as KeyboardEvent;

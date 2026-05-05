@@ -52,6 +52,23 @@ function severityRank(s: MessageSeverity): number {
   switch (s) { case 'INFO': return 0; case 'WARNING': return 1; case 'CRITICAL': return 2; }
 }
 
+/** Pick a foreground that stays legible on top of {bgHex}. Uses the YIQ
+ *  perceived-luminance formula so light brand colors (RATP yellow,
+ *  pastel pinks, lime greens) get black text and dark ones keep white.
+ *  Threshold biased toward black to keep mid-range colors readable. */
+function readableTextColor(bgHex: string): string {
+  if (!bgHex) {return '#fff';}
+  const raw = bgHex.startsWith('#') ? bgHex.slice(1) : bgHex;
+  const expanded = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
+  if (expanded.length !== 6) {return '#fff';}
+  const r = parseInt(expanded.slice(0, 2), 16);
+  const g = parseInt(expanded.slice(2, 4), 16);
+  const b = parseInt(expanded.slice(4, 6), 16);
+  if ([r, g, b].some(c => Number.isNaN(c))) {return '#fff';}
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 160 ? '#1a1a1a' : '#fff';
+}
+
 @Component({
   selector: 'app-schematic-map',
   standalone: true,
@@ -82,6 +99,8 @@ function severityRank(s: MessageSeverity): number {
       <div
         class="line-diagram-wrapper"
         tabindex="0"
+        role="application"
+        aria-label="Network schematic. Drag or scroll to pan. Hold Ctrl and scroll, or pinch, to zoom. Arrow keys pan; plus and minus zoom; 0 resets the view."
         (wheel)="onWheel($event)"
         (keydown)="onKeyDown($event)"
         (mousedown)="onPointerDown($event)"
@@ -176,6 +195,7 @@ function severityRank(s: MessageSeverity): number {
                   [attr.x]="getLineBadgeWidth(row.line.code) / 2 - 30"
                   dominant-baseline="central"
                   text-anchor="middle"
+                  [attr.fill]="getLineTextColor(row.line.color)"
                   class="line-badge-text"
                 >{{ row.line.code }}</text>
                 @if (row.line.name && row.line.name !== row.line.code) {
@@ -280,7 +300,7 @@ function severityRank(s: MessageSeverity): number {
                         <text
                           text-anchor="middle"
                           dominant-baseline="central"
-                          fill="white"
+                          [attr.fill]="getLineTextColor(getLineColor(code))"
                           font-size="15"
                           font-weight="bold"
                         >{{ code }}</text>
@@ -429,6 +449,16 @@ export class SchematicMapComponent {
   });
 
   isSingleLineMode = computed(() => this.visibleLines().length === 1);
+
+  /** lineId → NetworkLine lookup. Avoids the O(n) `find` we'd otherwise
+   *  do for every route segment when computing stroke widths. */
+  private readonly lineById = computed(() => {
+    const map = new Map<string, NetworkLine>();
+    for (const line of this.lines()) {
+      map.set(line.id, line);
+    }
+    return map;
+  });
 
   /** Whether some lines are filtered out */
   hasHiddenLines = computed(() => this.visibleLineCodes().length < this.sortedLines().length);
@@ -973,7 +1003,7 @@ export class SchematicMapComponent {
 
   getRouteStrokeWidth(lineId: string): number {
     if (this.isSingleLineMode()) {return 10;}
-    const line = this.lines().find(l => l.id === lineId);
+    const line = this.lineById().get(lineId);
     return line && this.isTrunkLine(line) ? 13 : 10;
   }
 
@@ -1051,6 +1081,12 @@ export class SchematicMapComponent {
 
   getLineColor(code: string): string {
     return this.lineColorMap().get(code) ?? '#666';
+  }
+
+  /** Black or white text for a given line color, picked so it stays
+   *  legible against pastel or saturated yellow/orange brand colors. */
+  getLineTextColor(bg: string): string {
+    return readableTextColor(bg);
   }
 
   getTransportIcon(type: string): string {
