@@ -297,6 +297,7 @@ function hashStopId(s: string): number {
             @if (isLabelRendered(label)) {
               <g [attr.transform]="'translate(' + label.x + ',' + label.y + ')'"
                  [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(label.stop.id, label.lineId)">
+                <title>{{ label.stop.name }}</title>
                 <text
                   [attr.transform]="label.orientation === 'down' ? 'rotate(45) translate(8, 8)' : 'rotate(-45) translate(8, -8)'"
                   class="stop-name"
@@ -304,7 +305,7 @@ function hashStopId(s: string): number {
                   [class.interchange]="isInterchange(label.stop)"
                   [class.terminus]="isNetworkTerminus(label.stop)"
                 >
-                  {{ label.stop.name }}
+                  {{ displayLabel(label.stop.name) }}
                 </text>
               </g>
             }
@@ -899,6 +900,21 @@ export class SchematicMapComponent {
 
   getLineBadgeWidth(code: string): number {
     return Math.max(32, code.length * 8 + 16);
+  }
+
+  /** In multi-line views the row gap is too tight (120 SVG units) for the
+   *  longest French stop names ("Saint-Martin-d'Hères, Paul Mistral"): rotated
+   *  -45° they fan ~150 units along the diagonal and the text glyphs end up
+   *  inside the stop circles of the row above. We drop the city prefix so the
+   *  visible label fits in the row gap; the full name stays in the SVG
+   *  <title> tooltip and in the stop popup. Single-line mode has plenty of
+   *  vertical space, so it keeps the full name. */
+  displayLabel(name: string): string {
+    if (this.isSingleLineMode()) {return name;}
+    const commaIdx = name.indexOf(',');
+    if (commaIdx <= 0) {return name;}
+    const tail = name.substring(commaIdx + 1).trim();
+    return tail.length > 0 ? tail : name;
   }
 
   getLineColor(code: string): string {

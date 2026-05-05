@@ -301,6 +301,39 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('displayLabel', () => {
+    it('keeps the full name in single-line mode', () => {
+      fixture.componentRef.setInput('visibleLineCodes', ['L1']);
+      fixture.detectChanges();
+
+      expect(component.displayLabel('Grenoble, Verdun - Préfecture'))
+        .toBe('Grenoble, Verdun - Préfecture');
+    });
+
+    it('strips the city prefix in multi-line mode', () => {
+      fixture.detectChanges(); // 2 lines visible by default
+
+      expect(component.displayLabel('Grenoble, Verdun - Préfecture'))
+        .toBe('Verdun - Préfecture');
+      expect(component.displayLabel("Saint-Martin-d'Hères, Paul Mistral"))
+        .toBe('Paul Mistral');
+    });
+
+    it('returns the original name when there is no comma', () => {
+      fixture.detectChanges();
+
+      expect(component.displayLabel('La Poya')).toBe('La Poya');
+      expect(component.displayLabel('Oxford')).toBe('Oxford');
+    });
+
+    it('falls back to the original name when the part after the comma is empty', () => {
+      fixture.detectChanges();
+
+      expect(component.displayLabel('Trailing,')).toBe('Trailing,');
+      expect(component.displayLabel('Trailing,   ')).toBe('Trailing,   ');
+    });
+  });
+
   describe('label orientation and deduplication', () => {
     it('alternates labels up/down in single-line mode with terminuses pinned up', () => {
       // 5 stops, single-line: indices 0 and 4 are edges (forced up),
