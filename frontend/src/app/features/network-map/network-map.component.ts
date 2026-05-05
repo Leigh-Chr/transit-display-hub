@@ -16,6 +16,7 @@ import { SchematicLayoutService, LayoutStop } from './services/schematic-layout.
 import { RouteFinderService, RouteResult } from './services/route-finder.service';
 import { SchematicMapComponent } from './components/schematic-map/schematic-map.component';
 import { RouteSearchBarComponent } from './components/route-search-bar/route-search-bar.component';
+import { LineIndexComponent } from './components/line-index/line-index.component';
 import { StopPopupComponent, StopPopupData, LineAlertInfo } from './components/stop-popup/stop-popup.component';
 import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
 import { ThemeService } from '@core/services/theme.service';
@@ -34,6 +35,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
     MatProgressSpinnerModule,
     SchematicMapComponent,
     RouteSearchBarComponent,
+    LineIndexComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -95,6 +97,11 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
             <mat-icon>route</mat-icon>
             <span>No stops configured yet</span>
           </div>
+        } @else if (useIndexView()) {
+          <app-line-index
+            [lines]="lines()"
+            (lineSelected)="focusLine($event)"
+          />
         } @else {
           <app-schematic-map
             [lines]="lines()"
@@ -597,6 +604,15 @@ export class NetworkMapComponent implements OnInit {
     }
     return this.userVisibleLineCodes();
   });
+
+  /** Above this many simultaneously visible lines, the schematic stack
+   * collapses into an unreadable striped block — fall back to a searchable
+   * line index. The user picks a line to enter focus mode. */
+  private static readonly INDEX_VIEW_THRESHOLD = 30;
+
+  useIndexView = computed(() =>
+    this.visibleLineCodes().length > NetworkMapComponent.INDEX_VIEW_THRESHOLD
+  );
 
   layoutData = computed(() => {
     const map = this.networkMap();
