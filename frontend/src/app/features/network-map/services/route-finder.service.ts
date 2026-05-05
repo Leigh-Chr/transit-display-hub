@@ -123,17 +123,21 @@ export class RouteFinderService {
     return this.runDijkstra(adj, startLines, targetLines, fromStopId, toStopId, networkMap);
   }
 
-  /** Build adjacency graph with same-line edges and transfer edges */
+  /** Build adjacency graph with same-line edges and transfer edges. We walk
+   *  every itinerary of every line so branches, terminus-partial variants
+   *  and reverse directions all contribute their adjacencies — otherwise a
+   *  stop served only by a non-primary itinerary would be unreachable. */
   private buildGraph(networkMap: NetworkMap): GraphBuildResult {
     const adj = new Map<string, AdjacencyEdge[]>();
     const stopToLines = new Map<string, Set<string>>();
+    const seenEdges = new Set<string>();
 
     for (const line of networkMap.lines) {
-      const itinerary = line.itineraries[0];
-      if (!itinerary || itinerary.length === 0) {continue;}
-
-      this.registerStopLineAssociations(itinerary, line.id, stopToLines);
-      this.addSameLineEdges(itinerary, line.id, adj);
+      for (const itinerary of line.itineraries) {
+        if (itinerary.length === 0) {continue;}
+        this.registerStopLineAssociations(itinerary, line.id, stopToLines);
+        this.addSameLineEdges(itinerary, line.id, adj, seenEdges);
+      }
     }
 
     this.addTransferEdges(stopToLines, adj);
@@ -151,14 +155,22 @@ export class RouteFinderService {
     }
   }
 
-  /** Add bidirectional edges between consecutive stops on the same line (cost 1) */
+  /** Add bidirectional edges between consecutive stops on the same line
+   *  (cost 1). The seen set deduplicates edges across itineraries: a forward
+   *  and a reverse direction of the same line would otherwise add every
+   *  segment twice. */
   private addSameLineEdges(
-    itinerary: string[], lineId: string, adj: Map<string, AdjacencyEdge[]>
+    itinerary: string[], lineId: string, adj: Map<string, AdjacencyEdge[]>,
+    seen: Set<string>,
   ): void {
     for (let i = 0; i < itinerary.length - 1; i++) {
       const a = itinerary[i];
       const b = itinerary[i + 1];
-      if (a === undefined || b === undefined) {continue;}
+      if (a === undefined || b === undefined || a === b) {continue;}
+
+      const canonical = a < b ? `${a}|${b}|${lineId}` : `${b}|${a}|${lineId}`;
+      if (seen.has(canonical)) {continue;}
+      seen.add(canonical);
 
       const keyA = this.getKey(a, lineId);
       const keyB = this.getKey(b, lineId);
@@ -325,7 +337,10 @@ export class RouteFinderService {
     return segments;
   }
 
-  /** Compute the direction name for each segment based on itinerary order */
+  /** Compute the direction name for each segment by picking the itinerary
+   *  that actually matches the travelled segment. Using itineraries[0]
+   *  blindly would mis-label routes through alternate branches or reverse
+   *  directions. */
   private computeSegmentDirections(
     segments: RouteSegment[],
     lineMap: Map<string, NetworkLine>,
@@ -334,11 +349,12 @@ export class RouteFinderService {
     for (const segment of segments) {
       const line = lineMap.get(segment.lineId);
       if (!line) {continue;}
-      const itinerary = line.itineraries[0] ?? [];
       const firstStopId = segment.stopIds[0] ?? '';
       const lastStopId = segment.stopIds[segment.stopIds.length - 1] ?? '';
 
-      if (itinerary.length >= 2 && segment.stopIds.length >= 2) {
+      const itinerary = this.pickMatchingItinerary(line.itineraries, firstStopId, lastStopId);
+
+      if (itinerary && itinerary.length >= 2 && segment.stopIds.length >= 2) {
         const firstIdx = itinerary.indexOf(firstStopId);
         const lastIdx = itinerary.indexOf(lastStopId);
         const terminusId = lastIdx > firstIdx
@@ -349,6 +365,31 @@ export class RouteFinderService {
         segment.directionName = stopNameMap.get(lastStopId) ?? '';
       }
     }
+  }
+
+  /** Find the itinerary best describing the travelled segment. Prefers
+   *  one where the segment endpoints appear in travel order; falls back
+   *  to any itinerary containing both, then to the first itinerary. */
+  private pickMatchingItinerary(
+    itineraries: string[][],
+    firstStopId: string,
+    lastStopId: string,
+  ): string[] | null {
+    for (const itinerary of itineraries) {
+      const firstIdx = itinerary.indexOf(firstStopId);
+      const lastIdx = itinerary.indexOf(lastStopId);
+      if (firstIdx >= 0 && lastIdx >= 0 && firstIdx < lastIdx) {
+        return itinerary;
+      }
+    }
+    for (const itinerary of itineraries) {
+      const firstIdx = itinerary.indexOf(firstStopId);
+      const lastIdx = itinerary.indexOf(lastStopId);
+      if (firstIdx >= 0 && lastIdx >= 0) {
+        return itinerary;
+      }
+    }
+    return itineraries[0] ?? null;
   }
 
   /** Extract IDs of stops where a line transfer occurs */

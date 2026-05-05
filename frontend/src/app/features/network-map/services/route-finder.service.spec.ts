@@ -103,4 +103,83 @@ describe('RouteFinderService', () => {
     // Direction should be toward terminus (Bravo = A2) since we're going forward
     expect(result!.segments[0]!.directionName).toBe('Bravo');
   });
+
+  describe('multi-itinerary lines', () => {
+    // Line Y has a Y-shape topology: Trunk -> Junction, then either
+    // Branch A (primary itinerary) or Branch B (secondary). The route-finder
+    // must consider both itineraries to reach Branch B.
+    const yShape: NetworkMap = {
+      lines: [
+        {
+          id: 'lineY',
+          code: 'Y',
+          name: 'Branch line',
+          color: '#0F0',
+          type: null,
+          itineraries: [
+            ['trunk', 'junction', 'branchA'],
+            ['trunk', 'junction', 'branchB'],
+          ],
+        },
+      ],
+      stops: [
+        { id: 'trunk',    name: 'Trunk',    latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['Y'] },
+        { id: 'junction', name: 'Junction', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['Y'] },
+        { id: 'branchA',  name: 'Branch A', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['Y'] },
+        { id: 'branchB',  name: 'Branch B', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['Y'] },
+      ],
+      bounds: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
+    };
+
+    it('reaches a stop that lives only on a non-primary itinerary', () => {
+      const result = service.findRoute(yShape, 'trunk', 'branchB');
+      expect(result).not.toBeNull();
+      expect(result!.segments).toHaveLength(1);
+      expect(result!.segments[0]!.stopIds).toEqual(['trunk', 'junction', 'branchB']);
+      expect(result!.transfers).toBe(0);
+    });
+
+    it('labels the direction with the matching branch terminus', () => {
+      const toA = service.findRoute(yShape, 'trunk', 'branchA');
+      const toB = service.findRoute(yShape, 'trunk', 'branchB');
+      expect(toA!.segments[0]!.directionName).toBe('Branch A');
+      expect(toB!.segments[0]!.directionName).toBe('Branch B');
+    });
+
+    it('routes between the two branch tips through the junction', () => {
+      const result = service.findRoute(yShape, 'branchA', 'branchB');
+      expect(result).not.toBeNull();
+      // Single segment on line Y is enough — no transfer needed.
+      expect(result!.segments).toHaveLength(1);
+      expect(result!.segments[0]!.stopIds[0]).toBe('branchA');
+      expect(result!.segments[0]!.stopIds[result!.segments[0]!.stopIds.length - 1]).toBe('branchB');
+    });
+
+    it('labels the direction correctly when travelling the reverse itinerary', () => {
+      const oneWay: NetworkMap = {
+        lines: [
+          {
+            id: 'lineL',
+            code: 'L',
+            name: 'L',
+            color: '#000',
+            type: null,
+            itineraries: [
+              ['s1', 's2', 's3'],
+              ['s3', 's2', 's1'],
+            ],
+          },
+        ],
+        stops: [
+          { id: 's1', name: 'S1', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L'] },
+          { id: 's2', name: 'S2', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L'] },
+          { id: 's3', name: 'S3', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L'] },
+        ],
+        bounds: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
+      };
+      const reverse = service.findRoute(oneWay, 's3', 's1');
+      expect(reverse).not.toBeNull();
+      expect(reverse!.segments[0]!.directionName).toBe('S1');
+    });
+  });
 });
