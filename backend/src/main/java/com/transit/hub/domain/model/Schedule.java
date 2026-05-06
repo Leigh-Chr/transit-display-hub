@@ -59,4 +59,17 @@ public class Schedule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "itinerary_id", nullable = false)
     private Itinerary itinerary;
+
+    /** GTFS {@code pickup_type}: 0 = standard, 1 = no pickup, 2 = phone
+     *  the agency, 3 = coordinate with the driver. The (1, 1) "no service"
+     *  pair is filtered at import time, so 1 here always means "drop-off
+     *  only" since drop_off_type would be 0. */
+    @Column(name = "pickup_type", nullable = false)
+    @Builder.Default
+    private short pickupType = 0;
+
+    /** GTFS {@code drop_off_type}: same encoding as {@link #pickupType}. */
+    @Column(name = "drop_off_type", nullable = false)
+    @Builder.Default
+    private short dropOffType = 0;
 }

@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.enums.MessageSeverity;
+import com.transit.hub.domain.model.enums.PickupKind;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -19,7 +20,8 @@ public record DisplayState(
     public record ArrivalInfo(
             LocalTime scheduledTime,
             String destinationName,
-            LineInfo line
+            LineInfo line,
+            PickupKind pickupKind
     ) {}
 
     public record MessageInfo(

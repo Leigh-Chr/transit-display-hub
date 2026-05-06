@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DisplayService } from '@core/api/display.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
-import { DisplayState } from '@shared/models';
+import { DisplayState, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 
 @Component({
@@ -100,7 +100,12 @@ import { lineTextColor } from '@shared/utils/color.utils';
                     >
                       {{ arrival.line.code }}
                     </span>
-                    <span class="destination">{{ arrival.destinationName }}</span>
+                    <span class="destination">
+                      {{ arrival.destinationName }}
+                      @if (pickupBadge(arrival.pickupKind); as badge) {
+                        <span class="pickup-badge">{{ badge }}</span>
+                      }
+                    </span>
                     <span class="time-info">
                       <span
                         class="time-relative"
@@ -128,7 +133,12 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       >
                         {{ arrival.line.code }}
                       </span>
-                      <span class="destination">{{ arrival.destinationName }}</span>
+                      <span class="destination">
+                        {{ arrival.destinationName }}
+                        @if (pickupBadge(arrival.pickupKind); as badge) {
+                          <span class="pickup-badge">{{ badge }}</span>
+                        }
+                      </span>
                       <span class="time-info">
                         <span
                         class="time-relative"
@@ -417,6 +427,21 @@ import { lineTextColor } from '@shared/utils/color.utils';
       white-space: nowrap;
     }
 
+    .pickup-badge {
+      display: inline-block;
+      margin-left: 1vw;
+      padding: 0.3vh 0.8vw;
+      border-radius: 0.4vh;
+      font-size: clamp(1.5vh, 2vh, 2.5vh);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      background: var(--app-kiosk-info-bg-subtle);
+      color: var(--app-kiosk-info-accent);
+      border: 1px solid var(--app-kiosk-info-border);
+    }
+
     .time-info {
       display: flex;
       align-items: baseline;
@@ -661,6 +686,20 @@ export class KioskComponent implements OnInit, OnDestroy {
   // Exposed to the template so badges pick the server-resolved foreground
   // color (route_text_color from GTFS) before falling back to YIQ contrast.
   readonly lineTextColor = lineTextColor;
+
+  /** Maps a {@link PickupKind} to a short label rendered next to the
+   *  destination name. Returns null for {@code NORMAL} (no badge needed)
+   *  and for unknown kinds so the template can use the {@code @if/as}
+   *  pattern cleanly. */
+  pickupBadge(kind: PickupKind | undefined): string | null {
+    switch (kind) {
+      case 'DROP_OFF_ONLY': return 'Drop-off only';
+      case 'PICKUP_ONLY': return 'Pickup only';
+      case 'ON_REQUEST_AGENCY': return 'On request — call agency';
+      case 'ON_REQUEST_DRIVER': return 'On request — wave the driver';
+      default: return null;
+    }
+  }
 
   private token: string | null = null;
   private stopId: string | null = null;

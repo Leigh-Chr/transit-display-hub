@@ -153,7 +153,9 @@ public class DisplayStateCalculator {
         return new DisplayState.ArrivalInfo(
                 schedule.getTime(),
                 destination,
-                lineInfo
+                lineInfo,
+                com.transit.hub.domain.model.enums.PickupKind.from(
+                        schedule.getPickupType(), schedule.getDropOffType())
         );
     }
 

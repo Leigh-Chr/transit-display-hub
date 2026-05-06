@@ -1,5 +1,7 @@
 package com.transit.hub.application.dto.response;
 
+import com.transit.hub.domain.model.enums.PickupKind;
+
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
@@ -16,6 +18,7 @@ public record HubDisplayState(
             LocalTime scheduledTime,
             String destinationName,
             String platform,
-            LineInfo line
+            LineInfo line,
+            PickupKind pickupKind
     ) {}
 }

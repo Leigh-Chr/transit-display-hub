@@ -233,10 +233,19 @@ export interface DisplayState {
   generatedAt: string;
 }
 
+/** Passenger-facing summary of GTFS pickup_type / drop_off_type. */
+export type PickupKind =
+  | 'NORMAL'
+  | 'DROP_OFF_ONLY'
+  | 'PICKUP_ONLY'
+  | 'ON_REQUEST_AGENCY'
+  | 'ON_REQUEST_DRIVER';
+
 export interface ArrivalInfo {
   scheduledTime: string;
   destinationName: string;
   line: LineInfo;
+  pickupKind?: PickupKind;
 }
 
 export interface MessageInfo {
@@ -260,6 +269,7 @@ export interface HubArrivalInfo {
   destinationName: string;
   platform: string;
   line: LineInfo;
+  pickupKind?: PickupKind;
 }
 
 // Network Map

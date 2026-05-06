@@ -618,6 +618,12 @@ public class GtfsImportService {
                         optional(record, "arrival_time")));
                 if (time == null) {continue;}
 
+                short pickupType = (short) parseInt(optional(record, "pickup_type"), 0);
+                short dropOffType = (short) parseInt(optional(record, "drop_off_type"), 0);
+                // (1, 1) means "no service at this stop_time" per the GTFS spec.
+                // Filter so the row never shows up on a kiosk as a phantom arrival.
+                if (pickupType == 1 && dropOffType == 1) {continue;}
+
                 ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time);
                 if (!seen.add(key)) {continue;}
 
@@ -625,6 +631,8 @@ public class GtfsImportService {
                         .time(time)
                         .stop(stop)
                         .itinerary(itinerary)
+                        .pickupType(pickupType)
+                        .dropOffType(dropOffType)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {
