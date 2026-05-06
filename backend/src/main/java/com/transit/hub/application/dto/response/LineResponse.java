@@ -15,6 +15,13 @@ public record LineResponse(
         Integer sortOrder,
         String description,
         String url,
+        /** Identifier of the operating agency. Null for lines created via
+         *  the legacy admin form or imported from feeds without
+         *  agency.txt. */
+        UUID agencyId,
+        /** Convenience name of the operating agency, denormalised so the
+         *  admin UI can render the column without a second request. */
+        String agencyName,
         int stopCount,
         int itineraryCount
 ) {
@@ -29,6 +36,8 @@ public record LineResponse(
                 line.getSortOrder(),
                 line.getDescription(),
                 line.getUrl(),
+                line.getAgency() != null ? line.getAgency().getId() : null,
+                line.getAgency() != null ? line.getAgency().getName() : null,
                 line.getStops() != null ? line.getStops().size() : 0,
                 line.getItineraries() != null ? line.getItineraries().size() : 0
         );

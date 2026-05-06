@@ -61,6 +61,11 @@ export interface Line {
   description?: string | null;
   /** GTFS route_url — public link to the operator's page. */
   url?: string | null;
+  /** Operating agency id (when the line is bound to one). */
+  agencyId?: string | null;
+  /** Denormalised agency name so the admin UI can render the column
+   *  without a second request. */
+  agencyName?: string | null;
   stopCount: number;
   itineraryCount: number;
 }
