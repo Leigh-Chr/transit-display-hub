@@ -235,6 +235,10 @@ export interface DisplayState {
   /** GTFS platform_code for stops that publish one — null for bus poles
    *  and any stop without a platform designation. */
   stopPlatformCode?: string | null;
+  /** GTFS stop_code — short identifier printed on the physical signpost
+   *  (e.g. "BSP1234"). Rendered discreetly so passengers can confirm
+   *  they're at the right stop. */
+  stopShortCode?: string | null;
   lines: LineInfo[];
   arrivals: ArrivalInfo[];
   messages: MessageInfo[];

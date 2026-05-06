@@ -15,6 +15,11 @@ public record DisplayState(
          *  hub kiosks). Null on bus poles and any stop without a platform
          *  designation. */
         String stopPlatformCode,
+        /** GTFS stop_code — the short identifier printed on the physical
+         *  signpost (e.g. "BSP1234"). Null when the feed doesn't publish
+         *  one; the kiosk renders it discreetly so passengers can confirm
+         *  they're at the right stop without comparing line lists. */
+        String stopShortCode,
         List<LineInfo> lines,
         List<ArrivalInfo> arrivals,
         List<MessageInfo> messages,

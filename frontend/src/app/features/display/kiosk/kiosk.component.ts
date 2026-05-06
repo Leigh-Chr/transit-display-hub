@@ -27,7 +27,12 @@ import { lineTextColor } from '@shared/utils/color.utils';
         <header class="header">
           <img src="assets/logo.png" alt="" class="header-logo">
           <div class="stop-info">
-            <h1 class="stop-name">{{ displayState()!.stopName }}</h1>
+            <h1 class="stop-name">
+              {{ displayState()!.stopName }}
+              @if (displayState()!.stopShortCode; as code) {
+                <span class="stop-short-code">{{ code }}</span>
+              }
+            </h1>
             <div class="header-lines">
               @for (line of displayState()!.lines; track line.code) {
                 <span class="header-line-badge"
@@ -270,6 +275,20 @@ import { lineTextColor } from '@shared/utils/color.utils';
       font-weight: 700;
       margin: 0;
       letter-spacing: -0.02em;
+    }
+
+    .stop-short-code {
+      display: inline-block;
+      margin-left: 1.2vw;
+      padding: 0.4vh 1vw;
+      border-radius: 0.5vh;
+      font-size: 2.5vh;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      vertical-align: middle;
+      color: var(--app-kiosk-on-surface-muted);
+      border: 0.2vh solid var(--app-kiosk-border);
+      font-variant-numeric: tabular-nums;
     }
 
     .header-lines {

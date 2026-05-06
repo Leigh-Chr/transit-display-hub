@@ -90,6 +90,7 @@ public class DisplayStateService {
                 event.getStopId(),
                 event.getStopName(),
                 null,
+                null,
                 List.of(),
                 List.of(),
                 List.of(new DisplayState.MessageInfo(
