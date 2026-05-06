@@ -61,4 +61,14 @@ public class ItineraryStop {
     @Column(nullable = false)
     private Integer position;
 
+    /** GTFS {@code stop_headsign}. The destination text shown on the
+     *  vehicle's roller display at this specific stop, which can differ
+     *  from the trip's overall {@code trip_headsign} on lines whose
+     *  public destination changes mid-route (loop services, terminus
+     *  short-running, branching). Null when the feed doesn't override
+     *  the trip-level headsign. */
+    @jakarta.validation.constraints.Size(max = 100)
+    @Column(name = "stop_headsign", length = 100)
+    private String stopHeadsign;
+
 }

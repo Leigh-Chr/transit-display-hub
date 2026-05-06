@@ -445,8 +445,8 @@ public class GtfsImportService {
         Set<String> selectedTripIds = new HashSet<>(bestTrip.values());
         log.info("GTFS import: {} representative trips selected", selectedTripIds.size());
 
-        // 4. Pass 2 over stop_times: collect (tripId -> ordered list of stop_ids)
-        record TimedStop(String stopId, int sequence) {}
+        // 4. Pass 2 over stop_times: collect (tripId -> ordered list of stops with their per-stop headsign)
+        record TimedStop(String stopId, int sequence, String headsign) {}
         Map<String, List<TimedStop>> stopsByTrip = new HashMap<>();
         try (CSVParser parser = openCsv(stopTimesFile)) {
             for (CSVRecord record : parser) {
@@ -456,8 +456,9 @@ public class GtfsImportService {
                 }
                 int sequence = parseInt(record.get("stop_sequence"), 0);
                 String stopId = record.get("stop_id");
+                String headsign = optional(record, "stop_headsign");
                 stopsByTrip.computeIfAbsent(tripId, k -> new ArrayList<>())
-                        .add(new TimedStop(stopId, sequence));
+                        .add(new TimedStop(stopId, sequence, isBlank(headsign) ? null : headsign.trim()));
             }
         }
 
@@ -506,6 +507,7 @@ public class GtfsImportService {
                         .itinerary(itinerary)
                         .stop(stop)
                         .position(position++)
+                        .stopHeadsign(truncate(ts.headsign, 100))
                         .build();
                 itinerary.getItineraryStops().add(is);
                 stop.getLines().add(line);

@@ -86,7 +86,7 @@ public class DisplayStateCalculator {
                 ))
                 .values()
                 .stream()
-                .map(this::toArrivalInfo)
+                .map(s -> toArrivalInfo(s, stopId))
                 .toList();
 
         // Get active messages for this stop (for all its lines)
@@ -139,14 +139,33 @@ public class DisplayStateCalculator {
         versionMap.remove(event.getStopId());
     }
 
-    private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule) {
+    private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule, UUID stopId) {
         Itinerary itinerary = schedule.getItinerary();
         LineInfo lineInfo = LineInfo.from(itinerary.getLine());
+        // stop_headsign overrides the trip-level terminus when the feed
+        // declares a stop-specific destination (loop services, terminus
+        // short-running, branching). Falls through to the itinerary's
+        // terminus name on null/blank.
+        String destination = resolveStopHeadsign(itinerary, stopId);
+        if (destination == null) {
+            destination = itinerary.getTerminusName();
+        }
         return new DisplayState.ArrivalInfo(
                 schedule.getTime(),
-                itinerary.getTerminusName(),
+                destination,
                 lineInfo
         );
+    }
+
+    private static String resolveStopHeadsign(Itinerary itinerary, UUID stopId) {
+        if (itinerary.getItineraryStops() == null) {return null;}
+        for (var is : itinerary.getItineraryStops()) {
+            if (is.getStop() != null && stopId.equals(is.getStop().getId())) {
+                String headsign = is.getStopHeadsign();
+                return (headsign == null || headsign.isBlank()) ? null : headsign;
+            }
+        }
+        return null;
     }
 
     private DisplayState.MessageInfo toMessageInfo(BroadcastMessage message) {
