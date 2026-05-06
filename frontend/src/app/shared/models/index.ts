@@ -108,6 +108,16 @@ export interface Stop {
   name: string;
   latitude: number | null;
   longitude: number | null;
+  /** GTFS stop_code — signpost id (e.g. "BSP1234"). */
+  shortCode?: string | null;
+  /** GTFS platform_code — quay / track designation. */
+  platformCode?: string | null;
+  /** GTFS stop_desc. */
+  description?: string | null;
+  /** GTFS stop_url. */
+  url?: string | null;
+  /** GTFS wheelchair_boarding tri-state. */
+  wheelchairBoarding?: WheelchairAccess | null;
   lines: LineInfo[];
   scheduleCount: number;
   hasDevice: boolean;
