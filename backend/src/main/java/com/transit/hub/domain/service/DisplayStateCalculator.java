@@ -7,10 +7,13 @@ import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
+import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.event.StopDeletedEvent;
+import com.transit.hub.domain.util.ServiceCalendarMatcher;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,9 +23,11 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +45,7 @@ public class DisplayStateCalculator {
     private final StopRepository stopRepository;
     private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
+    private final ServiceCalendarRepository serviceCalendarRepository;
 
     /** Operator-facing zone used to compare wall-clock schedule times against
      *  the server's now(). Pinning it here means the JVM's TZ — which can be
@@ -72,9 +78,31 @@ public class DisplayStateCalculator {
         // concatenated in chronological order — see `loadUpcomingSchedules`.
         ZoneId zone = resolveZone(stop);
         LocalTime now = LocalTime.now(zone);
+        LocalDate today = LocalDate.now(zone);
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
-        List<DisplayState.ArrivalInfo> arrivals = loadUpcomingSchedules(stopId, now, windowEnd)
-                .stream()
+        boolean crossesMidnight = !windowEnd.isAfter(now);
+
+        // Pre-load every calendar with its exceptions in a single query so the
+        // per-schedule isActive() check stays in memory. Bounded to ~10-20
+        // calendars in practice; the find-all-with-exceptions repo method
+        // avoids the 1+N "fetch exceptions per schedule" trap.
+        Map<UUID, ServiceCalendar> calendarsById = loadCalendarsById();
+
+        List<Schedule> upcoming = loadUpcomingSchedules(stopId, now, windowEnd);
+        // Filter on the service calendar of the day each schedule actually
+        // belongs to: schedules pulled from the cross-midnight tail belong
+        // to tomorrow's calendar, the rest to today's.
+        LocalDate tomorrow = today.plusDays(1);
+        List<Schedule> activeToday = new java.util.ArrayList<>(upcoming.size());
+        for (Schedule s : upcoming) {
+            LocalDate effectiveDate = (crossesMidnight && s.getTime().isBefore(now)) ? tomorrow : today;
+            ServiceCalendar calendar = resolveCalendar(s, calendarsById);
+            if (ServiceCalendarMatcher.isActive(calendar, effectiveDate)) {
+                activeToday.add(s);
+            }
+        }
+
+        List<DisplayState.ArrivalInfo> arrivals = activeToday.stream()
                 // Group by itinerary, keeping the first (earliest) departure per direction.
                 // LinkedHashMap preserves insertion order, which already reflects chronology
                 // (incl. cross-midnight), so no further sorting is needed.
@@ -117,6 +145,29 @@ public class DisplayStateCalculator {
                 version,
                 Instant.now()
         );
+    }
+
+    private Map<UUID, ServiceCalendar> loadCalendarsById() {
+        Map<UUID, ServiceCalendar> map = new HashMap<>();
+        for (ServiceCalendar cal : serviceCalendarRepository.findAllWithExceptions()) {
+            map.put(cal.getId(), cal);
+        }
+        return map;
+    }
+
+    /**
+     * Resolves a schedule's service calendar through the pre-loaded map so we
+     * never hit Hibernate's lazy proxy. Schedules with a null FK (admin or
+     * legacy rows that predate Phase 1.4) keep showing every day, which the
+     * matcher handles via its {@code calendar == null} branch.
+     */
+    private static ServiceCalendar resolveCalendar(Schedule schedule, Map<UUID, ServiceCalendar> calendarsById) {
+        ServiceCalendar lazy = schedule.getServiceCalendar();
+        if (lazy == null) {
+            return null;
+        }
+        // .getId() is safe on a LAZY proxy — Hibernate stores the FK locally.
+        return calendarsById.get(lazy.getId());
     }
 
     private List<Schedule> loadUpcomingSchedules(UUID stopId, LocalTime now, LocalTime windowEnd) {

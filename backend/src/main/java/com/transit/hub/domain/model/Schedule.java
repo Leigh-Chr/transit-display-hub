@@ -25,8 +25,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "schedules",
        uniqueConstraints = @UniqueConstraint(
-           name = "uk_schedule_stop_itinerary_time",
-           columnNames = {"stop_id", "itinerary_id", "time"}
+           name = "uk_schedule_stop_itinerary_time_calendar",
+           columnNames = {"stop_id", "itinerary_id", "time", "service_calendar_id"}
        ),
        indexes = {
            @Index(name = "idx_schedule_stop_time", columnList = "stop_id, time"),
@@ -114,4 +114,13 @@ public class Schedule {
     @jakarta.validation.constraints.Size(max = 40)
     @Column(name = "block_id", length = 40)
     private String blockId;
+
+    /** Service calendar this row belongs to. Null = "always active",
+     *  used for legacy / admin-created schedules that predate
+     *  multi-day service support. The display calculator treats null as
+     *  "show every day" so existing installs without GTFS data behave
+     *  identically. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_calendar_id")
+    private ServiceCalendar serviceCalendar;
 }

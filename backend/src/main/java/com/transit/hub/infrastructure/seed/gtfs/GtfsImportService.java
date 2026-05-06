@@ -7,9 +7,12 @@ import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
+import com.transit.hub.domain.model.ServiceCalendar;
+import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.domain.model.enums.LineType;
+import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
@@ -17,6 +20,7 @@ import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
 import lombok.RequiredArgsConstructor;
@@ -72,6 +76,7 @@ public class GtfsImportService {
     private final AgencyRepository agencyRepository;
     private final TransferRepository transferRepository;
     private final AttributionRepository attributionRepository;
+    private final ServiceCalendarRepository serviceCalendarRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -587,7 +592,11 @@ public class GtfsImportService {
         return new ItineraryImport(itineraryCount, itineraryStopCount, tripInfos, itinerariesByRouteDir);
     }
 
-    private record ServiceCalendar(
+    /**
+     * In-memory parsing buffer. Persisted later as a {@link ServiceCalendar}
+     * entity once we know which {@code service_id}s are referenced by trips.
+     */
+    private record ServiceCalendarSnapshot(
             LocalDate startDate,
             LocalDate endDate,
             EnumSet<DayOfWeek> daysOfWeek,
@@ -602,7 +611,7 @@ public class GtfsImportService {
         }
     }
 
-    private static final class ServiceCalendarBuilder {
+    private static final class ServiceCalendarSnapshotBuilder {
         private LocalDate startDate;
         private LocalDate endDate;
         private EnumSet<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
@@ -618,8 +627,8 @@ public class GtfsImportService {
         void added(LocalDate date) {added.add(date);}
         void removed(LocalDate date) {removed.add(date);}
 
-        ServiceCalendar build() {
-            return new ServiceCalendar(startDate, endDate, days, added, removed);
+        ServiceCalendarSnapshot build() {
+            return new ServiceCalendarSnapshot(startDate, endDate, days, added, removed);
         }
     }
 
@@ -663,27 +672,45 @@ public class GtfsImportService {
             return 0;
         }
 
-        Map<String, ServiceCalendar> services = loadServiceCalendars(workDir);
-        Set<String> activeServices = pickActiveServices(services);
-        if (activeServices.isEmpty()) {
-            log.warn("GTFS import: no active services found in calendar files, skipping schedule import");
+        Map<String, ServiceCalendarSnapshot> snapshots = loadServiceCalendars(workDir);
+        if (snapshots.isEmpty()) {
+            log.warn("GTFS import: no service calendars found, skipping schedule import");
             return 0;
         }
+        Map<String, ServiceCalendar> services = persistServiceCalendars(snapshots);
+        // Log the "representative day" for ops-grade visibility. The value
+        // no longer drives import filtering — every active service is now
+        // persisted — but it stays useful when debugging "is the feed
+        // current?" complaints.
+        logReferenceDate(snapshots);
 
         Map<String, TripInfo> tripInfos = itineraryImport.tripInfos;
         Map<RouteDirKey, Itinerary> itineraries = itineraryImport.itinerariesByRouteDir;
 
-        // (stopId, itineraryId, time) dedupe key — matches uk_schedule_stop_itinerary_time
-        record ScheduleKey(java.util.UUID stopId, java.util.UUID itineraryId, LocalTime time) {}
+        // (stopId, itineraryId, time, serviceCalendarId) dedupe key matches
+        // uk_schedule_stop_itinerary_time_calendar; lets two services share a
+        // {stop, itinerary, time} triple as long as their calendar differs.
+        record ScheduleKey(java.util.UUID stopId, java.util.UUID itineraryId,
+                           LocalTime time, java.util.UUID calendarId) {}
         Set<ScheduleKey> seen = new HashSet<>();
         List<Schedule> batch = new ArrayList<>(MAX_SCHEDULE_BATCH);
         int total = 0;
+        int skippedNoCalendar = 0;
 
         try (CSVParser parser = openCsv(stopTimesFile)) {
             for (CSVRecord record : parser) {
                 String tripId = record.get("trip_id");
                 TripInfo trip = tripInfos.get(tripId);
-                if (trip == null || !activeServices.contains(trip.serviceId)) {continue;}
+                if (trip == null) {continue;}
+                ServiceCalendar calendar = services.get(trip.serviceId);
+                if (calendar == null) {
+                    // Trip references a service_id that wasn't declared in
+                    // calendar.txt or calendar_dates.txt: the spec calls it
+                    // a feed bug; we drop the row rather than persist a
+                    // schedule we can never decide whether to display.
+                    skippedNoCalendar++;
+                    continue;
+                }
 
                 Itinerary itinerary = itineraries.get(new RouteDirKey(trip.routeId, trip.directionId));
                 if (itinerary == null) {continue;}
@@ -704,7 +731,7 @@ public class GtfsImportService {
                 // Filter so the row never shows up on a kiosk as a phantom arrival.
                 if (pickupType == 1 && dropOffType == 1) {continue;}
 
-                ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time);
+                ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time, calendar.getId());
                 if (!seen.add(key)) {continue;}
 
                 // Wheelchair / bikes overrides: only stored when the trip's
@@ -733,6 +760,7 @@ public class GtfsImportService {
                         .frequencyHeadwaySeconds(freq == null ? null : freq.headwaySeconds)
                         .frequencyExactTimes(freq == null ? null : freq.exactTimes)
                         .blockId(trip.blockId)
+                        .serviceCalendar(calendar)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {
@@ -751,12 +779,69 @@ public class GtfsImportService {
             total += batch.size();
         }
 
-        log.info("GTFS import: {} schedules created across {} active services", total, activeServices.size());
+        if (skippedNoCalendar > 0) {
+            log.warn("GTFS import: skipped {} stop_times rows whose trip references an unknown service_id",
+                    skippedNoCalendar);
+        }
+        log.info("GTFS import: {} schedules created across {} service calendars", total, services.size());
         return total;
     }
 
-    private Map<String, ServiceCalendar> loadServiceCalendars(Path workDir) throws IOException {
-        Map<String, ServiceCalendarBuilder> builders = new HashMap<>();
+    /**
+     * Persists each {@link ServiceCalendarSnapshot} as a {@link ServiceCalendar}
+     * row plus its {@link ServiceCalendarException}s. Wipes the existing
+     * calendar tables first so re-imports start from a clean slate; the
+     * {@code ON DELETE SET NULL} on {@code schedules.service_calendar_id}
+     * keeps any stale schedule rows displayable as "always active" until
+     * they get refreshed by the rest of the import.
+     */
+    private Map<String, ServiceCalendar> persistServiceCalendars(Map<String, ServiceCalendarSnapshot> snapshots) {
+        serviceCalendarRepository.deleteAllInBatch();
+        serviceCalendarRepository.flush();
+
+        Map<String, ServiceCalendar> result = new HashMap<>();
+        for (Map.Entry<String, ServiceCalendarSnapshot> e : snapshots.entrySet()) {
+            String externalId = e.getKey();
+            ServiceCalendarSnapshot snap = e.getValue();
+            ServiceCalendar entity = ServiceCalendar.builder()
+                    .externalId(truncate(externalId, 100))
+                    .startDate(snap.startDate())
+                    .endDate(snap.endDate())
+                    .build();
+            entity.setDaysOfWeek(snap.daysOfWeek());
+            // Build exceptions before save so the cascade picks them up.
+            for (LocalDate d : snap.addedDates()) {
+                entity.getExceptions().add(ServiceCalendarException.builder()
+                        .serviceCalendar(entity)
+                        .date(d)
+                        .exceptionType(ServiceExceptionType.ADDED)
+                        .build());
+            }
+            for (LocalDate d : snap.removedDates()) {
+                entity.getExceptions().add(ServiceCalendarException.builder()
+                        .serviceCalendar(entity)
+                        .date(d)
+                        .exceptionType(ServiceExceptionType.REMOVED)
+                        .build());
+            }
+            ServiceCalendar saved = serviceCalendarRepository.save(entity);
+            result.put(externalId, saved);
+        }
+        log.info("GTFS import: {} service calendars persisted (with {} exceptions)",
+                result.size(),
+                result.values().stream().mapToInt(c -> c.getExceptions().size()).sum());
+        return result;
+    }
+
+    private void logReferenceDate(Map<String, ServiceCalendarSnapshot> snapshots) {
+        Set<String> active = pickActiveServices(snapshots);
+        if (active.isEmpty()) {
+            log.info("GTFS import: no service is active anywhere in the next 30 days; feed may be stale");
+        }
+    }
+
+    private Map<String, ServiceCalendarSnapshot> loadServiceCalendars(Path workDir) throws IOException {
+        Map<String, ServiceCalendarSnapshotBuilder> builders = new HashMap<>();
 
         Path calendar = workDir.resolve("calendar.txt");
         if (Files.exists(calendar)) {
@@ -773,7 +858,7 @@ public class GtfsImportService {
                     if ("1".equals(optional(record, "sunday"))) {days.add(DayOfWeek.SUNDAY);}
                     LocalDate start = GtfsParse.parseGtfsDate(optional(record, "start_date"));
                     LocalDate end = GtfsParse.parseGtfsDate(optional(record, "end_date"));
-                    builders.computeIfAbsent(serviceId, id -> new ServiceCalendarBuilder())
+                    builders.computeIfAbsent(serviceId, id -> new ServiceCalendarSnapshotBuilder())
                             .withWeekly(start, end, days);
                 }
             }
@@ -787,15 +872,15 @@ public class GtfsImportService {
                     LocalDate date = GtfsParse.parseGtfsDate(record.get("date"));
                     if (date == null) {continue;}
                     int exceptionType = parseInt(record.get("exception_type"), 0);
-                    ServiceCalendarBuilder b = builders.computeIfAbsent(serviceId, id -> new ServiceCalendarBuilder());
+                    ServiceCalendarSnapshotBuilder b = builders.computeIfAbsent(serviceId, id -> new ServiceCalendarSnapshotBuilder());
                     if (exceptionType == 1) {b.added(date);}
                     else if (exceptionType == 2) {b.removed(date);}
                 }
             }
         }
 
-        Map<String, ServiceCalendar> result = new HashMap<>();
-        for (Map.Entry<String, ServiceCalendarBuilder> e : builders.entrySet()) {
+        Map<String, ServiceCalendarSnapshot> result = new HashMap<>();
+        for (Map.Entry<String, ServiceCalendarSnapshotBuilder> e : builders.entrySet()) {
             result.put(e.getKey(), e.getValue().build());
         }
         return result;
@@ -805,8 +890,11 @@ public class GtfsImportService {
      * Pick the set of service IDs running on the most representative day available.
      * Prefers today, falls back to scanning ±30 days, then to the busiest day in the
      * combined feed range. Returns empty when no services are defined at all.
+     * <p>
+     * Used only for ops logging now — the importer no longer filters schedules by
+     * a single representative day, see {@link #importSchedules}.
      */
-    private Set<String> pickActiveServices(Map<String, ServiceCalendar> services) {
+    private Set<String> pickActiveServices(Map<String, ServiceCalendarSnapshot> services) {
         if (services.isEmpty()) {return Set.of();}
 
         LocalDate today = LocalDate.now();
@@ -826,12 +914,12 @@ public class GtfsImportService {
         // Last-resort: pick the date with the most active services across the union of
         // all calendar ranges. Bounded to 365 candidates to keep the search cheap.
         LocalDate scanStart = services.values().stream()
-                .map(ServiceCalendar::startDate)
+                .map(ServiceCalendarSnapshot::startDate)
                 .filter(d -> d != null)
                 .min(LocalDate::compareTo)
                 .orElse(today);
         LocalDate scanEnd = services.values().stream()
-                .map(ServiceCalendar::endDate)
+                .map(ServiceCalendarSnapshot::endDate)
                 .filter(d -> d != null)
                 .max(LocalDate::compareTo)
                 .orElse(today);
@@ -852,9 +940,9 @@ public class GtfsImportService {
         return best;
     }
 
-    private Set<String> activeOn(Map<String, ServiceCalendar> services, LocalDate date) {
+    private Set<String> activeOn(Map<String, ServiceCalendarSnapshot> services, LocalDate date) {
         Set<String> active = new HashSet<>();
-        for (Map.Entry<String, ServiceCalendar> e : services.entrySet()) {
+        for (Map.Entry<String, ServiceCalendarSnapshot> e : services.entrySet()) {
             if (e.getValue().isActiveOn(date)) {active.add(e.getKey());}
         }
         return active;

@@ -13,6 +13,7 @@ should think twice before reverting.
 | [0005](0005-pickup-and-wheelchair-storage.md) | Per-schedule overrides for accessibility / pickup metadata |
 | [0006](0006-transfer-weighting.md) | Route-finder transfer cost from `transfers.txt` |
 | [0007](0007-import-orchestrator.md) | Single orchestrator for boot, scheduler and manual reimport |
+| [0008](0008-multi-day-service-calendars.md) | Multi-day service calendars and per-day display filtering |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

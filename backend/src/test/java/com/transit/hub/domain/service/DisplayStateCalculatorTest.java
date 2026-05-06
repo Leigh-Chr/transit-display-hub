@@ -11,6 +11,7 @@ import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
+import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,9 @@ class DisplayStateCalculatorTest {
     @Mock
     private BroadcastMessageRepository messageRepository;
 
+    @Mock
+    private ServiceCalendarRepository serviceCalendarRepository;
+
     @InjectMocks
     private DisplayStateCalculator calculator;
 
@@ -65,6 +69,14 @@ class DisplayStateCalculatorTest {
         testLine = TestDataFactory.createLineWithId(testLineId, "L1", "Metro Line 1", "#FF5733");
         testItinerary = TestDataFactory.createItineraryWithId(testItineraryId, testLine, "Direction Eastern");
         testStop = TestDataFactory.createStopWithId(testStopId, "Central Station", testLine);
+        // Default to "no calendars persisted" — schedules with a null FK
+        // (the test fixtures) are treated as always-active by the matcher,
+        // which keeps the existing test expectations intact. lenient() so
+        // the strict-mockito mode doesn't complain about tests that bail
+        // out before the calculator reaches the calendar lookup (e.g. the
+        // "stop not found" path).
+        lenient().when(serviceCalendarRepository.findAllWithExceptions())
+                .thenReturn(List.of());
     }
 
     @Nested
