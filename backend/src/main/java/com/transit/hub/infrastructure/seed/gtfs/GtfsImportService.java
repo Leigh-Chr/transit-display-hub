@@ -407,7 +407,7 @@ public class GtfsImportService {
             Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
 
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
-                            int wheelchairAccessible) {}
+                            int wheelchairAccessible, int bikesAllowed) {}
 
     private record RouteDirKey(String routeId, String directionId) {}
 
@@ -426,7 +426,8 @@ public class GtfsImportService {
                         firstNonBlank(optional(record, "direction_id"), "0"),
                         optional(record, "service_id"),
                         optional(record, "trip_headsign"),
-                        parseInt(optional(record, "wheelchair_accessible"), 0)));
+                        parseInt(optional(record, "wheelchair_accessible"), 0),
+                        parseInt(optional(record, "bikes_allowed"), 0)));
             }
         }
         log.info("GTFS import: {} trips loaded", tripInfos.size());
@@ -503,11 +504,14 @@ public class GtfsImportService {
             // the longest variant happens to be the non-accessible one.
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault =
                     majorityWheelchair(tripInfos, key);
+            com.transit.hub.domain.model.enums.BikesAllowed bikesDefault =
+                    majorityBikes(tripInfos, key);
             Itinerary itinerary = Itinerary.builder()
                     .externalId(truncate(tripId, 100))
                     .line(line)
                     .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
                     .wheelchairDefault(wheelchairDefault)
+                    .bikesAllowedDefault(bikesDefault)
                     .itineraryStops(new ArrayList<>())
                     .build();
             itinerary = itineraryRepository.save(itinerary);
@@ -640,11 +644,13 @@ public class GtfsImportService {
                 ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time);
                 if (!seen.add(key)) {continue;}
 
-                // Wheelchair override: only stored when the trip's value
-                // diverges from the itinerary's majority default. Saves
-                // ~1 byte × millions of rows on most feeds.
+                // Wheelchair / bikes overrides: only stored when the trip's
+                // value diverges from the itinerary's majority default. Saves
+                // ~2 bytes × millions of rows on most feeds.
                 Boolean wheelchairOverride = computeWheelchairOverride(trip.wheelchairAccessible,
                         itinerary.getWheelchairDefault());
+                Boolean bikesOverride = computeBikesOverride(trip.bikesAllowed,
+                        itinerary.getBikesAllowedDefault());
 
                 batch.add(Schedule.builder()
                         .time(time)
@@ -653,6 +659,7 @@ public class GtfsImportService {
                         .pickupType(pickupType)
                         .dropOffType(dropOffType)
                         .wheelchairOverride(wheelchairOverride)
+                        .bikesAllowedOverride(bikesOverride)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {
@@ -884,6 +891,48 @@ public class GtfsImportService {
                     ? null : Boolean.FALSE;
         }
         return null; // unknown — inherit from itinerary
+    }
+
+    /**
+     * Computes the per-schedule bikes override following the same
+     * null-means-inherit rule as {@link #computeWheelchairOverride}.
+     */
+    private static Boolean computeBikesOverride(int tripBikes,
+            com.transit.hub.domain.model.enums.BikesAllowed itineraryDefault) {
+        if (tripBikes == 1) {
+            return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED
+                    ? null : Boolean.TRUE;
+        }
+        if (tripBikes == 2) {
+            return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED
+                    ? null : Boolean.FALSE;
+        }
+        return null;
+    }
+
+    /**
+     * Majority vote on {@code bikes_allowed} mirroring {@link #majorityWheelchair}.
+     */
+    private static com.transit.hub.domain.model.enums.BikesAllowed majorityBikes(
+            Map<String, TripInfo> tripInfos, RouteDirKey key) {
+        int yes = 0;
+        int no = 0;
+        for (TripInfo info : tripInfos.values()) {
+            if (!info.routeId.equals(key.routeId)) {continue;}
+            if (!info.directionId.equals(key.directionId)) {continue;}
+            if (info.bikesAllowed == 1) { yes++; }
+            else if (info.bikesAllowed == 2) { no++; }
+        }
+        if (yes == 0 && no == 0) {
+            return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
+        }
+        if (yes > no) {
+            return com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED;
+        }
+        if (no > yes) {
+            return com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED;
+        }
+        return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
     }
 
     /**

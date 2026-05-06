@@ -74,6 +74,12 @@ public class Itinerary {
     @Column(name = "wheelchair_default", length = 20)
     private com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault;
 
+    /** Default bikes-allowed policy for this itinerary, derived at import
+     *  time from the majority value of {@code trips.bikes_allowed}. */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "bikes_allowed_default", length = 20)
+    private com.transit.hub.domain.model.enums.BikesAllowed bikesAllowedDefault;
+
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @Builder.Default

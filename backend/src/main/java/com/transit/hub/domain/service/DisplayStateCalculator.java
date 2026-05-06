@@ -156,8 +156,25 @@ public class DisplayStateCalculator {
                 lineInfo,
                 com.transit.hub.domain.model.enums.PickupKind.from(
                         schedule.getPickupType(), schedule.getDropOffType()),
-                resolveWheelchair(schedule, itinerary)
+                resolveWheelchair(schedule, itinerary),
+                resolveBikes(schedule, itinerary)
         );
+    }
+
+    /**
+     * Resolves the effective bikes-allowed policy for an arrival,
+     * mirroring {@link #resolveWheelchair}.
+     */
+    private static com.transit.hub.domain.model.enums.BikesAllowed resolveBikes(
+            Schedule schedule, Itinerary itinerary) {
+        if (schedule.getBikesAllowedOverride() != null) {
+            return schedule.getBikesAllowedOverride()
+                    ? com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED
+                    : com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED;
+        }
+        return itinerary.getBikesAllowedDefault() == null
+                ? com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN
+                : itinerary.getBikesAllowedDefault();
     }
 
     /**

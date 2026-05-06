@@ -244,12 +244,16 @@ export type PickupKind =
 /** Tri-state wheelchair access mirroring GTFS conventions. */
 export type WheelchairAccess = 'UNKNOWN' | 'ACCESSIBLE' | 'NOT_ACCESSIBLE';
 
+/** Tri-state bicycle policy. */
+export type BikesAllowed = 'UNKNOWN' | 'ALLOWED' | 'NOT_ALLOWED';
+
 export interface ArrivalInfo {
   scheduledTime: string;
   destinationName: string;
   line: LineInfo;
   pickupKind?: PickupKind;
   wheelchairAccessible?: WheelchairAccess;
+  bikesAllowed?: BikesAllowed;
 }
 
 export interface MessageInfo {
@@ -275,6 +279,7 @@ export interface HubArrivalInfo {
   line: LineInfo;
   pickupKind?: PickupKind;
   wheelchairAccessible?: WheelchairAccess;
+  bikesAllowed?: BikesAllowed;
 }
 
 // Network Map

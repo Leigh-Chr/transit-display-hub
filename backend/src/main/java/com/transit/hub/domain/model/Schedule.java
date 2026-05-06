@@ -81,4 +81,9 @@ public class Schedule {
      *  inheriting the itinerary value. */
     @Column(name = "wheelchair_override")
     private Boolean wheelchairOverride;
+
+    /** Per-schedule override of the itinerary's bikes-allowed default.
+     *  Same null-means-inherit semantics as {@link #wheelchairOverride}. */
+    @Column(name = "bikes_allowed_override")
+    private Boolean bikesAllowedOverride;
 }

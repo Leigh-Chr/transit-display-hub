@@ -22,7 +22,8 @@ public record DisplayState(
             String destinationName,
             LineInfo line,
             PickupKind pickupKind,
-            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible
+            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
+            com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed
     ) {}
 
     public record MessageInfo(

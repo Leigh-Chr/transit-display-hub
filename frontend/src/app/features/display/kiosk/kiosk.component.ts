@@ -107,6 +107,9 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       } @else if (arrival.wheelchairAccessible === 'NOT_ACCESSIBLE') {
                         <mat-icon class="access-icon access-no" aria-label="Not wheelchair accessible">do_not_disturb</mat-icon>
                       }
+                      @if (arrival.bikesAllowed === 'ALLOWED') {
+                        <mat-icon class="access-icon access-yes" aria-label="Bicycles allowed">directions_bike</mat-icon>
+                      }
                       @if (pickupBadge(arrival.pickupKind); as badge) {
                         <span class="pickup-badge">{{ badge }}</span>
                       }
