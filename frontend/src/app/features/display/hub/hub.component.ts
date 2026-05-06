@@ -850,6 +850,14 @@ export class HubComponent implements OnInit, OnDestroy {
   private subscribeToUpdates(): void {
     this.hubWsService.connect(this.stopIds).subscribe({
       next: (state: DisplayState) => {
+        // Drop out-of-order pushes (broker reorder, retried fan-out): only
+        // accept a version strictly newer than what we already have for this
+        // stopId. Bump receivedAt regardless so we don't show stale.
+        const cached = this.stopStates.get(state.stopId);
+        if (cached && state.version < cached.state.version) {
+          this.stopStates.set(state.stopId, { state: cached.state, receivedAt: Date.now() });
+          return;
+        }
         this.stopStates.set(state.stopId, { state, receivedAt: Date.now() });
         this.rebuildHubState();
       },

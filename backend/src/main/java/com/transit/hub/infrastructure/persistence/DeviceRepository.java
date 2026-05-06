@@ -19,6 +19,8 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
 
     List<Device> findByStatus(DeviceStatus status);
 
+    long countByStatus(DeviceStatus status);
+
     List<Device> findByStopId(UUID stopId);
 
     @Query("SELECT d FROM Device d WHERE d.status = 'ONLINE' AND d.lastHeartbeat < :threshold")

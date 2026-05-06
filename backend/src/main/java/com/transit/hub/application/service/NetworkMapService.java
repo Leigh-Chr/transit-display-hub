@@ -16,6 +16,7 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,7 @@ public class NetworkMapService {
     private final BroadcastMessageRepository broadcastMessageRepository;
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ActiveDisplayTracker activeDisplayTracker;
 
     @Value("${app.data-loader.gtfs.attribution:}")
     private String attribution;
@@ -165,6 +167,13 @@ public class NetworkMapService {
     }
 
     private void pushNetworkMapUpdate() {
+        // Skip the recompute + serialize entirely when nobody is watching.
+        // The cache invalidation already happened, so the next consumer will
+        // get a fresh response on first GET anyway.
+        if (!activeDisplayTracker.hasNetworkMapSubscribers()) {
+            log.debug("Skipping network map push — no active subscribers");
+            return;
+        }
         try {
             NetworkMapResponse networkMap = getNetworkMap();
             AlertsResponse alerts = getAlerts();
@@ -177,6 +186,10 @@ public class NetworkMapService {
     }
 
     private void pushAlertsUpdate() {
+        if (!activeDisplayTracker.hasNetworkMapSubscribers()) {
+            log.debug("Skipping alerts push — no active subscribers");
+            return;
+        }
         try {
             AlertsResponse alerts = getAlerts();
             Object payload = Map.of("type", "ALERTS_UPDATE", "alerts", alerts);

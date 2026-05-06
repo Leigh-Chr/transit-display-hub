@@ -8,11 +8,13 @@ import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.event.StopDeletedEvent;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,6 +123,14 @@ public class DisplayStateCalculator {
         combined.addAll(beforeMidnight);
         combined.addAll(afterMidnight);
         return combined;
+    }
+
+    @EventListener
+    public void onStopDeleted(StopDeletedEvent event) {
+        // Drop the version counter when the stop disappears so the in-memory
+        // map doesn't accumulate dead entries over a long-running process
+        // (GTFS reimports, manual stop churn).
+        versionMap.remove(event.getStopId());
     }
 
     private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule) {

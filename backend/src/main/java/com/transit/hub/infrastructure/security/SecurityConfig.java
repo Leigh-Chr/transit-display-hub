@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/stops/**").hasAnyRole("ADMIN", "AGENT")
 
                         // Admin only endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/itineraries/**").hasRole("ADMIN")
                         .requestMatchers("/api/lines/**").hasRole("ADMIN")
                         .requestMatchers("/api/stops/**").hasRole("ADMIN")

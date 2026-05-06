@@ -8,7 +8,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { forkJoin } from 'rxjs';
 import {
   HubDisplayDialogComponent,
   HubDisplayDialogData,
@@ -16,11 +15,9 @@ import {
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { AuthService } from '@core/auth/auth.service';
 import { LineService } from '@core/api/line.service';
-import { StopService } from '@core/api/stop.service';
-import { ItineraryService } from '@core/api/itinerary.service';
 import { MessageService } from '@core/api/message.service';
-import { DeviceService } from '@core/api/device.service';
-import { Line, Stop, Itinerary, BroadcastMessage, Device } from '@shared/models';
+import { DashboardService } from '@core/api/dashboard.service';
+import { Line, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { readableTextColor } from '@shared/utils/color.utils';
 import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
@@ -55,7 +52,7 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
                   <mat-icon>subway</mat-icon>
                 </div>
                 <div class="stat-info">
-                  <div class="stat-value">{{ lines().length }}</div>
+                  <div class="stat-value">{{ lineCount() }}</div>
                   <div class="stat-label">Lines</div>
                 </div>
               </mat-card-content>
@@ -67,7 +64,7 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
                   <mat-icon>place</mat-icon>
                 </div>
                 <div class="stat-info">
-                  <div class="stat-value">{{ stops().length }}</div>
+                  <div class="stat-value">{{ stopCount() }}</div>
                   <div class="stat-label">Stops</div>
                 </div>
               </mat-card-content>
@@ -79,7 +76,7 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
                   <mat-icon>alt_route</mat-icon>
                 </div>
                 <div class="stat-info">
-                  <div class="stat-value">{{ itineraries().length }}</div>
+                  <div class="stat-value">{{ itineraryCount() }}</div>
                   <div class="stat-label">Itineraries</div>
                 </div>
               </mat-card-content>
@@ -101,15 +98,15 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
           @if (isAdmin()) {
             <mat-card class="stat-card">
               <mat-card-content>
-                <div class="stat-icon devices-icon" [class.warning]="devices().length > 0 && deviceHealthPercent() < 100">
-                  <mat-icon>{{ devices().length === 0 || deviceHealthPercent() === 100 ? 'tv' : 'tv_off' }}</mat-icon>
+                <div class="stat-icon devices-icon" [class.warning]="totalDevicesCount() > 0 && deviceHealthPercent() < 100">
+                  <mat-icon>{{ totalDevicesCount() === 0 || deviceHealthPercent() === 100 ? 'tv' : 'tv_off' }}</mat-icon>
                 </div>
                 <div class="stat-info">
                   <div class="stat-value">
-                    @if (devices().length === 0) {
+                    @if (totalDevicesCount() === 0) {
                       —
                     } @else {
-                      {{ onlineDevices() }}/{{ devices().length }}
+                      {{ onlineDevicesCount() }}/{{ totalDevicesCount() }}
                     }
                   </div>
                   <div class="stat-label">Devices Online</div>
@@ -131,7 +128,7 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
               }
             </mat-card-header>
             <mat-card-content>
-              @if (lines().length === 0) {
+              @if (lineCount() === 0) {
                 <div class="empty-state">
                   <mat-icon>subway</mat-icon>
                   <span>No lines configured</span>
@@ -168,7 +165,7 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
               <a mat-button routerLink="/admin/devices" class="view-all">View All</a>
             </mat-card-header>
             <mat-card-content>
-              @if (devices().length === 0) {
+              @if (totalDevicesCount() === 0) {
                 <div class="empty-state">
                   <mat-icon>tv</mat-icon>
                   <span>No devices registered</span>
@@ -182,19 +179,19 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
                     <div class="health-breakdown">
                       <div class="health-stat online">
                         <mat-icon>check_circle</mat-icon>
-                        <span>{{ onlineDevices() }} online</span>
+                        <span>{{ onlineDevicesCount() }} online</span>
                       </div>
                       <div class="health-stat offline">
                         <mat-icon>cancel</mat-icon>
-                        <span>{{ offlineDevices().length }} offline</span>
+                        <span>{{ totalDevicesCount() - onlineDevicesCount() }} offline</span>
                       </div>
                       <div class="health-stat total">
                         <mat-icon>devices</mat-icon>
-                        <span>{{ devices().length }} total</span>
+                        <span>{{ totalDevicesCount() }} total</span>
                       </div>
                     </div>
                   </div>
-                  @if (offlineDevices().length > 0) {
+                  @if (totalDevicesCount() - onlineDevicesCount() > 0) {
                     <div class="offline-preview">
                       <div class="offline-title">Offline devices:</div>
                       @for (device of displayedOfflineDevices(); track device.id) {
@@ -926,22 +923,31 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
 export class DashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly lineService = inject(LineService);
-  private readonly stopService = inject(StopService);
-  private readonly itineraryService = inject(ItineraryService);
   private readonly messageService = inject(MessageService);
-  private readonly deviceService = inject(DeviceService);
+  private readonly dashboardService = inject(DashboardService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
 
   readonly isAdmin = this.authService.isAdmin;
 
   loading = signal(true);
-  lines = signal<Line[]>([]);
-  stops = signal<Stop[]>([]);
-  itineraries = signal<Itinerary[]>([]);
+  /** Lines for the hub-display dialog selector. Populated lazily the first
+   *  time the user opens the dialog so the initial dashboard load stays small. */
+  hubDialogLines = signal<Line[] | null>(null);
+  // Counters returned by /api/admin/dashboard. Default 0 so the cards render
+  // sensibly during the first paint before the response arrives.
+  lineCount = signal(0);
+  stopCount = signal(0);
+  itineraryCount = signal(0);
+  topLines = signal<Line[]>([]);
+  hasMoreLinesValue = signal(false);
   activeMessages = signal<BroadcastMessage[]>([]);
   allMessages = signal<BroadcastMessage[]>([]);
-  devices = signal<Device[]>([]);
+  recentMessagesSignal = signal<BroadcastMessage[]>([]);
+  offlineDevices = signal<Device[]>([]);
+  remainingOfflineCount = signal(0);
+  onlineDevicesCount = signal(0);
+  totalDevicesCount = signal(0);
 
   criticalMessages = computed(() =>
     this.activeMessages().filter((m) => m.severity === 'CRITICAL')
@@ -953,32 +959,21 @@ export class DashboardComponent implements OnInit {
     Math.max(0, this.criticalMessages().length - 6)
   );
 
-  offlineDevices = computed(() =>
-    this.devices().filter((d) => d.status === 'OFFLINE')
-  );
-
-  displayedOfflineDevices = computed(() => this.offlineDevices().slice(0, 6));
-
-  remainingOfflineCount = computed(() =>
-    Math.max(0, this.offlineDevices().length - 6)
-  );
-
-  onlineDevices = computed(() =>
-    this.devices().filter((d) => d.status === 'ONLINE').length
-  );
+  // Renamed for clarity — the dashboard endpoint already trims to the preview.
+  displayedOfflineDevices = computed(() => this.offlineDevices());
 
   deviceHealthPercent = computed(() => {
-    const total = this.devices().length;
-    if (total === 0) {return 100;}
-    return Math.round((this.onlineDevices() / total) * 100);
+    const total = this.totalDevicesCount();
+    if (total === 0) { return 100; }
+    return Math.round((this.onlineDevicesCount() / total) * 100);
   });
 
-  displayedLines = computed(() => this.lines().slice(0, 6));
+  displayedLines = computed(() => this.topLines());
 
-  hasMoreLines = computed(() => this.lines().length > 6);
+  hasMoreLines = computed(() => this.hasMoreLinesValue());
 
   recentMessages = computed(() =>
-    [...this.allMessages()]
+    [...this.recentMessagesSignal()]
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
       .slice(0, 5)
   );
@@ -991,20 +986,23 @@ export class DashboardComponent implements OnInit {
     this.loading.set(true);
 
     if (this.isAdmin()) {
-      forkJoin({
-        lines: this.lineService.getAll(),
-        stops: this.stopService.getAll(),
-        itineraries: this.itineraryService.getAll(),
-        allMessages: this.messageService.getAll(),
-        devices: this.deviceService.getAll(),
-      }).subscribe({
-        next: ({ lines, stops, itineraries, allMessages, devices }) => {
-          this.lines.set(lines);
-          this.stops.set(stops);
-          this.itineraries.set(itineraries);
-          this.allMessages.set(allMessages);
-          this.activeMessages.set(allMessages.filter(m => m.active));
-          this.devices.set(devices);
+      // Single aggregated call — replaces the legacy forkJoin of five
+      // non-paginated GETs that each downloaded the entire domain table.
+      this.dashboardService.getSummary().subscribe({
+        next: (summary) => {
+          this.lineCount.set(summary.lineCount);
+          this.stopCount.set(summary.stopCount);
+          this.itineraryCount.set(summary.itineraryCount);
+          this.topLines.set(summary.topLines);
+          this.hasMoreLinesValue.set(summary.lineCount > summary.topLines.length);
+          this.activeMessages.set(summary.activeMessages);
+          this.allMessages.set(summary.activeMessages);
+          this.recentMessagesSignal.set(summary.recentMessages);
+          this.totalDevicesCount.set(summary.devices.total);
+          this.onlineDevicesCount.set(summary.devices.online);
+          this.offlineDevices.set(summary.devices.offlinePreview);
+          this.remainingOfflineCount.set(
+            Math.max(0, summary.devices.offline - summary.devices.offlinePreview.length));
           this.loading.set(false);
         },
         error: () => {
@@ -1016,10 +1014,12 @@ export class DashboardComponent implements OnInit {
         },
       });
     } else {
+      // Agents only see messages — no need for the admin-gated dashboard endpoint.
       this.messageService.getAll().subscribe({
         next: (allMessages) => {
           this.allMessages.set(allMessages);
           this.activeMessages.set(allMessages.filter(m => m.active));
+          this.recentMessagesSignal.set(allMessages);
           this.loading.set(false);
         },
         error: () => {
@@ -1034,9 +1034,29 @@ export class DashboardComponent implements OnInit {
   }
 
   openHubDisplay(): void {
+    // The hub-display selector needs the full line list (with stops); the
+    // dashboard endpoint only ships the top 6, so lazy-load on first open.
+    const cached = this.hubDialogLines();
+    if (cached !== null) {
+      this.openHubDialogWith(cached);
+      return;
+    }
+    this.lineService.getAll().subscribe({
+      next: (lines) => {
+        this.hubDialogLines.set(lines);
+        this.openHubDialogWith(lines);
+      },
+      error: () => {
+        this.snackBar.open('Failed to load lines for hub selector', 'Close',
+          { duration: SNACKBAR_DURATIONS.error, panelClass: 'error-snackbar' });
+      },
+    });
+  }
+
+  private openHubDialogWith(lines: Line[]): void {
     this.dialog
       .open(HubDisplayDialogComponent, {
-        data: { lines: this.lines() } as HubDisplayDialogData,
+        data: { lines } as HubDisplayDialogData,
         width: '550px',
       })
       .afterClosed()

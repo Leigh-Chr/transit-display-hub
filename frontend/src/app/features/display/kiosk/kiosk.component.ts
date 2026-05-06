@@ -872,10 +872,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   private subscribeToUpdates(stopId: string): void {
     this.wsService.connect(stopId, this.deviceId).subscribe({
-      next: (state) => {
-        this.displayState.set(state);
-        this.lastUpdate.set(Date.now());
-      },
+      next: (state) => this.applyState(state),
       error: (err) => {
         console.error('WebSocket error:', err);
       },
@@ -888,23 +885,30 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.wsService.reconnected$.subscribe(() => this.refetchSnapshot(stopId));
   }
 
+  /** Accept a state only if its version is monotone — drops out-of-order pushes
+   *  that arrive after a newer one (broker queue reordering, retried fan-out).
+   *  We still bump lastUpdate so the kiosk doesn't drift into "stale" state. */
+  private applyState(state: DisplayState): void {
+    const current = this.displayState();
+    if (current && state.version < current.version) {
+      this.lastUpdate.set(Date.now());
+      return;
+    }
+    this.displayState.set(state);
+    this.lastUpdate.set(Date.now());
+  }
+
   private refetchSnapshot(stopId: string): void {
     if (this.token) {
       this.displayService.getStateByToken(this.token).subscribe({
-        next: (auth) => {
-          this.displayState.set(auth.state);
-          this.lastUpdate.set(Date.now());
-        },
+        next: (auth) => this.applyState(auth.state),
         error: (err: unknown) => {
           console.error('Failed to refresh snapshot after reconnect:', err);
         },
       });
     } else {
       this.displayService.getState(stopId).subscribe({
-        next: (state) => {
-          this.displayState.set(state);
-          this.lastUpdate.set(Date.now());
-        },
+        next: (state) => this.applyState(state),
         error: (err: unknown) => {
           console.error('Failed to refresh snapshot after reconnect:', err);
         },

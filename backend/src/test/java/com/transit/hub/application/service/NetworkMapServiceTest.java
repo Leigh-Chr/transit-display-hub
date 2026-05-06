@@ -58,6 +58,9 @@ class NetworkMapServiceTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
+    @Mock
+    private com.transit.hub.infrastructure.websocket.ActiveDisplayTracker activeDisplayTracker;
+
     @InjectMocks
     private NetworkMapService networkMapService;
 
@@ -311,6 +314,7 @@ class NetworkMapServiceTest {
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
             when(stopRepository.findAllWithLines()).thenReturn(List.of());
             when(broadcastMessageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of());
+            when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(true);
 
             networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));
 
@@ -326,11 +330,28 @@ class NetworkMapServiceTest {
         }
 
         @Test
+        @DisplayName("skips push when no map subscribers")
+        void skipsPushWhenNoSubscribers() {
+            Cache networkMapCache = mock(Cache.class);
+            Cache networkAlertsCache = mock(Cache.class);
+            when(cacheManager.getCache("networkMap")).thenReturn(networkMapCache);
+            when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
+            when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(false);
+
+            networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));
+
+            verify(networkMapCache).clear();
+            verify(networkAlertsCache).clear();
+            verify(messagingTemplate, never()).convertAndSend(eq("/topic/network-map"), any(Object.class));
+        }
+
+        @Test
         @DisplayName("evicts alerts cache and pushes ALERTS_UPDATE WebSocket payload on MessageChangedEvent")
         void evictsAlertsCacheAndPushesOnMessageChangedEvent() {
             Cache networkAlertsCache = mock(Cache.class);
             when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
             when(broadcastMessageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of());
+            when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(true);
 
             networkMapService.onMessageChanged(new MessageChangedEvent(this, Set.of()));
 
@@ -353,6 +374,7 @@ class NetworkMapServiceTest {
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
             when(stopRepository.findAllWithLines()).thenReturn(List.of());
             when(broadcastMessageRepository.findActiveMessages(any(Instant.class))).thenReturn(List.of());
+            when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(true);
 
             // Should not throw
             networkMapService.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));

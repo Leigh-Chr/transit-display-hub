@@ -20,12 +20,17 @@ import java.util.regex.Pattern;
 public class ActiveDisplayTracker {
 
     private static final Pattern DISPLAY_TOPIC_PATTERN = Pattern.compile("/topic/display/([a-f0-9-]+)");
+    private static final String NETWORK_MAP_TOPIC = "/topic/network-map";
 
     // Map of stopId -> Set of sessionIds subscribed to that stop
     private final Map<UUID, Set<String>> activeSubscriptions = new ConcurrentHashMap<>();
 
     // Map of sessionId -> subscriptionId -> stopId (to handle unsubscribe)
     private final Map<String, Map<String, UUID>> sessionSubscriptions = new ConcurrentHashMap<>();
+
+    // sessionId -> Set of subscriptionIds subscribed to /topic/network-map.
+    // Tracked separately because the topic is global (no UUID parameter).
+    private final Map<String, Set<String>> networkMapSubscriptions = new ConcurrentHashMap<>();
 
     @EventListener
     public void handleSubscribe(SessionSubscribeEvent event) {
@@ -53,6 +58,13 @@ public class ActiveDisplayTracker {
 
                 if (log.isDebugEnabled()) {
                     log.debug("Client {} subscribed to stop {}", sessionId, stopId);
+                }
+            } else if (NETWORK_MAP_TOPIC.equals(destination)) {
+                networkMapSubscriptions
+                        .computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
+                        .add(subscriptionId);
+                if (log.isDebugEnabled()) {
+                    log.debug("Client {} subscribed to network map", sessionId);
                 }
             }
         } catch (Exception e) {
@@ -83,6 +95,11 @@ public class ActiveDisplayTracker {
                     }
                 }
             }
+
+            Set<String> mapSubs = networkMapSubscriptions.get(sessionId);
+            if (mapSubs != null && mapSubs.remove(subscriptionId) && mapSubs.isEmpty()) {
+                networkMapSubscriptions.remove(sessionId);
+            }
         } catch (Exception e) {
             if (log.isWarnEnabled()) {
                 log.warn("Error handling unsubscribe event: {}", e.getMessage());
@@ -109,6 +126,7 @@ public class ActiveDisplayTracker {
                     log.debug("Client {} disconnected, removed {} subscriptions", sessionId, subscriptions.size());
                 }
             }
+            networkMapSubscriptions.remove(sessionId);
         } catch (Exception e) {
             if (log.isWarnEnabled()) {
                 log.warn("Error handling disconnect event: {}", e.getMessage());
@@ -133,5 +151,9 @@ public class ActiveDisplayTracker {
     public boolean hasActiveSubscriptions(UUID stopId) {
         Set<String> sessions = activeSubscriptions.get(stopId);
         return sessions != null && !sessions.isEmpty();
+    }
+
+    public boolean hasNetworkMapSubscribers() {
+        return !networkMapSubscriptions.isEmpty();
     }
 }
