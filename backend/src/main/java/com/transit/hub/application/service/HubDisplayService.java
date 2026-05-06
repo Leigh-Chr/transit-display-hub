@@ -63,7 +63,13 @@ public class HubDisplayService {
                         .map(a -> new HubDisplayState.HubArrivalInfo(
                                 a.scheduledTime(),
                                 a.destinationName(),
-                                s.stopName(),
+                                // Prefer the GTFS platform_code when the stop
+                                // publishes one; fall back to the human stop
+                                // name (typical for bus hubs without numbered
+                                // platforms).
+                                s.stopPlatformCode() != null && !s.stopPlatformCode().isBlank()
+                                        ? s.stopPlatformCode()
+                                        : s.stopName(),
                                 a.line(),
                                 a.pickupKind(),
                                 a.wheelchairAccessible(),

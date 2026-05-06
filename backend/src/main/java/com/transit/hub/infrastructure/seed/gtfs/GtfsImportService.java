@@ -345,7 +345,7 @@ public class GtfsImportService {
     private StopImport importStops(Path stopsFile) throws IOException {
         record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
                        String shortCode, String ttsName, String timezone, String description, String url,
-                       int wheelchairBoarding) {}
+                       int wheelchairBoarding, String platformCode) {}
 
         List<RawStop> raw = new ArrayList<>();
         try (CSVParser parser = openCsv(stopsFile)) {
@@ -367,7 +367,8 @@ public class GtfsImportService {
                         optional(record, "stop_timezone"),
                         optional(record, "stop_desc"),
                         optional(record, "stop_url"),
-                        parseInt(optional(record, "wheelchair_boarding"), 0)));
+                        parseInt(optional(record, "wheelchair_boarding"), 0),
+                        optional(record, "platform_code")));
             }
         }
 
@@ -415,6 +416,7 @@ public class GtfsImportService {
                     .url(truncate(r.url, 255))
                     .wheelchairBoarding(
                             com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding))
+                    .platformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10))
                     .build();
             result.put(rootId, stopRepository.save(stop));
         }

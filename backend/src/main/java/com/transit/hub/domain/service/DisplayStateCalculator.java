@@ -109,6 +109,7 @@ public class DisplayStateCalculator {
         return new DisplayState(
                 stopId,
                 stop.getName(),
+                stop.getPlatformCode(),
                 lineInfos,
                 arrivals,
                 messages,

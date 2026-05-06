@@ -49,7 +49,7 @@ class DisplayStateServiceTest {
     void setUp() {
         stopId = UUID.randomUUID();
         mockState = new DisplayState(
-                stopId, "Central Station",
+                stopId, "Central Station", null,
                 List.of(), List.of(), List.of(),
                 1L, Instant.now()
         );
@@ -107,8 +107,8 @@ class DisplayStateServiceTest {
         void iteratesOverActiveStopIds() {
             UUID stopId2 = UUID.randomUUID();
             UUID stopId3 = UUID.randomUUID();
-            DisplayState state2 = new DisplayState(stopId2, "North Station", List.of(), List.of(), List.of(), 2L, Instant.now());
-            DisplayState state3 = new DisplayState(stopId3, "South Station", List.of(), List.of(), List.of(), 3L, Instant.now());
+            DisplayState state2 = new DisplayState(stopId2, "North Station", null, List.of(), List.of(), List.of(), 2L, Instant.now());
+            DisplayState state3 = new DisplayState(stopId3, "South Station", null, List.of(), List.of(), List.of(), 3L, Instant.now());
 
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenReturn(state2);
@@ -160,7 +160,7 @@ class DisplayStateServiceTest {
         @DisplayName("recalculates all affected stops")
         void recalculatesAllAffectedStops() {
             UUID stopId2 = UUID.randomUUID();
-            DisplayState state2 = new DisplayState(stopId2, "North Station", List.of(), List.of(), List.of(), 2L, Instant.now());
+            DisplayState state2 = new DisplayState(stopId2, "North Station", null, List.of(), List.of(), List.of(), 2L, Instant.now());
 
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenReturn(state2);
@@ -182,7 +182,7 @@ class DisplayStateServiceTest {
         @DisplayName("recalculates all affected stops")
         void recalculatesAllAffectedStops() {
             UUID stopId2 = UUID.randomUUID();
-            DisplayState state2 = new DisplayState(stopId2, "North Station", List.of(), List.of(), List.of(), 2L, Instant.now());
+            DisplayState state2 = new DisplayState(stopId2, "North Station", null, List.of(), List.of(), List.of(), 2L, Instant.now());
 
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenReturn(state2);
@@ -204,7 +204,7 @@ class DisplayStateServiceTest {
         @DisplayName("refreshes only stops with active subscribers")
         void refreshesActiveStops() {
             UUID stopId2 = UUID.randomUUID();
-            DisplayState state2 = new DisplayState(stopId2, "North Station", List.of(), List.of(), List.of(), 2L, Instant.now());
+            DisplayState state2 = new DisplayState(stopId2, "North Station", null, List.of(), List.of(), List.of(), 2L, Instant.now());
 
             when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(stopId, stopId2));
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
@@ -266,7 +266,7 @@ class DisplayStateServiceTest {
         void continuesWhenOneStopFails() {
             UUID stopId2 = UUID.randomUUID();
             UUID stopId3 = UUID.randomUUID();
-            DisplayState state3 = new DisplayState(stopId3, "South Station", List.of(), List.of(), List.of(), 3L, Instant.now());
+            DisplayState state3 = new DisplayState(stopId3, "South Station", null, List.of(), List.of(), List.of(), 3L, Instant.now());
 
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenThrow(new RuntimeException("Stop 2 failed"));

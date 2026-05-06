@@ -11,6 +11,10 @@ import java.util.UUID;
 public record DisplayState(
         UUID stopId,
         String stopName,
+        /** GTFS platform_code for stops that publish one (railway feeds,
+         *  hub kiosks). Null on bus poles and any stop without a platform
+         *  designation. */
+        String stopPlatformCode,
         List<LineInfo> lines,
         List<ArrivalInfo> arrivals,
         List<MessageInfo> messages,

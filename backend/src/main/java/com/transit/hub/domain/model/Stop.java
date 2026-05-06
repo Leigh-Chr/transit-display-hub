@@ -115,6 +115,15 @@ public class Stop {
     @Column(name = "wheelchair_boarding", length = 20)
     private com.transit.hub.domain.model.enums.WheelchairAccess wheelchairBoarding;
 
+    /** GTFS {@code platform_code}. Short identifier for the platform
+     *  ("A", "12bis"). Persisted whenever the stop the importer keeps
+     *  publishes one at root level. The full per-platform display
+     *  (where a station expands into multiple selectable rows) lives
+     *  in a follow-up that splits the parent-station collapse logic. */
+    @Size(max = 10)
+    @Column(name = "platform_code", length = 10)
+    private String platformCode;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",
             joinColumns = @JoinColumn(name = "stop_id"),

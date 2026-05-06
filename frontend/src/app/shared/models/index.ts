@@ -232,6 +232,9 @@ export interface UpdateUserRequest {
 export interface DisplayState {
   stopId: string;
   stopName: string;
+  /** GTFS platform_code for stops that publish one — null for bus poles
+   *  and any stop without a platform designation. */
+  stopPlatformCode?: string | null;
   lines: LineInfo[];
   arrivals: ArrivalInfo[];
   messages: MessageInfo[];

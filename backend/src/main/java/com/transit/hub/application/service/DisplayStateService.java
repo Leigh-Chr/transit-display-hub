@@ -89,6 +89,7 @@ public class DisplayStateService {
         DisplayState farewell = new DisplayState(
                 event.getStopId(),
                 event.getStopName(),
+                null,
                 List.of(),
                 List.of(),
                 List.of(new DisplayState.MessageInfo(
