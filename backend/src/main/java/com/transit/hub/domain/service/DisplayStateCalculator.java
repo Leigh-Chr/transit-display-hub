@@ -12,11 +12,13 @@ import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,6 +37,12 @@ public class DisplayStateCalculator {
     private final StopRepository stopRepository;
     private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
+
+    /** Operator-facing zone used to compare wall-clock schedule times against
+     *  the server's now(). Pinning it here means the JVM's TZ — which can be
+     *  UTC in Docker — never silently shifts the kiosk's "next departure". */
+    @Value("${app.timezone:Europe/Paris}")
+    private String appTimezone = "Europe/Paris";
 
     private static final int MAX_MESSAGES = 3;
     private static final int WINDOW_MINUTES = 30;
@@ -56,7 +64,7 @@ public class DisplayStateCalculator {
         // Get upcoming arrivals within 30-minute window, one per itinerary/direction.
         // Handles the midnight wrap (e.g., 23:50 → 00:20) by issuing two queries
         // concatenated in chronological order — see `loadUpcomingSchedules`.
-        LocalTime now = LocalTime.now();
+        LocalTime now = LocalTime.now(ZoneId.of(appTimezone));
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
         List<DisplayState.ArrivalInfo> arrivals = loadUpcomingSchedules(stopId, now, windowEnd)
                 .stream()

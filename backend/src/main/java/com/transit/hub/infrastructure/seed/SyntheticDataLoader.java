@@ -727,8 +727,10 @@ public class SyntheticDataLoader implements CommandLineRunner {
                             .map(Line::getCode)
                             .sorted()
                             .collect(Collectors.joining(", "));
-                    if (log.isInfoEnabled()) {
-                        log.info("Sample device token for {} ({}): {}",
+                    // Log the plain token at DEBUG so dev terminals can copy it,
+                    // without leaking it to default INFO-level prod logs.
+                    if (log.isDebugEnabled()) {
+                        log.debug("Sample device token for {} ({}): {}",
                                 stop.getName(), lineCodes, token);
                     }
                 }

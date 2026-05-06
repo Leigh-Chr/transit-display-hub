@@ -85,11 +85,16 @@ public class BroadcastMessage {
     }
 
     public boolean isActive() {
-        Instant now = Instant.now();
-        return now.isAfter(startTime) && now.isBefore(endTime);
+        return isActiveAt(Instant.now());
     }
 
+    /**
+     * Half-open interval [startTime, endTime): a message is visible the moment
+     * its start arrives and stops being visible when end arrives. Matches the
+     * repository queries (`start <= now AND end > now`) so a message created
+     * exactly at its start instant fires the corresponding event.
+     */
     public boolean isActiveAt(Instant time) {
-        return time.isAfter(startTime) && time.isBefore(endTime);
+        return !time.isBefore(startTime) && time.isBefore(endTime);
     }
 }

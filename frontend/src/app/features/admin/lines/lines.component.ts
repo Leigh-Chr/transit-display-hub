@@ -408,7 +408,7 @@ export class LinesComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Delete Line',
-        message: `Delete line "${line.name}"? This will also delete all associated stops and schedules.`,
+        message: `Delete line "${line.name}"? Itineraries, schedules and line-scoped messages will be removed; stops served by this line are kept.`,
         confirmText: 'Delete',
         confirmColor: 'warn',
       } as ConfirmDialogData,

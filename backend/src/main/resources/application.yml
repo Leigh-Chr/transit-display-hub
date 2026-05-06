@@ -3,9 +3,16 @@ spring:
     name: transit-display-hub
   profiles:
     active: dev
+  jackson:
+    time-zone: ${APP_TIMEZONE:Europe/Paris}
 
 server:
   port: 8080
+
+app:
+  # Operator-facing local time used for schedule comparisons. Override via
+  # APP_TIMEZONE on networks running outside Europe/Paris.
+  timezone: ${APP_TIMEZONE:Europe/Paris}
 
 management:
   endpoints:

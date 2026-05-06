@@ -130,13 +130,16 @@ class BroadcastMessageTest {
         }
 
         @Test
-        @DisplayName("returns false when queried time equals start time (exclusive)")
-        void atExactStart_ReturnsFalse() {
+        @DisplayName("returns true when queried time equals start time (inclusive)")
+        void atExactStart_ReturnsTrue() {
+            // Half-open [start, end): the message becomes active at the very
+            // first instant of its window so the kiosk reflects start-exact
+            // events without a one-nanosecond hole.
             Instant start = Instant.parse("2025-01-01T10:00:00Z");
             Instant end = Instant.parse("2025-01-01T18:00:00Z");
             BroadcastMessage message = buildMessage(start, end);
 
-            assertThat(message.isActiveAt(start)).isFalse();
+            assertThat(message.isActiveAt(start)).isTrue();
         }
 
         @Test
