@@ -4,6 +4,7 @@ import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -89,6 +90,18 @@ public class GlobalExceptionHandler {
             }
         }
         return buildErrorResponse(HttpStatus.CONFLICT, message, null, request);
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> handleOptimisticLock(OptimisticLockingFailureException ex, WebRequest request) {
+        if (log.isWarnEnabled()) {
+            log.warn("Optimistic lock conflict: {}", ex.getMessage());
+        }
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "This record was modified by someone else. Reload to see the latest version and try again.",
+                null,
+                request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

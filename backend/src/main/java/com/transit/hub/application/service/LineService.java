@@ -11,6 +11,7 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -32,6 +33,7 @@ public class LineService {
 
     private final LineRepository lineRepository;
     private final ItineraryRepository itineraryRepository;
+    private final ItineraryStopRepository itineraryStopRepository;
     private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
     private final StopRepository stopRepository;
@@ -106,8 +108,11 @@ public class LineService {
             throw new EntityNotFoundException("Line", id);
         }
         Set<UUID> affectedStopIds = getStopIdsForLine(id);
-        // Delete related entities in correct order
+        // Delete related entities in dependency order. itinerary_stops has a FK
+        // to itineraries without ON DELETE CASCADE, so it must be cleared before
+        // the bulk delete on itineraries.
         scheduleRepository.deleteByItineraryLineId(id);
+        itineraryStopRepository.deleteByItineraryLineId(id);
         itineraryRepository.deleteByLineId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.LINE, id);
         lineRepository.deleteById(id);

@@ -179,12 +179,14 @@ public class ItineraryService {
         int position;
         if (request.position() != null) {
             position = request.position();
-            // Shift existing stops at or after this position
-            for (ItineraryStop is : itinerary.getItineraryStops()) {
-                if (is.getPosition() >= position) {
-                    is.setPosition(is.getPosition() + 1);
-                }
-            }
+            // Atomic bulk shift via SQL — touching one row at a time through JPA
+            // would intermittently violate the (itinerary_id, position) unique
+            // constraint as positions cross each other.
+            itineraryStopRepository.shiftPositionsFrom(itineraryId, position);
+            // The shift cleared the persistence context (clearAutomatically=true);
+            // re-load the itinerary so the new ItineraryStop attaches to a managed entity.
+            itinerary = itineraryRepository.findByIdWithLineAndStops(itineraryId).orElseThrow();
+            stop = stopRepository.findById(request.stopId()).orElseThrow();
         } else {
             Integer maxPosition = itineraryStopRepository.findMaxPositionByItineraryId(itineraryId);
             position = (maxPosition != null) ? maxPosition + 1 : 0;

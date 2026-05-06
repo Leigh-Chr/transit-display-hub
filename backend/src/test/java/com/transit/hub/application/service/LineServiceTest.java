@@ -10,6 +10,7 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
+import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -49,6 +50,9 @@ class LineServiceTest {
 
     @Mock
     private ItineraryRepository itineraryRepository;
+
+    @Mock
+    private ItineraryStopRepository itineraryStopRepository;
 
     @Mock
     private ScheduleRepository scheduleRepository;
@@ -257,6 +261,7 @@ class LineServiceTest {
             lineService.deleteLine(testLineId);
 
             verify(scheduleRepository).deleteByItineraryLineId(testLineId);
+            verify(itineraryStopRepository).deleteByItineraryLineId(testLineId);
             verify(itineraryRepository).deleteByLineId(testLineId);
             verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.LINE, testLineId);
             verify(lineRepository).deleteById(testLineId);

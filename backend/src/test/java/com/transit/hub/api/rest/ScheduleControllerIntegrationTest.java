@@ -74,6 +74,7 @@ class ScheduleControllerIntegrationTest {
         stopRepository.save(testStop);
 
         testItinerary = Itinerary.builder().name("Direction North").line(testLine).build();
+        testItinerary.addStop(testStop, 0);
         itineraryRepository.save(testItinerary);
 
         testSchedule = Schedule.builder().time(LocalTime.of(8, 30)).stop(testStop).itinerary(testItinerary).build();

@@ -4,6 +4,8 @@ import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
+import com.transit.hub.domain.event.StopDeletedEvent;
+import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.domain.service.DisplayStateCalculator;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -65,6 +69,35 @@ public class DisplayStateService {
             log.info("Message changed, affecting {} stops", event.getAffectedStopIds().size());
         }
         recalculateAndPushAll(event.getAffectedStopIds());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onStopDeleted(StopDeletedEvent event) {
+        if (log.isInfoEnabled()) {
+            log.info("Stop {} deleted, notifying subscribed kiosks", event.getStopId());
+        }
+        // The stop row is gone, so calculateForStop would throw. Push a final
+        // state with a clear CRITICAL message so kiosks subscribed to the topic
+        // surface the change instead of silently freezing on stale data.
+        DisplayState farewell = new DisplayState(
+                event.getStopId(),
+                event.getStopName(),
+                List.of(),
+                List.of(),
+                List.of(new DisplayState.MessageInfo(
+                        "Stop removed",
+                        "This stop is no longer in service.",
+                        MessageSeverity.CRITICAL)),
+                Long.MAX_VALUE,
+                Instant.now()
+        );
+        try {
+            messagingTemplate.convertAndSend("/topic/display/" + event.getStopId(), farewell);
+        } catch (Exception e) {
+            if (log.isErrorEnabled()) {
+                log.error("Failed to push stop-deleted notice for {}", event.getStopId(), e);
+            }
+        }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

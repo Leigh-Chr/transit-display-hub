@@ -4,9 +4,10 @@ import com.transit.hub.application.dto.request.CreateStopRequest;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.domain.event.NetworkChangedEvent;
+import com.transit.hub.domain.event.StopDeletedEvent;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
@@ -114,9 +115,10 @@ public class StopService {
 
     @Transactional
     public void deleteStop(UUID id) {
-        if (!stopRepository.existsById(id)) {
-            throw new EntityNotFoundException("Stop", id);
-        }
+        Stop stop = stopRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Stop", id));
+        String stopName = stop.getName();
+
         // Delete related entities in correct order
         scheduleRepository.deleteByStopId(id);
         itineraryStopRepository.deleteByStopId(id);
@@ -124,6 +126,8 @@ public class StopService {
         deviceRepository.deleteByStopId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.STOP, id);
         stopRepository.deleteById(id);
+        // Notify kiosks subscribed to this stop that their state is final.
+        eventPublisher.publishEvent(new StopDeletedEvent(this, id, stopName));
         eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(id)));
     }
 

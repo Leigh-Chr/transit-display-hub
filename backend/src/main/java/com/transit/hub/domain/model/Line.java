@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -37,6 +38,9 @@ public class Line {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Version
+    private Long version;
 
     @NotBlank(message = "Code is required")
     @Size(max = 10, message = "Code must be at most 10 characters")

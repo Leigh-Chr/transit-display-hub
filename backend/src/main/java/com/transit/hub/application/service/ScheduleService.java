@@ -50,12 +50,7 @@ public class ScheduleService {
         Itinerary itinerary = itineraryRepository.findByIdWithLineAndStops(request.itineraryId())
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary", request.itineraryId()));
 
-        Line line = itinerary.getLine();
-
-        // Validate that the itinerary's line belongs to this stop
-        if (!stop.getLines().contains(line)) {
-            throw new IllegalArgumentException("Itinerary's line " + line.getCode() + " is not associated with stop " + stop.getName());
-        }
+        validateItineraryServesStop(itinerary, stop);
 
         LocalTime time = LocalTime.parse(request.time(), TIME_FORMATTER);
 
@@ -88,12 +83,7 @@ public class ScheduleService {
         Itinerary itinerary = itineraryRepository.findByIdWithLineAndStops(request.itineraryId())
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary", request.itineraryId()));
 
-        Line line = itinerary.getLine();
-
-        // Validate that the itinerary's line belongs to this stop
-        if (!stop.getLines().contains(line)) {
-            throw new IllegalArgumentException("Itinerary's line " + line.getCode() + " is not associated with stop " + stop.getName());
-        }
+        validateItineraryServesStop(itinerary, stop);
 
         LocalTime time = LocalTime.parse(request.time(), TIME_FORMATTER);
 
@@ -121,5 +111,31 @@ public class ScheduleService {
         UUID stopId = schedule.getStop().getId();
         scheduleRepository.delete(schedule);
         eventPublisher.publishEvent(new ScheduleChangedEvent(this, stopId));
+    }
+
+    private void validateItineraryServesStop(Itinerary itinerary, Stop stop) {
+        Line line = itinerary.getLine();
+
+        // The itinerary's line must serve this stop
+        if (!stop.getLines().contains(line)) {
+            throw new IllegalArgumentException(
+                    "Itinerary's line " + line.getCode() + " is not associated with stop " + stop.getName());
+        }
+
+        // The itinerary must contain at least one stop, otherwise its terminus
+        // is undefined and the kiosk would render an empty destination cell.
+        if (itinerary.getItineraryStops() == null || itinerary.getItineraryStops().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Itinerary " + itinerary.getName() + " has no stops; cannot schedule arrivals on it");
+        }
+
+        // The itinerary must explicitly serve THIS stop, not just share its line.
+        // Otherwise we'd announce a route that doesn't actually pass here.
+        boolean stopBelongs = itinerary.getItineraryStops().stream()
+                .anyMatch(is -> is.getStop().getId().equals(stop.getId()));
+        if (!stopBelongs) {
+            throw new IllegalArgumentException(
+                    "Itinerary " + itinerary.getName() + " does not serve stop " + stop.getName());
+        }
     }
 }

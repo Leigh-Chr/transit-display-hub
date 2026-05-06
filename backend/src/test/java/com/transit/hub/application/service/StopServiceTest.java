@@ -284,7 +284,7 @@ class StopServiceTest {
         @Test
         @DisplayName("deletes existing stop, related entities, and publishes NetworkChangedEvent")
         void withExistingId_Succeeds() {
-            when(stopRepository.existsById(testStopId)).thenReturn(true);
+            when(stopRepository.findById(testStopId)).thenReturn(java.util.Optional.of(testStop));
 
             stopService.deleteStop(testStopId);
 
@@ -294,16 +294,19 @@ class StopServiceTest {
             verify(messageRepository).deleteByScopeTypeAndScopeId(MessageScope.STOP, testStopId);
             verify(stopRepository).deleteById(testStopId);
 
-            ArgumentCaptor<NetworkChangedEvent> captor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
-            verify(eventPublisher).publishEvent(captor.capture());
-            assertThat(captor.getValue().getAffectedStopIds()).contains(testStopId);
+            // Two events are published: StopDeletedEvent (kiosk farewell) and
+            // NetworkChangedEvent (cache invalidation).
+            ArgumentCaptor<NetworkChangedEvent> netCaptor = ArgumentCaptor.forClass(NetworkChangedEvent.class);
+            verify(eventPublisher).publishEvent(any(com.transit.hub.domain.event.StopDeletedEvent.class));
+            verify(eventPublisher).publishEvent(netCaptor.capture());
+            assertThat(netCaptor.getValue().getAffectedStopIds()).contains(testStopId);
         }
 
         @Test
         @DisplayName("throws EntityNotFoundException when stop not found")
         void withNonExistentId_ThrowsNotFound() {
             UUID unknownId = UUID.randomUUID();
-            when(stopRepository.existsById(unknownId)).thenReturn(false);
+            when(stopRepository.findById(unknownId)).thenReturn(java.util.Optional.empty());
 
             assertThatThrownBy(() -> stopService.deleteStop(unknownId))
                     .isInstanceOf(EntityNotFoundException.class)

@@ -71,7 +71,8 @@ class ScheduleServiceTest {
 
         testLine = TestDataFactory.createLineWithId(testLineId, "L1", "Metro Line 1", "#FF5733");
         testStop = TestDataFactory.createStopWithId(testStopId, "Central Station", testLine);
-        testItinerary = TestDataFactory.createItineraryWithId(testItineraryId, testLine, "Direction East");
+        testItinerary = TestDataFactory.createItineraryWithStops(testLine, "Direction East", testStop);
+        testItinerary.setId(testItineraryId);
 
         testSchedule = Schedule.builder()
                 .id(testScheduleId)
@@ -215,7 +216,8 @@ class ScheduleServiceTest {
         @DisplayName("throws IllegalArgumentException when itinerary line not associated with stop")
         void throwsWhenLineNotAssociatedWithStop() {
             Line otherLine = TestDataFactory.createLineWithId(UUID.randomUUID(), "L2", "Other Line", "#0000FF");
-            Itinerary otherItinerary = TestDataFactory.createItineraryWithId(UUID.randomUUID(), otherLine, "Other Direction");
+            Stop otherStop = TestDataFactory.createStopWithId(UUID.randomUUID(), "Other Stop", otherLine);
+            Itinerary otherItinerary = TestDataFactory.createItineraryWithStops(otherLine, "Other Direction", otherStop);
             CreateScheduleRequest request = new CreateScheduleRequest("10:00", otherItinerary.getId());
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
@@ -224,6 +226,36 @@ class ScheduleServiceTest {
             assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("not associated with stop");
+        }
+
+        @Test
+        @DisplayName("throws IllegalArgumentException when itinerary is empty")
+        void throwsWhenItineraryEmpty() {
+            Itinerary emptyItinerary = TestDataFactory.createItineraryWithId(UUID.randomUUID(), testLine, "Empty");
+            CreateScheduleRequest request = new CreateScheduleRequest("10:00", emptyItinerary.getId());
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.findByIdWithLineAndStops(emptyItinerary.getId())).thenReturn(Optional.of(emptyItinerary));
+
+            assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("has no stops");
+        }
+
+        @Test
+        @DisplayName("throws IllegalArgumentException when itinerary does not serve the stop")
+        void throwsWhenItineraryDoesNotServeStop() {
+            Stop neighborStop = TestDataFactory.createStopWithId(UUID.randomUUID(), "Neighbor", testLine);
+            Itinerary itineraryNotServingStop = TestDataFactory.createItineraryWithStops(testLine, "Other dir", neighborStop);
+            CreateScheduleRequest request = new CreateScheduleRequest("10:00", itineraryNotServingStop.getId());
+
+            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(itineraryRepository.findByIdWithLineAndStops(itineraryNotServingStop.getId()))
+                    .thenReturn(Optional.of(itineraryNotServingStop));
+
+            assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("does not serve stop");
         }
 
         @Test
@@ -316,7 +348,8 @@ class ScheduleServiceTest {
         @DisplayName("throws IllegalArgumentException when itinerary line not associated with stop")
         void throwsWhenLineNotAssociatedWithStop() {
             Line otherLine = TestDataFactory.createLineWithId(UUID.randomUUID(), "L2", "Other Line", "#0000FF");
-            Itinerary otherItinerary = TestDataFactory.createItineraryWithId(UUID.randomUUID(), otherLine, "Other Direction");
+            Stop otherStop = TestDataFactory.createStopWithId(UUID.randomUUID(), "Other Stop", otherLine);
+            Itinerary otherItinerary = TestDataFactory.createItineraryWithStops(otherLine, "Other Direction", otherStop);
             CreateScheduleRequest request = new CreateScheduleRequest("09:00", otherItinerary.getId());
 
             when(scheduleRepository.findById(testScheduleId)).thenReturn(Optional.of(testSchedule));
