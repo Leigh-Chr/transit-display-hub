@@ -5,6 +5,111 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-05-06
+
+GTFS integration deepened across the model, the import pipeline and the
+passenger-facing display. Sixteen Flyway migrations (V6–V21), all
+additive except the `lines.code` widening from VARCHAR(10) to
+VARCHAR(30). Architecture decisions are captured in `docs/adr/`.
+
+### Added
+
+#### Domain model
+- **`LineType` extended** to ten values (`BUS`, `TRAM`, `METRO`, `TRAIN`,
+  `FERRY`, `FUNICULAR`, `CABLE_CAR`, `TROLLEYBUS`, `MONORAIL`, `OTHER`)
+  with a tier-based `route_type` mapping covering the basic GTFS modes
+  (0..12) and the Extended Hierarchical Vehicle Types (100..1799). See
+  ADR 0001.
+- **`Agency` entity** populated from `agency.txt`. `Line.agency_id`
+  becomes the per-line owner of timezone, language and contact info.
+  `DisplayStateCalculator` resolves the display zone via Stop →
+  Agency → `app.timezone` fallback. See ADR 0002.
+- **`FeedInfo` singleton** captures `feed_info.txt` plus source URL,
+  SHA-256 and import timestamp. Replaced in place at every successful
+  import. See ADR 0003.
+- **`ImportAudit` append-only log** records every attempt — successful,
+  skipped or failed — with duration, entity counters, status and
+  trigger identifier. See ADR 0003.
+- **`Transfer` entity** persists `transfers.txt`. Inline on the
+  network-map response so the route-finder weights interchanges by
+  declared `min_transfer_time` instead of the previous magic constant.
+  See ADR 0006.
+- **`Attribution` entity** persists `attributions.txt` with role flags
+  (producer / operator / authority). Public endpoint.
+- **`external_id` columns** on `Stop`, `Line`, `Itinerary`, `Agency`,
+  `Attribution` so re-imports can match rows rather than recreate them.
+- **`stops.disabled`** soft-delete flag, ready for the matching
+  algorithm landing in a follow-up.
+- **Stop identity extended** with `short_code` (the signpost id),
+  `tts_name` (screen-reader pronunciation), `stop_timezone`,
+  `description`, `url`, `wheelchair_boarding`, `platform_code`.
+- **Per-itinerary defaults** for `wheelchair_default` and
+  `bikes_allowed_default`, computed via majority vote across the trips
+  of the same `(route, direction)`. Per-schedule overrides stored
+  only when a trip diverges. See ADR 0005.
+- **`Schedule` enriched** with `pickup_type`, `drop_off_type`,
+  `wheelchair_override`, `bikes_allowed_override`, `timepoint`.
+- **`ItineraryStop.stop_headsign`** drives the destination shown to
+  passengers, falling back to the trip-level terminus. See ADR 0004.
+- **`Line` enriched** with `text_color` (route_text_color, with YIQ
+  fallback for missing values), `continuous_pickup` /
+  `continuous_drop_off`, `sort_order`, `description`, `url`. Code
+  widened to VARCHAR(30).
+
+#### Import pipeline
+- **`GtfsImportOrchestrator`** — single entry point shared by the boot
+  loader, the cron scheduler and the admin endpoint. Owns the
+  `ReentrantLock`, the streaming SHA-256 and the audit-row lifecycle.
+  See ADR 0007.
+- **`GtfsRefreshScheduler`** — daily cron at 04:00 by default,
+  configurable via `app.data-loader.gtfs.refresh-cron`.
+- **Cache validation** in `GtfsDownloader` via `If-Modified-Since` and
+  `If-None-Match`, with a sidecar `.meta` file holding the previous
+  response's `Last-Modified` and `ETag`. 304 responses reuse the
+  cached zip even past the local TTL.
+- **Manual reimport endpoint** `POST /api/admin/gtfs/reimport` runs
+  synchronously under the admin's identity.
+- **Domain util `ColorContrast`** computes a WCAG-aligned foreground
+  for any background color via the YIQ luminance formula. Used by the
+  importer when `route_text_color` is missing and by `LineService` for
+  admin-created lines.
+
+#### API
+- `GET /api/agencies` — agency list (any authenticated user).
+- `GET /api/admin/feed-info` — current feed metadata (admin).
+- `GET /api/admin/import-audit?limit=N` — recent import attempts (admin).
+- `POST /api/admin/gtfs/reimport` — force a refresh (admin).
+- `GET /api/attributions` — public credit block.
+
+#### Frontend
+- **Kiosk display** renders accessibility (`accessible_forward` /
+  `do_not_disturb`), bicycle (`directions_bike`) and pickup-type
+  badges next to each arrival.
+- **Admin dashboard** gains a `FeedInfoCard` surfacing publisher,
+  version, validity range and days-until-expiry (red expired, amber
+  expiring within 7 days, default otherwise).
+- **`lineTextColor` helper** prefers the server-resolved foreground
+  before the YIQ fallback. Used by kiosk, hub display, schematic-map
+  and admin dashboard line badges.
+- **Route-finder** consumes the inline `transfers` from the
+  network-map snapshot. Type 3 transfers (impossible) are pruned;
+  type 1 (timed) drops to near-zero; types 0/2 use `min_transfer_time`
+  with a 180s default.
+
+### Changed
+- `Line.code` column widens to `VARCHAR(30)` (was 10). The kiosk badge
+  CSS already auto-shrinks for long codes.
+- `app.timezone` becomes a fallback rather than the primary source.
+  Existing installs without GTFS data behave identically.
+
+### Fixed
+- `route_type = 12` no longer mis-maps to `TRAM` (it's now `MONORAIL`).
+- Ferries (`route_type = 4`, `1000-1299`), trolleybuses (11, 800-899),
+  funiculars (7, 1400-1499) and aerial cable cars (6, 1300-1399) are
+  no longer silently bucketed as `BUS`.
+
+---
+
 ## [0.2.0] - 2026-05-06
 
 ### Fixed (correctness)
