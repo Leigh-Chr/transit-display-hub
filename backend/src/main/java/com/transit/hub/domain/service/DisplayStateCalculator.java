@@ -155,8 +155,27 @@ public class DisplayStateCalculator {
                 destination,
                 lineInfo,
                 com.transit.hub.domain.model.enums.PickupKind.from(
-                        schedule.getPickupType(), schedule.getDropOffType())
+                        schedule.getPickupType(), schedule.getDropOffType()),
+                resolveWheelchair(schedule, itinerary)
         );
+    }
+
+    /**
+     * Resolves the effective wheelchair accessibility for an arrival.
+     * Priority: schedule override > itinerary default > UNKNOWN. Keeps
+     * the kiosk three-state pictogram in sync with what the operator
+     * actually published in the feed.
+     */
+    private static com.transit.hub.domain.model.enums.WheelchairAccess resolveWheelchair(
+            Schedule schedule, Itinerary itinerary) {
+        if (schedule.getWheelchairOverride() != null) {
+            return schedule.getWheelchairOverride()
+                    ? com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE
+                    : com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE;
+        }
+        return itinerary.getWheelchairDefault() == null
+                ? com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN
+                : itinerary.getWheelchairDefault();
     }
 
     private static String resolveStopHeadsign(Itinerary itinerary, UUID stopId) {

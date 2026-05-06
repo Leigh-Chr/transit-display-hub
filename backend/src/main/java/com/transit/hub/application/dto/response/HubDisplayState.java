@@ -19,6 +19,7 @@ public record HubDisplayState(
             String destinationName,
             String platform,
             LineInfo line,
-            PickupKind pickupKind
+            PickupKind pickupKind,
+            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible
     ) {}
 }

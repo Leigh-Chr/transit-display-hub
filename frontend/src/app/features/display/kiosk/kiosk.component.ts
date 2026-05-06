@@ -102,6 +102,11 @@ import { lineTextColor } from '@shared/utils/color.utils';
                     </span>
                     <span class="destination">
                       {{ arrival.destinationName }}
+                      @if (arrival.wheelchairAccessible === 'ACCESSIBLE') {
+                        <mat-icon class="access-icon access-yes" aria-label="Wheelchair accessible">accessible_forward</mat-icon>
+                      } @else if (arrival.wheelchairAccessible === 'NOT_ACCESSIBLE') {
+                        <mat-icon class="access-icon access-no" aria-label="Not wheelchair accessible">do_not_disturb</mat-icon>
+                      }
                       @if (pickupBadge(arrival.pickupKind); as badge) {
                         <span class="pickup-badge">{{ badge }}</span>
                       }
@@ -440,6 +445,23 @@ import { lineTextColor } from '@shared/utils/color.utils';
       background: var(--app-kiosk-info-bg-subtle);
       color: var(--app-kiosk-info-accent);
       border: 1px solid var(--app-kiosk-info-border);
+    }
+
+    .access-icon {
+      vertical-align: middle;
+      margin-left: 0.8vw;
+      font-size: clamp(2.5vh, 3.5vh, 4.5vh) !important;
+      width: clamp(2.5vh, 3.5vh, 4.5vh) !important;
+      height: clamp(2.5vh, 3.5vh, 4.5vh) !important;
+    }
+
+    .access-icon.access-yes {
+      color: var(--app-kiosk-info-accent);
+    }
+
+    .access-icon.access-no {
+      color: var(--app-kiosk-warning-accent);
+      opacity: 0.85;
     }
 
     .time-info {

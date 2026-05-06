@@ -322,7 +322,8 @@ public class GtfsImportService {
 
     private StopImport importStops(Path stopsFile) throws IOException {
         record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
-                       String shortCode, String ttsName, String timezone, String description, String url) {}
+                       String shortCode, String ttsName, String timezone, String description, String url,
+                       int wheelchairBoarding) {}
 
         List<RawStop> raw = new ArrayList<>();
         try (CSVParser parser = openCsv(stopsFile)) {
@@ -343,7 +344,8 @@ public class GtfsImportService {
                         optional(record, "tts_stop_name"),
                         optional(record, "stop_timezone"),
                         optional(record, "stop_desc"),
-                        optional(record, "stop_url")));
+                        optional(record, "stop_url"),
+                        parseInt(optional(record, "wheelchair_boarding"), 0)));
             }
         }
 
@@ -389,6 +391,8 @@ public class GtfsImportService {
                     .stopTimezone(truncate(r.timezone, 60))
                     .description(truncate(r.description, 500))
                     .url(truncate(r.url, 255))
+                    .wheelchairBoarding(
+                            com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding))
                     .build();
             result.put(rootId, stopRepository.save(stop));
         }
@@ -402,7 +406,8 @@ public class GtfsImportService {
             Map<String, TripInfo> tripInfos,
             Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
 
-    private record TripInfo(String routeId, String directionId, String serviceId, String headsign) {}
+    private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
+                            int wheelchairAccessible) {}
 
     private record RouteDirKey(String routeId, String directionId) {}
 
@@ -420,7 +425,8 @@ public class GtfsImportService {
                         record.get("route_id"),
                         firstNonBlank(optional(record, "direction_id"), "0"),
                         optional(record, "service_id"),
-                        optional(record, "trip_headsign")));
+                        optional(record, "trip_headsign"),
+                        parseInt(optional(record, "wheelchair_accessible"), 0)));
             }
         }
         log.info("GTFS import: {} trips loaded", tripInfos.size());
@@ -491,10 +497,17 @@ public class GtfsImportService {
             trip.sort((a, b) -> Integer.compare(a.sequence, b.sequence));
 
             String itineraryName = buildItineraryName(line.getCode(), info.headsign, key.directionId);
+            // Majority vote on wheelchair_accessible across every trip
+            // matching this (route, direction). The representative trip
+            // alone would underestimate accessibility on networks where
+            // the longest variant happens to be the non-accessible one.
+            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault =
+                    majorityWheelchair(tripInfos, key);
             Itinerary itinerary = Itinerary.builder()
                     .externalId(truncate(tripId, 100))
                     .line(line)
                     .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
+                    .wheelchairDefault(wheelchairDefault)
                     .itineraryStops(new ArrayList<>())
                     .build();
             itinerary = itineraryRepository.save(itinerary);
@@ -627,12 +640,19 @@ public class GtfsImportService {
                 ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time);
                 if (!seen.add(key)) {continue;}
 
+                // Wheelchair override: only stored when the trip's value
+                // diverges from the itinerary's majority default. Saves
+                // ~1 byte × millions of rows on most feeds.
+                Boolean wheelchairOverride = computeWheelchairOverride(trip.wheelchairAccessible,
+                        itinerary.getWheelchairDefault());
+
                 batch.add(Schedule.builder()
                         .time(time)
                         .stop(stop)
                         .itinerary(itinerary)
                         .pickupType(pickupType)
                         .dropOffType(dropOffType)
+                        .wheelchairOverride(wheelchairOverride)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {
@@ -845,6 +865,53 @@ public class GtfsImportService {
         String trimmed = raw.trim();
         String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
         return hex.matches("^#[0-9A-Fa-f]{6}$") ? hex : DEFAULT_COLOR;
+    }
+
+    /**
+     * Computes the per-schedule wheelchair override. Returns null when the
+     * trip's value matches the itinerary's default (the common case, so
+     * the schedule row stores nothing). Returns true/false only when the
+     * trip explicitly diverges.
+     */
+    private static Boolean computeWheelchairOverride(int tripWheelchair,
+            com.transit.hub.domain.model.enums.WheelchairAccess itineraryDefault) {
+        if (tripWheelchair == 1) {
+            return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE
+                    ? null : Boolean.TRUE;
+        }
+        if (tripWheelchair == 2) {
+            return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE
+                    ? null : Boolean.FALSE;
+        }
+        return null; // unknown — inherit from itinerary
+    }
+
+    /**
+     * Picks the dominant {@code wheelchair_accessible} value among the trips
+     * of a given (route, direction). Counts {@code 1} (accessible) vs
+     * {@code 2} (not accessible); ignores {@code 0} (unknown). Falls back
+     * to {@code UNKNOWN} when every trip is unspecified or evenly split.
+     */
+    private static com.transit.hub.domain.model.enums.WheelchairAccess majorityWheelchair(
+            Map<String, TripInfo> tripInfos, RouteDirKey key) {
+        int yes = 0;
+        int no = 0;
+        for (TripInfo info : tripInfos.values()) {
+            if (!info.routeId.equals(key.routeId)) {continue;}
+            if (!info.directionId.equals(key.directionId)) {continue;}
+            if (info.wheelchairAccessible == 1) { yes++; }
+            else if (info.wheelchairAccessible == 2) { no++; }
+        }
+        if (yes == 0 && no == 0) {
+            return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
+        }
+        if (yes > no) {
+            return com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE;
+        }
+        if (no > yes) {
+            return com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE;
+        }
+        return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
     }
 
     /**

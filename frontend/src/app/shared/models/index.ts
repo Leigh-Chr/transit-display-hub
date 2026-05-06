@@ -241,11 +241,15 @@ export type PickupKind =
   | 'ON_REQUEST_AGENCY'
   | 'ON_REQUEST_DRIVER';
 
+/** Tri-state wheelchair access mirroring GTFS conventions. */
+export type WheelchairAccess = 'UNKNOWN' | 'ACCESSIBLE' | 'NOT_ACCESSIBLE';
+
 export interface ArrivalInfo {
   scheduledTime: string;
   destinationName: string;
   line: LineInfo;
   pickupKind?: PickupKind;
+  wheelchairAccessible?: WheelchairAccess;
 }
 
 export interface MessageInfo {
@@ -270,6 +274,7 @@ export interface HubArrivalInfo {
   platform: string;
   line: LineInfo;
   pickupKind?: PickupKind;
+  wheelchairAccessible?: WheelchairAccess;
 }
 
 // Network Map

@@ -72,4 +72,13 @@ public class Schedule {
     @Column(name = "drop_off_type", nullable = false)
     @Builder.Default
     private short dropOffType = 0;
+
+    /** Per-schedule override of the itinerary's wheelchair default.
+     *  Null = inherit. Stored as nullable boolean (rather than the
+     *  WheelchairAccess enum) because once we know a trip diverges from
+     *  its itinerary default, the only relevant questions are accessible
+     *  yes / accessible no — UNKNOWN at this granularity collapses into
+     *  inheriting the itinerary value. */
+    @Column(name = "wheelchair_override")
+    private Boolean wheelchairOverride;
 }

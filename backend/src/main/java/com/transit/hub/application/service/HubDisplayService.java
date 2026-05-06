@@ -65,7 +65,8 @@ public class HubDisplayService {
                                 a.destinationName(),
                                 s.stopName(),
                                 a.line(),
-                                a.pickupKind()
+                                a.pickupKind(),
+                                a.wheelchairAccessible()
                         )))
                 .sorted(Comparator.comparing(HubDisplayState.HubArrivalInfo::scheduledTime))
                 .limit(MAX_ARRIVALS)

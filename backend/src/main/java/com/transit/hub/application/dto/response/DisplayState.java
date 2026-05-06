@@ -21,7 +21,8 @@ public record DisplayState(
             LocalTime scheduledTime,
             String destinationName,
             LineInfo line,
-            PickupKind pickupKind
+            PickupKind pickupKind,
+            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible
     ) {}
 
     public record MessageInfo(

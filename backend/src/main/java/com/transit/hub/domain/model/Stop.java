@@ -108,6 +108,13 @@ public class Stop {
     @Column(length = 255)
     private String url;
 
+    /** GTFS {@code wheelchair_boarding} (0/1/2). Drives the PMR pictogram
+     *  on the stop popup and shapes the route-finder when a passenger
+     *  opts into the "accessible-only" filter. */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "wheelchair_boarding", length = 20)
+    private com.transit.hub.domain.model.enums.WheelchairAccess wheelchairBoarding;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",
             joinColumns = @JoinColumn(name = "stop_id"),

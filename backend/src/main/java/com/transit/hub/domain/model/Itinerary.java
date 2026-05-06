@@ -67,6 +67,13 @@ public class Itinerary {
     @Column(nullable = false)
     private String name;
 
+    /** Default wheelchair accessibility for this itinerary, derived at
+     *  import time from the majority value of {@code trips.wheelchair_accessible}.
+     *  Per-schedule overrides live on the schedule itself. */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "wheelchair_default", length = 20)
+    private com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault;
+
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @Builder.Default
