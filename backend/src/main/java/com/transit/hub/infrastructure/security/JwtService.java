@@ -67,8 +67,17 @@ public class JwtService {
         }
     }
 
+    /**
+     * Same 30-second leeway the front-end applies — keeps a freshly minted
+     * token from being rejected when the client's clock drifts a few seconds
+     * past the server's, e.g. after a laptop wakes from sleep.
+     */
+    private static final long CLOCK_SKEW_SECONDS = 30;
+
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).isBefore(Instant.now());
+        return extractExpiration(token)
+                .plusSeconds(CLOCK_SKEW_SECONDS)
+                .isBefore(Instant.now());
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -78,6 +87,7 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
+                .clockSkewSeconds(CLOCK_SKEW_SECONDS)
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)

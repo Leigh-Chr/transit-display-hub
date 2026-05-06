@@ -57,11 +57,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
+            } else {
+                // The bearer was present but expired or signed with a different key.
+                // Surface the cause via WWW-Authenticate so the client can distinguish
+                // "you're not logged in" from "your session timed out" and react
+                // accordingly (e.g. clear the stored token before redirecting).
+                response.setHeader(
+                        "WWW-Authenticate",
+                        "Bearer error=\"invalid_token\", error_description=\"Token expired or invalid\"");
             }
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.debug("JWT authentication failed: {}", e.getMessage());
             }
+            response.setHeader(
+                    "WWW-Authenticate",
+                    "Bearer error=\"invalid_token\", error_description=\"Token rejected\"");
         }
 
         filterChain.doFilter(request, response);

@@ -106,10 +106,15 @@ export class AuthService {
     return stored;
   }
 
+  /** 30 s of leeway between client and server clocks: the typical drift on a
+   *  laptop after a long sleep is enough to throw a freshly-issued token into
+   *  "expired" territory if we compare strictly. */
+  private static readonly CLOCK_SKEW_SECONDS = 30;
+
   private isTokenExpired(token: string): boolean {
     try {
       const decoded = jwtDecode<JwtPayload>(token);
-      return decoded.exp * 1000 < Date.now();
+      return (decoded.exp + AuthService.CLOCK_SKEW_SECONDS) * 1000 < Date.now();
     } catch {
       return true;
     }
