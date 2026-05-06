@@ -40,6 +40,11 @@ export interface LineInfo {
   code: string;
   name: string;
   color: string;
+  /** Foreground color resolved server-side (from GTFS route_text_color or
+   *  derived via YIQ luminance). May be absent on legacy rows or test
+   *  fixtures; consumers should reach for {@link lineTextColor} which
+   *  falls back to {@link readableTextColor} on the background color. */
+  textColor?: string | null;
 }
 
 // Line
@@ -48,6 +53,7 @@ export interface Line {
   code: string;
   name: string;
   color: string;
+  textColor?: string | null;
   type: LineType | null;
   stopCount: number;
   itineraryCount: number;
@@ -269,6 +275,7 @@ export interface NetworkLine {
   code: string;
   name: string;
   color: string;
+  textColor?: string | null;
   type: LineType | null;
   category?: string | null;
   itineraries: string[][];

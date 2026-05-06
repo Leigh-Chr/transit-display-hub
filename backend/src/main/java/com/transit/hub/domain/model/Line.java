@@ -57,6 +57,17 @@ public class Line {
     @Column(nullable = false)
     private String color;
 
+    /**
+     * Foreground color used to render text on top of {@link #color}. When the
+     * GTFS feed provides {@code route_text_color} we keep it verbatim;
+     * otherwise the importer derives a contrast-safe value from {@link #color}
+     * via the YIQ luminance formula. Stored so frontends don't have to
+     * recompute it for every render.
+     */
+    @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Text color must be a valid hex color (e.g., #FFFFFF)")
+    @Column(name = "text_color", length = 7)
+    private String textColor;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 15)
     private LineType type;

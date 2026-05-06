@@ -19,6 +19,7 @@ import {
   LineInfo,
   MessageInfo,
 } from '@shared/models';
+import { lineTextColor } from '@shared/utils/color.utils';
 
 @Component({
   selector: 'app-hub',
@@ -35,7 +36,9 @@ import {
             <h1 class="stop-name">{{ hubState()!.hubName }}</h1>
             <div class="header-lines">
               @for (line of hubState()!.lines; track line.code) {
-                <span class="header-line-badge" [style.backgroundColor]="line.color">
+                <span class="header-line-badge"
+                      [style.backgroundColor]="line.color"
+                      [style.color]="lineTextColor(line)">
                   {{ line.code }}
                 </span>
               }
@@ -100,6 +103,7 @@ import {
                     <span
                       class="line-badge"
                       [style.backgroundColor]="arrival.line.color"
+                      [style.color]="lineTextColor(arrival.line)"
                     >
                       {{ arrival.line.code }}
                     </span>
@@ -128,6 +132,7 @@ import {
                       <span
                         class="line-badge"
                         [style.backgroundColor]="arrival.line.color"
+                        [style.color]="lineTextColor(arrival.line)"
                       >
                         {{ arrival.line.code }}
                       </span>
@@ -677,6 +682,10 @@ export class HubComponent implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   currentTime = signal(this.formatTime(new Date()));
   currentDate = signal(this.formatDate(new Date()));
+
+  // Exposed to the template: prefer the server-resolved foreground color
+  // (route_text_color) before falling back to a YIQ-derived contrast.
+  readonly lineTextColor = lineTextColor;
 
   private stopIds: string[] = [];
   private hubName = 'Hub';

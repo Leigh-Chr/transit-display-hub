@@ -180,7 +180,7 @@ interface NetworkStopLabel {
                   [attr.x]="getLineBadgeWidth(row.line.code) / 2 - 30"
                   dominant-baseline="central"
                   text-anchor="middle"
-                  [attr.fill]="getLineTextColor(row.line.color)"
+                  [attr.fill]="getLineTextColor(row.line.color, row.line.textColor)"
                   class="line-badge-text"
                 >{{ row.line.code }}</text>
                 @if (row.line.name && row.line.name !== row.line.code) {
@@ -1068,9 +1068,12 @@ export class SchematicMapComponent {
   }
 
   /** Black or white text for a given line color, picked so it stays
-   *  legible against pastel or saturated yellow/orange brand colors. */
-  getLineTextColor(bg: string): string {
-    return readableTextColor(bg);
+   *  legible against pastel or saturated yellow/orange brand colors.
+   *  When the server resolved a {@code textColor} (from GTFS
+   *  {@code route_text_color} or its YIQ-derived fallback), prefer that
+   *  value so admin overrides survive the round-trip. */
+  getLineTextColor(bg: string, textColor?: string | null): string {
+    return textColor ?? readableTextColor(bg);
   }
 
   getTransportIcon(type: string): string {

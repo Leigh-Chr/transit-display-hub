@@ -9,6 +9,7 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
+import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
@@ -74,6 +75,7 @@ public class LineService {
                 .code(request.code())
                 .name(request.name())
                 .color(request.color())
+                .textColor(ColorContrast.readableTextColor(request.color()))
                 .type(request.type())
                 .build();
 
@@ -92,9 +94,16 @@ public class LineService {
             throw new ValidationException("Line with code '" + request.code() + "' already exists");
         }
 
+        boolean colorChanged = !line.getColor().equals(request.color());
         line.setCode(request.code());
         line.setName(request.name());
         line.setColor(request.color());
+        if (colorChanged || line.getTextColor() == null) {
+            // Re-derive on color change so the contrast stays in sync; fill in
+            // when missing (rows imported before the column existed, or admin
+            // creations that pre-dated this feature).
+            line.setTextColor(ColorContrast.readableTextColor(request.color()));
+        }
         line.setType(request.type());
 
         Line saved = lineRepository.save(line);

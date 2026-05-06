@@ -13,6 +13,7 @@ import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.domain.model.enums.UserRole;
+import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
@@ -135,70 +136,32 @@ public class SyntheticDataLoader implements CommandLineRunner {
 
         Map<String, Line> lines = new LinkedHashMap<>();
 
-        // Metro Lines
-        lines.put("M1", lineRepository.save(Line.builder()
-                .code("M1")
-                .name("Red Line - East-West Express")
-                .color("#E53935")
-                .type(LineType.METRO)
-                .build()));
-
-        lines.put("M2", lineRepository.save(Line.builder()
-                .code("M2")
-                .name("Blue Line - North-South")
-                .color("#1E88E5")
-                .type(LineType.METRO)
-                .build()));
-
-        lines.put("M3", lineRepository.save(Line.builder()
-                .code("M3")
-                .name("Green Line - Ring")
-                .color("#43A047")
-                .type(LineType.METRO)
-                .build()));
-
-        lines.put("M4", lineRepository.save(Line.builder()
-                .code("M4")
-                .name("Orange Line - Downtown Express")
-                .color("#FB8C00")
-                .type(LineType.METRO)
-                .build()));
-
-        // Airport Express
-        lines.put("A1", lineRepository.save(Line.builder()
-                .code("A1")
-                .name("Airport Express")
-                .color("#8E24AA")
-                .type(LineType.TRAIN)
-                .build()));
-
-        // Tram Lines
-        lines.put("T1", lineRepository.save(Line.builder()
-                .code("T1")
-                .name("Tram - Riverside")
-                .color("#00ACC1")
-                .type(LineType.TRAM)
-                .build()));
-
-        lines.put("T2", lineRepository.save(Line.builder()
-                .code("T2")
-                .name("Tram - University District")
-                .color("#7CB342")
-                .type(LineType.TRAM)
-                .build()));
-
-        // Bus Lines
-        lines.put("B1", lineRepository.save(Line.builder()
-                .code("B1")
-                .name("Bus - Crosstown Connector")
-                .color("#F4511E")
-                .type(LineType.BUS)
-                .build()));
+        lines.put("M1", saveLine("M1", "Red Line - East-West Express", "#E53935", LineType.METRO));
+        lines.put("M2", saveLine("M2", "Blue Line - North-South", "#1E88E5", LineType.METRO));
+        lines.put("M3", saveLine("M3", "Green Line - Ring", "#43A047", LineType.METRO));
+        lines.put("M4", saveLine("M4", "Orange Line - Downtown Express", "#FB8C00", LineType.METRO));
+        lines.put("A1", saveLine("A1", "Airport Express", "#8E24AA", LineType.TRAIN));
+        lines.put("T1", saveLine("T1", "Tram - Riverside", "#00ACC1", LineType.TRAM));
+        lines.put("T2", saveLine("T2", "Tram - University District", "#7CB342", LineType.TRAM));
+        lines.put("B1", saveLine("B1", "Bus - Crosstown Connector", "#F4511E", LineType.BUS));
 
         if (log.isInfoEnabled()) {
             log.info("Created {} lines", lines.size());
         }
         return lines;
+    }
+
+    /** Builds a Line with the contrast-safe foreground color derived from
+     *  {@code color}, so the synthetic seed mirrors the same invariant the
+     *  GTFS importer enforces (every line carries an explicit textColor). */
+    private Line saveLine(String code, String name, String color, LineType type) {
+        return lineRepository.save(Line.builder()
+                .code(code)
+                .name(name)
+                .color(color)
+                .textColor(ColorContrast.readableTextColor(color))
+                .type(type)
+                .build());
     }
 
     private Map<String, Stop> createStops(Map<String, Line> lines) {

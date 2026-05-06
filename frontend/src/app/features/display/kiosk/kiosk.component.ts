@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DisplayService } from '@core/api/display.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
 import { DisplayState } from '@shared/models';
+import { lineTextColor } from '@shared/utils/color.utils';
 
 @Component({
   selector: 'app-kiosk',
@@ -29,7 +30,9 @@ import { DisplayState } from '@shared/models';
             <h1 class="stop-name">{{ displayState()!.stopName }}</h1>
             <div class="header-lines">
               @for (line of displayState()!.lines; track line.code) {
-                <span class="header-line-badge" [style.backgroundColor]="line.color">
+                <span class="header-line-badge"
+                      [style.backgroundColor]="line.color"
+                      [style.color]="lineTextColor(line)">
                   {{ line.code }}
                 </span>
               }
@@ -93,6 +96,7 @@ import { DisplayState } from '@shared/models';
                     <span
                       class="line-badge"
                       [style.backgroundColor]="arrival.line.color"
+                      [style.color]="lineTextColor(arrival.line)"
                     >
                       {{ arrival.line.code }}
                     </span>
@@ -120,6 +124,7 @@ import { DisplayState } from '@shared/models';
                       <span
                         class="line-badge"
                         [style.backgroundColor]="arrival.line.color"
+                        [style.color]="lineTextColor(arrival.line)"
                       >
                         {{ arrival.line.code }}
                       </span>
@@ -652,6 +657,10 @@ export class KioskComponent implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   currentTime = signal(this.formatTime(new Date()));
   currentDate = signal(this.formatDate(new Date()));
+
+  // Exposed to the template so badges pick the server-resolved foreground
+  // color (route_text_color from GTFS) before falling back to YIQ contrast.
+  readonly lineTextColor = lineTextColor;
 
   private token: string | null = null;
   private stopId: string | null = null;

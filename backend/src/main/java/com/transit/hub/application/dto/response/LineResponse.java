@@ -10,6 +10,7 @@ public record LineResponse(
         String code,
         String name,
         String color,
+        String textColor,
         LineType type,
         int stopCount,
         int itineraryCount
@@ -20,6 +21,7 @@ public record LineResponse(
                 line.getCode(),
                 line.getName(),
                 line.getColor(),
+                line.getTextColor(),
                 line.getType(),
                 line.getStops() != null ? line.getStops().size() : 0,
                 line.getItineraries() != null ? line.getItineraries().size() : 0

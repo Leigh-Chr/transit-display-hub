@@ -19,7 +19,7 @@ import { MessageService } from '@core/api/message.service';
 import { DashboardService } from '@core/api/dashboard.service';
 import { Line, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
-import { readableTextColor } from '@shared/utils/color.utils';
+import { lineTextColor, readableTextColor } from '@shared/utils/color.utils';
 import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
 
 @Component({
@@ -145,7 +145,7 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
                       <span
                         class="line-badge"
                         [style.backgroundColor]="line.color"
-                        [style.color]="readableTextColor(line.color)"
+                        [style.color]="lineTextColor(line)"
                       >
                         {{ line.code }}
                       </span>
@@ -1070,8 +1070,11 @@ export class DashboardComponent implements OnInit {
       });
   }
 
-  // Expose the shared color helper to the template for line-badge contrast.
+  // Expose the shared color helpers to the template for line-badge contrast.
+  // {@link lineTextColor} preferred (uses server-resolved textColor), with
+  // {@link readableTextColor} kept for cases where only the bg color is known.
   readableTextColor = readableTextColor;
+  lineTextColor = lineTextColor;
 
   getMessageStatus(message: BroadcastMessage): 'active' | 'scheduled' | 'expired' {
     // The server's `active` flag is the source of truth — it accounts for the

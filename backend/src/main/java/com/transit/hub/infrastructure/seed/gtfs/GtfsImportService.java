@@ -6,6 +6,7 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.LineType;
+import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
@@ -120,6 +121,7 @@ public class GtfsImportService {
                 String shortName = optional(record, "route_short_name");
                 String longName = optional(record, "route_long_name");
                 String color = optional(record, "route_color");
+                String textColor = optional(record, "route_text_color");
                 int routeType = parseInt(record.get("route_type"), 3);
                 String networkId = optional(record, "network_id");
 
@@ -127,11 +129,14 @@ public class GtfsImportService {
                 String name = truncate(firstNonBlank(longName, shortName, routeId), LINE_NAME_MAX_LENGTH);
                 LineType type = GtfsParse.mapRouteType(routeType);
                 String category = truncate(deriveCategory(networkId, routeType), LINE_CATEGORY_MAX_LENGTH);
+                String formattedColor = formatColor(color);
+                String formattedTextColor = resolveTextColor(textColor, formattedColor);
 
                 Line line = lineRepository.save(Line.builder()
                         .code(uniqueCode(code, result.values()))
                         .name(name)
-                        .color(formatColor(color))
+                        .color(formattedColor)
+                        .textColor(formattedTextColor)
                         .type(type)
                         .category(category)
                         .build());
@@ -711,6 +716,24 @@ public class GtfsImportService {
         String trimmed = raw.trim();
         String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
         return hex.matches("^#[0-9A-Fa-f]{6}$") ? hex : DEFAULT_COLOR;
+    }
+
+    /**
+     * Resolves the text color for a line: keep the GTFS-provided
+     * {@code route_text_color} when usable, otherwise derive a
+     * contrast-safe value from the background color via the YIQ
+     * luminance formula. Always returns an upper-cased {@code "#RRGGBB"}
+     * literal so the column is uniform regardless of feed quirks.
+     */
+    private static String resolveTextColor(String rawTextColor, String backgroundColor) {
+        if (!isBlank(rawTextColor)) {
+            String trimmed = rawTextColor.trim();
+            String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
+            if (hex.matches("^#[0-9A-Fa-f]{6}$")) {
+                return hex.toUpperCase();
+            }
+        }
+        return ColorContrast.readableTextColor(backgroundColor);
     }
 
     private static String buildItineraryName(String lineCode, String headsign, String directionId) {
