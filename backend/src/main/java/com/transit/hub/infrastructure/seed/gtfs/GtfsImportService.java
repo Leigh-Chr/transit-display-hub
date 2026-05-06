@@ -6,12 +6,15 @@ import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.ServiceCalendarException;
+import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.domain.model.enums.LineType;
+import com.transit.hub.domain.model.enums.PathwayMode;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
@@ -19,8 +22,10 @@ import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
+import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +82,8 @@ public class GtfsImportService {
     private final TransferRepository transferRepository;
     private final AttributionRepository attributionRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
+    private final StationLevelRepository stationLevelRepository;
+    private final PathwayRepository pathwayRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -114,6 +121,10 @@ public class GtfsImportService {
             int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies);
 
             importTransfers(workDir.resolve("transfers.txt"), stopImport);
+
+            importStationLevels(workDir.resolve("levels.txt"));
+
+            importPathways(workDir.resolve("pathways.txt"), stopImport);
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -993,6 +1004,106 @@ public class GtfsImportService {
         }
         log.info("GTFS import: {} transfers created ({} rows skipped — unknown stop)",
                 batch.size(), skippedUnknownStop);
+    }
+
+    /**
+     * Reads {@code levels.txt} when present. Wipes the table first so
+     * each import starts from a clean slate; pathways referencing a
+     * level that has been dropped will simply find no row, which the
+     * admin endpoint handles via a null check.
+     */
+    private void importStationLevels(Path levelsFile) throws IOException {
+        stationLevelRepository.deleteAllInBatch();
+        stationLevelRepository.flush();
+
+        if (!Files.exists(levelsFile)) {
+            log.info("GTFS import: levels.txt missing, skipping");
+            return;
+        }
+        List<StationLevel> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(levelsFile)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "level_id");
+                if (isBlank(externalId)) {continue;}
+                Double levelIndex = parseDoubleOrNull(optional(record, "level_index"));
+                if (levelIndex == null) {continue;}
+                batch.add(StationLevel.builder()
+                        .externalId(truncate(externalId, 100))
+                        .levelIndex(levelIndex)
+                        .levelName(truncate(optional(record, "level_name"), 100))
+                        .build());
+            }
+        }
+        if (!batch.isEmpty()) {
+            stationLevelRepository.saveAll(batch);
+        }
+        log.info("GTFS import: {} station levels created", batch.size());
+    }
+
+    /**
+     * Reads {@code pathways.txt} when present. Endpoints are resolved
+     * through the same parent-station collapse the schedule importer
+     * uses, so a pathway between two quays of the same station will
+     * end up as a self-transfer at the root stop until Phase 1.3
+     * introduces per-platform Stop rows. Self-transfer rows are still
+     * worth persisting — they expose elevators / escalators that an
+     * accessibility filter can later highlight.
+     */
+    private void importPathways(Path pathwaysFile, StopImport stopImport) throws IOException {
+        pathwayRepository.deleteAllInBatch();
+        pathwayRepository.flush();
+
+        if (!Files.exists(pathwaysFile)) {
+            log.info("GTFS import: pathways.txt missing, skipping");
+            return;
+        }
+        List<Pathway> batch = new ArrayList<>();
+        int skippedUnknownStop = 0;
+        int skippedUnknownMode = 0;
+        try (CSVParser parser = openCsv(pathwaysFile)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "pathway_id");
+                if (isBlank(externalId)) {continue;}
+                String fromGtfs = optional(record, "from_stop_id");
+                String toGtfs = optional(record, "to_stop_id");
+                if (isBlank(fromGtfs) || isBlank(toGtfs)) {continue;}
+
+                Stop fromStop = resolveStop(fromGtfs, stopImport);
+                Stop toStop = resolveStop(toGtfs, stopImport);
+                if (fromStop == null || toStop == null) {
+                    skippedUnknownStop++;
+                    continue;
+                }
+
+                int modeCode = parseInt(optional(record, "pathway_mode"), 0);
+                PathwayMode mode = PathwayMode.fromGtfsCode(modeCode);
+                if (mode == null) {
+                    skippedUnknownMode++;
+                    continue;
+                }
+                boolean bidirectional = "1".equals(optional(record, "is_bidirectional"));
+
+                batch.add(Pathway.builder()
+                        .externalId(truncate(externalId, 100))
+                        .fromStop(fromStop)
+                        .toStop(toStop)
+                        .pathwayMode(mode)
+                        .bidirectional(bidirectional)
+                        .lengthMetres(parseDoubleOrNull(optional(record, "length")))
+                        .traversalTimeSeconds(parseIntOrNull(optional(record, "traversal_time")))
+                        .stairCount(parseIntOrNull(optional(record, "stair_count")))
+                        .maxSlope(parseDoubleOrNull(optional(record, "max_slope")))
+                        .minWidthMetres(parseDoubleOrNull(optional(record, "min_width")))
+                        .signpostedAs(truncate(optional(record, "signposted_as"), 200))
+                        .reversedSignpostedAs(truncate(optional(record, "reversed_signposted_as"), 200))
+                        .build());
+            }
+        }
+        if (!batch.isEmpty()) {
+            pathwayRepository.saveAll(batch);
+        }
+        log.info("GTFS import: {} pathways created ({} skipped unknown stop, {} skipped unknown mode)",
+                batch.size(), skippedUnknownStop, skippedUnknownMode);
     }
 
     /**

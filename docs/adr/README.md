@@ -14,6 +14,7 @@ should think twice before reverting.
 | [0006](0006-transfer-weighting.md) | Route-finder transfer cost from `transfers.txt` |
 | [0007](0007-import-orchestrator.md) | Single orchestrator for boot, scheduler and manual reimport |
 | [0008](0008-multi-day-service-calendars.md) | Multi-day service calendars and per-day display filtering |
+| [0009](0009-pathways-and-levels.md) | Persisting station levels and pathways for indoor topology |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
