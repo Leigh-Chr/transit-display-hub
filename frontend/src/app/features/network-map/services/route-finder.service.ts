@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { NetworkMap, NetworkLine } from '@shared/models';
+import { NetworkMap, NetworkLine, NetworkTransfer } from '@shared/models';
 
 class MinHeap<T> {
   private heap: T[] = [];
@@ -107,7 +107,16 @@ interface PathStep {
 @Injectable({ providedIn: 'root' })
 export class RouteFinderService {
 
-  private static readonly TRANSFER_COST = 10000;
+  /** Default cost (seconds) applied to transfers not explicitly declared
+   *  in transfers.txt. Calibrated against typical European urban metros:
+   *  3 minutes of average wait + walk between platforms. The previous
+   *  10000 magic number meant every interchange dwarfed the line-travel
+   *  cost; routes through a single line, however indirect, always won. */
+  private static readonly DEFAULT_TRANSFER_COST_SECONDS = 180;
+
+  /** Type 3 in transfers.txt = transfer impossible. We materialise it as
+   *  a near-infinite cost so any path containing it loses to alternatives. */
+  private static readonly IMPOSSIBLE_TRANSFER_COST = 999_999;
 
   findRoute(networkMap: NetworkMap, fromStopId: string, toStopId: string): RouteResult | null {
     if (fromStopId === toStopId) {return null;}
@@ -140,9 +149,43 @@ export class RouteFinderService {
       }
     }
 
-    this.addTransferEdges(stopToLines, adj);
+    const transferIndex = this.indexTransfers(networkMap.transfers ?? []);
+    this.addTransferEdges(stopToLines, adj, transferIndex);
 
     return { adj, stopToLines };
+  }
+
+  /** Builds a lookup from "fromStopId|toStopId" to the most-favourable
+   *  declared transfer. Both directions are indexed so transfers.txt's
+   *  one-way semantics still let the route-finder find the cheap path
+   *  in either travel direction. */
+  private indexTransfers(transfers: NetworkTransfer[]): Map<string, NetworkTransfer> {
+    const index = new Map<string, NetworkTransfer>();
+    for (const t of transfers) {
+      const fwdKey = `${t.fromStopId}|${t.toStopId}`;
+      const revKey = `${t.toStopId}|${t.fromStopId}`;
+      // Prefer the cheaper transfer when multiple rows describe the
+      // same pair (rare but happens in feeds with both directional and
+      // generic entries).
+      const existing = index.get(fwdKey);
+      if (!existing || this.transferCostFor(t) < this.transferCostFor(existing)) {
+        index.set(fwdKey, t);
+        index.set(revKey, t);
+      }
+    }
+    return index;
+  }
+
+  /** Resolves the Dijkstra cost for a declared transfer. Type 3 = not
+   *  possible (effectively pruned), type 1 = timed (synced services,
+   *  near-zero), others fall back to {@code minTransferTimeSeconds} or
+   *  the global default. */
+  private transferCostFor(transfer: NetworkTransfer): number {
+    switch (transfer.transferType) {
+      case 3: return RouteFinderService.IMPOSSIBLE_TRANSFER_COST;
+      case 1: return transfer.minTransferTimeSeconds ?? 0;
+      default: return transfer.minTransferTimeSeconds ?? RouteFinderService.DEFAULT_TRANSFER_COST_SECONDS;
+    }
   }
 
   /** Register which lines serve each stop */
@@ -180,12 +223,23 @@ export class RouteFinderService {
     }
   }
 
-  /** Add transfer edges between different lines at the same stop */
+  /** Add transfer edges between different lines at the same stop. The
+   *  cost is the declared transfers.txt minimum-time when present, with
+   *  a sensible default otherwise. */
   private addTransferEdges(
-    stopToLines: Map<string, Set<string>>, adj: Map<string, AdjacencyEdge[]>
+    stopToLines: Map<string, Set<string>>,
+    adj: Map<string, AdjacencyEdge[]>,
+    transferIndex: Map<string, NetworkTransfer>,
   ): void {
     for (const [stopId, lineIds] of stopToLines) {
       const lines = [...lineIds];
+      const selfTransfer = transferIndex.get(`${stopId}|${stopId}`);
+      const cost = selfTransfer
+        ? this.transferCostFor(selfTransfer)
+        : RouteFinderService.DEFAULT_TRANSFER_COST_SECONDS;
+      // Skip building edges for transfers explicitly marked impossible.
+      if (cost >= RouteFinderService.IMPOSSIBLE_TRANSFER_COST) {continue;}
+
       for (let i = 0; i < lines.length; i++) {
         for (let j = i + 1; j < lines.length; j++) {
           const lineI = lines[i];
@@ -195,8 +249,8 @@ export class RouteFinderService {
           const keyA = this.getKey(stopId, lineI);
           const keyB = this.getKey(stopId, lineJ);
 
-          this.addEdge(adj, keyA, keyB, { stopId, lineId: lineJ }, RouteFinderService.TRANSFER_COST);
-          this.addEdge(adj, keyB, keyA, { stopId, lineId: lineI }, RouteFinderService.TRANSFER_COST);
+          this.addEdge(adj, keyA, keyB, { stopId, lineId: lineJ }, cost);
+          this.addEdge(adj, keyB, keyA, { stopId, lineId: lineI }, cost);
         }
       }
     }

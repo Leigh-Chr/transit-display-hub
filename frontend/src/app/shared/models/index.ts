@@ -295,8 +295,20 @@ export interface HubArrivalInfo {
 export interface NetworkMap {
   lines: NetworkLine[];
   stops: NetworkStop[];
+  /** Inline GTFS transfers powering the route-finder's interchange cost.
+   *  Optional for backwards compatibility with payloads predating this
+   *  field — consumers should default to an empty list. */
+  transfers?: NetworkTransfer[];
   bounds: NetworkBounds;
   attribution?: string | null;
+}
+
+export interface NetworkTransfer {
+  fromStopId: string;
+  toStopId: string;
+  /** GTFS transfer_type: 0 recommended, 1 timed, 2 minimum-time, 3 not possible. */
+  transferType: number;
+  minTransferTimeSeconds: number | null;
 }
 
 export interface NetworkLine {

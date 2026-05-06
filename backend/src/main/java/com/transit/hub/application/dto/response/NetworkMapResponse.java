@@ -10,6 +10,7 @@ import java.util.UUID;
 public record NetworkMapResponse(
         List<NetworkLine> lines,
         List<NetworkStop> stops,
+        List<NetworkTransfer> transfers,
         Bounds bounds,
         String attribution
 ) {
@@ -32,6 +33,17 @@ public record NetworkMapResponse(
             Double schematicX,
             Double schematicY,
             List<String> lineCodes
+    ) {}
+
+    /** Inline transfer between two stops. {@code transferType} mirrors
+     *  GTFS (0 recommended, 1 timed, 2 minimum-time, 3 not possible).
+     *  {@code minTransferTimeSeconds} is null when the feed didn't
+     *  publish one — consumers fall back to a reasonable default. */
+    public record NetworkTransfer(
+            UUID fromStopId,
+            UUID toStopId,
+            short transferType,
+            Integer minTransferTimeSeconds
     ) {}
 
     public record Bounds(

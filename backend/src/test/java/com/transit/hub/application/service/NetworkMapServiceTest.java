@@ -13,6 +13,7 @@ import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TransferRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,6 +52,9 @@ class NetworkMapServiceTest {
 
     @Mock
     private BroadcastMessageRepository broadcastMessageRepository;
+
+    @Mock
+    private TransferRepository transferRepository;
 
     @Mock
     private CacheManager cacheManager;

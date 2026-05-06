@@ -7,6 +7,7 @@ import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
@@ -15,6 +16,7 @@ import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TransferRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -66,6 +68,7 @@ public class GtfsImportService {
     private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
     private final AgencyRepository agencyRepository;
+    private final TransferRepository transferRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -99,6 +102,8 @@ public class GtfsImportService {
                     stopImport);
 
             int schedules = importSchedules(workDir, itineraryImport, stopImport);
+
+            importTransfers(workDir.resolve("transfers.txt"), stopImport);
 
             assignSchematicCoordinates(stopImport.stopsByGtfsId.values());
 
@@ -802,6 +807,61 @@ public class GtfsImportService {
             if (e.getValue().isActiveOn(date)) {active.add(e.getKey());}
         }
         return active;
+    }
+
+    /**
+     * Reads {@code transfers.txt} when present (the file is GTFS-optional).
+     * Resolves both endpoints through the same parent-station collapse the
+     * importer does for stop_times so a transfer declared between quays
+     * still maps to the persisted root stops the kiosks know about.
+     */
+    private void importTransfers(Path transfersFile, StopImport stopImport) throws IOException {
+        if (!Files.exists(transfersFile)) {
+            log.info("GTFS import: transfers.txt missing, skipping");
+            return;
+        }
+        List<Transfer> batch = new ArrayList<>();
+        int skippedUnknownStop = 0;
+        try (CSVParser parser = openCsv(transfersFile)) {
+            for (CSVRecord record : parser) {
+                String fromGtfs = optional(record, "from_stop_id");
+                String toGtfs = optional(record, "to_stop_id");
+                if (isBlank(fromGtfs) || isBlank(toGtfs)) {continue;}
+
+                Stop fromStop = resolveStop(fromGtfs, stopImport);
+                Stop toStop = resolveStop(toGtfs, stopImport);
+                if (fromStop == null || toStop == null) {
+                    skippedUnknownStop++;
+                    continue;
+                }
+                // self-transfer rows describe waiting at a station for a
+                // different platform's service; we keep them — the route-
+                // finder ignores zero-length edges anyway.
+
+                short transferType = (short) parseInt(optional(record, "transfer_type"), 0);
+                Integer minTransferTime = parseIntOrNull(optional(record, "min_transfer_time"));
+
+                batch.add(Transfer.builder()
+                        .fromStop(fromStop)
+                        .toStop(toStop)
+                        .transferType(transferType)
+                        .minTransferTime(minTransferTime)
+                        .build());
+            }
+        }
+        if (!batch.isEmpty()) {
+            transferRepository.saveAll(batch);
+        }
+        log.info("GTFS import: {} transfers created ({} rows skipped — unknown stop)",
+                batch.size(), skippedUnknownStop);
+    }
+
+    /** Resolves a GTFS stop_id to a persisted root Stop, walking through
+     *  the parent_station chain the way stop_times does. */
+    private static Stop resolveStop(String gtfsStopId, StopImport stopImport) {
+        String rootId = stopImport.rootStopIdByGtfsId.get(gtfsStopId);
+        if (rootId == null) {return null;}
+        return stopImport.stopsByGtfsId.get(rootId);
     }
 
     private void assignSchematicCoordinates(Collection<Stop> stops) {

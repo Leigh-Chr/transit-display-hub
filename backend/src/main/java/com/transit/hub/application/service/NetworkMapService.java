@@ -6,6 +6,7 @@ import com.transit.hub.application.dto.response.NetworkMapResponse.AlertsRespons
 import com.transit.hub.application.dto.response.NetworkMapResponse.Bounds;
 import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkLine;
 import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkStop;
+import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkTransfer;
 import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.BroadcastMessage;
@@ -13,9 +14,11 @@ import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TransferRepository;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,7 @@ public class NetworkMapService {
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
     private final BroadcastMessageRepository broadcastMessageRepository;
+    private final TransferRepository transferRepository;
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActiveDisplayTracker activeDisplayTracker;
@@ -51,6 +55,7 @@ public class NetworkMapService {
     public NetworkMapResponse getNetworkMap() {
         List<Line> lines = lineRepository.findAllWithItineraryStops();
         List<Stop> stops = stopRepository.findAllWithLines();
+        List<Transfer> transfers = transferRepository.findAllWithStops();
 
         List<NetworkLine> networkLines = lines.stream()
                 .map(this::toNetworkLine)
@@ -60,10 +65,18 @@ public class NetworkMapService {
                 .map(this::toNetworkStop)
                 .toList();
 
+        List<NetworkTransfer> networkTransfers = transfers.stream()
+                .map(t -> new NetworkTransfer(
+                        t.getFromStop().getId(),
+                        t.getToStop().getId(),
+                        t.getTransferType(),
+                        t.getMinTransferTime()))
+                .toList();
+
         Bounds bounds = calculateBounds(networkStops);
 
         String attr = attribution == null || attribution.isBlank() ? null : attribution;
-        return new NetworkMapResponse(networkLines, networkStops, bounds, attr);
+        return new NetworkMapResponse(networkLines, networkStops, networkTransfers, bounds, attr);
     }
 
     @Cacheable("networkAlerts")
