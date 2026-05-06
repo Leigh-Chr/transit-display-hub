@@ -364,6 +364,17 @@ export interface NetworkMapAlertsUpdate {
 
 export type NetworkMapUpdate = NetworkMapFullUpdate | NetworkMapAlertsUpdate;
 
+// GTFS Attribution (public credit block)
+export interface Attribution {
+  organizationName: string;
+  producer: boolean;
+  operator: boolean;
+  authority: boolean;
+  url: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
 // GTFS Agency
 export interface Agency {
   id: string;

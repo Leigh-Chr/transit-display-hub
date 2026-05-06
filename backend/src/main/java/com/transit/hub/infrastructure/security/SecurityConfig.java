@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/devices/authenticate").permitAll()
                         .requestMatchers("/api/display/**").permitAll()  // Public for kiosk displays
                         .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
+                        .requestMatchers(HttpMethod.GET, "/api/attributions").permitAll()  // Public credit block
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()

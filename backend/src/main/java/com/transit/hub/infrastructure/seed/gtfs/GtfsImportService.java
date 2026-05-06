@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.Agency;
+import com.transit.hub.domain.model.Attribution;
 import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
@@ -11,6 +12,7 @@ import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
+import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
@@ -69,6 +71,7 @@ public class GtfsImportService {
     private final FeedInfoRepository feedInfoRepository;
     private final AgencyRepository agencyRepository;
     private final TransferRepository transferRepository;
+    private final AttributionRepository attributionRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -104,6 +107,8 @@ public class GtfsImportService {
             int schedules = importSchedules(workDir, itineraryImport, stopImport);
 
             importTransfers(workDir.resolve("transfers.txt"), stopImport);
+
+            importAttributions(workDir.resolve("attributions.txt"));
 
             assignSchematicCoordinates(stopImport.stopsByGtfsId.values());
 
@@ -854,6 +859,46 @@ public class GtfsImportService {
         }
         log.info("GTFS import: {} transfers created ({} rows skipped — unknown stop)",
                 batch.size(), skippedUnknownStop);
+    }
+
+    /**
+     * Reads {@code attributions.txt} when present. Replaces the table
+     * (rather than upserting) on every import so credits never linger
+     * after the operator drops a line. The file is GTFS-optional —
+     * we silently skip when missing.
+     */
+    private void importAttributions(Path attributionsFile) throws IOException {
+        attributionRepository.deleteAllInBatch();
+        attributionRepository.flush();
+
+        if (!Files.exists(attributionsFile)) {
+            log.info("GTFS import: attributions.txt missing, skipping");
+            return;
+        }
+        List<Attribution> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(attributionsFile)) {
+            for (CSVRecord record : parser) {
+                String name = optional(record, "organization_name");
+                if (isBlank(name)) {continue;}
+                batch.add(Attribution.builder()
+                        .externalId(truncate(optional(record, "attribution_id"), 100))
+                        .organizationName(truncate(name, 200))
+                        .producer("1".equals(optional(record, "is_producer")))
+                        .operator("1".equals(optional(record, "is_operator")))
+                        .authority("1".equals(optional(record, "is_authority")))
+                        .agencyExternalId(truncate(optional(record, "agency_id"), 100))
+                        .routeExternalId(truncate(optional(record, "route_id"), 100))
+                        .tripExternalId(truncate(optional(record, "trip_id"), 100))
+                        .url(truncate(optional(record, "attribution_url"), 500))
+                        .email(truncate(optional(record, "attribution_email"), 100))
+                        .phone(truncate(optional(record, "attribution_phone"), 30))
+                        .build());
+            }
+        }
+        if (!batch.isEmpty()) {
+            attributionRepository.saveAll(batch);
+        }
+        log.info("GTFS import: {} attributions created", batch.size());
     }
 
     /** Resolves a GTFS stop_id to a persisted root Stop, walking through
