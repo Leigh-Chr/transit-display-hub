@@ -125,7 +125,7 @@ public class GtfsImportService {
 
                 String code = truncate(firstNonBlank(shortName, longName, routeId), LINE_CODE_MAX_LENGTH);
                 String name = truncate(firstNonBlank(longName, shortName, routeId), LINE_NAME_MAX_LENGTH);
-                LineType type = mapRouteType(routeType);
+                LineType type = GtfsParse.mapRouteType(routeType);
                 String category = truncate(deriveCategory(networkId, routeType), LINE_CATEGORY_MAX_LENGTH);
 
                 Line line = lineRepository.save(Line.builder()
@@ -683,7 +683,7 @@ public class GtfsImportService {
         if (!isBlank(networkId)) {
             return networkId.trim();
         }
-        return routeTypeLabel(mapRouteType(routeType));
+        return routeTypeLabel(GtfsParse.mapRouteType(routeType));
     }
 
     private static String routeTypeLabel(LineType type) {
@@ -695,21 +695,13 @@ public class GtfsImportService {
             case METRO -> "Metro";
             case TRAIN -> "Train";
             case BUS -> "Bus";
+            case FERRY -> "Ferry";
+            case FUNICULAR -> "Funicular";
+            case CABLE_CAR -> "Cable car";
+            case TROLLEYBUS -> "Trolleybus";
+            case MONORAIL -> "Monorail";
+            case OTHER -> "Other";
         };
-    }
-
-    private static LineType mapRouteType(int routeType) {
-        // Standard GTFS route types + extended Hierarchical Vehicle Types (HVT, range 100-1799)
-        if (routeType == 0 || routeType == 5 || routeType == 12 || (routeType >= 900 && routeType < 1000)) {
-            return LineType.TRAM;
-        }
-        if (routeType == 1 || (routeType >= 400 && routeType < 500)) {
-            return LineType.METRO;
-        }
-        if (routeType == 2 || (routeType >= 100 && routeType < 200)) {
-            return LineType.TRAIN;
-        }
-        return LineType.BUS;
     }
 
     private static String formatColor(String raw) {

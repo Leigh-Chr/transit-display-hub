@@ -1,8 +1,11 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
+import com.transit.hub.domain.model.enums.LineType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -138,6 +141,76 @@ class GtfsParseTest {
             assertThat(GtfsParse.extractAlphaPrefix("C-3")).isEqualTo("C");
             assertThat(GtfsParse.extractAlphaPrefix("X.42")).isEqualTo("X");
             assertThat(GtfsParse.extractAlphaPrefix("E2")).isEqualTo("E");
+        }
+    }
+
+    @Nested
+    @DisplayName("mapRouteType")
+    class MapRouteType {
+
+        @ParameterizedTest(name = "route_type {0} → {1}")
+        @CsvSource({
+                "0, TRAM",
+                "1, METRO",
+                "2, TRAIN",
+                "3, BUS",
+                "4, FERRY",
+                "5, CABLE_CAR",
+                "6, CABLE_CAR",
+                "7, FUNICULAR",
+                "11, TROLLEYBUS",
+                "12, MONORAIL",
+        })
+        @DisplayName("maps the basic GTFS modes")
+        void basic(int routeType, LineType expected) {
+            assertThat(GtfsParse.mapRouteType(routeType)).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "HVT {0} → {1}")
+        @CsvSource({
+                // Railway 100-199
+                "100, TRAIN", "101, TRAIN", "102, TRAIN", "199, TRAIN",
+                // Coach 200-299
+                "200, BUS", "204, BUS",
+                // Suburban Railway 300-399
+                "300, TRAIN", "301, TRAIN",
+                // Urban Railway 400-499
+                "400, METRO", "401, METRO", "405, METRO",
+                // Metro 500-599
+                "500, METRO",
+                // Underground 600-699
+                "600, METRO",
+                // Bus 700-799
+                "700, BUS", "702, BUS", "715, BUS",
+                // Trolleybus 800-899
+                "800, TROLLEYBUS",
+                // Tram 900-999
+                "900, TRAM", "901, TRAM",
+                // Water transport 1000-1099
+                "1000, FERRY",
+                // Air 1100-1199 (modelled as OTHER, no Line icon for planes)
+                "1100, OTHER",
+                // Ferry 1200-1299
+                "1200, FERRY",
+                // Telecabin / aerial 1300-1399
+                "1300, CABLE_CAR",
+                // Funicular 1400-1499
+                "1400, FUNICULAR",
+                // Taxi 1500-1599
+                "1500, BUS",
+                // Misc 1700-1799
+                "1700, OTHER",
+        })
+        @DisplayName("maps the extended Hierarchical Vehicle Types")
+        void hvt(int routeType, LineType expected) {
+            assertThat(GtfsParse.mapRouteType(routeType)).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "unknown route_type {0} → OTHER")
+        @CsvSource({"-1", "8", "9", "10", "13", "99", "1600", "1800", "9999"})
+        @DisplayName("falls back to OTHER for values not covered")
+        void unknown(int routeType) {
+            assertThat(GtfsParse.mapRouteType(routeType)).isEqualTo(LineType.OTHER);
         }
     }
 }

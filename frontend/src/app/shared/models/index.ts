@@ -3,7 +3,17 @@ export type MessageSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 export type MessageScope = 'NETWORK' | 'LINE' | 'STOP';
 export type DeviceStatus = 'ONLINE' | 'OFFLINE';
 export type UserRole = 'ADMIN' | 'AGENT';
-export type LineType = 'METRO' | 'BUS' | 'TRAM' | 'TRAIN';
+export type LineType =
+  | 'METRO'
+  | 'BUS'
+  | 'TRAM'
+  | 'TRAIN'
+  | 'FERRY'
+  | 'FUNICULAR'
+  | 'CABLE_CAR'
+  | 'TROLLEYBUS'
+  | 'MONORAIL'
+  | 'OTHER';
 
 // Pagination
 export interface PageResponse<T> {

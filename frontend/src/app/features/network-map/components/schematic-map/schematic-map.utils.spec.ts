@@ -73,7 +73,11 @@ describe('schematic-map.utils', () => {
 
   describe('getTransportIconPath', () => {
     it('returns a path for each known type', () => {
-      for (const type of ['TRAIN', 'TRAM', 'BUS', 'METRO']) {
+      const types = [
+        'TRAIN', 'TRAM', 'BUS', 'METRO',
+        'FERRY', 'FUNICULAR', 'CABLE_CAR', 'TROLLEYBUS', 'MONORAIL', 'OTHER',
+      ];
+      for (const type of types) {
         expect(getTransportIconPath(type)).toMatch(/^M/);
       }
     });

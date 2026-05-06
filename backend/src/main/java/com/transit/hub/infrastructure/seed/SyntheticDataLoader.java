@@ -603,10 +603,13 @@ public class SyntheticDataLoader implements CommandLineRunner {
             return 3;
         }
         return switch (type) {
-            case METRO -> 2;
+            case METRO, MONORAIL -> 2;
             case TRAIN -> 4;
             case TRAM -> 3;
-            case BUS -> 3;
+            case BUS, TROLLEYBUS -> 3;
+            case FERRY -> 5;
+            case FUNICULAR, CABLE_CAR -> 4;
+            case OTHER -> 3;
         };
     }
 

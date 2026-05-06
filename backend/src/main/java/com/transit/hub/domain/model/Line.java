@@ -58,7 +58,7 @@ public class Line {
     private String color;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
+    @Column(length = 15)
     private LineType type;
 
     @Size(max = 50, message = "Category must be at most 50 characters")

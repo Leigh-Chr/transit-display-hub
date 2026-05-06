@@ -153,7 +153,18 @@ export class LineDialogComponent {
   readonly dialogRef = inject(MatDialogRef<LineDialogComponent>);
   readonly data = inject<LineDialogData>(MAT_DIALOG_DATA);
 
-  readonly lineTypes: LineType[] = ['METRO', 'BUS', 'TRAM', 'TRAIN'];
+  readonly lineTypes: LineType[] = [
+    'METRO',
+    'BUS',
+    'TRAM',
+    'TRAIN',
+    'FERRY',
+    'FUNICULAR',
+    'CABLE_CAR',
+    'TROLLEYBUS',
+    'MONORAIL',
+    'OTHER',
+  ];
 
   form: LineForm = {
     code: this.data.line?.code ?? '',

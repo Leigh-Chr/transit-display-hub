@@ -106,7 +106,18 @@ describe('LineDialogComponent', () => {
     });
 
     it('should expose lineTypes array with all options', () => {
-      expect(component.lineTypes).toEqual(['METRO', 'BUS', 'TRAM', 'TRAIN']);
+      expect(component.lineTypes).toEqual([
+        'METRO',
+        'BUS',
+        'TRAM',
+        'TRAIN',
+        'FERRY',
+        'FUNICULAR',
+        'CABLE_CAR',
+        'TROLLEYBUS',
+        'MONORAIL',
+        'OTHER',
+      ]);
     });
   });
 
