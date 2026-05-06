@@ -106,4 +106,12 @@ public class Schedule {
      *  doesn't apply. */
     @Column(name = "frequency_exact_times")
     private Boolean frequencyExactTimes;
+
+    /** GTFS trips.block_id — chains the consecutive trips a single
+     *  physical vehicle runs throughout the day. Useful for analytics
+     *  and any future GTFS-RT vehicle matching; no passenger-facing
+     *  surface yet. */
+    @jakarta.validation.constraints.Size(max = 40)
+    @Column(name = "block_id", length = 40)
+    private String blockId;
 }

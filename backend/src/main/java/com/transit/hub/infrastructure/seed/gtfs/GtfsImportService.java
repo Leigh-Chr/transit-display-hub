@@ -433,7 +433,7 @@ public class GtfsImportService {
             Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
 
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
-                            int wheelchairAccessible, int bikesAllowed) {}
+                            int wheelchairAccessible, int bikesAllowed, String blockId) {}
 
     /** Headway annotation derived from frequencies.txt. We pick the
      *  smallest headway among all entries declared for a trip — that's
@@ -452,13 +452,15 @@ public class GtfsImportService {
         Map<String, TripInfo> tripInfos = new HashMap<>();
         try (CSVParser parser = openCsv(tripsFile)) {
             for (CSVRecord record : parser) {
+                String rawBlockId = optional(record, "block_id");
                 tripInfos.put(record.get("trip_id"), new TripInfo(
                         record.get("route_id"),
                         firstNonBlank(optional(record, "direction_id"), "0"),
                         optional(record, "service_id"),
                         optional(record, "trip_headsign"),
                         parseInt(optional(record, "wheelchair_accessible"), 0),
-                        parseInt(optional(record, "bikes_allowed"), 0)));
+                        parseInt(optional(record, "bikes_allowed"), 0),
+                        isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40)));
             }
         }
         log.info("GTFS import: {} trips loaded", tripInfos.size());
@@ -730,6 +732,7 @@ public class GtfsImportService {
                         .timepoint(timepoint)
                         .frequencyHeadwaySeconds(freq == null ? null : freq.headwaySeconds)
                         .frequencyExactTimes(freq == null ? null : freq.exactTimes)
+                        .blockId(trip.blockId)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {
