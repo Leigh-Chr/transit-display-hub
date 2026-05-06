@@ -76,6 +76,38 @@ public class Stop {
     @Column
     private Double schematicY;
 
+    /** GTFS {@code stop_code}: short identifier shown to passengers on
+     *  the physical signpost (e.g. "BSP1234"). Useful to confirm "you
+     *  are at the right stop" on the kiosk screen. */
+    @Size(max = 50)
+    @Column(name = "short_code", length = 50)
+    private String shortCode;
+
+    /** GTFS {@code tts_stop_name}: pronounceable form for screen readers
+     *  and TTS-based accessibility tools. Falls back to {@link #name}. */
+    @Size(max = 150)
+    @Column(name = "tts_name", length = 150)
+    private String ttsName;
+
+    /** Per-stop IANA timezone, taking precedence over the agency's
+     *  timezone for transit networks that cross zones (rare, but allowed
+     *  by the GTFS spec). */
+    @Size(max = 60)
+    @Column(name = "stop_timezone", length = 60)
+    private String stopTimezone;
+
+    /** GTFS {@code stop_desc}. Free-form description shown in the network
+     *  map's stop popup. */
+    @Size(max = 500)
+    @Column(length = 500)
+    private String description;
+
+    /** GTFS {@code stop_url}. Public-facing link, often the operator's
+     *  page describing the stop. */
+    @Size(max = 255)
+    @Column(length = 255)
+    private String url;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",
             joinColumns = @JoinColumn(name = "stop_id"),

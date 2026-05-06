@@ -179,6 +179,8 @@ public class DisplayStateCalculator {
     /**
      * Resolves the operating timezone for a stop. Order of precedence:
      * <ol>
+     *   <li>The stop's own {@code stop_timezone} when set (rare but
+     *       allowed for transit networks crossing zones).</li>
      *   <li>The {@code agency.timezone} of the most-served line (the line
      *       with the highest stop-line count); ties broken by line code
      *       so the resolution is deterministic.</li>
@@ -191,6 +193,10 @@ public class DisplayStateCalculator {
      * cannot take a kiosk offline.
      */
     private ZoneId resolveZone(Stop stop) {
+        ZoneId fromStop = tryParseZone(stop.getStopTimezone());
+        if (fromStop != null) {
+            return fromStop;
+        }
         Set<Line> lines = stop.getLines();
         if (lines != null && !lines.isEmpty()) {
             ZoneId fromAgency = lines.stream()

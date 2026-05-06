@@ -321,7 +321,8 @@ public class GtfsImportService {
             Map<String, String> rootStopIdByGtfsId) {}
 
     private StopImport importStops(Path stopsFile) throws IOException {
-        record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType) {}
+        record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
+                       String shortCode, String ttsName, String timezone, String description, String url) {}
 
         List<RawStop> raw = new ArrayList<>();
         try (CSVParser parser = openCsv(stopsFile)) {
@@ -337,7 +338,12 @@ public class GtfsImportService {
                         parseDoubleOrNull(optional(record, "stop_lat")),
                         parseDoubleOrNull(optional(record, "stop_lon")),
                         optional(record, "parent_station"),
-                        locationType));
+                        locationType,
+                        optional(record, "stop_code"),
+                        optional(record, "tts_stop_name"),
+                        optional(record, "stop_timezone"),
+                        optional(record, "stop_desc"),
+                        optional(record, "stop_url")));
             }
         }
 
@@ -378,6 +384,11 @@ public class GtfsImportService {
                     .name(truncate(r.name, STOP_NAME_MAX_LENGTH))
                     .latitude(r.lat)
                     .longitude(r.lon)
+                    .shortCode(truncate(r.shortCode, 50))
+                    .ttsName(truncate(r.ttsName, 150))
+                    .stopTimezone(truncate(r.timezone, 60))
+                    .description(truncate(r.description, 500))
+                    .url(truncate(r.url, 255))
                     .build();
             result.put(rootId, stopRepository.save(stop));
         }
