@@ -236,6 +236,9 @@ public class GtfsImportService {
                 String formattedTextColor = resolveTextColor(textColor, formattedColor);
                 Agency agency = resolveAgency(agencyId, agencies);
 
+                short continuousPickup = (short) parseInt(optional(record, "continuous_pickup"), 1);
+                short continuousDropOff = (short) parseInt(optional(record, "continuous_drop_off"), 1);
+
                 Line line = lineRepository.save(Line.builder()
                         .externalId(truncate(routeId, 100))
                         .code(uniqueCode(code, result.values()))
@@ -245,6 +248,8 @@ public class GtfsImportService {
                         .type(type)
                         .category(category)
                         .agency(agency)
+                        .continuousPickup(continuousPickup)
+                        .continuousDropOff(continuousDropOff)
                         .build());
                 result.put(routeId, line);
             }

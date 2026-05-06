@@ -86,6 +86,20 @@ public class Line {
     @Column(length = 50)
     private String category;
 
+    /** GTFS {@code continuous_pickup} (route-level). 0 = continuous (any
+     *  point), 1 = no continuous service (default), 2 = phone agency,
+     *  3 = coordinate with driver. Non-default values flag hop-on/hop-off
+     *  routes the stop popup can surface. */
+    @Column(name = "continuous_pickup", nullable = false)
+    @Builder.Default
+    private short continuousPickup = 1;
+
+    /** GTFS {@code continuous_drop_off}. Same encoding as
+     *  {@link #continuousPickup}. */
+    @Column(name = "continuous_drop_off", nullable = false)
+    @Builder.Default
+    private short continuousDropOff = 1;
+
     /** Operating agency. Nullable because lines created via the legacy
      *  admin form (or imported from feeds without {@code agency.txt})
      *  may not have one. The {@code DisplayStateCalculator} falls back

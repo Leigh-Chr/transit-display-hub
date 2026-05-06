@@ -80,6 +80,7 @@ public class Itinerary {
     @Column(name = "bikes_allowed_default", length = 20)
     private com.transit.hub.domain.model.enums.BikesAllowed bikesAllowedDefault;
 
+
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @Builder.Default
