@@ -53,23 +53,24 @@ public class DisplayStateCalculator {
                 .map(LineInfo::from)
                 .toList();
 
-        // Get upcoming arrivals within 30-minute window, one per itinerary/direction
+        // Get upcoming arrivals within 30-minute window, one per itinerary/direction.
+        // Handles the midnight wrap (e.g., 23:50 → 00:20) by issuing two queries
+        // concatenated in chronological order — see `loadUpcomingSchedules`.
         LocalTime now = LocalTime.now();
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
-        List<DisplayState.ArrivalInfo> arrivals = scheduleRepository
-                .findByStopIdAndTimeWindowWithItinerary(stopId, now, windowEnd)
+        List<DisplayState.ArrivalInfo> arrivals = loadUpcomingSchedules(stopId, now, windowEnd)
                 .stream()
-                // Group by itinerary, keeping only the first (earliest) departure per direction
+                // Group by itinerary, keeping the first (earliest) departure per direction.
+                // LinkedHashMap preserves insertion order, which already reflects chronology
+                // (incl. cross-midnight), so no further sorting is needed.
                 .collect(Collectors.toMap(
                         schedule -> schedule.getItinerary().getId(),
                         Function.identity(),
-                        (existing, replacement) -> existing, // Keep first occurrence (earliest time)
-                        LinkedHashMap::new // Preserve insertion order
+                        (existing, replacement) -> existing,
+                        LinkedHashMap::new
                 ))
                 .values()
                 .stream()
-                // Sort by departure time
-                .sorted(Comparator.comparing(Schedule::getTime))
                 .map(this::toArrivalInfo)
                 .toList();
 
@@ -99,6 +100,19 @@ public class DisplayStateCalculator {
                 version,
                 Instant.now()
         );
+    }
+
+    private List<Schedule> loadUpcomingSchedules(UUID stopId, LocalTime now, LocalTime windowEnd) {
+        if (windowEnd.isAfter(now)) {
+            return scheduleRepository.findByStopIdAndTimeWindowWithItinerary(stopId, now, windowEnd);
+        }
+        // Window crosses midnight: union of "after now today" and "up to windowEnd tomorrow"
+        List<Schedule> beforeMidnight = scheduleRepository.findByStopIdAndTimeAfterWithItinerary(stopId, now);
+        List<Schedule> afterMidnight = scheduleRepository.findByStopIdAndTimeBeforeOrEqualWithItinerary(stopId, windowEnd);
+        List<Schedule> combined = new java.util.ArrayList<>(beforeMidnight.size() + afterMidnight.size());
+        combined.addAll(beforeMidnight);
+        combined.addAll(afterMidnight);
+        return combined;
     }
 
     private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule) {

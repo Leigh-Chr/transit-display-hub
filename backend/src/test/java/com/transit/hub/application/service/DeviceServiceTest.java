@@ -183,6 +183,7 @@ class DeviceServiceTest {
             DeviceAuthResponse result = deviceService.authenticateDevice(plainToken);
 
             assertThat(result.valid()).isTrue();
+            assertThat(result.deviceId()).isEqualTo(testDeviceId);
             assertThat(result.stopId()).isEqualTo(testStopId);
             assertThat(result.stopName()).isEqualTo("Central Station");
             assertThat(result.lines()).hasSize(1);

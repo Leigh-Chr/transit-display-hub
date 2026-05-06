@@ -50,6 +50,8 @@ public class DisplayController {
         if (!auth.valid()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(displayStateService.getDisplayState(auth.stopId()));
+        return ResponseEntity.ok()
+                .header("X-Device-Id", auth.deviceId().toString())
+                .body(displayStateService.getDisplayState(auth.stopId()));
     }
 }

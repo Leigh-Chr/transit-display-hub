@@ -27,6 +27,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
            "WHERE s.stop.id = :stopId AND s.time > :startTime AND s.time <= :endTime ORDER BY s.time")
     List<Schedule> findByStopIdAndTimeWindowWithItinerary(UUID stopId, LocalTime startTime, LocalTime endTime);
 
+    @Query("SELECT s FROM Schedule s JOIN FETCH s.itinerary i JOIN FETCH i.line " +
+           "LEFT JOIN FETCH i.itineraryStops is LEFT JOIN FETCH is.stop " +
+           "WHERE s.stop.id = :stopId AND s.time <= :endTime ORDER BY s.time")
+    List<Schedule> findByStopIdAndTimeBeforeOrEqualWithItinerary(UUID stopId, LocalTime endTime);
+
     void deleteByStopId(UUID stopId);
 
     boolean existsByStopIdAndItineraryIdAndTime(UUID stopId, UUID itineraryId, LocalTime time);

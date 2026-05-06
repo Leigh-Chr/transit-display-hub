@@ -3,12 +3,15 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.dto.response.HubDisplayState;
 import com.transit.hub.application.dto.response.LineInfo;
+import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.service.DisplayStateCalculator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,18 +21,29 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HubDisplayService {
 
     private final DisplayStateCalculator displayStateCalculator;
     private final AtomicLong versionCounter = new AtomicLong(0);
 
     private static final int MAX_MESSAGES = 5;
+    private static final int MAX_ARRIVALS = 50;
 
     @Transactional(readOnly = true)
     public HubDisplayState getHubDisplayState(List<UUID> stopIds, String hubName) {
-        List<DisplayState> stopStates = stopIds.stream()
-                .map(displayStateCalculator::calculateForStop)
-                .toList();
+        // Skip individual stops that no longer exist instead of failing the whole hub.
+        // A typo, a stale URL or a deleted stop should leave the rest of the hub usable.
+        List<DisplayState> stopStates = new ArrayList<>(stopIds.size());
+        for (UUID stopId : stopIds) {
+            try {
+                stopStates.add(displayStateCalculator.calculateForStop(stopId));
+            } catch (EntityNotFoundException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Hub '{}' references unknown stop {}, skipping", hubName, stopId);
+                }
+            }
+        }
 
         // Merge lines, deduplicate by id, sort by code
         List<LineInfo> lines = stopStates.stream()
@@ -39,7 +53,7 @@ public class HubDisplayService {
                 .sorted(Comparator.comparing(LineInfo::code))
                 .toList();
 
-        // Merge arrivals with platform = stopName, sort by scheduledTime
+        // Merge arrivals with platform = stopName, sort by scheduledTime, cap to MAX_ARRIVALS
         List<HubDisplayState.HubArrivalInfo> arrivals = stopStates.stream()
                 .flatMap(s -> s.arrivals().stream()
                         .map(a -> new HubDisplayState.HubArrivalInfo(
@@ -49,6 +63,7 @@ public class HubDisplayService {
                                 a.line()
                         )))
                 .sorted(Comparator.comparing(HubDisplayState.HubArrivalInfo::scheduledTime))
+                .limit(MAX_ARRIVALS)
                 .toList();
 
         // Deduplicate messages (records have structural equality), limit to MAX_MESSAGES

@@ -16,13 +16,13 @@ export class WebSocketService {
   private client: Client | null = null;
   private readonly displayStateSubject = new Subject<DisplayState>();
   private readonly connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
-  private stopId: string | null = null;
-  private readonly destroy$ = new Subject<void>();
+  private deviceId: string | null = null;
+  private destroy$ = new Subject<void>();
 
   connectionState = this.connectionStateSignal.asReadonly();
 
-  connect(stopId: string): Observable<DisplayState> {
-    this.stopId = stopId;
+  connect(stopId: string, deviceId: string | null = null): Observable<DisplayState> {
+    this.deviceId = deviceId;
     this.connectionStateSignal.set('CONNECTING');
 
     const token = this.authService.getToken();
@@ -55,11 +55,13 @@ export class WebSocketService {
 
   disconnect(): void {
     this.destroy$.next();
+    this.destroy$.complete();
+    this.destroy$ = new Subject<void>();
     if (this.client) {
       void this.client.deactivate();
       this.client = null;
     }
-    this.stopId = null;
+    this.deviceId = null;
     this.connectionStateSignal.set('DISCONNECTED');
   }
 
@@ -77,13 +79,15 @@ export class WebSocketService {
   }
 
   private startHeartbeat(): void {
+    if (!this.deviceId) { return; }
+    const deviceId = this.deviceId;
     timer(0, 30000).pipe(
       takeUntil(this.destroy$),
       tap(() => {
         if (this.client?.connected) {
           this.client.publish({
             destination: '/app/device/heartbeat',
-            body: JSON.stringify({ stopId: this.stopId })
+            body: JSON.stringify({ deviceId })
           });
         }
       })

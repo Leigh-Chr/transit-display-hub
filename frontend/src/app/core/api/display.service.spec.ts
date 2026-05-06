@@ -119,17 +119,19 @@ describe('DisplayService', () => {
   });
 
   describe('getStateByToken', () => {
-    it('should return display state using device token', () => {
+    it('should return display state and deviceId using device token', () => {
       const token = 'device-token-abc123';
+      const deviceId = 'device-uuid-99';
 
-      service.getStateByToken(token).subscribe(state => {
-        expect(state).toEqual(mockDisplayState);
+      service.getStateByToken(token).subscribe(authenticated => {
+        expect(authenticated.state).toEqual(mockDisplayState);
+        expect(authenticated.deviceId).toBe(deviceId);
       });
 
       const req = httpMock.expectOne('/api/display');
       expect(req.request.method).toBe('GET');
       expect(req.request.headers.get('X-Device-Token')).toBe(token);
-      req.flush(mockDisplayState);
+      req.flush(mockDisplayState, { headers: { 'X-Device-Id': deviceId } });
     });
 
     it('should set X-Device-Token header', () => {
@@ -140,6 +142,18 @@ describe('DisplayService', () => {
       const req = httpMock.expectOne('/api/display');
       expect(req.request.headers.has('X-Device-Token')).toBe(true);
       expect(req.request.headers.get('X-Device-Token')).toBe('my-secret-token');
+      req.flush(mockDisplayState);
+    });
+
+    it('should expose null deviceId when header missing', () => {
+      const token = 'token-without-header';
+
+      service.getStateByToken(token).subscribe(authenticated => {
+        expect(authenticated.deviceId).toBeNull();
+        expect(authenticated.state).toEqual(mockDisplayState);
+      });
+
+      const req = httpMock.expectOne('/api/display');
       req.flush(mockDisplayState);
     });
 

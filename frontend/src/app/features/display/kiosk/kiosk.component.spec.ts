@@ -42,7 +42,7 @@ describe('KioskComponent', () => {
 
     mockDisplayService = {
       getState: vi.fn().mockReturnValue(of(mockDisplayState)),
-      getStateByToken: vi.fn().mockReturnValue(of(mockDisplayState))
+      getStateByToken: vi.fn().mockReturnValue(of({ deviceId: 'device-1', state: mockDisplayState }))
     };
 
     mockWsService = {
@@ -101,7 +101,7 @@ describe('KioskComponent', () => {
       paramsSubject.next({ stopId: 'stop-123' });
       queryParamsSubject.next({});
 
-      expect(mockWsService.connect).toHaveBeenCalledWith('stop-123');
+      expect(mockWsService.connect).toHaveBeenCalledWith('stop-123', null);
     });
   });
 

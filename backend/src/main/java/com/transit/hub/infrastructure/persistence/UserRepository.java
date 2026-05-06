@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.persistence;
 
 import com.transit.hub.domain.model.User;
+import com.transit.hub.domain.model.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<User> findBySearch(String search, Pageable pageable);
+
+    long countByRoleAndEnabledTrue(UserRole role);
 }

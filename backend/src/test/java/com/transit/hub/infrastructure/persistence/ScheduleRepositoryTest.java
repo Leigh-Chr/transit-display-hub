@@ -336,6 +336,41 @@ class ScheduleRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findByStopIdAndTimeBeforeOrEqualWithItinerary")
+    class FindByStopIdAndTimeBeforeOrEqualWithItinerary {
+
+        @Test
+        @DisplayName("returns schedules at or before endTime, ordered by time")
+        void returnsSchedulesBeforeEndTime() {
+            persistSchedule(LocalTime.of(0, 5), stopA, itinerary1);
+            persistSchedule(LocalTime.of(0, 20), stopA, itinerary2);
+            persistSchedule(LocalTime.of(2, 0), stopA, itinerary1);
+            em.flush();
+            em.clear();
+
+            List<Schedule> result = repository.findByStopIdAndTimeBeforeOrEqualWithItinerary(
+                    stopA.getId(), LocalTime.of(0, 20));
+
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getTime()).isEqualTo(LocalTime.of(0, 5));
+            assertThat(result.get(1).getTime()).isEqualTo(LocalTime.of(0, 20));
+        }
+
+        @Test
+        @DisplayName("returns empty when no schedule is at or before endTime")
+        void returnsEmptyWhenAllAfter() {
+            persistSchedule(LocalTime.of(8, 0), stopA, itinerary1);
+            em.flush();
+            em.clear();
+
+            List<Schedule> result = repository.findByStopIdAndTimeBeforeOrEqualWithItinerary(
+                    stopA.getId(), LocalTime.of(0, 30));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("existsByStopIdAndItineraryIdAndTime")
     class ExistsByStopIdAndItineraryIdAndTime {
 

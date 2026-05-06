@@ -7,6 +7,7 @@ import com.transit.hub.application.dto.response.UserResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.model.User;
+import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -70,6 +71,12 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User", id));
 
+        boolean wasActiveAdmin = user.getRole() == UserRole.ADMIN && user.isEnabled();
+        boolean willBeActiveAdmin = request.role() == UserRole.ADMIN && request.enabled();
+        if (wasActiveAdmin && !willBeActiveAdmin) {
+            ensureAtLeastOneOtherActiveAdmin(user.getId());
+        }
+
         // Update password only if provided
         if (request.password() != null && !request.password().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.password()));
@@ -82,9 +89,23 @@ public class UserService {
     }
 
     public void delete(UUID id) {
-        if (!userRepository.existsById(id)) {
-            throw new EntityNotFoundException("User", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User", id));
+
+        if (user.getRole() == UserRole.ADMIN && user.isEnabled()) {
+            ensureAtLeastOneOtherActiveAdmin(id);
         }
+
         userRepository.deleteById(id);
+    }
+
+    private void ensureAtLeastOneOtherActiveAdmin(UUID excludingId) {
+        long activeAdmins = userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN);
+        // The caller is still counted at this point — at least 2 are needed
+        // for the change to leave someone else as active admin.
+        if (activeAdmins <= 1) {
+            throw new ValidationException(
+                    "Cannot disable, demote or delete the last active administrator");
+        }
     }
 }

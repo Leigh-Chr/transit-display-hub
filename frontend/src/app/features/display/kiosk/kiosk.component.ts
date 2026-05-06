@@ -655,6 +655,7 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   private token: string | null = null;
   private stopId: string | null = null;
+  private deviceId: string | null = null;
   private timeInterval: ReturnType<typeof setInterval> | null = null;
   private visibilityHandler: (() => void) | null = null;
   /** Wall-clock timestamp of the most recent state update (initial fetch or
@@ -840,10 +841,11 @@ export class KioskComponent implements OnInit, OnDestroy {
       return;
     }
     this.displayService.getStateByToken(this.token).subscribe({
-      next: (state) => {
-        this.displayState.set(state);
+      next: (authenticated) => {
+        this.deviceId = authenticated.deviceId;
+        this.displayState.set(authenticated.state);
         this.lastUpdate.set(Date.now());
-        this.subscribeToUpdates(state.stopId);
+        this.subscribeToUpdates(authenticated.state.stopId);
       },
       error: () => {
         this.error.set('Invalid device token or device not found.');
@@ -869,7 +871,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private subscribeToUpdates(stopId: string): void {
-    this.wsService.connect(stopId).subscribe({
+    this.wsService.connect(stopId, this.deviceId).subscribe({
       next: (state) => {
         this.displayState.set(state);
         this.lastUpdate.set(Date.now());

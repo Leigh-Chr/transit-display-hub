@@ -205,9 +205,9 @@ describe('WebSocketService', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should start heartbeat on connect and publish to correct destination', () => {
+    it('should start heartbeat on connect when deviceId is provided and publish to correct destination', () => {
       vi.useFakeTimers();
-      service.connect('stop-123');
+      service.connect('stop-123', 'device-42');
       const client = (service as unknown as ServicePrivateFields).client;
       client.connected = true;
       client._config.onConnect();
@@ -215,8 +215,21 @@ describe('WebSocketService', () => {
       vi.advanceTimersByTime(0);
       expect(client.publish).toHaveBeenCalledWith({
         destination: '/app/device/heartbeat',
-        body: JSON.stringify({ stopId: 'stop-123' })
+        body: JSON.stringify({ deviceId: 'device-42' })
       });
+
+      vi.useRealTimers();
+    });
+
+    it('should not publish heartbeats when no deviceId is provided', () => {
+      vi.useFakeTimers();
+      service.connect('stop-123');
+      const client = (service as unknown as ServicePrivateFields).client;
+      client.connected = true;
+      client._config.onConnect();
+
+      vi.advanceTimersByTime(60_000);
+      expect(client.publish).not.toHaveBeenCalled();
 
       vi.useRealTimers();
     });

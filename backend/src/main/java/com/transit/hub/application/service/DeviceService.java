@@ -110,7 +110,7 @@ public class DeviceService {
     @Transactional
     public DeviceAuthResponse authenticateDevice(String token) {
         if (token == null || token.length() < TOKEN_LOOKUP_LENGTH) {
-            return new DeviceAuthResponse(false, null, null, null);
+            return new DeviceAuthResponse(false, null, null, null, null);
         }
 
         // Use token prefix for fast lookup, then verify with BCrypt
@@ -129,6 +129,7 @@ public class DeviceService {
 
                 return new DeviceAuthResponse(
                         true,
+                        device.getId(),
                         device.getStop().getId(),
                         device.getStop().getName(),
                         lines
@@ -136,7 +137,7 @@ public class DeviceService {
             }
         }
 
-        return new DeviceAuthResponse(false, null, null, null);
+        return new DeviceAuthResponse(false, null, null, null, null);
     }
 
     @Transactional

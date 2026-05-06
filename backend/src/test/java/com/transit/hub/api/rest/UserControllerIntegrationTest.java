@@ -251,7 +251,9 @@ class UserControllerIntegrationTest {
         void withValidRequest_Returns200() throws Exception {
             UpdateUserRequest request = new UpdateUserRequest(null, UserRole.AGENT, false);
 
-            mockMvc.perform(put("/api/users/" + testAdmin.getId())
+            // Target the agent rather than the admin: demoting/disabling the only
+            // active admin is correctly refused by the last-admin guard.
+            mockMvc.perform(put("/api/users/" + testAgent.getId())
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))

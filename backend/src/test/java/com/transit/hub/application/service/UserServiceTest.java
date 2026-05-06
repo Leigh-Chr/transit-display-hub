@@ -57,6 +57,9 @@ class UserServiceTest {
         testAdmin = TestDataFactory.createUser("admin", UserRole.ADMIN);
         testAdmin.setId(testAdminId);
         testAgent = TestDataFactory.createUser("agent", UserRole.AGENT);
+        // Default: assume there is more than one active admin so destructive admin
+        // tests can run; per-test setups override when checking the guard itself.
+        lenient().when(userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN)).thenReturn(2L);
     }
 
     @Nested
@@ -385,7 +388,7 @@ class UserServiceTest {
         @Test
         @DisplayName("deletes existing user")
         void withExistingId_Succeeds() {
-            when(userRepository.existsById(testAdminId)).thenReturn(true);
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
 
             userService.delete(testAdminId);
 
@@ -396,13 +399,87 @@ class UserServiceTest {
         @DisplayName("throws EntityNotFoundException when user not found")
         void withNonExistentId_ThrowsNotFound() {
             UUID unknownId = UUID.randomUUID();
-            when(userRepository.existsById(unknownId)).thenReturn(false);
+            when(userRepository.findById(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> userService.delete(unknownId))
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessageContaining("User");
 
             verify(userRepository, never()).deleteById(any());
+        }
+
+        @Test
+        @DisplayName("does not delete the last active admin")
+        void refusesLastActiveAdmin() {
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN)).thenReturn(1L);
+
+            assertThatThrownBy(() -> userService.delete(testAdminId))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("last active administrator");
+
+            verify(userRepository, never()).deleteById(any());
+        }
+
+        @Test
+        @DisplayName("allows deleting an agent regardless of admin count")
+        void allowsAgentDelete() {
+            UUID agentId = UUID.randomUUID();
+            testAgent.setId(agentId);
+            when(userRepository.findById(agentId)).thenReturn(Optional.of(testAgent));
+
+            userService.delete(agentId);
+
+            verify(userRepository).deleteById(agentId);
+            // Guard should not query the count when subject isn't an active admin
+            verify(userRepository, never()).countByRoleAndEnabledTrue(UserRole.ADMIN);
+        }
+    }
+
+    @Nested
+    @DisplayName("update() - last admin guard")
+    class UpdateLastAdminGuard {
+
+        @Test
+        @DisplayName("refuses to disable the last active admin")
+        void refusesDisableLastAdmin() {
+            UpdateUserRequest request = new UpdateUserRequest(null, UserRole.ADMIN, false);
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN)).thenReturn(1L);
+
+            assertThatThrownBy(() -> userService.update(testAdminId, request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("last active administrator");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("refuses to demote the last active admin")
+        void refusesDemoteLastAdmin() {
+            UpdateUserRequest request = new UpdateUserRequest(null, UserRole.AGENT, true);
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN)).thenReturn(1L);
+
+            assertThatThrownBy(() -> userService.update(testAdminId, request))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("last active administrator");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("allows promoting an agent even when only one admin exists")
+        void allowsPromote() {
+            UUID agentId = UUID.randomUUID();
+            testAgent.setId(agentId);
+            UpdateUserRequest request = new UpdateUserRequest(null, UserRole.ADMIN, true);
+            when(userRepository.findById(agentId)).thenReturn(Optional.of(testAgent));
+            when(userRepository.save(any(User.class))).thenReturn(testAgent);
+
+            userService.update(agentId, request);
+
+            assertThat(testAgent.getRole()).isEqualTo(UserRole.ADMIN);
         }
     }
 }
