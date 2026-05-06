@@ -261,7 +261,7 @@ class DeviceControllerIntegrationTest {
 
             // Verify the token is 43 chars (Base64 encoded 32 bytes without padding)
             String responseJson = result.getResponse().getContentAsString();
-            String token = objectMapper.readTree(responseJson).get("token").asText();
+            String token = objectMapper.readTree(responseJson).get("token").asString();
             assertThat(token).hasSize(43);
         }
 
@@ -313,7 +313,7 @@ class DeviceControllerIntegrationTest {
                     .andReturn();
 
             String responseJson = registerResult.getResponse().getContentAsString();
-            String newToken = objectMapper.readTree(responseJson).get("token").asText();
+            String newToken = objectMapper.readTree(responseJson).get("token").asString();
 
             // Now authenticate with the new token
             DeviceAuthRequest authRequest = new DeviceAuthRequest(newToken);
