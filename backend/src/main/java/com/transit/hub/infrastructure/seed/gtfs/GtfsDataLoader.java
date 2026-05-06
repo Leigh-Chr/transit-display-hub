@@ -1,5 +1,6 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
+import com.transit.hub.application.service.GtfsImportOrchestrator;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.LineRepository;
@@ -10,15 +11,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.cache.CacheManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Path;
-
 /**
- * Seeds the database from a standard GTFS feed.
- * Activated by app.data-loader.source=gtfs.
+ * One-shot bootstrap loader. Creates the default users and triggers a
+ * single GTFS import via {@link GtfsImportOrchestrator}; the heavy lifting
+ * (download, hash, import, audit, cache eviction) lives in the orchestrator
+ * so the same path is reused by the cron-driven refresh and any future
+ * admin-triggered re-import.
+ *
+ * Activated by {@code app.data-loader.source=gtfs}.
  */
 @Component
 @RequiredArgsConstructor
@@ -30,9 +33,7 @@ public class GtfsDataLoader implements CommandLineRunner {
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
     private final PasswordEncoder passwordEncoder;
-    private final GtfsDownloader downloader;
-    private final GtfsImportService importer;
-    private final CacheManager cacheManager;
+    private final GtfsImportOrchestrator orchestrator;
 
     @Value("${app.data-loader.gtfs.url}")
     private String feedUrl;
@@ -50,44 +51,11 @@ public class GtfsDataLoader implements CommandLineRunner {
         log.info("=== GTFS data seeding: {} ===", networkName);
         createUsers();
 
-        try {
-            Path feed = downloader.downloadOrCached(feedUrl);
-            String hash = sha256(feed);
-            GtfsImportService.ImportResult result = importer.importFromZip(feed, feedUrl, hash);
-            // The frontend may have hit /api/network-map while routes/stops were
-            // still being persisted, caching an empty snapshot. Drop those caches
-            // so the next request rebuilds from the populated database.
-            evictNetworkCaches();
-            logSummary(result);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("GTFS import interrupted", e);
-        } catch (Exception e) {
-            log.error("GTFS import failed for {}: {}. Application will start without network data.",
-                    feedUrl, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * SHA-256 of the downloaded zip, used to detect re-downloads that
-     * returned identical content (so the next idempotent re-import logic
-     * in 0.5 can skip the work). Streams the file so a 200 MB feed never
-     * sits in memory.
-     */
-    private String sha256(Path file) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-            try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
-                byte[] buffer = new byte[8 * 1024];
-                int read;
-                while ((read = in.read(buffer)) > 0) {
-                    md.update(buffer, 0, read);
-                }
-            }
-            return java.util.HexFormat.of().formatHex(md.digest());
-        } catch (Exception e) {
-            log.warn("Failed to compute SHA-256 of feed file {}: {}", file, e.getMessage());
-            return null;
+        GtfsImportOrchestrator.ImportOutcome outcome = orchestrator.runImport(feedUrl, "boot");
+        if (outcome.result() != null) {
+            logSummary(outcome.result());
+        } else {
+            log.warn("GTFS bootstrap import did not return a result: {}", outcome.message());
         }
     }
 
@@ -128,13 +96,6 @@ public class GtfsDataLoader implements CommandLineRunner {
                 .build());
 
         log.info("Created {} users", userRepository.count());
-    }
-
-    private void evictNetworkCaches() {
-        for (String name : new String[]{"networkMap", "networkAlerts"}) {
-            var cache = cacheManager.getCache(name);
-            if (cache != null) {cache.clear();}
-        }
     }
 
     private void logSummary(GtfsImportService.ImportResult r) {
