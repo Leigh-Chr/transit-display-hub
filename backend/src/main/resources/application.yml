@@ -96,7 +96,11 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: "0"
-    locations: classpath:db/migration
+    # Two locations: the portable schema in db/migration plus Postgres-only
+    # extensions (pg_trgm GIN indexes) in db/migration-postgres. The H2 dev
+    # profile only points at the portable folder so it can boot without an
+    # extension it doesn't ship.
+    locations: classpath:db/migration,classpath:db/migration-postgres
 
 app:
   data-loader:

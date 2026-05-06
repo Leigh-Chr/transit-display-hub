@@ -24,7 +24,17 @@
             "polyfills": [],
             "tsConfig": "tsconfig.app.json",
             "assets": ["src/assets", "src/favicon.ico", "src/manifest.webmanifest"],
-            "styles": ["src/styles.scss"],
+            "styles": [
+              "src/styles.scss",
+              "node_modules/@fontsource/inter/400.css",
+              "node_modules/@fontsource/inter/500.css",
+              "node_modules/@fontsource/inter/600.css",
+              "node_modules/@fontsource/inter/700.css",
+              "node_modules/@fontsource/roboto/400.css",
+              "node_modules/@fontsource/roboto/500.css",
+              "node_modules/@fontsource/roboto/700.css",
+              "node_modules/material-icons/iconfont/material-icons.css"
+            ],
             "scripts": [],
             "allowedCommonJsDependencies": ["@stomp/stompjs", "sockjs-client"]
           },
@@ -33,7 +43,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "520kb",
+                  "maximumWarning": "560kb",
                   "maximumError": "1mb"
                 }
               ],
