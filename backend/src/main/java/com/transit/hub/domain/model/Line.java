@@ -6,10 +6,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -75,6 +78,14 @@ public class Line {
     @Size(max = 50, message = "Category must be at most 50 characters")
     @Column(length = 50)
     private String category;
+
+    /** Operating agency. Nullable because lines created via the legacy
+     *  admin form (or imported from feeds without {@code agency.txt})
+     *  may not have one. The {@code DisplayStateCalculator} falls back
+     *  to {@code app.timezone} when this is null. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agency_id")
+    private Agency agency;
 
     @ManyToMany(mappedBy = "lines")
     @Builder.Default

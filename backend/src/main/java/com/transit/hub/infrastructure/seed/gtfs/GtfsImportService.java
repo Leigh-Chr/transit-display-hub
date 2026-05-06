@@ -1,5 +1,6 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
+import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
@@ -8,6 +9,7 @@ import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.util.ColorContrast;
+import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
@@ -63,6 +65,7 @@ public class GtfsImportService {
     private final ItineraryRepository itineraryRepository;
     private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
+    private final AgencyRepository agencyRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -85,7 +88,8 @@ public class GtfsImportService {
 
             persistFeedInfo(workDir.resolve("feed_info.txt"), sourceUrl, sourceHash);
 
-            Map<String, Line> linesByGtfsId = importRoutes(workDir.resolve("routes.txt"));
+            Map<String, Agency> agenciesByGtfsId = importAgencies(workDir.resolve("agency.txt"));
+            Map<String, Line> linesByGtfsId = importRoutes(workDir.resolve("routes.txt"), agenciesByGtfsId);
             StopImport stopImport = importStops(workDir.resolve("stops.txt"));
 
             ItineraryImport itineraryImport = importItineraries(
@@ -169,7 +173,49 @@ public class GtfsImportService {
         }
     }
 
-    private Map<String, Line> importRoutes(Path routesFile) throws IOException {
+    /**
+     * Reads {@code agency.txt} when present. The file is GTFS-required when
+     * the feed declares more than one agency but technically optional in
+     * single-agency feeds. We always make sure at least one row exists so
+     * the timezone resolution path can rely on a non-null reference.
+     */
+    private Map<String, Agency> importAgencies(Path agenciesFile) throws IOException {
+        Map<String, Agency> result = new LinkedHashMap<>();
+        if (!Files.exists(agenciesFile)) {
+            log.info("GTFS import: agency.txt missing, no agencies persisted");
+            return result;
+        }
+        try (CSVParser parser = openCsv(agenciesFile)) {
+            for (CSVRecord record : parser) {
+                String agencyId = optional(record, "agency_id");
+                String name = truncate(optional(record, "agency_name"), 200);
+                if (isBlank(name)) {
+                    // GTFS allows agency_name to be empty when there is exactly
+                    // one agency, but we need *something* to render in the UI.
+                    name = "Unnamed agency";
+                }
+
+                Agency agency = Agency.builder()
+                        .externalId(isBlank(agencyId) ? null : truncate(agencyId.trim(), 100))
+                        .name(name)
+                        .url(truncate(optional(record, "agency_url"), 500))
+                        .timezone(truncate(optional(record, "agency_timezone"), 60))
+                        .lang(truncate(optional(record, "agency_lang"), 10))
+                        .phone(truncate(optional(record, "agency_phone"), 30))
+                        .fareUrl(truncate(optional(record, "agency_fare_url"), 500))
+                        .email(truncate(optional(record, "agency_email"), 100))
+                        .build();
+                Agency saved = agencyRepository.save(agency);
+                // Index both by the GTFS agency_id (when present) and by the
+                // empty string so single-agency feeds can resolve to it.
+                result.put(isBlank(agencyId) ? "" : agencyId, saved);
+            }
+        }
+        log.info("GTFS import: {} agencies created", result.size());
+        return result;
+    }
+
+    private Map<String, Line> importRoutes(Path routesFile, Map<String, Agency> agencies) throws IOException {
         Map<String, Line> result = new LinkedHashMap<>();
         try (CSVParser parser = openCsv(routesFile)) {
             for (CSVRecord record : parser) {
@@ -180,6 +226,7 @@ public class GtfsImportService {
                 String textColor = optional(record, "route_text_color");
                 int routeType = parseInt(record.get("route_type"), 3);
                 String networkId = optional(record, "network_id");
+                String agencyId = optional(record, "agency_id");
 
                 String code = truncate(firstNonBlank(shortName, longName, routeId), LINE_CODE_MAX_LENGTH);
                 String name = truncate(firstNonBlank(longName, shortName, routeId), LINE_NAME_MAX_LENGTH);
@@ -187,6 +234,7 @@ public class GtfsImportService {
                 String category = truncate(deriveCategory(networkId, routeType), LINE_CATEGORY_MAX_LENGTH);
                 String formattedColor = formatColor(color);
                 String formattedTextColor = resolveTextColor(textColor, formattedColor);
+                Agency agency = resolveAgency(agencyId, agencies);
 
                 Line line = lineRepository.save(Line.builder()
                         .code(uniqueCode(code, result.values()))
@@ -195,6 +243,7 @@ public class GtfsImportService {
                         .textColor(formattedTextColor)
                         .type(type)
                         .category(category)
+                        .agency(agency)
                         .build());
                 result.put(routeId, line);
             }
@@ -772,6 +821,26 @@ public class GtfsImportService {
         String trimmed = raw.trim();
         String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
         return hex.matches("^#[0-9A-Fa-f]{6}$") ? hex : DEFAULT_COLOR;
+    }
+
+    /**
+     * Routes a GTFS {@code agency_id} to its persisted {@link Agency}.
+     * Falls back to the single agency when the feed has exactly one and
+     * the route omits {@code agency_id} (the GTFS spec permits this).
+     * Returns {@code null} when no agency was loaded — lines without an
+     * agency are still valid; the timezone resolver knows how to deal
+     * with that.
+     */
+    private static Agency resolveAgency(String agencyId, Map<String, Agency> agencies) {
+        if (agencies.isEmpty()) {return null;}
+        if (!isBlank(agencyId)) {
+            Agency match = agencies.get(agencyId.trim());
+            if (match != null) {return match;}
+        }
+        if (agencies.size() == 1) {
+            return agencies.values().iterator().next();
+        }
+        return null;
     }
 
     /**

@@ -323,6 +323,19 @@ export interface NetworkMapAlertsUpdate {
 
 export type NetworkMapUpdate = NetworkMapFullUpdate | NetworkMapAlertsUpdate;
 
+// GTFS Agency
+export interface Agency {
+  id: string;
+  externalId: string | null;
+  name: string;
+  url: string | null;
+  timezone: string | null;
+  lang: string | null;
+  phone: string | null;
+  fareUrl: string | null;
+  email: string | null;
+}
+
 // GTFS Feed Info (admin)
 export interface FeedInfo {
   publisherName: string | null;

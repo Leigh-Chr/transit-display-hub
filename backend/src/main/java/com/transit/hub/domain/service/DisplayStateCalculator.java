@@ -43,7 +43,10 @@ public class DisplayStateCalculator {
 
     /** Operator-facing zone used to compare wall-clock schedule times against
      *  the server's now(). Pinning it here means the JVM's TZ — which can be
-     *  UTC in Docker — never silently shifts the kiosk's "next departure". */
+     *  UTC in Docker — never silently shifts the kiosk's "next departure".
+     *  When a stop's lines declare an {@code agency.timezone}, that takes
+     *  precedence over this value; the property is the system-wide fallback
+     *  for installs without GTFS data or without {@code agency.txt}. */
     @Value("${app.timezone:Europe/Paris}")
     private String appTimezone = "Europe/Paris";
 
@@ -67,7 +70,8 @@ public class DisplayStateCalculator {
         // Get upcoming arrivals within 30-minute window, one per itinerary/direction.
         // Handles the midnight wrap (e.g., 23:50 → 00:20) by issuing two queries
         // concatenated in chronological order — see `loadUpcomingSchedules`.
-        LocalTime now = LocalTime.now(ZoneId.of(appTimezone));
+        ZoneId zone = resolveZone(stop);
+        LocalTime now = LocalTime.now(zone);
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
         List<DisplayState.ArrivalInfo> arrivals = loadUpcomingSchedules(stopId, now, windowEnd)
                 .stream()
@@ -151,5 +155,49 @@ public class DisplayStateCalculator {
                 message.getContent(),
                 message.getSeverity()
         );
+    }
+
+    /**
+     * Resolves the operating timezone for a stop. Order of precedence:
+     * <ol>
+     *   <li>The {@code agency.timezone} of the most-served line (the line
+     *       with the highest stop-line count); ties broken by line code
+     *       so the resolution is deterministic.</li>
+     *   <li>The first non-blank {@code agency.timezone} encountered.</li>
+     *   <li>The {@code app.timezone} property — kept as a global fallback
+     *       for synthetic-seed installs and feeds without {@code agency.txt}.</li>
+     * </ol>
+     * Invalid timezone strings (legacy or typo'd) silently fall through to
+     * the next step rather than throwing, so a single bad row in the feed
+     * cannot take a kiosk offline.
+     */
+    private ZoneId resolveZone(Stop stop) {
+        Set<Line> lines = stop.getLines();
+        if (lines != null && !lines.isEmpty()) {
+            ZoneId fromAgency = lines.stream()
+                    .filter(l -> l.getAgency() != null && l.getAgency().getTimezone() != null)
+                    .sorted(Comparator
+                            .comparing((Line l) -> l.getCode() == null ? "" : l.getCode()))
+                    .map(l -> tryParseZone(l.getAgency().getTimezone()))
+                    .filter(z -> z != null)
+                    .findFirst()
+                    .orElse(null);
+            if (fromAgency != null) {
+                return fromAgency;
+            }
+        }
+        ZoneId fallback = tryParseZone(appTimezone);
+        return fallback != null ? fallback : ZoneId.of("Europe/Paris");
+    }
+
+    private static ZoneId tryParseZone(String zone) {
+        if (zone == null || zone.isBlank()) {
+            return null;
+        }
+        try {
+            return ZoneId.of(zone.trim());
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
