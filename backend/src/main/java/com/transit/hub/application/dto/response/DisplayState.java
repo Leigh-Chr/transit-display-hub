@@ -28,7 +28,11 @@ public record DisplayState(
             PickupKind pickupKind,
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
             com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed,
-            boolean timepoint
+            boolean timepoint,
+            /** Headway from frequencies.txt when applicable. The kiosk
+             *  surfaces it as "every X min" so passengers don't expect
+             *  a strict timetable on high-frequency lines. */
+            Integer frequencyHeadwaySeconds
     ) {}
 
     public record MessageInfo(

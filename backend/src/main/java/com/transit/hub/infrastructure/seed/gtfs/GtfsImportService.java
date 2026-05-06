@@ -104,7 +104,9 @@ public class GtfsImportService {
                     linesByGtfsId,
                     stopImport);
 
-            int schedules = importSchedules(workDir, itineraryImport, stopImport);
+            Map<String, FrequencyInfo> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
+
+            int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies);
 
             importTransfers(workDir.resolve("transfers.txt"), stopImport);
 
@@ -433,6 +435,11 @@ public class GtfsImportService {
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
                             int wheelchairAccessible, int bikesAllowed) {}
 
+    /** Headway annotation derived from frequencies.txt. We pick the
+     *  smallest headway among all entries declared for a trip — that's
+     *  the "best case" frequency the kiosk can confidently advertise. */
+    private record FrequencyInfo(int headwaySeconds, Boolean exactTimes) {}
+
     private record RouteDirKey(String routeId, String directionId) {}
 
     private ItineraryImport importItineraries(
@@ -616,7 +623,37 @@ public class GtfsImportService {
 
     private static final int MAX_SCHEDULE_BATCH = 5_000;
 
-    private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport)
+    /**
+     * Reads {@code frequencies.txt} into a {@code tripId -> FrequencyInfo}
+     * map. Trips with multiple windows (e.g. peak vs off-peak) collapse
+     * to the smallest headway — that's the most useful number for
+     * "every X min" display since passenger expectation tracks the best
+     * case more than the worst. Absent file = empty map.
+     */
+    private Map<String, FrequencyInfo> loadFrequencies(Path frequenciesFile) throws IOException {
+        Map<String, FrequencyInfo> result = new HashMap<>();
+        if (!Files.exists(frequenciesFile)) {
+            return result;
+        }
+        try (CSVParser parser = openCsv(frequenciesFile)) {
+            for (CSVRecord record : parser) {
+                String tripId = record.get("trip_id");
+                int headway = parseInt(optional(record, "headway_secs"), 0);
+                if (isBlank(tripId) || headway <= 0) {continue;}
+                String exactRaw = optional(record, "exact_times");
+                Boolean exact = isBlank(exactRaw) ? null : "1".equals(exactRaw.trim());
+                FrequencyInfo current = result.get(tripId);
+                if (current == null || headway < current.headwaySeconds) {
+                    result.put(tripId, new FrequencyInfo(headway, exact));
+                }
+            }
+        }
+        log.info("GTFS import: {} trips carry frequency annotations", result.size());
+        return result;
+    }
+
+    private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport,
+                                Map<String, FrequencyInfo> frequencies)
             throws IOException {
         Path stopTimesFile = workDir.resolve("stop_times.txt");
         if (!Files.exists(stopTimesFile)) {
@@ -680,6 +717,8 @@ public class GtfsImportService {
                 String timepointRaw = optional(record, "timepoint");
                 boolean timepoint = isBlank(timepointRaw) || !"0".equals(timepointRaw.trim());
 
+                FrequencyInfo freq = frequencies.get(tripId);
+
                 batch.add(Schedule.builder()
                         .time(time)
                         .stop(stop)
@@ -689,6 +728,8 @@ public class GtfsImportService {
                         .wheelchairOverride(wheelchairOverride)
                         .bikesAllowedOverride(bikesOverride)
                         .timepoint(timepoint)
+                        .frequencyHeadwaySeconds(freq == null ? null : freq.headwaySeconds)
+                        .frequencyExactTimes(freq == null ? null : freq.exactTimes)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {

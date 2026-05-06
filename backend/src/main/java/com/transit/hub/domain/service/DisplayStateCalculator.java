@@ -159,7 +159,8 @@ public class DisplayStateCalculator {
                         schedule.getPickupType(), schedule.getDropOffType()),
                 resolveWheelchair(schedule, itinerary),
                 resolveBikes(schedule, itinerary),
-                schedule.isTimepoint()
+                schedule.isTimepoint(),
+                schedule.getFrequencyHeadwaySeconds()
         );
     }
 

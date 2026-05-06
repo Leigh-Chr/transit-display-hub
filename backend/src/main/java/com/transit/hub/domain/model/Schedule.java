@@ -93,4 +93,17 @@ public class Schedule {
     @Column(nullable = false)
     @Builder.Default
     private boolean timepoint = true;
+
+    /** Headway (in seconds) inherited from the trip's frequencies.txt
+     *  entry when present. Lets the kiosk render "every 4 min" alongside
+     *  or instead of the next-departure clock for high-frequency lines.
+     *  Null when the trip is not in frequency mode. */
+    @Column(name = "frequency_headway_seconds")
+    private Integer frequencyHeadwaySeconds;
+
+    /** GTFS frequencies.exact_times. True means start_time is exact,
+     *  false (default) means it's approximate. Null when frequencies
+     *  doesn't apply. */
+    @Column(name = "frequency_exact_times")
+    private Boolean frequencyExactTimes;
 }

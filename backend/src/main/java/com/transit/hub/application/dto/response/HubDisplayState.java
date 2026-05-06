@@ -22,6 +22,7 @@ public record HubDisplayState(
             PickupKind pickupKind,
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
             com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed,
-            boolean timepoint
+            boolean timepoint,
+            Integer frequencyHeadwaySeconds
     ) {}
 }

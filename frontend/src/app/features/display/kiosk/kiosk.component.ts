@@ -113,6 +113,9 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       @if (pickupBadge(arrival.pickupKind); as badge) {
                         <span class="pickup-badge">{{ badge }}</span>
                       }
+                      @if (frequencyLabel(arrival.frequencyHeadwaySeconds); as freq) {
+                        <span class="pickup-badge frequency-badge">{{ freq }}</span>
+                      }
                     </span>
                     <span class="time-info">
                       <span
@@ -450,6 +453,11 @@ import { lineTextColor } from '@shared/utils/color.utils';
       border: 1px solid var(--app-kiosk-info-border);
     }
 
+    .frequency-badge {
+      background: transparent;
+      border-color: var(--app-kiosk-info-accent);
+    }
+
     .access-icon {
       vertical-align: middle;
       margin-left: 0.8vw;
@@ -711,6 +719,18 @@ export class KioskComponent implements OnInit, OnDestroy {
   // Exposed to the template so badges pick the server-resolved foreground
   // color (route_text_color from GTFS) before falling back to YIQ contrast.
   readonly lineTextColor = lineTextColor;
+
+  /** Renders the frequency headway as a short "every X min" label.
+   *  Null when the arrival is on a fixed timetable so the template
+   *  skips the badge entirely. Headways under 60 seconds round to
+   *  "every minute" — a strict 30s read would surprise passengers
+   *  whose mental model is "minutes between buses". */
+  frequencyLabel(headwaySeconds: number | null | undefined): string | null {
+    if (!headwaySeconds || headwaySeconds <= 0) {return null;}
+    const minutes = Math.round(headwaySeconds / 60);
+    if (minutes <= 1) {return 'every minute';}
+    return `every ${minutes} min`;
+  }
 
   /** Maps a {@link PickupKind} to a short label rendered next to the
    *  destination name. Returns null for {@code NORMAL} (no badge needed)

@@ -265,6 +265,10 @@ export interface ArrivalInfo {
   bikesAllowed?: BikesAllowed;
   /** GTFS timepoint: false means the time is approximate. */
   timepoint?: boolean;
+  /** Headway from frequencies.txt — seconds between consecutive
+   *  departures during the active window. Null when the trip is on a
+   *  fixed timetable. */
+  frequencyHeadwaySeconds?: number | null;
 }
 
 export interface MessageInfo {
@@ -292,6 +296,7 @@ export interface HubArrivalInfo {
   wheelchairAccessible?: WheelchairAccess;
   bikesAllowed?: BikesAllowed;
   timepoint?: boolean;
+  frequencyHeadwaySeconds?: number | null;
 }
 
 // Network Map
