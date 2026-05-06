@@ -157,7 +157,8 @@ public class DisplayStateCalculator {
                 com.transit.hub.domain.model.enums.PickupKind.from(
                         schedule.getPickupType(), schedule.getDropOffType()),
                 resolveWheelchair(schedule, itinerary),
-                resolveBikes(schedule, itinerary)
+                resolveBikes(schedule, itinerary),
+                schedule.isTimepoint()
         );
     }
 

@@ -12,6 +12,9 @@ public record LineResponse(
         String color,
         String textColor,
         LineType type,
+        Integer sortOrder,
+        String description,
+        String url,
         int stopCount,
         int itineraryCount
 ) {
@@ -23,6 +26,9 @@ public record LineResponse(
                 line.getColor(),
                 line.getTextColor(),
                 line.getType(),
+                line.getSortOrder(),
+                line.getDescription(),
+                line.getUrl(),
                 line.getStops() != null ? line.getStops().size() : 0,
                 line.getItineraries() != null ? line.getItineraries().size() : 0
         );

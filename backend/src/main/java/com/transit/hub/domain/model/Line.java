@@ -53,8 +53,8 @@ public class Line {
     private String externalId;
 
     @NotBlank(message = "Code is required")
-    @Size(max = 10, message = "Code must be at most 10 characters")
-    @Column(unique = true, nullable = false)
+    @Size(max = 30, message = "Code must be at most 30 characters")
+    @Column(unique = true, nullable = false, length = 30)
     private String code;
 
     @NotBlank(message = "Name is required")
@@ -99,6 +99,24 @@ public class Line {
     @Column(name = "continuous_drop_off", nullable = false)
     @Builder.Default
     private short continuousDropOff = 1;
+
+    /** GTFS {@code route_sort_order}. Drives the stable line ordering on
+     *  the network map and admin lists. Lines without a value sort after
+     *  those with one, then by code. */
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
+    /** GTFS {@code route_desc}. Free-form description shown in the stop
+     *  popup and admin detail view. */
+    @Size(max = 500)
+    @Column(length = 500)
+    private String description;
+
+    /** GTFS {@code route_url}. Public link to the operator's page about
+     *  this line. */
+    @Size(max = 255)
+    @Column(length = 255)
+    private String url;
 
     /** Operating agency. Nullable because lines created via the legacy
      *  admin form (or imported from feeds without {@code agency.txt})

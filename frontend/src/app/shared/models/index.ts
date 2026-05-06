@@ -55,6 +55,12 @@ export interface Line {
   color: string;
   textColor?: string | null;
   type: LineType | null;
+  /** GTFS route_sort_order — drives stable line ordering. */
+  sortOrder?: number | null;
+  /** GTFS route_desc — free-form description shown in the stop popup. */
+  description?: string | null;
+  /** GTFS route_url — public link to the operator's page. */
+  url?: string | null;
   stopCount: number;
   itineraryCount: number;
 }
@@ -254,6 +260,8 @@ export interface ArrivalInfo {
   pickupKind?: PickupKind;
   wheelchairAccessible?: WheelchairAccess;
   bikesAllowed?: BikesAllowed;
+  /** GTFS timepoint: false means the time is approximate. */
+  timepoint?: boolean;
 }
 
 export interface MessageInfo {
@@ -280,6 +288,7 @@ export interface HubArrivalInfo {
   pickupKind?: PickupKind;
   wheelchairAccessible?: WheelchairAccess;
   bikesAllowed?: BikesAllowed;
+  timepoint?: boolean;
 }
 
 // Network Map

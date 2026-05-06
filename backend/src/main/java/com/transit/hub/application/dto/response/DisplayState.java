@@ -23,7 +23,8 @@ public record DisplayState(
             LineInfo line,
             PickupKind pickupKind,
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
-            com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed
+            com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed,
+            boolean timepoint
     ) {}
 
     public record MessageInfo(

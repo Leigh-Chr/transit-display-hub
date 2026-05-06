@@ -86,4 +86,11 @@ public class Schedule {
      *  Same null-means-inherit semantics as {@link #wheelchairOverride}. */
     @Column(name = "bikes_allowed_override")
     private Boolean bikesAllowedOverride;
+
+    /** GTFS {@code timepoint}: 1 (default) means the time is exact,
+     *  0 means it's an approximation. The kiosk prefixes approximate
+     *  arrivals with a tilde so passengers don't set their watch by them. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean timepoint = true;
 }

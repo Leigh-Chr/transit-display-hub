@@ -52,7 +52,7 @@ import java.util.zip.ZipFile;
 @Slf4j
 public class GtfsImportService {
 
-    private static final int LINE_CODE_MAX_LENGTH = 10;
+    private static final int LINE_CODE_MAX_LENGTH = 30;
     private static final int LINE_NAME_MAX_LENGTH = 100;
     private static final int LINE_CATEGORY_MAX_LENGTH = 50;
     private static final int STOP_NAME_MAX_LENGTH = 100;
@@ -238,6 +238,10 @@ public class GtfsImportService {
 
                 short continuousPickup = (short) parseInt(optional(record, "continuous_pickup"), 1);
                 short continuousDropOff = (short) parseInt(optional(record, "continuous_drop_off"), 1);
+                String sortOrderRaw = optional(record, "route_sort_order");
+                Integer sortOrder = isBlank(sortOrderRaw) ? null : parseIntOrNull(sortOrderRaw);
+                String routeDesc = truncate(optional(record, "route_desc"), 500);
+                String routeUrl = truncate(optional(record, "route_url"), 255);
 
                 Line line = lineRepository.save(Line.builder()
                         .externalId(truncate(routeId, 100))
@@ -250,6 +254,9 @@ public class GtfsImportService {
                         .agency(agency)
                         .continuousPickup(continuousPickup)
                         .continuousDropOff(continuousDropOff)
+                        .sortOrder(sortOrder)
+                        .description(isBlank(routeDesc) ? null : routeDesc)
+                        .url(isBlank(routeUrl) ? null : routeUrl)
                         .build());
                 result.put(routeId, line);
             }
@@ -656,6 +663,10 @@ public class GtfsImportService {
                         itinerary.getWheelchairDefault());
                 Boolean bikesOverride = computeBikesOverride(trip.bikesAllowed,
                         itinerary.getBikesAllowedDefault());
+                // GTFS timepoint defaults to "exact" when omitted; only an
+                // explicit 0 means the time is approximate.
+                String timepointRaw = optional(record, "timepoint");
+                boolean timepoint = isBlank(timepointRaw) || !"0".equals(timepointRaw.trim());
 
                 batch.add(Schedule.builder()
                         .time(time)
@@ -665,6 +676,7 @@ public class GtfsImportService {
                         .dropOffType(dropOffType)
                         .wheelchairOverride(wheelchairOverride)
                         .bikesAllowedOverride(bikesOverride)
+                        .timepoint(timepoint)
                         .build());
 
                 if (batch.size() >= MAX_SCHEDULE_BATCH) {
@@ -1063,6 +1075,17 @@ public class GtfsImportService {
             return Integer.parseInt(s.trim());
         } catch (NumberFormatException e) {
             return defaultValue;
+        }
+    }
+
+    private static Integer parseIntOrNull(String s) {
+        if (isBlank(s)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
