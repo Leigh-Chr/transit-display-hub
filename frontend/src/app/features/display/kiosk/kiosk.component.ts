@@ -880,6 +880,36 @@ export class KioskComponent implements OnInit, OnDestroy {
         console.error('WebSocket error:', err);
       },
     });
+
+    // After a WebSocket interruption, the broker may have skipped pushes
+    // (e.g. a stop was renamed, a message expired) — fetch a fresh snapshot
+    // so the kiosk doesn't keep showing pre-disconnect state until the next
+    // server-driven event.
+    this.wsService.reconnected$.subscribe(() => this.refetchSnapshot(stopId));
+  }
+
+  private refetchSnapshot(stopId: string): void {
+    if (this.token) {
+      this.displayService.getStateByToken(this.token).subscribe({
+        next: (auth) => {
+          this.displayState.set(auth.state);
+          this.lastUpdate.set(Date.now());
+        },
+        error: (err: unknown) => {
+          console.error('Failed to refresh snapshot after reconnect:', err);
+        },
+      });
+    } else {
+      this.displayService.getState(stopId).subscribe({
+        next: (state) => {
+          this.displayState.set(state);
+          this.lastUpdate.set(Date.now());
+        },
+        error: (err: unknown) => {
+          console.error('Failed to refresh snapshot after reconnect:', err);
+        },
+      });
+    }
   }
 
   private formatTime(date: Date): string {

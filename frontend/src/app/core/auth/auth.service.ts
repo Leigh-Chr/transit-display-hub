@@ -1,7 +1,7 @@
 import { inject, Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { LoginRequest, LoginResponse, UserRole, AuthUser } from '@shared/models';
 
@@ -23,6 +23,12 @@ export class AuthService {
    *  interceptor on 401 and consumed by LoginComponent after a successful
    *  re-login so the user lands back where they were. */
   private readonly redirectUrlSignal = signal<string | null>(null);
+
+  /** Fires once per logout so long-lived peripherals (WebSocket clients) can
+   *  drop their session along with the token, instead of staying subscribed
+   *  on behalf of an account that no longer exists in this tab. */
+  private readonly logoutSubject = new Subject<void>();
+  readonly logout$ = this.logoutSubject.asObservable();
 
   isAuthenticated = computed(() => {
     const token = this.tokenSignal();
@@ -63,6 +69,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     this.tokenSignal.set(null);
+    this.logoutSubject.next();
     void this.router.navigate(['/login']);
   }
 

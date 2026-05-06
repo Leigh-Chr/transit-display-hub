@@ -14,8 +14,15 @@ export class HubWebSocketService {
   private subscriptions: StompSubscription[] = [];
   private updateSubject = new Subject<DisplayState>();
   private readonly connectedSignal = signal(false);
+  private hasConnectedOnce = false;
+  private readonly reconnectedSubject = new Subject<void>();
+  readonly reconnected$ = this.reconnectedSubject.asObservable();
 
   isConnected = this.connectedSignal.asReadonly();
+
+  constructor() {
+    this.authService.logout$.subscribe(() => this.disconnect());
+  }
 
   connect(stopIds: string[]): Observable<DisplayState> {
     if (this.client) {
@@ -33,6 +40,10 @@ export class HubWebSocketService {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         this.connectedSignal.set(true);
+        if (this.hasConnectedOnce) {
+          this.reconnectedSubject.next();
+        }
+        this.hasConnectedOnce = true;
         if (!this.client) { return; }
         for (const stopId of stopIds) {
           const sub = this.client.subscribe(`/topic/display/${stopId}`, (message: IMessage) => {
@@ -69,6 +80,7 @@ export class HubWebSocketService {
       this.client = null;
     }
     this.connectedSignal.set(false);
+    this.hasConnectedOnce = false;
     this.updateSubject.complete();
     this.updateSubject = new Subject<DisplayState>();
   }

@@ -857,6 +857,20 @@ export class HubComponent implements OnInit, OnDestroy {
         console.error('Hub WebSocket error:', err);
       },
     });
+
+    // After a WebSocket interruption, refresh the aggregate snapshot to
+    // capture any deletions or renames that happened during the gap.
+    this.hubWsService.reconnected$.subscribe(() => {
+      this.displayService.getHubState(this.stopIds, this.hubName).subscribe({
+        next: state => {
+          this.lastUpdate.set(Date.now());
+          this.hubState.set(state);
+        },
+        error: err => {
+          console.error('Failed to refresh hub state after reconnect:', err);
+        },
+      });
+    });
   }
 
   private rebuildHubState(): void {

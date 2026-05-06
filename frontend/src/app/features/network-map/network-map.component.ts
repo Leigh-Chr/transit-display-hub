@@ -853,6 +853,13 @@ export class NetworkMapComponent implements OnInit {
         this.alerts.set(update.alerts);
       }
     });
+
+    // After a WebSocket interruption, the broker may have skipped FULL_UPDATE
+    // pushes (e.g. lines or stops were edited during the gap) — re-load the
+    // map snapshot so the user doesn't keep an outdated topology on screen.
+    this.networkMapWs.reconnected$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.loadNetwork());
   }
 
   onFilterChange(codes: string[]): void {

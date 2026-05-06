@@ -14,6 +14,7 @@ import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.testutil.TestDataFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,6 +25,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -79,6 +82,16 @@ class MessageServiceTest {
         testStop = TestDataFactory.createStopWithId(testStopId, "Central Station", testLine);
         now = Instant.now();
         futureTime = now.plus(1, ChronoUnit.HOURS);
+        // The service now blocks NETWORK-scope mutations from non-admins; seed
+        // an admin principal so the existing scope tests still exercise the
+        // happy path. Per-test overrides remain free to clear or replace it.
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("admin", null, "ROLE_ADMIN"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Nested

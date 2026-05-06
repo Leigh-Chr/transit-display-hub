@@ -14,8 +14,15 @@ export class NetworkMapWebSocketService {
   private subscription: StompSubscription | null = null;
   private updateSubject = new Subject<NetworkMapUpdate>();
   private readonly connected = signal(false);
+  private hasConnectedOnce = false;
+  private readonly reconnectedSubject = new Subject<void>();
+  readonly reconnected$ = this.reconnectedSubject.asObservable();
 
   isConnected = this.connected.asReadonly();
+
+  constructor() {
+    this.authService.logout$.subscribe(() => this.disconnect());
+  }
 
   connect(): Observable<NetworkMapUpdate> {
     if (this.client) {
@@ -33,6 +40,10 @@ export class NetworkMapWebSocketService {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         this.connected.set(true);
+        if (this.hasConnectedOnce) {
+          this.reconnectedSubject.next();
+        }
+        this.hasConnectedOnce = true;
         if (!this.client) {return;}
         this.subscription = this.client.subscribe('/topic/network-map', (message: IMessage) => {
           try {
@@ -66,6 +77,7 @@ export class NetworkMapWebSocketService {
       this.client = null;
     }
     this.connected.set(false);
+    this.hasConnectedOnce = false;
     this.updateSubject.complete();
     this.updateSubject = new Subject<NetworkMapUpdate>();
   }

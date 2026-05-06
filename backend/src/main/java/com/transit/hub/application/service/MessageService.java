@@ -18,6 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,6 +93,7 @@ public class MessageService {
     @Transactional
     public MessageResponse createMessage(CreateMessageRequest request) {
         validateMessageRequest(request);
+        assertAuthorizedForScope(request.scopeType());
 
         BroadcastMessage message = BroadcastMessage.builder()
                 .title(request.title())
@@ -118,6 +122,10 @@ public class MessageService {
                 .orElseThrow(() -> new EntityNotFoundException("Message", id));
 
         validateMessageRequest(request);
+        // Block agents both from promoting a message into NETWORK scope and from
+        // editing one that already has it.
+        assertAuthorizedForScope(request.scopeType());
+        assertAuthorizedForScope(message.getScopeType());
 
         // Track original affected stops for event
         Set<UUID> originalAffectedStops = getAffectedStopIds(message);
@@ -150,11 +158,31 @@ public class MessageService {
         BroadcastMessage message = messageRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Message", id));
 
+        assertAuthorizedForScope(message.getScopeType());
+
         Set<UUID> affectedStops = getAffectedStopIds(message);
         messageRepository.delete(message);
 
         if (!affectedStops.isEmpty()) {
             eventPublisher.publishEvent(new MessageChangedEvent(this, affectedStops));
+        }
+    }
+
+    /**
+     * NETWORK-scope messages are network-wide announcements visible on every
+     * kiosk; only admins may create, modify or delete them. LINE/STOP scopes
+     * remain available to agents.
+     */
+    private void assertAuthorizedForScope(MessageScope scope) {
+        if (scope != MessageScope.NETWORK) {
+            return;
+        }
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            throw new AccessDeniedException(
+                    "Only administrators can create, modify or delete network-wide messages");
         }
     }
 

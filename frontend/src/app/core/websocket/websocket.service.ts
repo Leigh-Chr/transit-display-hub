@@ -18,8 +18,21 @@ export class WebSocketService {
   private readonly connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
   private deviceId: string | null = null;
   private destroy$ = new Subject<void>();
+  private hasConnectedOnce = false;
+  /** Emits each time the STOMP session re-opens after an interruption. Useful
+   *  for downstream consumers (kiosk) that need to re-fetch a fresh snapshot
+   *  via REST since pushes during the drop are lost. */
+  private readonly reconnectedSubject = new Subject<void>();
+  readonly reconnected$ = this.reconnectedSubject.asObservable();
 
   connectionState = this.connectionStateSignal.asReadonly();
+
+  constructor() {
+    // Drop the live STOMP session as soon as the user logs out, otherwise
+    // the broker keeps pushing display state to a tab that no longer has a
+    // token to authenticate further requests with.
+    this.authService.logout$.subscribe(() => this.disconnect());
+  }
 
   connect(stopId: string, deviceId: string | null = null): Observable<DisplayState> {
     this.deviceId = deviceId;
@@ -38,6 +51,10 @@ export class WebSocketService {
         this.connectionStateSignal.set('CONNECTED');
         this.subscribeToStop(stopId);
         this.startHeartbeat();
+        if (this.hasConnectedOnce) {
+          this.reconnectedSubject.next();
+        }
+        this.hasConnectedOnce = true;
       },
       onDisconnect: () => {
         this.connectionStateSignal.set('DISCONNECTED');
@@ -62,6 +79,7 @@ export class WebSocketService {
       this.client = null;
     }
     this.deviceId = null;
+    this.hasConnectedOnce = false;
     this.connectionStateSignal.set('DISCONNECTED');
   }
 

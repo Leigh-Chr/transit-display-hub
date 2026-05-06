@@ -12,7 +12,7 @@ describe('KioskComponent', () => {
   let component: KioskComponent;
   let fixture: ComponentFixture<KioskComponent>;
   let mockDisplayService: { getState: ReturnType<typeof vi.fn>; getStateByToken: ReturnType<typeof vi.fn> };
-  let mockWsService: { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; connectionState: ReturnType<typeof signal<ConnectionState>> };
+  let mockWsService: { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; connectionState: ReturnType<typeof signal<ConnectionState>>; reconnected$: typeof EMPTY };
   let paramsSubject: Subject<Record<string, string>>;
   let queryParamsSubject: Subject<Record<string, string>>;
 
@@ -48,7 +48,8 @@ describe('KioskComponent', () => {
     mockWsService = {
       connect: vi.fn().mockReturnValue(EMPTY),
       disconnect: vi.fn(),
-      connectionState: signal<ConnectionState>('CONNECTED')
+      connectionState: signal<ConnectionState>('CONNECTED'),
+      reconnected$: EMPTY
     };
 
     TestBed.configureTestingModule({
