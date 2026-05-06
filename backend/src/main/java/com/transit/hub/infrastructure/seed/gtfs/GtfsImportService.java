@@ -1,5 +1,6 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
+import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
@@ -7,6 +8,7 @@ import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.util.ColorContrast;
+import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
@@ -60,14 +62,28 @@ public class GtfsImportService {
     private final StopRepository stopRepository;
     private final ItineraryRepository itineraryRepository;
     private final ScheduleRepository scheduleRepository;
+    private final FeedInfoRepository feedInfoRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
     @Transactional
     public ImportResult importFromZip(Path zipPath) throws IOException {
+        return importFromZip(zipPath, null, null);
+    }
+
+    /**
+     * Import a GTFS feed from a local zip, recording the {@code sourceUrl}
+     * and {@code sourceHash} on the singleton {@link FeedInfo} row so the
+     * admin dashboard can surface where the data came from and detect
+     * unchanged re-downloads.
+     */
+    @Transactional
+    public ImportResult importFromZip(Path zipPath, String sourceUrl, String sourceHash) throws IOException {
         Path workDir = Files.createTempDirectory("gtfs-extract-");
         try {
             extractZip(zipPath, workDir);
+
+            persistFeedInfo(workDir.resolve("feed_info.txt"), sourceUrl, sourceHash);
 
             Map<String, Line> linesByGtfsId = importRoutes(workDir.resolve("routes.txt"));
             StopImport stopImport = importStops(workDir.resolve("stops.txt"));
@@ -91,6 +107,46 @@ public class GtfsImportService {
         } finally {
             deleteRecursively(workDir);
         }
+    }
+
+    /**
+     * Reads {@code feed_info.txt} when present (the file is GTFS-optional)
+     * and replaces the singleton {@link FeedInfo} row. When the file is
+     * missing we still write a row so admins can see at least the source
+     * URL and import timestamp.
+     */
+    private void persistFeedInfo(Path feedInfoFile, String sourceUrl, String sourceHash) throws IOException {
+        FeedInfo.FeedInfoBuilder builder = FeedInfo.builder()
+                .sourceUrl(sourceUrl)
+                .sourceHash(sourceHash)
+                .importedAt(java.time.Instant.now());
+
+        if (Files.exists(feedInfoFile)) {
+            try (CSVParser parser = openCsv(feedInfoFile)) {
+                for (CSVRecord record : parser) {
+                    builder
+                            .publisherName(truncate(optional(record, "feed_publisher_name"), 200))
+                            .publisherUrl(truncate(optional(record, "feed_publisher_url"), 500))
+                            .lang(truncate(optional(record, "feed_lang"), 20))
+                            .defaultLang(truncate(optional(record, "default_lang"), 20))
+                            .feedVersion(truncate(optional(record, "feed_version"), 50))
+                            .contactEmail(truncate(optional(record, "feed_contact_email"), 50))
+                            .contactUrl(truncate(optional(record, "feed_contact_url"), 500))
+                            .startDate(GtfsParse.parseGtfsDate(optional(record, "feed_start_date")))
+                            .endDate(GtfsParse.parseGtfsDate(optional(record, "feed_end_date")));
+                    break; // GTFS spec allows only one record in feed_info.txt
+                }
+            }
+        } else {
+            log.info("GTFS import: feed_info.txt missing, recording import metadata only");
+        }
+
+        // Replace any prior singleton — we never accumulate history here
+        // (use import_audit for that, added in 0.8). deleteAllInBatch is a
+        // no-op when the table is empty, so the first-import path stays cheap.
+        feedInfoRepository.deleteAllInBatch();
+        feedInfoRepository.flush();
+        feedInfoRepository.save(builder.build());
     }
 
     private void extractZip(Path zipPath, Path target) throws IOException {

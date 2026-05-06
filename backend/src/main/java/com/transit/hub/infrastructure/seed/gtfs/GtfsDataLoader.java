@@ -52,7 +52,8 @@ public class GtfsDataLoader implements CommandLineRunner {
 
         try {
             Path feed = downloader.downloadOrCached(feedUrl);
-            GtfsImportService.ImportResult result = importer.importFromZip(feed);
+            String hash = sha256(feed);
+            GtfsImportService.ImportResult result = importer.importFromZip(feed, feedUrl, hash);
             // The frontend may have hit /api/network-map while routes/stops were
             // still being persisted, caching an empty snapshot. Drop those caches
             // so the next request rebuilds from the populated database.
@@ -64,6 +65,29 @@ public class GtfsDataLoader implements CommandLineRunner {
         } catch (Exception e) {
             log.error("GTFS import failed for {}: {}. Application will start without network data.",
                     feedUrl, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * SHA-256 of the downloaded zip, used to detect re-downloads that
+     * returned identical content (so the next idempotent re-import logic
+     * in 0.5 can skip the work). Streams the file so a 200 MB feed never
+     * sits in memory.
+     */
+    private String sha256(Path file) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
+                byte[] buffer = new byte[8 * 1024];
+                int read;
+                while ((read = in.read(buffer)) > 0) {
+                    md.update(buffer, 0, read);
+                }
+            }
+            return java.util.HexFormat.of().formatHex(md.digest());
+        } catch (Exception e) {
+            log.warn("Failed to compute SHA-256 of feed file {}: {}", file, e.getMessage());
+            return null;
         }
     }
 

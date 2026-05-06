@@ -322,3 +322,22 @@ export interface NetworkMapAlertsUpdate {
 }
 
 export type NetworkMapUpdate = NetworkMapFullUpdate | NetworkMapAlertsUpdate;
+
+// GTFS Feed Info (admin)
+export interface FeedInfo {
+  publisherName: string | null;
+  publisherUrl: string | null;
+  lang: string | null;
+  defaultLang: string | null;
+  feedVersion: string | null;
+  contactEmail: string | null;
+  contactUrl: string | null;
+  /** ISO-8601 date "YYYY-MM-DD". */
+  startDate: string | null;
+  /** ISO-8601 date "YYYY-MM-DD". */
+  endDate: string | null;
+  sourceUrl: string | null;
+  sourceHash: string | null;
+  /** ISO-8601 instant. */
+  importedAt: string | null;
+}

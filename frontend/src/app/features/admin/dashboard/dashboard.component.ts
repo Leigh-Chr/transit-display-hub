@@ -21,6 +21,7 @@ import { Line, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { lineTextColor, readableTextColor } from '@shared/utils/color.utils';
 import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
+import { FeedInfoCardComponent } from './feed-info-card.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -34,11 +35,16 @@ import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
     MatProgressBarModule,
     MatTooltipModule,
     StatsSkeletonComponent,
+    FeedInfoCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dashboard">
       <h1 class="page-title">Dashboard</h1>
+
+      @if (isAdmin()) {
+        <app-feed-info-card />
+      }
 
       @if (loading()) {
         <app-stats-skeleton />
