@@ -867,8 +867,11 @@ export class HubComponent implements OnInit, OnDestroy {
     });
 
     // After a WebSocket interruption, refresh the aggregate snapshot to
-    // capture any deletions or renames that happened during the gap.
+    // capture any deletions or renames that happened during the gap. Also
+    // wipe stopStates so the version filter can't reject a backend whose
+    // in-memory versionMap restarted from scratch.
     this.hubWsService.reconnected$.subscribe(() => {
+      this.stopStates.clear();
       this.displayService.getHubState(this.stopIds, this.hubName).subscribe({
         next: state => {
           this.lastUpdate.set(Date.now());

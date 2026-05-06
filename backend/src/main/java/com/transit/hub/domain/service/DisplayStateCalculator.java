@@ -14,9 +14,10 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -125,11 +126,12 @@ public class DisplayStateCalculator {
         return combined;
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onStopDeleted(StopDeletedEvent event) {
-        // Drop the version counter when the stop disappears so the in-memory
-        // map doesn't accumulate dead entries over a long-running process
-        // (GTFS reimports, manual stop churn).
+        // Drop the version counter only after the deletion actually committed.
+        // Using a plain @EventListener fired even on rollback, leaving the map
+        // pruned for a stop the database still has (and pushing version=1
+        // afterwards, which the kiosk's monotonicity filter would then reject).
         versionMap.remove(event.getStopId());
     }
 

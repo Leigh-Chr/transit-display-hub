@@ -75,10 +75,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 String token = header.substring("Bearer ".length()).trim();
                 if (!jwtService.isValidToken(token)) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Rejecting STOMP CONNECT with invalid token");
+                        log.debug("STOMP CONNECT carries an expired/invalid token; "
+                                + "falling back to anonymous (kiosk topics are public)");
                     }
-                    // Return null to drop the message; the client sees the CONNECT fail.
-                    return null;
+                    // Drop the bad token but let the connection through anonymously.
+                    // Public topics (kiosk, network-map) keep working; private ones
+                    // remain protected because the principal isn't bound.
+                    return message;
                 }
 
                 String username = jwtService.extractUsername(token);

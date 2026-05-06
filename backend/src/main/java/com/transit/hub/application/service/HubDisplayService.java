@@ -3,8 +3,8 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.dto.response.HubDisplayState;
 import com.transit.hub.application.dto.response.LineInfo;
-import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.service.DisplayStateCalculator;
+import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class HubDisplayService {
 
     private final DisplayStateCalculator displayStateCalculator;
+    private final StopRepository stopRepository;
     private final AtomicLong versionCounter = new AtomicLong(0);
 
     private static final int MAX_MESSAGES = 5;
@@ -34,15 +35,18 @@ public class HubDisplayService {
     public HubDisplayState getHubDisplayState(List<UUID> stopIds, String hubName) {
         // Skip individual stops that no longer exist instead of failing the whole hub.
         // A typo, a stale URL or a deleted stop should leave the rest of the hub usable.
+        // We pre-filter via existsById to avoid letting EntityNotFoundException leak out
+        // of calculateForStop — even when caught, an exception in a child @Transactional
+        // marks the parent transaction as rollback-only.
         List<DisplayState> stopStates = new ArrayList<>(stopIds.size());
         for (UUID stopId : stopIds) {
-            try {
-                stopStates.add(displayStateCalculator.calculateForStop(stopId));
-            } catch (EntityNotFoundException e) {
+            if (!stopRepository.existsById(stopId)) {
                 if (log.isDebugEnabled()) {
                     log.debug("Hub '{}' references unknown stop {}, skipping", hubName, stopId);
                 }
+                continue;
             }
+            stopStates.add(displayStateCalculator.calculateForStop(stopId));
         }
 
         // Merge lines, deduplicate by id, sort by code

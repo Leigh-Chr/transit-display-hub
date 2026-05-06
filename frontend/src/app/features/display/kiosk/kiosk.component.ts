@@ -898,17 +898,27 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.lastUpdate.set(Date.now());
   }
 
+  /** Like applyState but unconditional: used right after reconnect/refetch when
+   *  the version counter may have reset (backend restart, in-memory `versionMap`
+   *  starting fresh). Without this the kiosk would freeze on stale data,
+   *  rejecting every fresh state because its number is "lower" than the cached
+   *  pre-restart one. */
+  private resetState(state: DisplayState): void {
+    this.displayState.set(state);
+    this.lastUpdate.set(Date.now());
+  }
+
   private refetchSnapshot(stopId: string): void {
     if (this.token) {
       this.displayService.getStateByToken(this.token).subscribe({
-        next: (auth) => this.applyState(auth.state),
+        next: (auth) => this.resetState(auth.state),
         error: (err: unknown) => {
           console.error('Failed to refresh snapshot after reconnect:', err);
         },
       });
     } else {
       this.displayService.getState(stopId).subscribe({
-        next: (state) => this.applyState(state),
+        next: (state) => this.resetState(state),
         error: (err: unknown) => {
           console.error('Failed to refresh snapshot after reconnect:', err);
         },
