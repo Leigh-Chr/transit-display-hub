@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [0.3.0] - 2026-05-06
 
 GTFS integration deepened across the model, the import pipeline and the
-passenger-facing display. Sixteen Flyway migrations (V6–V21), all
+passenger-facing display. Eighteen Flyway migrations (V6–V23), all
 additive except the `lines.code` widening from VARCHAR(10) to
 VARCHAR(30). Architecture decisions are captured in `docs/adr/`.
 
@@ -48,7 +48,10 @@ VARCHAR(30). Architecture decisions are captured in `docs/adr/`.
   of the same `(route, direction)`. Per-schedule overrides stored
   only when a trip diverges. See ADR 0005.
 - **`Schedule` enriched** with `pickup_type`, `drop_off_type`,
-  `wheelchair_override`, `bikes_allowed_override`, `timepoint`.
+  `wheelchair_override`, `bikes_allowed_override`, `timepoint`,
+  `frequency_headway_seconds`, `frequency_exact_times`, `block_id`.
+  The headway annotation lets the kiosk render "every 4 min" alongside
+  the next-departure clock for high-frequency lines.
 - **`ItineraryStop.stop_headsign`** drives the destination shown to
   passengers, falling back to the trip-level terminus. See ADR 0004.
 - **`Line` enriched** with `text_color` (route_text_color, with YIQ
@@ -80,11 +83,17 @@ VARCHAR(30). Architecture decisions are captured in `docs/adr/`.
 - `GET /api/admin/import-audit?limit=N` — recent import attempts (admin).
 - `POST /api/admin/gtfs/reimport` — force a refresh (admin).
 - `GET /api/attributions` — public credit block.
+- `LineResponse` now carries `agencyId` / `agencyName` so the admin
+  table can show the operating agency without a second request.
+- `StopResponse` now carries `shortCode`, `platformCode`,
+  `description`, `url`, `wheelchairBoarding` so the admin stop screen
+  surfaces the full GTFS identity in one payload.
 
 #### Frontend
 - **Kiosk display** renders accessibility (`accessible_forward` /
   `do_not_disturb`), bicycle (`directions_bike`) and pickup-type
-  badges next to each arrival.
+  badges next to each arrival, plus a discreet `stop_code` sub-title
+  so passengers can confirm the signpost id printed at the stop.
 - **Admin dashboard** gains a `FeedInfoCard` surfacing publisher,
   version, validity range and days-until-expiry (red expired, amber
   expiring within 7 days, default otherwise).
