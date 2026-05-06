@@ -229,13 +229,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       width: var(--app-actions-column-width);
     }
 
-    /* Enter animations */
-    @keyframes fadeInSlide {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
 
     @media (max-width: 600px) {
       .selector-row {

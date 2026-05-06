@@ -62,6 +62,7 @@ interface MessageForm {
             placeholder="e.g., Service Disruption"
             required
           />
+          <mat-error>Title is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -74,6 +75,7 @@ interface MessageForm {
             placeholder="Detailed message content..."
             required
           ></textarea>
+          <mat-error>Content is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -83,6 +85,7 @@ interface MessageForm {
             <mat-option value="WARNING">Warning</mat-option>
             <mat-option value="CRITICAL">Critical</mat-option>
           </mat-select>
+          <mat-error>Severity is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -97,6 +100,7 @@ interface MessageForm {
             <mat-option value="LINE">Specific Line</mat-option>
             <mat-option value="STOP">Specific Stop</mat-option>
           </mat-select>
+          <mat-error>Scope is required</mat-error>
         </mat-form-field>
 
         @if (form.scopeType === 'LINE' || form.scopeType === 'STOP') {
@@ -114,6 +118,7 @@ interface MessageForm {
                 </mat-option>
               }
             </mat-select>
+            <mat-error>Line is required for this scope</mat-error>
           </mat-form-field>
         }
 
@@ -130,6 +135,10 @@ interface MessageForm {
                 <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
               }
             </mat-select>
+            @if (!form.lineId) {
+              <mat-hint>Pick a line first</mat-hint>
+            }
+            <mat-error>Stop is required for this scope</mat-error>
           </mat-form-field>
         }
 
@@ -143,6 +152,7 @@ interface MessageForm {
               name="startTime"
               required
             />
+            <mat-error>Start time is required</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -156,6 +166,8 @@ interface MessageForm {
             />
             @if (form.startTime && form.endTime && !isDateRangeValid()) {
               <mat-error>End time must be after start time</mat-error>
+            } @else {
+              <mat-error>End time is required</mat-error>
             }
           </mat-form-field>
         </div>

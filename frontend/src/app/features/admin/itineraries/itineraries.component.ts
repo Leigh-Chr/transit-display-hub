@@ -243,13 +243,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       width: var(--app-actions-column-width);
     }
 
-    /* Enter animations */
-    @keyframes fadeInSlide {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
 
     @media (max-width: 600px) {
       .toolbar {
@@ -339,6 +333,12 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
       })
       .subscribe({
         next: (response: PageResponse<Itinerary>) => {
+          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
+            this.page = Math.max(0, response.totalPages - 1);
+            this.updateUrl();
+            this.loadItineraries();
+            return;
+          }
           this.dataSource.data = response.content;
           this.totalElements = response.totalElements;
           this.loading.set(false);
@@ -404,6 +404,8 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
       if (result) {
         this.itineraryService.create(result as CreateItineraryRequest).subscribe({
           next: () => {
+            this.page = 0;
+            this.updateUrl();
             this.loadItineraries();
             this.snackBar.open('Itinerary created', 'Close', {
               duration: 3000,

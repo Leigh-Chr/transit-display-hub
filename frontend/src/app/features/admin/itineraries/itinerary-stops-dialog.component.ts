@@ -46,7 +46,7 @@ interface StopItem {
     <mat-dialog-content class="itinerary-stops-dialog-content">
       @if (loading()) {
         <div class="loading-container">
-          <mat-spinner diameter="40" />
+          <mat-spinner diameter="40" aria-label="Loading itinerary stops" />
         </div>
       } @else {
         <mat-form-field appearance="outline" class="full-width">
@@ -96,7 +96,12 @@ interface StopItem {
 
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>Cancel</button>
-      <button mat-flat-button color="primary" (click)="save()" [disabled]="loading()">Save</button>
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="save()"
+        [disabled]="loading() || selectedStops().length === 0"
+      >Save</button>
     </mat-dialog-actions>
   `,
   styles: `

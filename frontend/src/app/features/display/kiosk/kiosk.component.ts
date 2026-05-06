@@ -98,7 +98,10 @@ import { DisplayState } from '@shared/models';
                     </span>
                     <span class="destination">{{ arrival.destinationName }}</span>
                     <span class="time-info">
-                      <span class="time-relative">{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                      <span
+                        class="time-relative"
+                        [class.imminent]="isImminent(arrival.scheduledTime)"
+                      >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
                       <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
                     </span>
                   </div>
@@ -122,7 +125,10 @@ import { DisplayState } from '@shared/models';
                       </span>
                       <span class="destination">{{ arrival.destinationName }}</span>
                       <span class="time-info">
-                        <span class="time-relative">{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                        <span
+                        class="time-relative"
+                        [class.imminent]="isImminent(arrival.scheduledTime)"
+                      >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
                         <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
                       </span>
                     </div>
@@ -168,9 +174,14 @@ import { DisplayState } from '@shared/models';
 
         <!-- Connection status indicator (minimal) -->
         @if (!connected()) {
-          <div class="connection-warning">
-            <mat-icon>wifi_off</mat-icon>
+          <div class="connection-warning" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">wifi_off</mat-icon>
             Reconnecting...
+          </div>
+        } @else if (isStale()) {
+          <div class="connection-warning stale-warning" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+            Last update {{ staleMinutes() }}m ago
           </div>
         }
       } @else if (error()) {
@@ -181,7 +192,7 @@ import { DisplayState } from '@shared/models';
         </div>
       } @else {
         <div class="loading-state">
-          <mat-spinner diameter="80"></mat-spinner>
+          <mat-spinner diameter="80" aria-label="Loading display"></mat-spinner>
           <h1>Loading...</h1>
         </div>
       }
@@ -198,7 +209,6 @@ import { DisplayState } from '@shared/models';
       background: var(--app-kiosk-surface);
       color: var(--app-kiosk-on-surface);
       min-height: 100vh;
-      font-family: 'Roboto', 'Arial', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -417,6 +427,18 @@ import { DisplayState } from '@shared/models';
       color: var(--app-kiosk-on-surface);
     }
 
+    /* Imminent: the bus is leaving now. Pop visually so a passenger
+       glancing across the platform spots it without parsing every row. */
+    .time-relative.imminent {
+      color: var(--app-kiosk-info-accent);
+      animation: imminentPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes imminentPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.62; }
+    }
+
     .time-absolute {
       font-size: clamp(2.5vh, 3.5vh, 5vh);
       font-weight: 500;
@@ -542,7 +564,9 @@ import { DisplayState } from '@shared/models';
       border-radius: 0.5vh;
       font-size: 3vh;
       font-weight: 500;
-      animation: blink 1s ease-in-out infinite;
+      /* Calm pulse instead of harsh blink — passengers in a station already
+         have enough flicker around them. */
+      animation: connectionPulse 2.4s ease-in-out infinite;
     }
 
     .connection-warning mat-icon {
@@ -551,9 +575,18 @@ import { DisplayState } from '@shared/models';
       height: 3vh;
     }
 
-    @keyframes blink {
+    /* Stale variant — link is up but the server has gone quiet. Less alarming
+       than the disconnected state but still flagged so passengers don't
+       trust ghost departures. */
+    .connection-warning.stale-warning {
+      background: var(--app-kiosk-warning-accent);
+      color: #1a1a1a;
+      animation: none;
+    }
+
+    @keyframes connectionPulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.78; }
     }
 
     /* --- Error & Loading States --- */
@@ -623,11 +656,38 @@ export class KioskComponent implements OnInit, OnDestroy {
   private token: string | null = null;
   private stopId: string | null = null;
   private timeInterval: ReturnType<typeof setInterval> | null = null;
+  private visibilityHandler: (() => void) | null = null;
+  /** Wall-clock timestamp of the most recent state update (initial fetch or
+   *  WebSocket push). Used to surface "data is stale" when the WS link is
+   *  technically open but the backend has gone quiet (deleted stop, etc.). */
+  lastUpdate = signal<number | null>(null);
+  /** Threshold past which we consider the displayed state stale: 3 minutes.
+   *  Long enough to ride out normal WS gaps, short enough to warn passengers
+   *  before they trust ghost departures. */
+  private static readonly STALE_THRESHOLD_MS = 3 * 60 * 1000;
+  /** Re-evaluates against currentTime so the banner appears even if no new
+   *  state ever arrives — the 1s clock signal drives the recompute. */
+  isStale = computed(() => {
+    this.currentTime();
+    const last = this.lastUpdate();
+    if (last === null) { return false; }
+    return Date.now() - last > KioskComponent.STALE_THRESHOLD_MS;
+  });
+  /** Minutes since the last update, formatted for the banner. */
+  staleMinutes = computed(() => {
+    this.currentTime();
+    const last = this.lastUpdate();
+    if (last === null) { return 0; }
+    return Math.floor((Date.now() - last) / 60000);
+  });
 
   // Maximum arrivals that fit on screen without scrolling
   private static readonly MAX_VISIBLE_ARRIVALS = 5;
   // Seconds to display each arrival during scroll
-  private static readonly SECONDS_PER_ARRIVAL = 3;
+  // Dwell time per visible arrival when the list scrolls. 4s gives a passenger
+  // in motion a comfortable beat to scan line + destination + time without
+  // feeling chased by the next row.
+  private static readonly SECONDS_PER_ARRIVAL = 4;
 
   // All arrivals from display state, filtered to exclude past departures
   allArrivals = computed(() => {
@@ -641,8 +701,13 @@ export class KioskComponent implements OnInit, OnDestroy {
     return arrivals.filter(arrival => {
       const parts = arrival.scheduledTime.split(':');
       const arrivalMinutes = parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
-      // Keep arrivals that are in the future (with 1 min buffer for "Imminent")
-      return arrivalMinutes >= currentMinutes;
+      // Wrap arrivals across midnight: when the scheduled time looks earlier than
+      // `now` and the gap is large (>6h), treat it as tomorrow's arrival (night
+      // service running into early morning). Anything older than 6h is genuinely
+      // past and gets dropped.
+      let delta = arrivalMinutes - currentMinutes;
+      if (delta < -360) { delta += 1440; }
+      return delta >= 0;
     });
   });
 
@@ -683,7 +748,9 @@ export class KioskComponent implements OnInit, OnDestroy {
       acc + m.title.length + m.content.length, 0
     );
     // Base: 20s, add 2s per 50 characters for readability
-    const duration = Math.max(15, 20 + Math.floor(totalLength / 50) * 2);
+    // Info ticker: shorter base (12s) than before so brief messages don't
+    // hang on screen for a full 20s every cycle. Still grows with content.
+    const duration = Math.max(10, 12 + Math.floor(totalLength / 50) * 2);
     return `${duration}s`;
   });
 
@@ -727,18 +794,45 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.timeInterval = setInterval(() => {
-      const now = new Date();
-      this.currentTime.set(this.formatTime(now));
-      this.currentDate.set(this.formatDate(now));
-    }, 1000);
+    this.startClock();
+    // Pause the clock while the tab is hidden — kiosks running 24/7 don't need
+    // to burn CPU updating an off-screen clock once a second.
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        this.stopClock();
+      } else {
+        this.refreshClock();
+        this.startClock();
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   ngOnDestroy(): void {
-    if (this.timeInterval) {
-      clearInterval(this.timeInterval);
+    this.stopClock();
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
     }
     this.wsService.disconnect();
+  }
+
+  private startClock(): void {
+    if (this.timeInterval !== null) { return; }
+    this.timeInterval = setInterval(() => this.refreshClock(), 1000);
+  }
+
+  private stopClock(): void {
+    if (this.timeInterval !== null) {
+      clearInterval(this.timeInterval);
+      this.timeInterval = null;
+    }
+  }
+
+  private refreshClock(): void {
+    const now = new Date();
+    this.currentTime.set(this.formatTime(now));
+    this.currentDate.set(this.formatDate(now));
   }
 
   private initializeWithToken(): void {
@@ -748,6 +842,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.displayService.getStateByToken(this.token).subscribe({
       next: (state) => {
         this.displayState.set(state);
+        this.lastUpdate.set(Date.now());
         this.subscribeToUpdates(state.stopId);
       },
       error: () => {
@@ -764,6 +859,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.displayService.getState(stopId).subscribe({
       next: (state) => {
         this.displayState.set(state);
+        this.lastUpdate.set(Date.now());
         this.subscribeToUpdates(stopId);
       },
       error: () => {
@@ -776,6 +872,7 @@ export class KioskComponent implements OnInit, OnDestroy {
     this.wsService.connect(stopId).subscribe({
       next: (state) => {
         this.displayState.set(state);
+        this.lastUpdate.set(Date.now());
       },
       error: (err) => {
         console.error('WebSocket error:', err);
@@ -817,8 +914,11 @@ export class KioskComponent implements OnInit, OnDestroy {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const departureMinutes = hours * 60 + minutes;
 
-    // Simple minute-based difference (arrivals are already filtered to be in the future)
-    return Math.max(0, departureMinutes - nowMinutes);
+    // Wrap across midnight (same logic as allArrivals filter): a scheduled time
+    // earlier than `now` with a large gap means tomorrow's departure.
+    let delta = departureMinutes - nowMinutes;
+    if (delta < -360) { delta += 1440; }
+    return Math.max(0, delta);
   }
 
   formatRelativeTime(time: string): string {
@@ -827,5 +927,11 @@ export class KioskComponent implements OnInit, OnDestroy {
       return 'Imminent';
     }
     return `${minutes} min`;
+  }
+
+  /** Whether the next departure is happening now (within the same minute).
+   *  Drives the highlighted `.imminent` styling on the relative-time pill. */
+  isImminent(time: string): boolean {
+    return this.getMinutesUntil(time) === 0;
   }
 }

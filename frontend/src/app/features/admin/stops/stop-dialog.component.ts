@@ -55,6 +55,7 @@ interface StopForm {
             }
           </mat-select>
           <mat-hint>Select one or more lines this stop serves</mat-hint>
+          <mat-error>At least one line is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -66,6 +67,7 @@ interface StopForm {
             placeholder="e.g., Central Station"
             required
           />
+          <mat-error>Name is required</mat-error>
         </mat-form-field>
 
         <div class="coordinates-row">

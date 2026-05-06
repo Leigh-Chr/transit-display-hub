@@ -33,8 +33,8 @@ import { RouteResult } from '../../services/route-finder.service';
         <mat-icon class="panel-icon">route</mat-icon>
         <span class="panel-title">Route</span>
         @if (selectedDeparture() || selectedArrival()) {
-          <button class="clear-btn" (click)="clearSearch()" title="Clear search">
-            <mat-icon>close</mat-icon>
+          <button class="clear-btn" type="button" (click)="clearSearch()" title="Clear search" aria-label="Clear search">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         }
       </div>
@@ -60,8 +60,8 @@ import { RouteResult } from '../../services/route-finder.service';
 
       <div class="field-separator">
         <span class="connector-line"></span>
-        <button class="swap-btn" (click)="swapStops()" title="Swap">
-          <mat-icon>swap_vert</mat-icon>
+        <button class="swap-btn" type="button" (click)="swapStops()" title="Swap" aria-label="Swap departure and arrival">
+          <mat-icon aria-hidden="true">swap_vert</mat-icon>
         </button>
         <span class="connector-line"></span>
       </div>

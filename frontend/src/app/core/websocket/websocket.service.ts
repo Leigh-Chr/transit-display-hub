@@ -1,9 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Observable, Subject, timer } from 'rxjs';
 import { takeUntil, tap } from 'rxjs/operators';
 import { DisplayState } from '@shared/models';
+import { AuthService } from '@core/auth/auth.service';
 
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
 
@@ -11,6 +12,7 @@ export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'REC
   providedIn: 'root'
 })
 export class WebSocketService {
+  private readonly authService = inject(AuthService);
   private client: Client | null = null;
   private readonly displayStateSubject = new Subject<DisplayState>();
   private readonly connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
@@ -23,8 +25,12 @@ export class WebSocketService {
     this.stopId = stopId;
     this.connectionStateSignal.set('CONNECTING');
 
+    const token = this.authService.getToken();
+    const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+
     this.client = new Client({
       webSocketFactory: () => new SockJS('/ws'),
+      connectHeaders,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

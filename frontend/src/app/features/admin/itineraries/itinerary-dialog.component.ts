@@ -60,6 +60,10 @@ interface ItineraryForm {
               </mat-option>
             }
           </mat-select>
+          @if (data.itinerary) {
+            <mat-hint>Line cannot be changed after creation</mat-hint>
+          }
+          <mat-error>Line is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -73,6 +77,7 @@ interface ItineraryForm {
             placeholder="e.g., Direction Eastern Terminal"
           />
           <mat-hint>Name for this direction/itinerary</mat-hint>
+          <mat-error>Name is required</mat-error>
         </mat-form-field>
 
         @if (!data.itinerary) {

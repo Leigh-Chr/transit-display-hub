@@ -9,6 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, MatSort, Sort } from '@angular/material/sort';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, takeUntil } from 'rxjs';
 import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -33,6 +34,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     MatChipsModule,
     MatSortModule,
     MatPaginatorModule,
+    MatTooltipModule,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
@@ -115,16 +117,21 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
               <td mat-cell *matCellDef="let user" class="actions-column">
-                <button mat-icon-button color="primary" (click)="openEditDialog(user)">
-                  <mat-icon>edit</mat-icon>
+                <button mat-icon-button color="primary" (click)="openEditDialog(user)" aria-label="Edit user">
+                  <mat-icon aria-hidden="true">edit</mat-icon>
                 </button>
                 <button
                   mat-icon-button
                   color="warn"
                   (click)="deleteUser(user)"
-                  [disabled]="isCurrentUser(user)"
+                  [disabled]="isCurrentUser(user) || isLastEnabledAdmin(user)"
+                  [matTooltip]="
+                    isCurrentUser(user) ? 'You cannot delete your own account' :
+                    isLastEnabledAdmin(user) ? 'Cannot delete the last enabled admin' : 'Delete user'
+                  "
+                  aria-label="Delete user"
                 >
-                  <mat-icon>delete</mat-icon>
+                  <mat-icon aria-hidden="true">delete</mat-icon>
                 </button>
               </td>
             </ng-container>
@@ -226,12 +233,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     }
 
     /* Enter animations */
-    @keyframes fadeInSlide {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
 export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -292,6 +294,12 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
       })
       .subscribe({
         next: (response: PageResponse<User>) => {
+          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
+            this.page = Math.max(0, response.totalPages - 1);
+            this.updateUrl();
+            this.loadUsers();
+            return;
+          }
           this.dataSource.data = response.content;
           this.totalElements = response.totalElements;
           this.loading.set(false);
@@ -343,6 +351,18 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.authService.currentUser()?.username === user.username;
   }
 
+  /** Best-effort frontend guard against locking the system out. The backend
+   *  remains authoritative — this only blocks the obvious case where the
+   *  current page already shows a single enabled admin. Multi-page scenarios
+   *  still rely on the server's rejection. */
+  isLastEnabledAdmin(user: User): boolean {
+    if (user.role !== 'ADMIN' || !user.enabled) { return false; }
+    const enabledAdminsOnPage = this.dataSource.data.filter(
+      u => u.role === 'ADMIN' && u.enabled,
+    );
+    return enabledAdminsOnPage.length === 1 && enabledAdminsOnPage[0]?.id === user.id;
+  }
+
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(UserDialogComponent, {
       data: { isEdit: false } as UserDialogData,
@@ -354,6 +374,8 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
       if (result) {
         this.userService.create(result as CreateUserRequest).subscribe({
           next: () => {
+            this.page = 0;
+            this.updateUrl();
             this.loadUsers();
             this.snackBar.open('User created', 'Close', {
               duration: 3000,

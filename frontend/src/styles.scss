@@ -139,7 +139,19 @@ html {
     --app-surface-tinted: color-mix(in srgb, var(--mat-sys-primary, #0078D4) 5%, var(--app-surface));
   }
 
-  // === Sidebar (admin navigation — always dark) ===
+  // === Auth pages (login, eventually password reset) ===
+  // The auth gradient stays dark in both themes — same brand-identity rationale
+  // as the sidebar below. Edit these tokens to retune the auth backdrop without
+  // touching component styles.
+  --app-auth-bg-from: #1A1A2E;
+  --app-auth-bg-via: #16213e;
+  --app-auth-bg-to: #0F4C75;
+
+  // === Sidebar (admin navigation — always dark, regardless of theme) ===
+  // Design decision: the admin nav stays dark in both light and dark themes
+  // so that it carries the brand identity and offers high-contrast wayfinding
+  // against any content. The override sits in `.admin-sidenav` (search this
+  // file) and uses `!important` to win the cascade against MDC's defaults.
   --app-sidebar-bg: #1A1A2E;
   --app-sidebar-text: rgba(255, 255, 255, 0.87);
   --app-sidebar-text-muted: rgba(255, 255, 255, 0.6);
@@ -375,7 +387,13 @@ body {
       border-radius: var(--app-radius-sm);
       margin: 2px 8px;
 
-      // Force text color with direct styling
+      // The MDC list primitives ship `color` rules with `!important` baked in
+      // via @angular/material's compiled styles, so the token overrides above
+      // do reach the CSS custom property but the inline color cascades win.
+      // Until @angular/material exposes a clean way to opt out, we mirror the
+      // same `!important` here on the visible nodes (text + icon) to take
+      // back the cascade. Any future cleanup must be visually verified in the
+      // browser — a silent regression here turns the sidebar invisible.
       .mdc-list-item__primary-text,
       .mat-mdc-list-item-title,
       [matlistitemtitle],
@@ -756,6 +774,34 @@ mat-card {
   }
 }
 
+// Tablet (600-1024px) — between full-mobile collapse and roomy desktop.
+// Tighten paddings and let stat / device grids breathe with bigger min cells
+// so iPad-portrait and Surface-class screens don't get stuck on a 4-col
+// grid that crams content.
+@media (min-width: 601px) and (max-width: 1024px) {
+  .main-content {
+    padding: 20px 24px !important;
+  }
+
+  .page-title {
+    font-size: 26px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .devices-grid,
+  .overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  }
+
+  .toolbar mat-form-field {
+    flex: 1 1 200px;
+  }
+}
+
 // ----------------------------------------------------------------------------
 // 12. TYPOGRAPHY ENHANCEMENTS (M3 Expressive)
 // ----------------------------------------------------------------------------
@@ -767,4 +813,61 @@ mat-card {
 .current-time {
   font-feature-settings: 'tnum' 1;
   font-variant-numeric: tabular-nums;
+}
+
+// ----------------------------------------------------------------------------
+// 13a. GLOBAL ENTER ANIMATIONS
+// Reusable utility classes consumed via Angular's `animate.enter="..."`.
+// Defined globally so every admin list page picks the same rhythm — change
+// once here to retune the whole app. The easing is M3's emphasized-decelerate.
+// ----------------------------------------------------------------------------
+
+@keyframes appFadeInSlide {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes appScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes appSlideInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: appFadeInSlide var(--m3-duration-short4) var(--m3-easing-emphasized-decelerate) forwards; }
+.grid-stagger { animation: appScaleIn var(--m3-duration-medium2) var(--m3-easing-emphasized-decelerate) forwards; }
+.list-stagger { animation: appSlideInUp var(--m3-duration-medium2) var(--m3-easing-emphasized-decelerate) forwards; }
+
+// ----------------------------------------------------------------------------
+// 13b. REDUCED MOTION (Accessibility - WCAG 2.3.3)
+// Respect users who prefer reduced motion: disable non-essential animations
+// and shorten transitions to a near-instant duration.
+// ----------------------------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  // Disable hover transforms that depend on motion
+  .card-interactive:hover,
+  .mat-mdc-icon-button:hover,
+  .mat-mdc-flat-button[color="primary"]:hover,
+  .mat-mdc-raised-button[color="primary"]:hover {
+    transform: none;
+  }
+
+  .pulse-animation,
+  .fade-in,
+  .route-enter {
+    animation: none;
+  }
 }

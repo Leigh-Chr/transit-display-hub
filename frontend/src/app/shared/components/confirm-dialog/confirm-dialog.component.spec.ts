@@ -54,14 +54,14 @@ describe('ConfirmDialogComponent', () => {
       createComponent();
       const buttons = fixture.nativeElement.querySelectorAll('button');
       const cancelBtn = buttons[0];
-      expect(cancelBtn.textContent.trim()).toContain('Annuler');
+      expect(cancelBtn.textContent.trim()).toContain('Cancel');
     });
 
     it('should show default confirm text', () => {
       createComponent();
       const buttons = fixture.nativeElement.querySelectorAll('button');
       const confirmBtn = buttons[1];
-      expect(confirmBtn.textContent.trim()).toContain('Confirmer');
+      expect(confirmBtn.textContent.trim()).toContain('Confirm');
     });
   });
 

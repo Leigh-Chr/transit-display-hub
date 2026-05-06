@@ -94,7 +94,7 @@ interface TimetableGroup {
 
       @if (loading()) {
         <div class="loading">
-          <mat-spinner diameter="32"></mat-spinner>
+          <mat-spinner diameter="32" aria-label="Loading schedules"></mat-spinner>
           <span>Loading schedules...</span>
         </div>
       } @else if (error()) {

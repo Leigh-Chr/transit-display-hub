@@ -9,12 +9,18 @@ import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vites
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
-  let authServiceSpy: { login: MockedFunction<AuthService['login']> };
-  let routerSpy: { navigate: MockedFunction<Router['navigate']> };
+  let authServiceSpy: {
+    login: MockedFunction<AuthService['login']>;
+    consumeRedirectUrl: MockedFunction<AuthService['consumeRedirectUrl']>;
+  };
+  let routerSpy: {
+    navigate: MockedFunction<Router['navigate']>;
+    navigateByUrl: MockedFunction<Router['navigateByUrl']>;
+  };
 
   beforeEach(async () => {
-    authServiceSpy = { login: vi.fn() };
-    routerSpy = { navigate: vi.fn() };
+    authServiceSpy = { login: vi.fn(), consumeRedirectUrl: vi.fn().mockReturnValue(null) };
+    routerSpy = { navigate: vi.fn(), navigateByUrl: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -160,12 +166,21 @@ describe('LoginComponent', () => {
       }));
     });
 
-    it('should navigate to /admin on success', () => {
+    it('should navigate to /admin on success when no redirect URL is stored', () => {
       component.username = 'admin';
       component.password = 'password123';
       component.onSubmit();
 
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin']);
+      expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/admin');
+    });
+
+    it('should navigate to the stored redirect URL when present', () => {
+      authServiceSpy.consumeRedirectUrl.mockReturnValueOnce('/admin/schedules?page=2');
+      component.username = 'admin';
+      component.password = 'password123';
+      component.onSubmit();
+
+      expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/admin/schedules?page=2');
     });
 
     it('should not set error on success', () => {
@@ -231,7 +246,7 @@ describe('LoginComponent', () => {
       component.password = 'wrong';
       component.onSubmit();
 
-      expect(routerSpy.navigate).not.toHaveBeenCalled();
+      expect(routerSpy.navigateByUrl).not.toHaveBeenCalled();
     });
   });
 

@@ -366,13 +366,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       border-radius: var(--app-radius-md);
     }
 
-    /* Enter animations */
-    @keyframes slideInUp {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .list-stagger { animation: slideInUp 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
 
     @media (max-width: 600px) {
       .toolbar {
@@ -456,6 +450,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (response: PageResponse<BroadcastMessage>) => {
+          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
+            this.page = Math.max(0, response.totalPages - 1);
+            this.updateUrl();
+            this.loadMessages();
+            return;
+          }
           this.messages.set(response.content);
           this.totalElements = response.totalElements;
           this.loading.set(false);
@@ -524,6 +524,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
       if (result) {
         this.messageService.create(result as CreateMessageRequest).subscribe({
           next: () => {
+            this.page = 0;
+            this.updateUrl();
             this.loadMessages();
             this.snackBar.open('Message created', 'Close', {
               duration: 3000,

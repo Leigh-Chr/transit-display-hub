@@ -73,7 +73,7 @@ import { AuthService } from '@core/auth/auth.service';
               [disabled]="loading()"
             >
               @if (loading()) {
-                <mat-spinner diameter="20"></mat-spinner>
+                <mat-spinner diameter="20" aria-label="Logging in"></mat-spinner>
               } @else {
                 Login
               }
@@ -93,7 +93,12 @@ import { AuthService } from '@core/auth/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--app-sidebar-bg) 0%, var(--app-map-surface-container) 50%, var(--app-sidebar-active) 100%);
+      background: linear-gradient(
+        135deg,
+        var(--app-auth-bg-from) 0%,
+        var(--app-auth-bg-via) 50%,
+        var(--app-auth-bg-to) 100%
+      );
     }
 
     .login-card {
@@ -194,7 +199,8 @@ export class LoginComponent {
       .login({ username: this.username, password: this.password })
       .subscribe({
         next: () => {
-          void this.router.navigate(['/admin']);
+          const redirectUrl = this.authService.consumeRedirectUrl();
+          void this.router.navigateByUrl(redirectUrl ?? '/admin');
         },
         error: (err: unknown) => {
           this.loading.set(false);

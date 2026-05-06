@@ -171,30 +171,36 @@ describe('DashboardComponent', () => {
       expect(component.deviceHealthPercent()).toBe(75);
     });
 
-    it('should limit displayedOfflineDevices to 3', () => {
+    it('should limit displayedOfflineDevices to 6', () => {
       component.devices.set([
         { id: '1', stopId: 's1', stopName: 'A', lines: [], status: 'OFFLINE' },
         { id: '2', stopId: 's2', stopName: 'B', lines: [], status: 'OFFLINE' },
         { id: '3', stopId: 's3', stopName: 'C', lines: [], status: 'OFFLINE' },
         { id: '4', stopId: 's4', stopName: 'D', lines: [], status: 'OFFLINE' },
         { id: '5', stopId: 's5', stopName: 'E', lines: [], status: 'OFFLINE' },
+        { id: '6', stopId: 's6', stopName: 'F', lines: [], status: 'OFFLINE' },
+        { id: '7', stopId: 's7', stopName: 'G', lines: [], status: 'OFFLINE' },
+        { id: '8', stopId: 's8', stopName: 'H', lines: [], status: 'OFFLINE' },
       ]);
 
-      expect(component.offlineDevices().length).toBe(5);
-      expect(component.displayedOfflineDevices().length).toBe(3);
+      expect(component.offlineDevices().length).toBe(8);
+      expect(component.displayedOfflineDevices().length).toBe(6);
       expect(component.remainingOfflineCount()).toBe(2);
     });
 
-    it('should limit displayedCriticalMessages to 3', () => {
+    it('should limit displayedCriticalMessages to 6', () => {
       component.activeMessages.set([
         { id: '1', title: 'C1', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
         { id: '2', title: 'C2', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
         { id: '3', title: 'C3', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
         { id: '4', title: 'C4', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
+        { id: '5', title: 'C5', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
+        { id: '6', title: 'C6', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
+        { id: '7', title: 'C7', content: '', severity: 'CRITICAL', startTime: pastDate, endTime: futureDate, scopeType: 'NETWORK', scopeId: null, scopeInfo: null, active: true },
       ]);
 
-      expect(component.criticalMessages().length).toBe(4);
-      expect(component.displayedCriticalMessages().length).toBe(3);
+      expect(component.criticalMessages().length).toBe(7);
+      expect(component.displayedCriticalMessages().length).toBe(6);
       expect(component.remainingCriticalCount()).toBe(1);
     });
 

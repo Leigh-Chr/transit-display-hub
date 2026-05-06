@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { linkedQueryParam } from 'ngxtension/linked-query-param';
@@ -46,8 +47,15 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
           <h1>Network Map</h1>
         </div>
         <p class="subtitle">{{ subtitle() }}</p>
-        <button class="theme-toggle" (click)="themeService.toggleTheme()" title="Toggle theme">
-          <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        <button
+          class="theme-toggle"
+          type="button"
+          (click)="themeService.toggleTheme()"
+          [title]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+          [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+          [attr.aria-pressed]="themeService.isDarkMode()"
+        >
+          <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
         </button>
       </header>
 
@@ -88,7 +96,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
         }
         @if (loading()) {
           <div class="loading-state">
-            <mat-spinner diameter="48"></mat-spinner>
+            <mat-spinner diameter="48" aria-label="Loading network"></mat-spinner>
             <span>Loading network...</span>
           </div>
         } @else if (error()) {
@@ -278,7 +286,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
       gap: 8px;
       padding: 8px 14px;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--app-radius-sm);
       background: transparent;
       color: var(--app-map-on-surface-variant);
       font-size: 0.8125rem;
@@ -305,7 +313,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
       min-width: 22px;
       height: 18px;
       padding: 0 6px;
-      border-radius: 9px;
+      border-radius: var(--app-radius-sm);
       background: var(--app-map-surface-container-high);
       color: var(--app-map-on-surface-variant);
       font-size: 0.6875rem;
@@ -528,6 +536,7 @@ export class NetworkMapComponent implements OnInit {
   private readonly routeFinder = inject(RouteFinderService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly snackBar = inject(MatSnackBar);
   readonly themeService = inject(ThemeService);
   private readonly networkMapWs = inject(NetworkMapWebSocketService);
 
@@ -548,6 +557,7 @@ export class NetworkMapComponent implements OnInit {
   highlightedStopId = signal<string | null>(null);
   private readonly stopSearchFilter = signal('');
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
+  private searchResetTimer: ReturnType<typeof setTimeout> | null = null;
 
   filteredStops = computed(() => {
     const term = this.stopSearchFilter();
@@ -712,6 +722,9 @@ export class NetworkMapComponent implements OnInit {
       if (this.highlightTimer) {
         clearTimeout(this.highlightTimer);
       }
+      if (this.searchResetTimer) {
+        clearTimeout(this.searchResetTimer);
+      }
       this.networkMapWs.disconnect();
     });
 
@@ -731,9 +744,21 @@ export class NetworkMapComponent implements OnInit {
 
       // Drop URL ids that don't match any stop in the current network
       // (renamed/removed stop, wrong feed) instead of leaving the URL
-      // in an inconsistent "?from=ghost" state.
-      if (fromId !== null && !wantedDep) {this.fromParam.set(null);}
-      if (toId !== null && !wantedArr) {this.toParam.set(null);}
+      // in an inconsistent "?from=ghost" state. If this happens while a
+      // route was being displayed, the user just lost it silently — surface
+      // a snackbar so they understand the network changed under them.
+      const droppingDep = fromId !== null && !wantedDep;
+      const droppingArr = toId !== null && !wantedArr;
+      const hadActiveRoute = this.routeResult() !== null;
+      if (droppingDep) {this.fromParam.set(null);}
+      if (droppingArr) {this.toParam.set(null);}
+      if ((droppingDep || droppingArr) && hadActiveRoute) {
+        this.snackBar.open(
+          'Route updated: one of your stops is no longer in the network.',
+          'Close',
+          { duration: 6000, panelClass: 'warning-snackbar' },
+        );
+      }
 
       const currentDep = this.departureStop();
       const currentArr = this.arrivalStop();
@@ -949,9 +974,11 @@ export class NetworkMapComponent implements OnInit {
     this.openStopPopup(stop);
 
     // Reset the search field after a tick so the popup gets focus
-    setTimeout(() => {
+    if (this.searchResetTimer) {clearTimeout(this.searchResetTimer);}
+    this.searchResetTimer = setTimeout(() => {
       this.stopSearchCtrl.setValue('', { emitEvent: false });
       this.stopSearchFilter.set('');
+      this.searchResetTimer = null;
     });
   }
 

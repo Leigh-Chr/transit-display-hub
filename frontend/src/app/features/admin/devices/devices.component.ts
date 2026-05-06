@@ -307,13 +307,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       width: 100%;
     }
 
-    /* Enter animations */
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .grid-stagger { animation: scaleIn 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
 export class DevicesComponent implements OnInit, OnDestroy {

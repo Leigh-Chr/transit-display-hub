@@ -47,6 +47,7 @@ interface LineForm {
             placeholder="e.g., L1, M2, T3"
             required
           />
+          <mat-error>Code is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -58,16 +59,17 @@ interface LineForm {
             placeholder="e.g., Line 1 - Downtown Express"
             required
           />
+          <mat-error>Name is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Type</mat-label>
-          <mat-select [(ngModel)]="form.type" name="type">
-            <mat-option [value]="null">Not specified</mat-option>
+          <mat-select [(ngModel)]="form.type" name="type" required>
             @for (type of lineTypes; track type) {
               <mat-option [value]="type">{{ type }}</mat-option>
             }
           </mat-select>
+          <mat-error>Type is required</mat-error>
         </mat-form-field>
 
         <div class="color-field">
@@ -80,6 +82,7 @@ interface LineForm {
               placeholder="#0078D4"
               required
             />
+            <mat-error>Color is required</mat-error>
           </mat-form-field>
           <input
             type="color"
@@ -160,9 +163,7 @@ export class LineDialogComponent {
   };
 
   save(): void {
-    if (!this.form.type) {
-      return;
-    }
+    if (!this.form.type) { return; } // belt-and-suspenders; the form is `required`
     const request: CreateLineRequest = {
       code: this.form.code,
       name: this.form.name,

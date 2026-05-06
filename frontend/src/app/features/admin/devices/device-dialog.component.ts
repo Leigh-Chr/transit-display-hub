@@ -49,6 +49,7 @@ interface DeviceForm {
               </mat-option>
             }
           </mat-select>
+          <mat-error>Line is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -63,6 +64,10 @@ interface DeviceForm {
               <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
             }
           </mat-select>
+          @if (!form.lineId) {
+            <mat-hint>Pick a line first</mat-hint>
+          }
+          <mat-error>Stop is required</mat-error>
         </mat-form-field>
       </form>
     </mat-dialog-content>

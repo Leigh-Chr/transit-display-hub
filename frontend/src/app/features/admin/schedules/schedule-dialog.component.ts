@@ -57,6 +57,7 @@ export interface ScheduleDialogData {
               </mat-optgroup>
             }
           </mat-select>
+          <mat-error>Itinerary is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -68,6 +69,7 @@ export interface ScheduleDialogData {
             name="time"
             required
           />
+          <mat-error>Time is required</mat-error>
         </mat-form-field>
       </form>
     </mat-dialog-content>

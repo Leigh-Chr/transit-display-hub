@@ -8,14 +8,14 @@ import { MatIconModule } from '@angular/material/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="zoom-controls">
-      <button class="zoom-btn" (click)="zoomIn.emit()" title="Zoom in">
-        <mat-icon>add</mat-icon>
+      <button class="zoom-btn" type="button" (click)="zoomIn.emit()" title="Zoom in" aria-label="Zoom in">
+        <mat-icon aria-hidden="true">add</mat-icon>
       </button>
-      <button class="zoom-btn" (click)="resetView.emit()" title="Reset view">
-        <mat-icon>fit_screen</mat-icon>
+      <button class="zoom-btn" type="button" (click)="resetView.emit()" title="Reset view" aria-label="Reset view">
+        <mat-icon aria-hidden="true">fit_screen</mat-icon>
       </button>
-      <button class="zoom-btn" (click)="zoomOut.emit()" title="Zoom out">
-        <mat-icon>remove</mat-icon>
+      <button class="zoom-btn" type="button" (click)="zoomOut.emit()" title="Zoom out" aria-label="Zoom out">
+        <mat-icon aria-hidden="true">remove</mat-icon>
       </button>
     </div>
   `,

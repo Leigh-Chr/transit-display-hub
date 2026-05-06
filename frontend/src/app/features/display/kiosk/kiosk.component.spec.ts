@@ -150,7 +150,7 @@ describe('KioskComponent', () => {
     });
 
     it('should compute scrollDuration based on arrivals count', () => {
-      // Default has 2 arrivals → 2*3=6 → Math.max(10,6)=10
+      // Default has 2 arrivals → 2*4=8 → Math.max(10,8)=10
       expect(component.scrollDuration()).toBe('10s');
     });
 
@@ -161,14 +161,14 @@ describe('KioskComponent', () => {
         line: { id: 'line-1', code: 'L1', name: 'Metro Line 1', color: '#FF5733' }
       }));
       component.displayState.set({ ...mockDisplayState, arrivals: manyArrivals });
-      // 8*3=24 → "24s"
-      expect(component.scrollDuration()).toBe('24s');
+      // 8*4=32 → "32s"
+      expect(component.scrollDuration()).toBe('32s');
     });
 
     it('should compute tickerDuration based on info message length', () => {
       // Default: 1 info message "Info Notice" (11 chars title) + "Normal service" (14 chars content) = 25 chars
-      // Math.max(15, 20 + Math.floor(25/50)*2) = Math.max(15, 20+0) = 20
-      expect(component.tickerDuration()).toBe('20s');
+      // Math.max(10, 12 + Math.floor(25/50)*2) = Math.max(10, 12+0) = 12
+      expect(component.tickerDuration()).toBe('12s');
     });
 
     it('should compute tickerDuration with longer messages', () => {
@@ -179,8 +179,8 @@ describe('KioskComponent', () => {
           { title: 'C'.repeat(20), content: 'D'.repeat(30), severity: 'WARNING' }
         ]
       });
-      // Total length: 30+70+20+30 = 150, floor(150/50)*2 = 6, max(15, 20+6) = 26
-      expect(component.tickerDuration()).toBe('26s');
+      // Total length: 30+70+20+30 = 150, floor(150/50)*2 = 6, max(10, 12+6) = 18
+      expect(component.tickerDuration()).toBe('18s');
     });
 
     it('should compute alertDuration based on critical message length', () => {

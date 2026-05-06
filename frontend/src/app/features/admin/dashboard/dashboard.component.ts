@@ -22,6 +22,8 @@ import { MessageService } from '@core/api/message.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Stop, Itinerary, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
+import { readableTextColor } from '@shared/utils/color.utils';
+import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
 
 @Component({
   selector: 'app-dashboard',
@@ -143,7 +145,11 @@ import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skelet
                       class="line-item"
                       [matTooltip]="line.name + ' - ' + line.stopCount + ' stops, ' + line.itineraryCount + ' itineraries'"
                     >
-                      <span class="line-badge" [style.backgroundColor]="line.color">
+                      <span
+                        class="line-badge"
+                        [style.backgroundColor]="line.color"
+                        [style.color]="readableTextColor(line.color)"
+                      >
                         {{ line.code }}
                       </span>
                       <span class="line-name">{{ line.name }}</span>
@@ -239,6 +245,11 @@ import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skelet
                 </a>
               }
             </mat-card-content>
+          </mat-card>
+        } @else if (!loading()) {
+          <mat-card class="ops-ok-card" animate.enter="fade-in">
+            <mat-icon class="ops-ok-icon">check_circle</mat-icon>
+            <span class="ops-ok-text">No critical messages — all clear.</span>
           </mat-card>
         }
 
@@ -632,6 +643,29 @@ import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skelet
       opacity: 0.5;
     }
 
+    /* "All clear" placeholder shown when no critical messages exist —
+       intentionally subdued so that the rare error state, when it returns,
+       grabs attention by contrast. */
+    .ops-ok-card {
+      margin-bottom: 28px;
+      padding: 16px 20px;
+      border-radius: var(--app-radius-md);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--app-success-container);
+      color: var(--app-on-success-container);
+    }
+
+    .ops-ok-icon {
+      color: var(--app-success);
+    }
+
+    .ops-ok-text {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
     /* Alerts */
     .alerts-card {
       margin-bottom: 28px;
@@ -865,19 +899,7 @@ import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skelet
       font-weight: 500;
     }
 
-    /* Enter animations */
-    @keyframes fadeInSlide {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .fade-in { animation: fadeInSlide 200ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
-    .grid-stagger { animation: scaleIn 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
 
     /* Responsive */
     @media (max-width: 600px) {
@@ -925,20 +947,20 @@ export class DashboardComponent implements OnInit {
     this.activeMessages().filter((m) => m.severity === 'CRITICAL')
   );
 
-  displayedCriticalMessages = computed(() => this.criticalMessages().slice(0, 3));
+  displayedCriticalMessages = computed(() => this.criticalMessages().slice(0, 6));
 
   remainingCriticalCount = computed(() =>
-    Math.max(0, this.criticalMessages().length - 3)
+    Math.max(0, this.criticalMessages().length - 6)
   );
 
   offlineDevices = computed(() =>
     this.devices().filter((d) => d.status === 'OFFLINE')
   );
 
-  displayedOfflineDevices = computed(() => this.offlineDevices().slice(0, 3));
+  displayedOfflineDevices = computed(() => this.offlineDevices().slice(0, 6));
 
   remainingOfflineCount = computed(() =>
-    Math.max(0, this.offlineDevices().length - 3)
+    Math.max(0, this.offlineDevices().length - 6)
   );
 
   onlineDevices = computed(() =>
@@ -988,7 +1010,7 @@ export class DashboardComponent implements OnInit {
         error: () => {
           this.loading.set(false);
           this.snackBar
-            .open('Failed to load dashboard data', 'Retry', { duration: 8000, panelClass: 'error-snackbar' })
+            .open('Failed to load dashboard data', 'Retry', { duration: SNACKBAR_DURATIONS.retryable, panelClass: 'error-snackbar' })
             .onAction()
             .subscribe(() => this.loadData());
         },
@@ -1003,7 +1025,7 @@ export class DashboardComponent implements OnInit {
         error: () => {
           this.loading.set(false);
           this.snackBar
-            .open('Failed to load dashboard data', 'Retry', { duration: 8000, panelClass: 'error-snackbar' })
+            .open('Failed to load dashboard data', 'Retry', { duration: SNACKBAR_DURATIONS.retryable, panelClass: 'error-snackbar' })
             .onAction()
             .subscribe(() => this.loadData());
         },
@@ -1028,12 +1050,17 @@ export class DashboardComponent implements OnInit {
       });
   }
 
+  // Expose the shared color helper to the template for line-badge contrast.
+  readableTextColor = readableTextColor;
+
   getMessageStatus(message: BroadcastMessage): 'active' | 'scheduled' | 'expired' {
+    // The server's `active` flag is the source of truth — it accounts for the
+    // backend's wall clock, which is what passengers' displays consume.
+    // We only fall back to start/end comparison to differentiate "not yet"
+    // from "already over" when the server says inactive.
+    if (message.active) { return 'active'; }
     const now = new Date();
     const start = new Date(message.startTime);
-    const end = new Date(message.endTime);
-    if (now < start) {return 'scheduled';}
-    if (now > end) {return 'expired';}
-    return 'active';
+    return now < start ? 'scheduled' : 'expired';
   }
 }

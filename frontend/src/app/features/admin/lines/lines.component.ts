@@ -242,13 +242,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       border-radius: var(--app-radius-md);
     }
 
-    /* Enter animations */
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .grid-stagger { animation: scaleIn 250ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards; }
+    /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
 export class LinesComponent implements OnInit, OnDestroy {
@@ -300,6 +294,14 @@ export class LinesComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (response: PageResponse<Line>) => {
+          // After a delete on the last item of a page > 0, the server returns
+          // an empty page. Step back instead of showing a blank screen.
+          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
+            this.page = Math.max(0, response.totalPages - 1);
+            this.updateUrl();
+            this.loadLines();
+            return;
+          }
           this.lines.set(response.content);
           this.totalElements = response.totalElements;
           this.loading.set(false);
@@ -355,6 +357,10 @@ export class LinesComponent implements OnInit, OnDestroy {
       if (result) {
         this.lineService.create(result as CreateLineRequest).subscribe({
           next: () => {
+            // Jump back to page 0 so the user actually sees the new item
+            // (which sorts wherever the active sort dictates).
+            this.page = 0;
+            this.updateUrl();
             this.loadLines();
             this.snackBar.open('Line created', 'Close', {
               duration: 3000,

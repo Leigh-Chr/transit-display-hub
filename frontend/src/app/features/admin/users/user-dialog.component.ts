@@ -51,6 +51,9 @@ export interface UserDialogData {
           @if (!data.isEdit) {
             <mat-hint>3-50 characters</mat-hint>
           }
+          @if (!data.isEdit) {
+            <mat-error>Username must be 3-50 characters</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -66,6 +69,7 @@ export interface UserDialogData {
             [placeholder]="data.isEdit ? 'Leave empty to keep current' : 'Enter password'"
           />
           <mat-hint>{{ data.isEdit ? 'Leave empty to keep current password' : 'Minimum 6 characters' }}</mat-hint>
+          <mat-error>{{ data.isEdit ? 'Password must be at least 6 characters' : 'Password is required (min 6 characters)' }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -84,6 +88,7 @@ export interface UserDialogData {
               </span>
             </mat-option>
           </mat-select>
+          <mat-error>Role is required</mat-error>
         </mat-form-field>
 
         @if (data.isEdit) {

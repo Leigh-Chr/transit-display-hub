@@ -106,7 +106,10 @@ import {
                     <span class="platform">{{ arrival.platform }}</span>
                     <span class="destination">{{ arrival.destinationName }}</span>
                     <span class="time-info">
-                      <span class="time-relative">{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                      <span
+                        class="time-relative"
+                        [class.imminent]="isImminent(arrival.scheduledTime)"
+                      >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
                       <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
                     </span>
                   </div>
@@ -131,7 +134,10 @@ import {
                       <span class="platform">{{ arrival.platform }}</span>
                       <span class="destination">{{ arrival.destinationName }}</span>
                       <span class="time-info">
-                        <span class="time-relative">{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                        <span
+                        class="time-relative"
+                        [class.imminent]="isImminent(arrival.scheduledTime)"
+                      >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
                         <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
                       </span>
                     </div>
@@ -177,9 +183,14 @@ import {
 
         <!-- Connection status indicator -->
         @if (!connected()) {
-          <div class="connection-warning">
-            <mat-icon>wifi_off</mat-icon>
+          <div class="connection-warning" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">wifi_off</mat-icon>
             Reconnecting...
+          </div>
+        } @else if (isStale()) {
+          <div class="connection-warning stale-warning" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+            Last update {{ staleMinutes() }}m ago
           </div>
         }
       } @else if (error()) {
@@ -190,7 +201,7 @@ import {
         </div>
       } @else {
         <div class="loading-state">
-          <mat-spinner diameter="80"></mat-spinner>
+          <mat-spinner diameter="80" aria-label="Loading hub display"></mat-spinner>
           <h1>Loading...</h1>
         </div>
       }
@@ -443,6 +454,18 @@ import {
       color: var(--app-kiosk-on-surface);
     }
 
+    /* Imminent: the vehicle is leaving now. Pop visually so passengers spot
+       it across multiple platforms without parsing every row. */
+    .time-relative.imminent {
+      color: var(--app-kiosk-info-accent);
+      animation: imminentPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes imminentPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.62; }
+    }
+
     .time-absolute {
       font-size: clamp(2.5vh, 3.5vh, 5vh);
       font-weight: 500;
@@ -568,7 +591,8 @@ import {
       border-radius: 0.5vh;
       font-size: 3vh;
       font-weight: 500;
-      animation: blink 1s ease-in-out infinite;
+      /* Calm pulse instead of harsh blink. */
+      animation: connectionPulse 2.4s ease-in-out infinite;
     }
 
     .connection-warning mat-icon {
@@ -577,9 +601,16 @@ import {
       height: 3vh;
     }
 
-    @keyframes blink {
+    /* Stale variant — link is up but the backend has gone quiet. */
+    .connection-warning.stale-warning {
+      background: var(--app-kiosk-warning-accent);
+      color: #1a1a1a;
+      animation: none;
+    }
+
+    @keyframes connectionPulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.78; }
     }
 
     /* --- Error & Loading States --- */
@@ -649,11 +680,35 @@ export class HubComponent implements OnInit, OnDestroy {
 
   private stopIds: string[] = [];
   private hubName = 'Hub';
-  private readonly stopStates = new Map<string, DisplayState>();
+  /** Per-stop cached state with the wall-clock timestamp of the last push.
+   *  Anything older than STALE_STOP_THRESHOLD_MS is dropped from the rebuild
+   *  so a deleted stop (backend stops emitting) doesn't keep showing forever. */
+  private readonly stopStates = new Map<string, { state: DisplayState; receivedAt: number }>();
   private timeInterval: ReturnType<typeof setInterval> | null = null;
+  private visibilityHandler: (() => void) | null = null;
+  /** Wall-clock timestamp of the most recent state update; drives the
+   *  stale-data banner when the WS link is up but the backend has gone quiet. */
+  lastUpdate = signal<number | null>(null);
+  private static readonly STALE_THRESHOLD_MS = 3 * 60 * 1000;
+  isStale = computed(() => {
+    this.currentTime();
+    const last = this.lastUpdate();
+    if (last === null) { return false; }
+    return Date.now() - last > HubComponent.STALE_THRESHOLD_MS;
+  });
+  staleMinutes = computed(() => {
+    this.currentTime();
+    const last = this.lastUpdate();
+    if (last === null) { return 0; }
+    return Math.floor((Date.now() - last) / 60000);
+  });
 
   private static readonly MAX_VISIBLE_ARRIVALS = 8;
-  private static readonly SECONDS_PER_ARRIVAL = 3;
+  // Dwell time per visible arrival when the list scrolls. 4s gives readers
+  // a comfortable beat to scan multi-platform info.
+  private static readonly SECONDS_PER_ARRIVAL = 4;
+  /** A stop's cached state goes stale after 30 minutes without a fresh push. */
+  private static readonly STALE_STOP_THRESHOLD_MS = 30 * 60 * 1000;
 
   allArrivals = computed(() => {
     this.currentTime();
@@ -665,7 +720,11 @@ export class HubComponent implements OnInit, OnDestroy {
     return arrivals.filter(arrival => {
       const parts = arrival.scheduledTime.split(':');
       const arrivalMinutes = parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
-      return arrivalMinutes >= currentMinutes;
+      // Wrap arrivals across midnight: a scheduled time earlier than `now` with a
+      // large gap (>6h) is tomorrow's arrival (night service into early morning).
+      let delta = arrivalMinutes - currentMinutes;
+      if (delta < -360) { delta += 1440; }
+      return delta >= 0;
     });
   });
 
@@ -696,7 +755,9 @@ export class HubComponent implements OnInit, OnDestroy {
     const totalLength = messages.reduce((acc, m) =>
       acc + m.title.length + m.content.length, 0
     );
-    const duration = Math.max(15, 20 + Math.floor(totalLength / 50) * 2);
+    // Info ticker: shorter base than before (12s vs 20s) so short messages
+    // don't linger forever — content-length scaling still kicks in.
+    const duration = Math.max(10, 12 + Math.floor(totalLength / 50) * 2);
     return `${duration}s`;
   });
 
@@ -732,24 +793,52 @@ export class HubComponent implements OnInit, OnDestroy {
       this.loadInitialState();
     });
 
-    this.timeInterval = setInterval(() => {
-      const now = new Date();
-      this.currentTime.set(this.formatTime(now));
-      this.currentDate.set(this.formatDate(now));
-    }, 1000);
+    this.startClock();
+    // Pause the clock while the tab is hidden — hubs running 24/7 don't need
+    // to burn CPU updating an off-screen clock once a second.
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        this.stopClock();
+      } else {
+        this.refreshClock();
+        this.startClock();
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   ngOnDestroy(): void {
-    if (this.timeInterval) {
-      clearInterval(this.timeInterval);
+    this.stopClock();
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
     }
     this.hubWsService.disconnect();
+  }
+
+  private startClock(): void {
+    if (this.timeInterval !== null) { return; }
+    this.timeInterval = setInterval(() => this.refreshClock(), 1000);
+  }
+
+  private stopClock(): void {
+    if (this.timeInterval !== null) {
+      clearInterval(this.timeInterval);
+      this.timeInterval = null;
+    }
+  }
+
+  private refreshClock(): void {
+    const now = new Date();
+    this.currentTime.set(this.formatTime(now));
+    this.currentDate.set(this.formatDate(now));
   }
 
   private loadInitialState(): void {
     this.displayService.getHubState(this.stopIds, this.hubName).subscribe({
       next: state => {
-        this.hubState.set(state);
+        this.lastUpdate.set(Date.now());
+    this.hubState.set(state);
         this.subscribeToUpdates();
       },
       error: () => {
@@ -761,7 +850,7 @@ export class HubComponent implements OnInit, OnDestroy {
   private subscribeToUpdates(): void {
     this.hubWsService.connect(this.stopIds).subscribe({
       next: (state: DisplayState) => {
-        this.stopStates.set(state.stopId, state);
+        this.stopStates.set(state.stopId, { state, receivedAt: Date.now() });
         this.rebuildHubState();
       },
       error: err => {
@@ -771,7 +860,22 @@ export class HubComponent implements OnInit, OnDestroy {
   }
 
   private rebuildHubState(): void {
-    const states = Array.from(this.stopStates.values());
+    const validIds = new Set(this.stopIds);
+    const now = Date.now();
+    const states: DisplayState[] = [];
+    for (const [id, entry] of this.stopStates) {
+      if (!validIds.has(id)) {
+        // Stop was removed from the hub URL — drop its cached state.
+        this.stopStates.delete(id);
+        continue;
+      }
+      if (now - entry.receivedAt > HubComponent.STALE_STOP_THRESHOLD_MS) {
+        // No update from this stop for too long — likely deleted upstream.
+        // Skip it in the rebuild but keep the entry: a fresh push will revive it.
+        continue;
+      }
+      states.push(entry.state);
+    }
     if (states.length === 0) { return; }
 
     // Merge lines, deduplicate by id
@@ -809,6 +913,7 @@ export class HubComponent implements OnInit, OnDestroy {
     }
 
     const current = this.hubState();
+    this.lastUpdate.set(Date.now());
     this.hubState.set({
       hubName: current?.hubName ?? this.hubName,
       lines,
@@ -851,7 +956,10 @@ export class HubComponent implements OnInit, OnDestroy {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const departureMinutes = hours * 60 + minutes;
 
-    return Math.max(0, departureMinutes - nowMinutes);
+    // Wrap across midnight (same logic as allArrivals filter).
+    let delta = departureMinutes - nowMinutes;
+    if (delta < -360) { delta += 1440; }
+    return Math.max(0, delta);
   }
 
   formatRelativeTime(time: string): string {
@@ -860,5 +968,11 @@ export class HubComponent implements OnInit, OnDestroy {
       return 'Imminent';
     }
     return `${minutes} min`;
+  }
+
+  /** Whether the next departure is happening now (within the same minute).
+   *  Drives the highlighted `.imminent` styling on the relative-time pill. */
+  isImminent(time: string): boolean {
+    return this.getMinutesUntil(time) === 0;
   }
 }

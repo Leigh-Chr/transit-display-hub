@@ -35,6 +35,7 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <mat-sidenav-container class="admin-container">
       <mat-sidenav
         #sidenav
@@ -45,8 +46,8 @@ import {
         aria-label="Main navigation"
       >
         <div class="sidenav-header">
-          <img src="assets/logo.png" alt="Transit Display Hub logo" class="sidenav-logo">
-          <h1>Transit Display Hub</h1>
+          <img src="assets/logo.png" alt="" class="sidenav-logo">
+          <span class="brand-name">Transit Display Hub</span>
         </div>
 
         <mat-nav-list>
@@ -165,37 +166,40 @@ import {
         </mat-nav-list>
       </mat-sidenav>
 
-      <mat-sidenav-content role="main">
+      <mat-sidenav-content>
         <mat-toolbar color="primary">
           <button
             mat-icon-button
+            type="button"
             (click)="toggleSidenav()"
             aria-label="Toggle navigation menu"
             matTooltip="Toggle sidebar"
           >
-            <mat-icon>{{ sidenavOpen() ? 'menu_open' : 'menu' }}</mat-icon>
+            <mat-icon aria-hidden="true">{{ sidenavOpen() ? 'menu_open' : 'menu' }}</mat-icon>
           </button>
           <span class="toolbar-spacer"></span>
           <button
             mat-icon-button
+            type="button"
             (click)="themeService.toggleTheme()"
             [matTooltip]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
-            aria-label="Toggle dark mode"
+            [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+            [attr.aria-pressed]="themeService.isDarkMode()"
           >
-            <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+            <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           </button>
           @if (!breakpointService.isMobile()) {
             <span class="username">{{ authService.currentUser()?.username }}</span>
           }
-          <button mat-button (click)="logout()">
-            <mat-icon>logout</mat-icon>
+          <button mat-button type="button" (click)="logout()" aria-label="Logout">
+            <mat-icon aria-hidden="true">logout</mat-icon>
             @if (!breakpointService.isMobile()) {
               Logout
             }
           </button>
         </mat-toolbar>
 
-        <main class="main-content" animate.enter="route-enter">
+        <main id="main-content" class="main-content" animate.enter="route-enter">
           <router-outlet></router-outlet>
         </main>
       </mat-sidenav-content>
@@ -225,12 +229,31 @@ import {
       filter: brightness(0) invert(1);
     }
 
-    .sidenav-header h1 {
+    .sidenav-header .brand-name {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
       color: var(--app-sidebar-text);
       letter-spacing: -0.25px;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 8px;
+      z-index: 1000;
+      padding: 12px 16px;
+      background: var(--mat-sys-primary, #0078D4);
+      color: var(--mat-sys-on-primary, #ffffff);
+      border-radius: var(--app-radius-sm);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .skip-link:focus {
+      top: 8px;
+      outline: 2px solid var(--mat-sys-on-primary, #ffffff);
+      outline-offset: 2px;
     }
 
     .nav-section-title {

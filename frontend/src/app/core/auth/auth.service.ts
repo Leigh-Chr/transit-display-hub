@@ -19,6 +19,11 @@ export class AuthService {
 
   private readonly tokenSignal = signal<string | null>(this.getStoredToken());
 
+  /** URL the user was on when they got bumped to /login. Set by the auth
+   *  interceptor on 401 and consumed by LoginComponent after a successful
+   *  re-login so the user lands back where they were. */
+  private readonly redirectUrlSignal = signal<string | null>(null);
+
   isAuthenticated = computed(() => {
     const token = this.tokenSignal();
     if (!token) {return false;}
@@ -70,8 +75,28 @@ export class AuthService {
     return user ? user.role : null;
   }
 
+  setRedirectUrl(url: string | null): void {
+    this.redirectUrlSignal.set(url);
+  }
+
+  /** Returns the stored redirect URL once and clears it, so login can navigate
+   *  the user back without leaving a stale value behind for the next session. */
+  consumeRedirectUrl(): string | null {
+    const url = this.redirectUrlSignal();
+    if (url !== null) { this.redirectUrlSignal.set(null); }
+    return url;
+  }
+
+  /** Read the persisted token, dropping it if it's already expired so the rest
+   *  of the app never sees a stale credential it would only hand back to the
+   *  server (which would then 401 and bounce the user mid-action). */
   private getStoredToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    const stored = localStorage.getItem(this.TOKEN_KEY);
+    if (stored !== null && this.isTokenExpired(stored)) {
+      localStorage.removeItem(this.TOKEN_KEY);
+      return null;
+    }
+    return stored;
   }
 
   private isTokenExpired(token: string): boolean {

@@ -224,9 +224,9 @@ describe('AdminLayoutComponent', () => {
       await fixture.whenStable();
 
       const buttons = fixture.nativeElement.querySelectorAll('button[mat-icon-button]');
-      // Find the theme toggle button (has dark_mode or light_mode icon)
+      // Find the theme toggle button (its dynamic aria-label describes the target mode)
       const themeButton = Array.from(buttons as NodeListOf<HTMLButtonElement>).find(
-        (btn) => btn.getAttribute('aria-label') === 'Toggle dark mode'
+        (btn) => btn.getAttribute('aria-label')?.startsWith('Switch to ')
       );
 
       expect(themeButton).toBeTruthy();

@@ -1,13 +1,15 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Observable, Subject } from 'rxjs';
 import { NetworkMapUpdate } from '@shared/models';
+import { AuthService } from '@core/auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NetworkMapWebSocketService {
+  private readonly authService = inject(AuthService);
   private client: Client | null = null;
   private subscription: StompSubscription | null = null;
   private updateSubject = new Subject<NetworkMapUpdate>();
@@ -20,8 +22,12 @@ export class NetworkMapWebSocketService {
       return this.updateSubject.asObservable();
     }
 
+    const token = this.authService.getToken();
+    const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+
     this.client = new Client({
       webSocketFactory: () => new SockJS('/ws'),
+      connectHeaders,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

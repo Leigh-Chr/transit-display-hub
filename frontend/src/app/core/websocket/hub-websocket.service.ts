@@ -1,13 +1,15 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Observable, Subject } from 'rxjs';
 import { DisplayState } from '@shared/models';
+import { AuthService } from '@core/auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HubWebSocketService {
+  private readonly authService = inject(AuthService);
   private client: Client | null = null;
   private subscriptions: StompSubscription[] = [];
   private updateSubject = new Subject<DisplayState>();
@@ -20,8 +22,12 @@ export class HubWebSocketService {
       return this.updateSubject.asObservable();
     }
 
+    const token = this.authService.getToken();
+    const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+
     this.client = new Client({
       webSocketFactory: () => new SockJS('/ws'),
+      connectHeaders,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
