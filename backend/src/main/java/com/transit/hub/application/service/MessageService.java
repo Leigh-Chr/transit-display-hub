@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -42,16 +43,12 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getAllMessages() {
-        return messageRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponses(messageRepository.findAll());
     }
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getActiveMessages() {
-        return messageRepository.findActiveMessages(Instant.now()).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResponses(messageRepository.findActiveMessages(Instant.now()));
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +77,11 @@ public class MessageService {
         } else {
             page = messageRepository.findAll(pageable);
         }
-        return PageResponse.from(page, this::toResponse);
+        // Pre-load scope names in two bulk queries (one for lines, one for stops)
+        // so the per-message scope lookup in toResponse no longer adds N round-trips.
+        Map<UUID, String> lineNames = bulkLineNames(page.getContent());
+        Map<UUID, String> stopNames = bulkStopNames(page.getContent());
+        return PageResponse.from(page, msg -> toResponseWith(msg, lineNames, stopNames));
     }
 
     @Transactional(readOnly = true)
@@ -244,5 +245,63 @@ public class MessageService {
         }
 
         return MessageResponse.from(message, scopeInfo);
+    }
+
+    private List<MessageResponse> toResponses(List<BroadcastMessage> messages) {
+        Map<UUID, String> lineNames = bulkLineNames(messages);
+        Map<UUID, String> stopNames = bulkStopNames(messages);
+        return messages.stream()
+                .map(msg -> toResponseWith(msg, lineNames, stopNames))
+                .toList();
+    }
+
+    private MessageResponse toResponseWith(
+            BroadcastMessage message,
+            Map<UUID, String> lineNames,
+            Map<UUID, String> stopNames
+    ) {
+        MessageResponse.ScopeInfo scopeInfo = null;
+        UUID scopeId = message.getScopeId();
+        if (scopeId != null) {
+            String name = switch (message.getScopeType()) {
+                case LINE -> lineNames.get(scopeId);
+                case STOP -> stopNames.get(scopeId);
+                default -> null;
+            };
+            if (name != null) {
+                scopeInfo = new MessageResponse.ScopeInfo(name);
+            }
+        }
+        return MessageResponse.from(message, scopeInfo);
+    }
+
+    private Map<UUID, String> bulkLineNames(List<BroadcastMessage> messages) {
+        Set<UUID> ids = messages.stream()
+                .filter(m -> m.getScopeType() == MessageScope.LINE && m.getScopeId() != null)
+                .map(BroadcastMessage::getScopeId)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, String> names = new java.util.HashMap<>();
+        for (Line line : lineRepository.findAllById(ids)) {
+            names.put(line.getId(), line.getName());
+        }
+        return names;
+    }
+
+    private Map<UUID, String> bulkStopNames(List<BroadcastMessage> messages) {
+        Set<UUID> ids = messages.stream()
+                .filter(m -> m.getScopeType() == MessageScope.STOP && m.getScopeId() != null)
+                .map(BroadcastMessage::getScopeId)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, String> names = new java.util.HashMap<>();
+        for (Stop stop : stopRepository.findAllById(ids)) {
+            names.put(stop.getId(), stop.getName());
+        }
+        return names;
     }
 }

@@ -17,6 +17,13 @@ public record StopResponse(
         boolean hasDevice
 ) {
     public static StopResponse from(Stop stop) {
+        // Lazily reads stop.getSchedules() — incurs a per-row SELECT. Prefer
+        // the (stop, scheduleCount) overload from listing endpoints that have
+        // already aggregated the counts.
+        return from(stop, stop.getSchedules() != null ? stop.getSchedules().size() : 0);
+    }
+
+    public static StopResponse from(Stop stop, int scheduleCount) {
         List<LineInfo> lineInfos = stop.getLines().stream()
                 .sorted(Comparator.comparing(Line::getCode))
                 .map(LineInfo::from)
@@ -28,7 +35,7 @@ public record StopResponse(
                 stop.getLatitude(),
                 stop.getLongitude(),
                 lineInfos,
-                stop.getSchedules() != null ? stop.getSchedules().size() : 0,
+                scheduleCount,
                 stop.getDevices() != null && !stop.getDevices().isEmpty()
         );
     }

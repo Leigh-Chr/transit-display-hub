@@ -34,6 +34,14 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
 
     void deleteByStopId(UUID stopId);
 
+    /**
+     * Bulk schedule-count lookup for a batch of stops, used by listing endpoints
+     * to avoid the N+1 fetch that calling stop.getSchedules().size() would
+     * trigger on each row.
+     */
+    @Query("SELECT s.stop.id, COUNT(s) FROM Schedule s WHERE s.stop.id IN :stopIds GROUP BY s.stop.id")
+    List<Object[]> countByStopIdIn(java.util.Collection<UUID> stopIds);
+
     boolean existsByStopIdAndItineraryIdAndTime(UUID stopId, UUID itineraryId, LocalTime time);
 
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Schedule s " +

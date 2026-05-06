@@ -22,8 +22,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -41,15 +43,19 @@ public class StopService {
 
     @Transactional(readOnly = true)
     public List<StopResponse> getAllStops() {
-        return stopRepository.findAllWithLinesAndDevices().stream()
-                .map(StopResponse::from)
+        List<Stop> stops = stopRepository.findAllWithLinesAndDevices();
+        Map<UUID, Integer> counts = scheduleCountsFor(stops);
+        return stops.stream()
+                .map(stop -> StopResponse.from(stop, counts.getOrDefault(stop.getId(), 0)))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<StopResponse> getStopsByLine(UUID lineId) {
-        return stopRepository.findByLineIdWithLinesAndDevices(lineId).stream()
-                .map(StopResponse::from)
+        List<Stop> stops = stopRepository.findByLineIdWithLinesAndDevices(lineId);
+        Map<UUID, Integer> counts = scheduleCountsFor(stops);
+        return stops.stream()
+                .map(stop -> StopResponse.from(stop, counts.getOrDefault(stop.getId(), 0)))
                 .toList();
     }
 
@@ -69,7 +75,26 @@ public class StopService {
         } else {
             page = stopRepository.findAllWithLinesAndDevices(pageable);
         }
-        return PageResponse.from(page, StopResponse::from);
+
+        Map<UUID, Integer> counts = scheduleCountsFor(page.getContent());
+        return PageResponse.from(page,
+                stop -> StopResponse.from(stop, counts.getOrDefault(stop.getId(), 0)));
+    }
+
+    /**
+     * Single bulk SELECT against `schedules` rather than a lazy `getSchedules().size()`
+     * call per row, which would otherwise be a guaranteed N+1.
+     */
+    private Map<UUID, Integer> scheduleCountsFor(List<Stop> stops) {
+        if (stops.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> ids = stops.stream().map(Stop::getId).toList();
+        Map<UUID, Integer> counts = new HashMap<>();
+        for (Object[] row : scheduleRepository.countByStopIdIn(ids)) {
+            counts.put((UUID) row[0], ((Number) row[1]).intValue());
+        }
+        return counts;
     }
 
     @Transactional(readOnly = true)

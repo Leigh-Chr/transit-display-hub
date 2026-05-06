@@ -50,8 +50,15 @@ public class DisplayStateService {
     }
 
     public void recalculateAndPushAll(Set<UUID> stopIds) {
+        // A NETWORK-scope event yields every stop in the system, but only the
+        // ones with a live STOMP subscription will actually consume the push.
+        // Restricting to active stops avoids fan-outs of thousands of pushes
+        // (1 SQL recalc + 1 broadcast per stop) on every network-wide message.
+        Set<UUID> activeStops = activeDisplayTracker.getActiveStopIds();
         for (UUID stopId : stopIds) {
-            recalculateAndPush(stopId);
+            if (activeStops.contains(stopId)) {
+                recalculateAndPush(stopId);
+            }
         }
     }
 

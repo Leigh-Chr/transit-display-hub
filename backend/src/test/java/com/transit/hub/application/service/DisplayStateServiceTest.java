@@ -103,8 +103,8 @@ class DisplayStateServiceTest {
     class RecalculateAndPushAll {
 
         @Test
-        @DisplayName("iterates over all stop IDs")
-        void iteratesOverAllStopIds() {
+        @DisplayName("iterates over active stop IDs only")
+        void iteratesOverActiveStopIds() {
             UUID stopId2 = UUID.randomUUID();
             UUID stopId3 = UUID.randomUUID();
             DisplayState state2 = new DisplayState(stopId2, "North Station", List.of(), List.of(), List.of(), 2L, Instant.now());
@@ -113,11 +113,25 @@ class DisplayStateServiceTest {
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenReturn(state2);
             when(displayStateCalculator.calculateForStop(stopId3)).thenReturn(state3);
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(stopId, stopId2, stopId3));
 
             displayStateService.recalculateAndPushAll(Set.of(stopId, stopId2, stopId3));
 
             verify(displayStateCalculator, times(3)).calculateForStop(any());
             verify(messagingTemplate, times(3)).convertAndSend(anyString(), any(DisplayState.class));
+        }
+
+        @Test
+        @DisplayName("skips stops without an active subscription")
+        void skipsInactiveStops() {
+            UUID inactiveStop = UUID.randomUUID();
+            when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(stopId));
+
+            displayStateService.recalculateAndPushAll(Set.of(stopId, inactiveStop));
+
+            verify(displayStateCalculator).calculateForStop(stopId);
+            verify(displayStateCalculator, never()).calculateForStop(inactiveStop);
         }
     }
 
@@ -150,6 +164,7 @@ class DisplayStateServiceTest {
 
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenReturn(state2);
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(stopId, stopId2));
 
             MessageChangedEvent event = new MessageChangedEvent(this, Set.of(stopId, stopId2));
             displayStateService.onMessageChanged(event);
@@ -171,6 +186,7 @@ class DisplayStateServiceTest {
 
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenReturn(state2);
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(stopId, stopId2));
 
             NetworkChangedEvent event = new NetworkChangedEvent(this, Set.of(stopId, stopId2));
             displayStateService.onNetworkChanged(event);
@@ -255,6 +271,7 @@ class DisplayStateServiceTest {
             when(displayStateCalculator.calculateForStop(stopId)).thenReturn(mockState);
             when(displayStateCalculator.calculateForStop(stopId2)).thenThrow(new RuntimeException("Stop 2 failed"));
             when(displayStateCalculator.calculateForStop(stopId3)).thenReturn(state3);
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(stopId, stopId2, stopId3));
 
             displayStateService.recalculateAndPushAll(Set.of(stopId, stopId2, stopId3));
 
