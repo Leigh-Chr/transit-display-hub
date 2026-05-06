@@ -50,6 +50,13 @@ public class Itinerary {
     @Version
     private Long version;
 
+    /** GTFS source identifier (typically the trip_id of the representative
+     *  trip used to materialise this itinerary). Persisted so a re-import
+     *  can match rows rather than recreate them. */
+    @Size(max = 100)
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
     @NotNull(message = "Line is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "line_id", nullable = false)

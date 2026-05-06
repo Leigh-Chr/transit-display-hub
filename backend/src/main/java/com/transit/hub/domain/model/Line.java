@@ -45,6 +45,13 @@ public class Line {
     @Version
     private Long version;
 
+    /** GTFS {@code route_id}. Persisted so a re-import can match rows
+     *  rather than recreate them (which would break the broadcast
+     *  messages and itineraries anchored to the old UUID). */
+    @Size(max = 100)
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
     @NotBlank(message = "Code is required")
     @Size(max = 10, message = "Code must be at most 10 characters")
     @Column(unique = true, nullable = false)

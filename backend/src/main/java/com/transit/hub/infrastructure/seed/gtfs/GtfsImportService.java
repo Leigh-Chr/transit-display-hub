@@ -237,6 +237,7 @@ public class GtfsImportService {
                 Agency agency = resolveAgency(agencyId, agencies);
 
                 Line line = lineRepository.save(Line.builder()
+                        .externalId(truncate(routeId, 100))
                         .code(uniqueCode(code, result.values()))
                         .name(name)
                         .color(formattedColor)
@@ -373,6 +374,7 @@ public class GtfsImportService {
                 continue;
             }
             Stop stop = Stop.builder()
+                    .externalId(truncate(rootId, 100))
                     .name(truncate(r.name, STOP_NAME_MAX_LENGTH))
                     .latitude(r.lat)
                     .longitude(r.lon)
@@ -478,6 +480,7 @@ public class GtfsImportService {
 
             String itineraryName = buildItineraryName(line.getCode(), info.headsign, key.directionId);
             Itinerary itinerary = Itinerary.builder()
+                    .externalId(truncate(tripId, 100))
                     .line(line)
                     .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
                     .itineraryStops(new ArrayList<>())

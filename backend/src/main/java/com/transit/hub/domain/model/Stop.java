@@ -43,6 +43,22 @@ public class Stop {
     @Version
     private Long version;
 
+    /** GTFS {@code stop_id} from the source feed. Lets a re-import match
+     *  this row to its replacement instead of recreating it (which would
+     *  break devices and broadcast messages anchored to the old UUID).
+     *  Null for stops created manually via the admin form. */
+    @Size(max = 100)
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
+    /** Soft-delete flag. A stop tombstoned by a re-import (its external_id
+     *  vanished from the new feed) keeps its UUID so devices and messages
+     *  stay valid until an admin reconciles them, but is excluded from
+     *  every public-facing query. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean disabled = false;
+
     @NotBlank(message = "Name is required")
     @Size(max = 100, message = "Name must be at most 100 characters")
     @Column(nullable = false)
