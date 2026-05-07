@@ -308,19 +308,19 @@ class StopRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findBySearchWithLinesAndDevices")
-    class FindBySearchWithLinesAndDevices {
+    @DisplayName("findIdsBySearch + findAllByIdInWithLinesAndDevices (two-step pagination)")
+    class FindBySearchTwoStep {
 
         @Test
         @DisplayName("finds stops matching search term case-insensitively")
         void findsByCaseInsensitiveSearch() {
-            Page<Stop> result = repository.findBySearchWithLinesAndDevices(
-                    "central", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("central", PageRequest.of(0, 10));
+            List<Stop> hydrated = repository.findAllByIdInWithLinesAndDevices(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getName()).isEqualTo("Central Station");
-            assertThat(result.getContent().getFirst().getLines()).hasSize(2);
-            Set<UUID> deviceIds = result.getContent().getFirst().getDevices().stream()
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getName()).isEqualTo("Central Station");
+            assertThat(hydrated.getFirst().getLines()).hasSize(2);
+            Set<UUID> deviceIds = hydrated.getFirst().getDevices().stream()
                     .map(Device::getId)
                     .collect(Collectors.toSet());
             assertThat(deviceIds).containsExactly(deviceCentral.getId());
@@ -329,181 +329,150 @@ class StopRepositoryTest {
         @Test
         @DisplayName("finds stops by partial name match")
         void findsByPartialMatch() {
-            Page<Stop> result = repository.findBySearchWithLinesAndDevices(
-                    "station", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("station", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).hasSize(3);
-            assertThat(result.getTotalElements()).isEqualTo(3);
+            assertThat(idsPage.getContent()).hasSize(3);
+            assertThat(idsPage.getTotalElements()).isEqualTo(3);
         }
 
         @Test
         @DisplayName("returns empty page when no stops match")
         void returnsEmptyWhenNoMatch() {
-            Page<Stop> result = repository.findBySearchWithLinesAndDevices(
-                    "nonexistent", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("nonexistent", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
-            assertThat(result.getTotalElements()).isZero();
+            assertThat(idsPage.getContent()).isEmpty();
+            assertThat(idsPage.getTotalElements()).isZero();
         }
 
         @Test
-        @DisplayName("respects pagination")
+        @DisplayName("respects pagination on the id query")
         void respectsPagination() {
-            Page<Stop> page0 = repository.findBySearchWithLinesAndDevices(
-                    "station", PageRequest.of(0, 2));
-            Page<Stop> page1 = repository.findBySearchWithLinesAndDevices(
-                    "station", PageRequest.of(1, 2));
+            Page<UUID> page0 = repository.findIdsBySearch("station", PageRequest.of(0, 2));
+            Page<UUID> page1 = repository.findIdsBySearch("station", PageRequest.of(1, 2));
 
             assertThat(page0.getContent()).hasSize(2);
             assertThat(page0.getTotalElements()).isEqualTo(3);
             assertThat(page0.getTotalPages()).isEqualTo(2);
             assertThat(page1.getContent()).hasSize(1);
         }
-    }
-
-    @Nested
-    @DisplayName("findBySearchWithLines")
-    class FindBySearchWithLines {
 
         @Test
-        @DisplayName("finds stops matching search with lines eagerly loaded")
-        void findsBySearchWithLines() {
-            Page<Stop> result = repository.findBySearchWithLines(
-                    "NORTH", PageRequest.of(0, 10));
+        @DisplayName("findAllByIdInWithLines slim variant returns lines without devices")
+        void slimHydrate() {
+            Page<UUID> idsPage = repository.findIdsBySearch("NORTH", PageRequest.of(0, 10));
+            List<Stop> hydrated = repository.findAllByIdInWithLines(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getName()).isEqualTo("North Station");
-            assertThat(result.getContent().getFirst().getLines()).hasSize(1);
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getName()).isEqualTo("North Station");
+            assertThat(hydrated.getFirst().getLines()).hasSize(1);
         }
     }
 
     @Nested
-    @DisplayName("findAllWithLinesAndDevices (paginated)")
-    class FindAllWithLinesAndDevicesPaginated {
+    @DisplayName("findAllIds + findAllByIdInWithLinesAndDevices (paginated two-step)")
+    class FindAllPaginatedTwoStep {
 
         @Test
-        @DisplayName("returns paginated stops with lines and devices")
+        @DisplayName("first page returns ids that hydrate with lines + devices")
         void returnsPaginatedResults() {
-            Page<Stop> result = repository.findAllWithLinesAndDevices(PageRequest.of(0, 2));
+            Page<UUID> idsPage = repository.findAllIds(PageRequest.of(0, 2));
+            List<Stop> hydrated = repository.findAllByIdInWithLinesAndDevices(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getTotalElements()).isEqualTo(3);
-            assertThat(result.getTotalPages()).isEqualTo(2);
+            assertThat(idsPage.getContent()).hasSize(2);
+            assertThat(idsPage.getTotalElements()).isEqualTo(3);
+            assertThat(idsPage.getTotalPages()).isEqualTo(2);
+            assertThat(hydrated).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("full page returns every stop")
+        void fullPage() {
+            Page<UUID> idsPage = repository.findAllIds(PageRequest.of(0, 10));
+
+            assertThat(idsPage.getContent()).hasSize(3);
+            assertThat(idsPage.getTotalElements()).isEqualTo(3);
         }
     }
 
     @Nested
-    @DisplayName("findAllWithLines (paginated)")
-    class FindAllWithLinesPaginated {
+    @DisplayName("findIdsByLineId (paginated)")
+    class FindIdsByLineIdPaginated {
 
         @Test
-        @DisplayName("returns paginated stops with lines")
-        void returnsPaginatedResults() {
-            Page<Stop> result = repository.findAllWithLines(PageRequest.of(0, 10));
-
-            assertThat(result.getContent()).hasSize(3);
-            assertThat(result.getTotalElements()).isEqualTo(3);
-        }
-    }
-
-    @Nested
-    @DisplayName("findByLineIdWithLinesAndDevices (paginated)")
-    class FindByLineIdWithLinesAndDevicesPaginated {
-
-        @Test
-        @DisplayName("returns paginated stops for a specific line")
+        @DisplayName("returns paginated stop ids for a specific line")
         void returnsPaginatedStopsForLine() {
-            Page<Stop> result = repository.findByLineIdWithLinesAndDevices(
+            Page<UUID> idsPage = repository.findIdsByLineId(
                     lineM1.getId(), PageRequest.of(0, 1));
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getTotalElements()).isEqualTo(2);
-            assertThat(result.getTotalPages()).isEqualTo(2);
+            assertThat(idsPage.getContent()).hasSize(1);
+            assertThat(idsPage.getTotalElements()).isEqualTo(2);
+            assertThat(idsPage.getTotalPages()).isEqualTo(2);
         }
 
         @Test
         @DisplayName("returns empty page for non-existent line")
         void returnsEmptyForNonExistentLine() {
-            Page<Stop> result = repository.findByLineIdWithLinesAndDevices(
+            Page<UUID> idsPage = repository.findIdsByLineId(
                     UUID.randomUUID(), PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
-            assertThat(result.getTotalElements()).isZero();
+            assertThat(idsPage.getContent()).isEmpty();
+            assertThat(idsPage.getTotalElements()).isZero();
         }
-    }
-
-    @Nested
-    @DisplayName("findByLineIdWithLines (paginated)")
-    class FindByLineIdWithLinesPaginated {
 
         @Test
-        @DisplayName("returns paginated stops for a specific line with lines loaded")
-        void returnsPaginatedStopsForLine() {
-            Page<Stop> result = repository.findByLineIdWithLines(
+        @DisplayName("returns paginated stops for a specific line — full count")
+        void fullCountForLine() {
+            Page<UUID> idsPage = repository.findIdsByLineId(
                     lineB2.getId(), PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getTotalElements()).isEqualTo(2);
+            assertThat(idsPage.getContent()).hasSize(2);
+            assertThat(idsPage.getTotalElements()).isEqualTo(2);
         }
     }
 
     @Nested
-    @DisplayName("findByLineIdAndSearchWithLinesAndDevices")
-    class FindByLineIdAndSearchWithLinesAndDevices {
+    @DisplayName("findIdsByLineIdAndSearch (paginated)")
+    class FindIdsByLineIdAndSearch {
 
         @Test
         @DisplayName("filters by both line and search term")
         void filtersByLineAndSearch() {
-            Page<Stop> result = repository.findByLineIdAndSearchWithLinesAndDevices(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineM1.getId(), "central", PageRequest.of(0, 10));
+            List<Stop> hydrated = repository.findAllByIdInWithLinesAndDevices(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getName()).isEqualTo("Central Station");
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getName()).isEqualTo("Central Station");
         }
 
         @Test
         @DisplayName("returns empty when search matches but line does not")
         void returnsEmptyWhenLineDoesNotMatch() {
-            // South Station belongs to B2 only, not M1
-            Page<Stop> result = repository.findByLineIdAndSearchWithLinesAndDevices(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineM1.getId(), "south", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
+            assertThat(idsPage.getContent()).isEmpty();
         }
 
         @Test
         @DisplayName("returns empty when line matches but search does not")
         void returnsEmptyWhenSearchDoesNotMatch() {
-            Page<Stop> result = repository.findByLineIdAndSearchWithLinesAndDevices(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineM1.getId(), "nonexistent", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
+            assertThat(idsPage.getContent()).isEmpty();
         }
-    }
-
-    @Nested
-    @DisplayName("findByLineIdAndSearchWithLines")
-    class FindByLineIdAndSearchWithLines {
 
         @Test
-        @DisplayName("filters by both line and search term with lines loaded")
-        void filtersByLineAndSearch() {
-            Page<Stop> result = repository.findByLineIdAndSearchWithLines(
+        @DisplayName("hydrate keeps lines bound to each stop")
+        void slimHydrateKeepsLines() {
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineB2.getId(), "south", PageRequest.of(0, 10));
+            List<Stop> hydrated = repository.findAllByIdInWithLines(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getName()).isEqualTo("South Station");
-            assertThat(result.getContent().getFirst().getLines()).hasSize(1);
-        }
-
-        @Test
-        @DisplayName("performs case-insensitive search")
-        void caseInsensitiveSearch() {
-            Page<Stop> result = repository.findByLineIdAndSearchWithLines(
-                    lineB2.getId(), "CENTRAL", PageRequest.of(0, 10));
-
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getName()).isEqualTo("Central Station");
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getName()).isEqualTo("South Station");
+            assertThat(hydrated.getFirst().getLines()).hasSize(1);
         }
     }
 }

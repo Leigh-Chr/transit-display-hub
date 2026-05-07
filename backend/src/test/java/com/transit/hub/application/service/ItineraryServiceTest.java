@@ -541,56 +541,75 @@ class ItineraryServiceTest {
         private final Pageable pageable = PageRequest.of(0, 10);
 
         @Test
-        @DisplayName("with lineId and search calls findByLineIdAndSearchWithLine")
+        @DisplayName("with lineId and search pages over ids first then hydrates the page")
         void withLineIdAndSearch() {
-            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
-            when(itineraryRepository.findByLineIdAndSearchWithLine(eq(testLineId), eq("East"), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testItineraryId), pageable, 1);
+            when(itineraryRepository.findIdsByLineIdAndSearch(eq(testLineId), eq("East"), eq(pageable)))
+                    .thenReturn(idsPage);
+            when(itineraryRepository.findAllByIdInWithLine(List.of(testItineraryId)))
+                    .thenReturn(List.of(testItinerary));
 
             PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(testLineId, "East", pageable);
 
             assertThat(result.content()).hasSize(1);
             assertThat(result.totalElements()).isEqualTo(1);
-            verify(itineraryRepository).findByLineIdAndSearchWithLine(testLineId, "East", pageable);
+            verify(itineraryRepository).findIdsByLineIdAndSearch(testLineId, "East", pageable);
+            verify(itineraryRepository).findAllByIdInWithLine(List.of(testItineraryId));
         }
 
         @Test
-        @DisplayName("with lineId only calls findByLineIdWithLine")
+        @DisplayName("with lineId only pages over by-line ids and hydrates the page")
         void withLineIdOnly() {
-            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
-            when(itineraryRepository.findByLineIdWithLine(eq(testLineId), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testItineraryId), pageable, 1);
+            when(itineraryRepository.findIdsByLineId(eq(testLineId), eq(pageable))).thenReturn(idsPage);
+            when(itineraryRepository.findAllByIdInWithLine(List.of(testItineraryId)))
+                    .thenReturn(List.of(testItinerary));
 
             PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(testLineId, null, pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(itineraryRepository).findByLineIdWithLine(testLineId, pageable);
+            verify(itineraryRepository).findIdsByLineId(testLineId, pageable);
         }
 
         @Test
-        @DisplayName("with search only calls findBySearchWithLine")
+        @DisplayName("with search only pages over search ids and hydrates the page")
         void withSearchOnly() {
-            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
-            when(itineraryRepository.findBySearchWithLine(eq("East"), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testItineraryId), pageable, 1);
+            when(itineraryRepository.findIdsBySearch(eq("East"), eq(pageable))).thenReturn(idsPage);
+            when(itineraryRepository.findAllByIdInWithLine(List.of(testItineraryId)))
+                    .thenReturn(List.of(testItinerary));
 
             PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(null, "East", pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(itineraryRepository).findBySearchWithLine("East", pageable);
+            verify(itineraryRepository).findIdsBySearch("East", pageable);
         }
 
         @Test
-        @DisplayName("without lineId or search calls findAllWithLine")
+        @DisplayName("without lineId or search pages over all ids and hydrates the page")
         void withoutLineIdOrSearch() {
-            Page<Itinerary> page = new PageImpl<>(List.of(testItinerary), pageable, 1);
-            when(itineraryRepository.findAllWithLine(eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testItineraryId), pageable, 1);
+            when(itineraryRepository.findAllIds(eq(pageable))).thenReturn(idsPage);
+            when(itineraryRepository.findAllByIdInWithLine(List.of(testItineraryId)))
+                    .thenReturn(List.of(testItinerary));
 
             PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(null, null, pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(itineraryRepository).findAllWithLine(pageable);
+            verify(itineraryRepository).findAllIds(pageable);
+        }
+
+        @Test
+        @DisplayName("empty id page short-circuits the second query")
+        void emptyIdsSkipHydrate() {
+            Page<UUID> empty = new PageImpl<>(List.of(), pageable, 0);
+            when(itineraryRepository.findAllIds(eq(pageable))).thenReturn(empty);
+
+            PageResponse<ItineraryResponse> result = itineraryService.getAllItineraries(null, null, pageable);
+
+            assertThat(result.content()).isEmpty();
+            assertThat(result.totalElements()).isZero();
+            verify(itineraryRepository, never()).findAllByIdInWithLine(any());
         }
     }
 

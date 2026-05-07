@@ -323,56 +323,75 @@ class StopServiceTest {
         private final Pageable pageable = PageRequest.of(0, 10);
 
         @Test
-        @DisplayName("with lineId and search calls findByLineIdAndSearchWithLinesAndDevices")
+        @DisplayName("with lineId and search pages over ids first then hydrates the page")
         void withLineIdAndSearch() {
-            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
-            when(stopRepository.findByLineIdAndSearchWithLinesAndDevices(eq(testLineId), eq("Central"), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testStopId), pageable, 1);
+            when(stopRepository.findIdsByLineIdAndSearch(eq(testLineId), eq("Central"), eq(pageable)))
+                    .thenReturn(idsPage);
+            when(stopRepository.findAllByIdInWithLinesAndDevices(List.of(testStopId)))
+                    .thenReturn(List.of(testStop));
 
             PageResponse<StopResponse> result = stopService.getAllStops(testLineId, "Central", pageable);
 
             assertThat(result.content()).hasSize(1);
             assertThat(result.totalElements()).isEqualTo(1);
-            verify(stopRepository).findByLineIdAndSearchWithLinesAndDevices(testLineId, "Central", pageable);
+            verify(stopRepository).findIdsByLineIdAndSearch(testLineId, "Central", pageable);
+            verify(stopRepository).findAllByIdInWithLinesAndDevices(List.of(testStopId));
         }
 
         @Test
-        @DisplayName("with lineId only calls findByLineIdWithLinesAndDevices")
+        @DisplayName("with lineId only pages over by-line ids and hydrates the page")
         void withLineIdOnly() {
-            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
-            when(stopRepository.findByLineIdWithLinesAndDevices(eq(testLineId), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testStopId), pageable, 1);
+            when(stopRepository.findIdsByLineId(eq(testLineId), eq(pageable))).thenReturn(idsPage);
+            when(stopRepository.findAllByIdInWithLinesAndDevices(List.of(testStopId)))
+                    .thenReturn(List.of(testStop));
 
             PageResponse<StopResponse> result = stopService.getAllStops(testLineId, null, pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(stopRepository).findByLineIdWithLinesAndDevices(testLineId, pageable);
+            verify(stopRepository).findIdsByLineId(testLineId, pageable);
         }
 
         @Test
-        @DisplayName("with search only calls findBySearchWithLinesAndDevices")
+        @DisplayName("with search only pages over search ids and hydrates the page")
         void withSearchOnly() {
-            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
-            when(stopRepository.findBySearchWithLinesAndDevices(eq("Central"), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testStopId), pageable, 1);
+            when(stopRepository.findIdsBySearch(eq("Central"), eq(pageable))).thenReturn(idsPage);
+            when(stopRepository.findAllByIdInWithLinesAndDevices(List.of(testStopId)))
+                    .thenReturn(List.of(testStop));
 
             PageResponse<StopResponse> result = stopService.getAllStops(null, "Central", pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(stopRepository).findBySearchWithLinesAndDevices("Central", pageable);
+            verify(stopRepository).findIdsBySearch("Central", pageable);
         }
 
         @Test
-        @DisplayName("without lineId or search calls findAllWithLinesAndDevices")
+        @DisplayName("without lineId or search pages over all ids and hydrates the page")
         void withoutLineIdOrSearch() {
-            Page<Stop> page = new PageImpl<>(List.of(testStop), pageable, 1);
-            when(stopRepository.findAllWithLinesAndDevices(eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testStopId), pageable, 1);
+            when(stopRepository.findAllIds(eq(pageable))).thenReturn(idsPage);
+            when(stopRepository.findAllByIdInWithLinesAndDevices(List.of(testStopId)))
+                    .thenReturn(List.of(testStop));
 
             PageResponse<StopResponse> result = stopService.getAllStops(null, null, pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(stopRepository).findAllWithLinesAndDevices(pageable);
+            verify(stopRepository).findAllIds(pageable);
+        }
+
+        @Test
+        @DisplayName("empty id page short-circuits the second query")
+        void emptyIdsSkipHydrate() {
+            Page<UUID> empty = new PageImpl<>(List.of(), pageable, 0);
+            when(stopRepository.findAllIds(eq(pageable))).thenReturn(empty);
+
+            PageResponse<StopResponse> result = stopService.getAllStops(null, null, pageable);
+
+            assertThat(result.content()).isEmpty();
+            assertThat(result.totalElements()).isZero();
+            verify(stopRepository, never()).findAllByIdInWithLinesAndDevices(any());
         }
     }
 

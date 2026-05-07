@@ -49,33 +49,35 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, UUID> {
 
     void deleteByLineId(UUID lineId);
 
-    @Query(value = "SELECT DISTINCT i FROM Itinerary i " +
-           "JOIN FETCH i.line " +
-           "LEFT JOIN FETCH i.itineraryStops",
+    /** Two-step pagination, step 1: page Itinerary ids without
+     *  collection fetches so Hibernate can paginate in SQL
+     *  (HHH90003004 fix). */
+    @Query(value = "SELECT i.id FROM Itinerary i",
            countQuery = "SELECT COUNT(i) FROM Itinerary i")
-    Page<Itinerary> findAllWithLine(Pageable pageable);
+    Page<UUID> findAllIds(Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT i FROM Itinerary i " +
-           "JOIN FETCH i.line " +
-           "LEFT JOIN FETCH i.itineraryStops " +
-           "WHERE i.line.id = :lineId",
+    @Query(value = "SELECT i.id FROM Itinerary i WHERE i.line.id = :lineId",
            countQuery = "SELECT COUNT(i) FROM Itinerary i WHERE i.line.id = :lineId")
-    Page<Itinerary> findByLineIdWithLine(UUID lineId, Pageable pageable);
+    Page<UUID> findIdsByLineId(UUID lineId, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT i FROM Itinerary i " +
-           "JOIN FETCH i.line " +
-           "LEFT JOIN FETCH i.itineraryStops " +
+    @Query(value = "SELECT i.id FROM Itinerary i " +
            "WHERE LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))",
            countQuery = "SELECT COUNT(i) FROM Itinerary i " +
            "WHERE LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Itinerary> findBySearchWithLine(String search, Pageable pageable);
+    Page<UUID> findIdsBySearch(String search, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT i FROM Itinerary i " +
-           "JOIN FETCH i.line " +
-           "LEFT JOIN FETCH i.itineraryStops " +
+    @Query(value = "SELECT i.id FROM Itinerary i " +
            "WHERE i.line.id = :lineId AND " +
            "LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))",
            countQuery = "SELECT COUNT(i) FROM Itinerary i WHERE i.line.id = :lineId AND " +
            "LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Itinerary> findByLineIdAndSearchWithLine(UUID lineId, String search, Pageable pageable);
+    Page<UUID> findIdsByLineIdAndSearch(UUID lineId, String search, Pageable pageable);
+
+    /** Two-step pagination, step 2: hydrate the page's entities along
+     *  with their line + itineraryStops in one round-trip. */
+    @Query("SELECT DISTINCT i FROM Itinerary i " +
+           "JOIN FETCH i.line " +
+           "LEFT JOIN FETCH i.itineraryStops " +
+           "WHERE i.id IN :ids")
+    List<Itinerary> findAllByIdInWithLine(List<UUID> ids);
 }

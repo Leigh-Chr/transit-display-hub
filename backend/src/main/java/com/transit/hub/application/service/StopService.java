@@ -61,20 +61,36 @@ public class StopService {
 
     @Transactional(readOnly = true)
     public PageResponse<StopResponse> getAllStops(UUID lineId, String search, Pageable pageable) {
-        Page<Stop> page;
         boolean hasLineId = lineId != null;
         boolean hasSearch = search != null && !search.isBlank();
         String trimmedSearch = hasSearch ? search.trim() : null;
 
+        // Two-step pagination — page over Stop ids without a collection
+        // JOIN FETCH so Hibernate paginates in SQL, then hydrate only
+        // the page's entities with lines + devices.
+        Page<UUID> idsPage;
         if (hasLineId && hasSearch) {
-            page = stopRepository.findByLineIdAndSearchWithLinesAndDevices(lineId, trimmedSearch, pageable);
+            idsPage = stopRepository.findIdsByLineIdAndSearch(lineId, trimmedSearch, pageable);
         } else if (hasLineId) {
-            page = stopRepository.findByLineIdWithLinesAndDevices(lineId, pageable);
+            idsPage = stopRepository.findIdsByLineId(lineId, pageable);
         } else if (hasSearch) {
-            page = stopRepository.findBySearchWithLinesAndDevices(trimmedSearch, pageable);
+            idsPage = stopRepository.findIdsBySearch(trimmedSearch, pageable);
         } else {
-            page = stopRepository.findAllWithLinesAndDevices(pageable);
+            idsPage = stopRepository.findAllIds(pageable);
         }
+        if (idsPage.getContent().isEmpty()) {
+            return PageResponse.from(Page.<Stop>empty(pageable),
+                    stop -> StopResponse.from(stop, 0));
+        }
+        List<Stop> hydrated = stopRepository.findAllByIdInWithLinesAndDevices(idsPage.getContent());
+        Map<UUID, Stop> byId = hydrated.stream()
+                .collect(java.util.stream.Collectors.toMap(Stop::getId, s -> s));
+        List<Stop> ordered = idsPage.getContent().stream()
+                .map(byId::get)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        Page<Stop> page = new org.springframework.data.domain.PageImpl<>(
+                ordered, pageable, idsPage.getTotalElements());
 
         Map<UUID, Integer> counts = scheduleCountsFor(page.getContent());
         return PageResponse.from(page,

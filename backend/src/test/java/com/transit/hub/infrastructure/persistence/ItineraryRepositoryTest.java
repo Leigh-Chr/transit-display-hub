@@ -384,129 +384,131 @@ class ItineraryRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findAllWithLine (paginated)")
-    class FindAllWithLinePaginated {
+    @DisplayName("findAllIds + findAllByIdInWithLine (two-step pagination)")
+    class FindAllPaginatedTwoStep {
 
         @Test
-        @DisplayName("returns paginated itineraries with line eagerly loaded")
+        @DisplayName("first page returns ids that hydrate with line + itineraryStops")
         void returnsPaginatedWithLine() {
-            Page<Itinerary> result = repository.findAllWithLine(PageRequest.of(0, 2));
+            Page<UUID> idsPage = repository.findAllIds(PageRequest.of(0, 2));
+            List<Itinerary> hydrated = repository.findAllByIdInWithLine(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getTotalElements()).isEqualTo(3);
-            assertThat(result.getTotalPages()).isEqualTo(2);
-            // Line should be eagerly loaded
-            assertThat(result.getContent().getFirst().getLine().getCode()).isNotBlank();
+            assertThat(idsPage.getContent()).hasSize(2);
+            assertThat(idsPage.getTotalElements()).isEqualTo(3);
+            assertThat(idsPage.getTotalPages()).isEqualTo(2);
+            assertThat(hydrated).hasSize(2);
+            assertThat(hydrated.getFirst().getLine().getCode()).isNotBlank();
         }
 
         @Test
-        @DisplayName("second page contains remaining itineraries")
+        @DisplayName("second page contains the remaining itinerary")
         void secondPageContainsRemaining() {
-            Page<Itinerary> result = repository.findAllWithLine(PageRequest.of(1, 2));
+            Page<UUID> idsPage = repository.findAllIds(PageRequest.of(1, 2));
 
-            assertThat(result.getContent()).hasSize(1);
+            assertThat(idsPage.getContent()).hasSize(1);
         }
     }
 
     @Nested
-    @DisplayName("findByLineIdWithLine (paginated)")
-    class FindByLineIdWithLinePaginated {
+    @DisplayName("findIdsByLineId (paginated)")
+    class FindIdsByLineId {
 
         @Test
-        @DisplayName("returns paginated itineraries for a specific line")
+        @DisplayName("returns paginated itinerary ids for a specific line")
         void returnsPaginatedForLine() {
-            Page<Itinerary> result = repository.findByLineIdWithLine(
+            Page<UUID> idsPage = repository.findIdsByLineId(
                     lineM1.getId(), PageRequest.of(0, 1));
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getTotalElements()).isEqualTo(2);
-            assertThat(result.getTotalPages()).isEqualTo(2);
+            assertThat(idsPage.getContent()).hasSize(1);
+            assertThat(idsPage.getTotalElements()).isEqualTo(2);
+            assertThat(idsPage.getTotalPages()).isEqualTo(2);
         }
 
         @Test
         @DisplayName("returns empty page for non-existent line")
         void returnsEmptyForNonExistentLine() {
-            Page<Itinerary> result = repository.findByLineIdWithLine(
+            Page<UUID> idsPage = repository.findIdsByLineId(
                     UUID.randomUUID(), PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
-            assertThat(result.getTotalElements()).isZero();
+            assertThat(idsPage.getContent()).isEmpty();
+            assertThat(idsPage.getTotalElements()).isZero();
         }
     }
 
     @Nested
-    @DisplayName("findBySearchWithLine")
-    class FindBySearchWithLine {
+    @DisplayName("findIdsBySearch")
+    class FindIdsBySearch {
 
         @Test
         @DisplayName("finds itineraries by name case-insensitively")
         void findsByNameCaseInsensitive() {
-            Page<Itinerary> result = repository.findBySearchWithLine(
+            Page<UUID> idsPage = repository.findIdsBySearch(
                     "alpha", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).hasSize(2);
+            assertThat(idsPage.getContent()).hasSize(2);
         }
 
         @Test
         @DisplayName("finds itineraries by partial name match")
         void findsByPartialName() {
-            Page<Itinerary> result = repository.findBySearchWithLine(
+            Page<UUID> idsPage = repository.findIdsBySearch(
                     "loop", PageRequest.of(0, 10));
+            List<Itinerary> hydrated = repository.findAllByIdInWithLine(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getName()).isEqualTo("Gamma Loop");
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getName()).isEqualTo("Gamma Loop");
         }
 
         @Test
         @DisplayName("returns empty page when no match")
         void returnsEmptyWhenNoMatch() {
-            Page<Itinerary> result = repository.findBySearchWithLine(
+            Page<UUID> idsPage = repository.findIdsBySearch(
                     "nonexistent", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
+            assertThat(idsPage.getContent()).isEmpty();
         }
     }
 
     @Nested
-    @DisplayName("findByLineIdAndSearchWithLine")
-    class FindByLineIdAndSearchWithLine {
+    @DisplayName("findIdsByLineIdAndSearch")
+    class FindIdsByLineIdAndSearch {
 
         @Test
         @DisplayName("filters by both line and search term")
         void filtersByLineAndSearch() {
-            Page<Itinerary> result = repository.findByLineIdAndSearchWithLine(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineM1.getId(), "alpha", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).hasSize(2);
+            assertThat(idsPage.getContent()).hasSize(2);
         }
 
         @Test
         @DisplayName("returns empty when search matches but line does not")
         void returnsEmptyWhenLineDoesNotMatch() {
-            Page<Itinerary> result = repository.findByLineIdAndSearchWithLine(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineB2.getId(), "alpha", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
+            assertThat(idsPage.getContent()).isEmpty();
         }
 
         @Test
         @DisplayName("returns empty when line matches but search does not")
         void returnsEmptyWhenSearchDoesNotMatch() {
-            Page<Itinerary> result = repository.findByLineIdAndSearchWithLine(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineM1.getId(), "nonexistent", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
+            assertThat(idsPage.getContent()).isEmpty();
         }
 
         @Test
         @DisplayName("respects pagination")
         void respectsPagination() {
-            Page<Itinerary> result = repository.findByLineIdAndSearchWithLine(
+            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
                     lineM1.getId(), "alpha", PageRequest.of(0, 1));
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getTotalElements()).isEqualTo(2);
-            assertThat(result.getTotalPages()).isEqualTo(2);
+            assertThat(idsPage.getContent()).hasSize(1);
+            assertThat(idsPage.getTotalElements()).isEqualTo(2);
+            assertThat(idsPage.getTotalPages()).isEqualTo(2);
         }
     }
 }

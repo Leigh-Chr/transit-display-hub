@@ -55,45 +55,41 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT s.id FROM Stop s")
     Set<UUID> findAllIds();
 
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices WHERE " +
+    /** Two-step pagination, step 1: page Stop ids without collection
+     *  fetches so Hibernate can paginate in SQL (HHH90003004 fix).
+     *  Step 2 hydrates the page's entities below. */
+    @Query(value = "SELECT s.id FROM Stop s",
+           countQuery = "SELECT COUNT(s) FROM Stop s")
+    Page<UUID> findAllIds(Pageable pageable);
+
+    @Query(value = "SELECT s.id FROM Stop s WHERE " +
            "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s WHERE " +
+           countQuery = "SELECT COUNT(s) FROM Stop s WHERE " +
            "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Stop> findBySearchWithLinesAndDevices(String search, Pageable pageable);
+    Page<UUID> findIdsBySearch(String search, Pageable pageable);
 
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE " +
-           "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Stop> findBySearchWithLines(String search, Pageable pageable);
-
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s")
-    Page<Stop> findAllWithLinesAndDevices(Pageable pageable);
-
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s")
-    Page<Stop> findAllWithLines(Pageable pageable);
-
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices WHERE s IN " +
+    @Query(value = "SELECT s.id FROM Stop s WHERE s IN " +
            "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s JOIN s.lines l WHERE l.id = :lineId")
-    Page<Stop> findByLineIdWithLinesAndDevices(UUID lineId, Pageable pageable);
+           countQuery = "SELECT COUNT(s) FROM Stop s WHERE s IN " +
+           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)")
+    Page<UUID> findIdsByLineId(UUID lineId, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s IN " +
-           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s JOIN s.lines l WHERE l.id = :lineId")
-    Page<Stop> findByLineIdWithLines(UUID lineId, Pageable pageable);
-
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices WHERE " +
+    @Query(value = "SELECT s.id FROM Stop s WHERE " +
            "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%')) AND s IN " +
            "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s JOIN s.lines l WHERE l.id = :lineId AND " +
-           "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Stop> findByLineIdAndSearchWithLinesAndDevices(UUID lineId, String search, Pageable pageable);
-
-    @Query(value = "SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE " +
+           countQuery = "SELECT COUNT(s) FROM Stop s WHERE " +
            "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%')) AND s IN " +
-           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)",
-           countQuery = "SELECT COUNT(DISTINCT s) FROM Stop s JOIN s.lines l WHERE l.id = :lineId AND " +
-           "LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Stop> findByLineIdAndSearchWithLines(UUID lineId, String search, Pageable pageable);
+           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)")
+    Page<UUID> findIdsByLineIdAndSearch(UUID lineId, String search, Pageable pageable);
+
+    /** Two-step pagination, step 2: hydrate the page's entities with
+     *  lines + devices in one round-trip. */
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices " +
+           "WHERE s.id IN :ids")
+    List<Stop> findAllByIdInWithLinesAndDevices(List<UUID> ids);
+
+    /** Two-step pagination, step 2 — slim variant for callers that only
+     *  need lines (no devices). */
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s.id IN :ids")
+    List<Stop> findAllByIdInWithLines(List<UUID> ids);
 }

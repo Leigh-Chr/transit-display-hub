@@ -65,20 +65,35 @@ public class ItineraryService {
 
     @Transactional(readOnly = true)
     public PageResponse<ItineraryResponse> getAllItineraries(UUID lineId, String search, Pageable pageable) {
-        Page<Itinerary> page;
         boolean hasLineId = lineId != null;
         boolean hasSearch = search != null && !search.isBlank();
         String trimmedSearch = hasSearch ? search.trim() : null;
 
+        // Two-step pagination — page over Itinerary ids without a
+        // collection JOIN FETCH so Hibernate paginates in SQL, then
+        // hydrate only the page's entities with line + itineraryStops.
+        Page<UUID> idsPage;
         if (hasLineId && hasSearch) {
-            page = itineraryRepository.findByLineIdAndSearchWithLine(lineId, trimmedSearch, pageable);
+            idsPage = itineraryRepository.findIdsByLineIdAndSearch(lineId, trimmedSearch, pageable);
         } else if (hasLineId) {
-            page = itineraryRepository.findByLineIdWithLine(lineId, pageable);
+            idsPage = itineraryRepository.findIdsByLineId(lineId, pageable);
         } else if (hasSearch) {
-            page = itineraryRepository.findBySearchWithLine(trimmedSearch, pageable);
+            idsPage = itineraryRepository.findIdsBySearch(trimmedSearch, pageable);
         } else {
-            page = itineraryRepository.findAllWithLine(pageable);
+            idsPage = itineraryRepository.findAllIds(pageable);
         }
+        if (idsPage.getContent().isEmpty()) {
+            return PageResponse.from(Page.empty(pageable), ItineraryResponse::from);
+        }
+        List<Itinerary> hydrated = itineraryRepository.findAllByIdInWithLine(idsPage.getContent());
+        java.util.Map<UUID, Itinerary> byId = hydrated.stream()
+                .collect(java.util.stream.Collectors.toMap(Itinerary::getId, i -> i));
+        List<Itinerary> ordered = idsPage.getContent().stream()
+                .map(byId::get)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        Page<Itinerary> page = new org.springframework.data.domain.PageImpl<>(
+                ordered, pageable, idsPage.getTotalElements());
         return PageResponse.from(page, ItineraryResponse::from);
     }
 
