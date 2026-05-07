@@ -69,8 +69,24 @@ public class NetworkMapService {
         for (Object[] row : scheduleRepository.countByLineId()) {
             scheduleCountByLineId.put((UUID) row[0], (Long) row[1]);
         }
+
+        // Phase 1.3 itinerary remap: the importer attaches itinerary
+        // stops to actual platforms, but the schematic map only
+        // surfaces parent stations. Build platform→parent UUID
+        // mapping upfront so itineraries can rewrite their stop ids
+        // and stay consistent with the surface stop list shipped
+        // alongside.
+        Map<UUID, UUID> platformToParentId = new HashMap<>();
+        for (Stop s : stops) {
+            if (s.getParentStop() != null) {
+                platformToParentId.put(s.getId(), s.getParentStop().getId());
+            }
+        }
+
         List<NetworkLine> networkLines = lines.stream()
-                .map(line -> toNetworkLine(line, scheduleCountByLineId.getOrDefault(line.getId(), 0L)))
+                .map(line -> toNetworkLine(line,
+                        scheduleCountByLineId.getOrDefault(line.getId(), 0L),
+                        platformToParentId))
                 .toList();
 
         // Phase 1.3 ripple: the importer now persists every platform plus
@@ -117,14 +133,11 @@ public class NetworkMapService {
         }
 
         // Surface stops = parent stations + free-standing platforms.
-        // Platforms with a parent disappear into their parent.
-        Map<UUID, UUID> platformToParentId = new HashMap<>();
+        // Platforms with a parent disappear into their parent (already
+        // captured in platformToParentId above).
         List<NetworkStop> networkStops = new ArrayList<>();
         for (Stop s : stops) {
-            if (s.getParentStop() != null) {
-                platformToParentId.put(s.getId(), s.getParentStop().getId());
-                continue;
-            }
+            if (s.getParentStop() != null) {continue;}
             networkStops.add(toNetworkStop(s, childrenByParentId.get(s.getId()),
                     onDemandStopIds, areaNamesByStopId));
         }
@@ -174,7 +187,8 @@ public class NetworkMapService {
         return new AlertsResponse(networkAlerts, lineAlerts, stopAlerts);
     }
 
-    private NetworkLine toNetworkLine(Line line, long scheduleCount) {
+    private NetworkLine toNetworkLine(Line line, long scheduleCount,
+                                       Map<UUID, UUID> platformToParentId) {
         List<Itinerary> sortedItineraries = line.getItineraries().stream()
                 .sorted(Comparator.comparing(Itinerary::getName))
                 .toList();
@@ -190,9 +204,21 @@ public class NetworkMapService {
                 continue;
             }
 
-            itineraries.add(orderedStops.stream()
-                    .map(is -> is.getStop().getId())
-                    .toList());
+            // Remap each platform UUID to its parent's UUID when one
+            // exists, then dedupe consecutive duplicates that the
+            // collapse can introduce (multiple platforms of the same
+            // station appearing in sequence on a trip).
+            List<UUID> stopIds = new ArrayList<>(orderedStops.size());
+            UUID lastEmitted = null;
+            for (ItineraryStop is : orderedStops) {
+                UUID rawId = is.getStop().getId();
+                UUID surfaceId = platformToParentId.getOrDefault(rawId, rawId);
+                if (!surfaceId.equals(lastEmitted)) {
+                    stopIds.add(surfaceId);
+                    lastEmitted = surfaceId;
+                }
+            }
+            itineraries.add(stopIds);
         }
 
         return new NetworkLine(
