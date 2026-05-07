@@ -288,6 +288,12 @@ export interface ArrivalInfo {
    *  departures during the active window. Null when the trip is on a
    *  fixed timetable. */
   frequencyHeadwaySeconds?: number | null;
+  /** GTFS-Realtime delay applied to {@link scheduledTime} (seconds).
+   *  Positive = late, negative = early. Null = no realtime update
+   *  covers this arrival; the kiosk renders the scheduled time
+   *  unchanged. Zero is meaningful — "the feed says on time" — and
+   *  triggers the live indicator. */
+  realtimeDelaySeconds?: number | null;
 }
 
 export interface MessageInfo {
@@ -316,6 +322,7 @@ export interface HubArrivalInfo {
   bikesAllowed?: BikesAllowed;
   timepoint?: boolean;
   frequencyHeadwaySeconds?: number | null;
+  realtimeDelaySeconds?: number | null;
 }
 
 // Network Map

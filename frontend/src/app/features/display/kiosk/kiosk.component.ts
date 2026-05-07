@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DisplayService } from '@core/api/display.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
-import { DisplayState, PickupKind } from '@shared/models';
+import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 
 @Component({
@@ -121,13 +121,21 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       @if (frequencyLabel(arrival.frequencyHeadwaySeconds); as freq) {
                         <span class="pickup-badge frequency-badge">{{ freq }}</span>
                       }
+                      @if (isLive(arrival.realtimeDelaySeconds)) {
+                        <span class="live-badge"
+                              [class.delay-late]="(arrival.realtimeDelaySeconds ?? 0) > 60"
+                              [class.delay-early]="(arrival.realtimeDelaySeconds ?? 0) < -60"
+                              aria-label="Temps réel">
+                          ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
+                        </span>
+                      }
                     </span>
                     <span class="time-info">
                       <span
                         class="time-relative"
-                        [class.imminent]="isImminent(arrival.scheduledTime)"
-                      >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
-                      <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+                        [class.imminent]="isImminent(effectiveTime(arrival))"
+                      >{{ formatRelativeTime(effectiveTime(arrival)) }}</span>
+                      <span class="time-absolute">{{ formatDepartureTime(effectiveTime(arrival)) }}</span>
                     </span>
                   </div>
                 } @empty {
@@ -158,9 +166,9 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       <span class="time-info">
                         <span
                         class="time-relative"
-                        [class.imminent]="isImminent(arrival.scheduledTime)"
-                      >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
-                        <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+                        [class.imminent]="isImminent(effectiveTime(arrival))"
+                      >{{ formatRelativeTime(effectiveTime(arrival)) }}</span>
+                        <span class="time-absolute">{{ formatDepartureTime(effectiveTime(arrival)) }}</span>
                       </span>
                     </div>
                   }
@@ -477,6 +485,40 @@ import { lineTextColor } from '@shared/utils/color.utils';
       border-color: var(--app-kiosk-info-accent);
     }
 
+    .live-badge {
+      display: inline-block;
+      margin-left: 1vw;
+      padding: 0.3vh 0.8vw;
+      border-radius: 0.4vh;
+      font-size: clamp(1.5vh, 2vh, 2.5vh);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      background: rgba(46, 204, 113, 0.18);
+      color: rgb(46, 174, 96);
+      border: 1px solid rgba(46, 204, 113, 0.6);
+      // Pulsing dot evokes the "live data" idiom from broadcast UIs
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+
+    .live-badge.delay-late {
+      background: rgba(231, 76, 60, 0.18);
+      color: rgb(192, 57, 43);
+      border-color: rgba(231, 76, 60, 0.6);
+    }
+
+    .live-badge.delay-early {
+      background: rgba(241, 196, 15, 0.18);
+      color: rgb(180, 134, 6);
+      border-color: rgba(241, 196, 15, 0.6);
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+
     .access-icon {
       vertical-align: middle;
       margin-left: 0.8vw;
@@ -763,6 +805,49 @@ export class KioskComponent implements OnInit, OnDestroy {
       case 'ON_REQUEST_DRIVER': return 'On request — wave the driver';
       default: return null;
     }
+  }
+
+  /** Returns true when the GTFS-RT cache holds an explicit update
+   *  for this arrival — even when the delay is zero ("on time"
+   *  matters for passengers because it means the data is live, not
+   *  theoretical). */
+  isLive(delaySeconds: number | null | undefined): boolean {
+    return delaySeconds !== null && delaySeconds !== undefined;
+  }
+
+  /** Short label rendered next to the live indicator: "à l'heure",
+   *  "+3 min", "−2 min". Sub-minute values collapse to "à l'heure"
+   *  to avoid screen churn at 30 s granularity. */
+  liveLabel(delaySeconds: number | null | undefined): string {
+    if (delaySeconds === null || delaySeconds === undefined) {return '';}
+    const sign = delaySeconds >= 0 ? '+' : '−';
+    const abs = Math.round(Math.abs(delaySeconds) / 60);
+    if (abs === 0) {return 'à l\'heure';}
+    return `${sign}${abs} min`;
+  }
+
+  /** Adds the realtime delay to the scheduled HH:mm so the relative
+   *  countdown and absolute time both reflect what the passenger
+   *  will actually see at the stop. The scheduled time on the
+   *  payload stays untouched — we only project it forward at the
+   *  render layer. */
+  effectiveTime(arrival: ArrivalInfo | HubArrivalInfo): string {
+    const delay = arrival.realtimeDelaySeconds;
+    if (delay === null || delay === undefined || delay === 0) {
+      return arrival.scheduledTime;
+    }
+    const parts = arrival.scheduledTime.split(':');
+    const hours = parseInt(parts[0] ?? '0', 10);
+    const minutes = parseInt(parts[1] ?? '0', 10);
+    const seconds = parseInt(parts[2] ?? '0', 10);
+    const total = hours * 3600 + minutes * 60 + seconds + delay;
+    // Wrap into [0, 86400) so a late-night delay of 5 min on 23:58
+    // displays as 00:03 the next day rather than 24:03.
+    const wrapped = ((total % 86400) + 86400) % 86400;
+    const hh = Math.floor(wrapped / 3600);
+    const mm = Math.floor((wrapped % 3600) / 60);
+    const ss = wrapped % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
   }
 
   private token: string | null = null;
