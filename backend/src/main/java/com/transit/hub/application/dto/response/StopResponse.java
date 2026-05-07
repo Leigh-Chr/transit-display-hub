@@ -25,6 +25,17 @@ public record StopResponse(
          *  publish the field — admins see the difference between
          *  "explicitly unknown" (UNKNOWN) and "absent". */
         WheelchairAccess wheelchairBoarding,
+        /** GTFS location_type: 0 platform / regular stop, 1 station.
+         *  Drives the "Station" / "Quai" badge in the admin list and
+         *  enables the parent-aggregation behaviour on the kiosk. */
+        short locationType,
+        /** Parent station UUID when this row is a platform that
+         *  belongs to a multi-platform station. Null on free-standing
+         *  stops and on parent stations themselves. */
+        UUID parentStopId,
+        /** Denormalised parent name so the admin list can render
+         *  "Quai 4 — Saint-Lazare" without a second request. */
+        String parentStopName,
         List<LineInfo> lines,
         int scheduleCount,
         boolean hasDevice
@@ -42,6 +53,7 @@ public record StopResponse(
                 .map(LineInfo::from)
                 .toList();
 
+        Stop parent = stop.getParentStop();
         return new StopResponse(
                 stop.getId(),
                 stop.getName(),
@@ -52,6 +64,9 @@ public record StopResponse(
                 stop.getDescription(),
                 stop.getUrl(),
                 stop.getWheelchairBoarding(),
+                stop.getLocationType(),
+                parent != null ? parent.getId() : null,
+                parent != null ? parent.getName() : null,
                 lineInfos,
                 scheduleCount,
                 stop.getDevices() != null && !stop.getDevices().isEmpty()

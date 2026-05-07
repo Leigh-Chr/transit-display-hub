@@ -150,7 +150,20 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
-              <td mat-cell *matCellDef="let stop">{{ stop.name }}</td>
+              <td mat-cell *matCellDef="let stop">
+                <span class="stop-name-cell">
+                  @if (stop.locationType === 1) {
+                    <mat-icon class="stop-type-icon" matTooltip="Station (parent)">apartment</mat-icon>
+                  }
+                  <span>{{ stop.name }}</span>
+                  @if (stop.platformCode) {
+                    <span class="platform-badge" matTooltip="Quai">{{ stop.platformCode }}</span>
+                  }
+                  @if (stop.parentStopName) {
+                    <span class="parent-hint" matTooltip="Rattaché à">— {{ stop.parentStopName }}</span>
+                  }
+                </span>
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="schedules">
@@ -278,6 +291,37 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       @media (max-width: 600px) {
         display: none !important;
       }
+    }
+
+    .stop-name-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stop-type-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--mat-sys-primary);
+    }
+
+    .platform-badge {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .parent-hint {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.85em;
+      font-style: italic;
     }
 
     /* Enter animations */

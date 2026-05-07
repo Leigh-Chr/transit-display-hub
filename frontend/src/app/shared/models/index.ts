@@ -123,6 +123,17 @@ export interface Stop {
   url?: string | null;
   /** GTFS wheelchair_boarding tri-state. */
   wheelchairBoarding?: WheelchairAccess | null;
+  /** GTFS location_type: 0 platform / regular stop, 1 station.
+   *  Drives the badge in the admin list and the parent-aggregation
+   *  behaviour on a kiosk bound to a parent station. */
+  locationType?: number;
+  /** Parent station UUID when this row is a platform that belongs
+   *  to a multi-platform station. Null on free-standing stops and
+   *  parent stations themselves. */
+  parentStopId?: string | null;
+  /** Denormalised parent name so the admin list can render
+   *  "Quai 4 — Saint-Lazare" without a second request. */
+  parentStopName?: string | null;
   lines: LineInfo[];
   scheduleCount: number;
   hasDevice: boolean;
