@@ -150,6 +150,16 @@ import {
               <span matListItemTitle>Devices</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/realtime"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>sensors</mat-icon>
+              <span matListItemTitle>Temps réel</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 

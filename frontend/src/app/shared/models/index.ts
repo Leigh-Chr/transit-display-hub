@@ -460,6 +460,40 @@ export interface DataOverviewRealtime {
   vehiclePositionsEnabled: boolean;
 }
 
+// GTFS-Realtime (admin browse)
+export interface RealtimeAlert {
+  id: string;
+  routeIds: string[];
+  stopIds: string[];
+  agencyIds: string[];
+  headerText: string | null;
+  descriptionText: string | null;
+  url: string | null;
+  cause: string | null;
+  effect: string | null;
+  severity: string | null;
+}
+
+export interface VehiclePosition {
+  entityId: string;
+  vehicleId: string | null;
+  vehicleLabel: string | null;
+  tripId: string | null;
+  routeId: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  bearing: number | null;
+  speedMetresPerSecond: number | null;
+  currentStatus: string | null;
+  currentStopId: string | null;
+  currentStopSequence: number | null;
+  congestionLevel: string | null;
+  occupancyStatus: string | null;
+  occupancyPercentage: number | null;
+  /** Unix epoch seconds — when the vehicle reported this position. */
+  timestampEpochSeconds: number | null;
+}
+
 // GTFS Feed Info (admin)
 export interface FeedInfo {
   publisherName: string | null;

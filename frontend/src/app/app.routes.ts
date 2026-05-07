@@ -61,6 +61,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/devices/devices.component').then(m => m.DevicesComponent)
       },
       {
+        path: 'realtime',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
+        loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
+      },
+      {
         path: 'users',
         canActivate: [roleGuard],
         data: { requiredRole: 'ADMIN' },
