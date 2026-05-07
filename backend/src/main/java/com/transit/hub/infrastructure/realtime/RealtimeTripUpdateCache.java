@@ -80,6 +80,12 @@ public class RealtimeTripUpdateCache {
         return tripUpdatesUrl != null && !tripUpdatesUrl.isBlank();
     }
 
+    /** Number of trips currently in the cache. Used by the
+     *  data-overview dashboard. */
+    public int snapshotSize() {
+        return snapshot.get().size();
+    }
+
     public Optional<TripAdjustment> findUpdate(String tripExternalId) {
         if (tripExternalId == null) {return Optional.empty();}
         TripAdjustment hit = snapshot.get().get(tripExternalId);

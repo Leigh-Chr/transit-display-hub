@@ -15,6 +15,12 @@ import java.util.UUID;
 @Repository
 public interface StopRepository extends JpaRepository<Stop, UUID> {
 
+    /** Counts stops that the import flagged disabled because the new
+     *  feed no longer references them. Used by the data-overview
+     *  dashboard to surface "X stops orphaned" without forcing the
+     *  admin to scroll the full list. */
+    long countByDisabledTrue();
+
     @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices")
     List<Stop> findAllWithLinesAndDevices();
 
