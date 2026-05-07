@@ -86,6 +86,14 @@ public class Itinerary {
     @Builder.Default
     private List<ItineraryStop> itineraryStops = new ArrayList<>();
 
+    /** Geographic shape the itinerary traces, sourced from
+     *  {@code shapes.txt} via the representative trip's
+     *  {@code shape_id}. Null when the feed doesn't ship shape data
+     *  or when the trip has no {@code shape_id}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shape_id")
+    private Shape shape;
+
     /**
      * Returns the terminus name derived from the last stop in the itinerary.
      * Returns null if the itinerary has no stops.

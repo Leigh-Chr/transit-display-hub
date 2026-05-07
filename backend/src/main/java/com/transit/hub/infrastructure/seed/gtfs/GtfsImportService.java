@@ -11,6 +11,8 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.ServiceCalendar;
+import com.transit.hub.domain.model.Shape;
+import com.transit.hub.domain.model.ShapePoint;
 import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Translation;
@@ -30,6 +32,7 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
+import com.transit.hub.infrastructure.persistence.ShapeRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
@@ -93,6 +96,7 @@ public class GtfsImportService {
     private final PathwayRepository pathwayRepository;
     private final TranslationRepository translationRepository;
     private final FareAttributeRepository fareAttributeRepository;
+    private final ShapeRepository shapeRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -119,11 +123,14 @@ public class GtfsImportService {
             Map<String, Line> linesByGtfsId = importRoutes(workDir.resolve("routes.txt"), agenciesByGtfsId);
             StopImport stopImport = importStops(workDir.resolve("stops.txt"));
 
+            Map<String, Shape> shapesByGtfsId = importShapes(workDir.resolve("shapes.txt"));
+
             ItineraryImport itineraryImport = importItineraries(
                     workDir.resolve("trips.txt"),
                     workDir.resolve("stop_times.txt"),
                     linesByGtfsId,
-                    stopImport);
+                    stopImport,
+                    shapesByGtfsId);
 
             Map<String, FrequencyInfo> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
 
@@ -548,7 +555,7 @@ public class GtfsImportService {
             Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
 
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
-                            int wheelchairAccessible, int bikesAllowed, String blockId) {}
+                            int wheelchairAccessible, int bikesAllowed, String blockId, String shapeId) {}
 
     /** Headway annotation derived from frequencies.txt. We pick the
      *  smallest headway among all entries declared for a trip — that's
@@ -561,13 +568,15 @@ public class GtfsImportService {
             Path tripsFile,
             Path stopTimesFile,
             Map<String, Line> linesByGtfsId,
-            StopImport stopImport) throws IOException {
+            StopImport stopImport,
+            Map<String, Shape> shapesByGtfsId) throws IOException {
 
         // 1. Read trips into memory
         Map<String, TripInfo> tripInfos = new HashMap<>();
         try (CSVParser parser = openCsv(tripsFile)) {
             for (CSVRecord record : parser) {
                 String rawBlockId = optional(record, "block_id");
+                String rawShapeId = optional(record, "shape_id");
                 tripInfos.put(record.get("trip_id"), new TripInfo(
                         record.get("route_id"),
                         firstNonBlank(optional(record, "direction_id"), "0"),
@@ -575,7 +584,8 @@ public class GtfsImportService {
                         optional(record, "trip_headsign"),
                         parseInt(optional(record, "wheelchair_accessible"), 0),
                         parseInt(optional(record, "bikes_allowed"), 0),
-                        isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40)));
+                        isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40),
+                        isBlank(rawShapeId) ? null : rawShapeId.trim()));
             }
         }
         log.info("GTFS import: {} trips loaded", tripInfos.size());
@@ -675,6 +685,12 @@ public class GtfsImportService {
             com.transit.hub.domain.model.enums.BikesAllowed bikesDefault =
                     majorityBikes(tripInfos, key);
 
+            // Resolve the geographic shape from the representative
+            // trip's shape_id. Null = the feed didn't ship a shape for
+            // this trip (or shapes.txt was missing entirely), in which
+            // case the future map view falls back to stop-to-stop lines.
+            Shape shape = (info.shapeId == null) ? null : shapesByGtfsId.get(info.shapeId);
+
             String externalId = truncate(tripId, 100);
             Itinerary itinerary = existingItinerariesByExternalId.get(externalId);
             if (itinerary == null) {
@@ -684,6 +700,7 @@ public class GtfsImportService {
                         .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
                         .wheelchairDefault(wheelchairDefault)
                         .bikesAllowedDefault(bikesDefault)
+                        .shape(shape)
                         .itineraryStops(new ArrayList<>())
                         .build();
             } else {
@@ -692,6 +709,7 @@ public class GtfsImportService {
                 itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
                 itinerary.setWheelchairDefault(wheelchairDefault);
                 itinerary.setBikesAllowedDefault(bikesDefault);
+                itinerary.setShape(shape);
                 // orphanRemoval=true on the OneToMany picks up the
                 // cleared rows when we save the parent again below.
                 itinerary.getItineraryStops().clear();
@@ -1167,6 +1185,77 @@ public class GtfsImportService {
         }
         log.info("GTFS import: {} transfers created ({} rows skipped — unknown stop)",
                 batch.size(), skippedUnknownStop);
+    }
+
+    /**
+     * Reads {@code shapes.txt} when present. Each {@code shape_id} maps
+     * to a {@link Shape} entity carrying its ordered list of
+     * {@link ShapePoint} rows. Wipes the tables first because a shape
+     * is fully replaced by its new feed version (no semantic FK
+     * reaches into a Shape from outside the import).
+     * <p>
+     * Returns a {@code Map<String, Shape>} indexed by GTFS
+     * {@code shape_id} so {@link #importItineraries} can wire each
+     * itinerary's representative-trip shape FK.
+     */
+    private Map<String, Shape> importShapes(Path shapesFile) throws IOException {
+        // Cascade clears shape_points. Order matters: itineraries.shape_id
+        // is ON DELETE SET NULL so existing itineraries' FKs go null
+        // here, then importItineraries sets them again immediately
+        // after.
+        shapeRepository.deleteAllInBatch();
+        shapeRepository.flush();
+
+        Map<String, Shape> result = new HashMap<>();
+        if (!Files.exists(shapesFile)) {
+            log.info("GTFS import: shapes.txt missing, itineraries will have no geographic polyline");
+            return result;
+        }
+        Map<String, List<ShapePoint>> pointsByShape = new HashMap<>();
+        try (CSVParser parser = openCsv(shapesFile)) {
+            for (CSVRecord record : parser) {
+                String shapeId = optional(record, "shape_id");
+                if (isBlank(shapeId)) {continue;}
+                Double lat = parseDoubleOrNull(optional(record, "shape_pt_lat"));
+                Double lon = parseDoubleOrNull(optional(record, "shape_pt_lon"));
+                Integer sequence = parseIntOrNull(optional(record, "shape_pt_sequence"));
+                if (lat == null || lon == null || sequence == null) {continue;}
+                ShapePoint point = ShapePoint.builder()
+                        .sequence(sequence)
+                        .latitude(lat)
+                        .longitude(lon)
+                        .distTraveled(parseDoubleOrNull(optional(record, "shape_dist_traveled")))
+                        .build();
+                pointsByShape.computeIfAbsent(shapeId, k -> new ArrayList<>()).add(point);
+            }
+        }
+        int totalPoints = 0;
+        for (Map.Entry<String, List<ShapePoint>> entry : pointsByShape.entrySet()) {
+            String shapeId = entry.getKey();
+            List<ShapePoint> points = entry.getValue();
+            // GTFS doesn't guarantee shape_pt_sequence rows arrive in
+            // order — sort defensively before we hand them to the
+            // unique constraint and to OrderBy("sequence ASC").
+            points.sort((a, b) -> Integer.compare(a.getSequence(), b.getSequence()));
+            // Deduplicate consecutive (sequence) values: rare feeds
+            // occasionally repeat a row, which would violate the UK.
+            // Keep the first occurrence only.
+            Set<Integer> seenSeq = new HashSet<>();
+            points.removeIf(p -> !seenSeq.add(p.getSequence()));
+
+            Shape shape = Shape.builder()
+                    .externalId(truncate(shapeId, 100))
+                    .build();
+            for (ShapePoint p : points) {
+                p.setShape(shape);
+                shape.getPoints().add(p);
+            }
+            Shape saved = shapeRepository.save(shape);
+            result.put(shapeId, saved);
+            totalPoints += points.size();
+        }
+        log.info("GTFS import: {} shapes / {} shape points persisted", result.size(), totalPoints);
+        return result;
     }
 
     /**
