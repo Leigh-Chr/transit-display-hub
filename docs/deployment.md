@@ -269,8 +269,22 @@ Flyway is included in the project dependencies (`spring-boot-starter-flyway`). T
 
 ```
 backend/src/main/resources/db/migration/
-├── V1__initial_schema.sql      # Full PostgreSQL schema (tables, indexes, constraints)
-└── V2__seed_admin_user.sql     # Default admin user (admin / admin123)
+├── V1__initial_schema.sql              # Initial PostgreSQL schema
+├── V2__seed_admin_user.sql             # Default admin user (admin / admin123)
+├── V3..V23                              # Incremental growth: line metadata, transfers,
+│                                        #   agencies, attributions, frequencies,
+│                                        #   accessibility, pickup_type, feed_info, etc.
+├── V24__service_calendars.sql           # Multi-day service calendars (ADR 0008)
+├── V25__pathways_and_levels.sql         # Indoor topology (ADR 0009)
+├── V26__add_translations.sql            # GTFS translations (ADR 0010)
+├── V27__add_fares_v1.sql                # Fares v1 (ADR 0012)
+├── V28__add_shapes.sql                  # Shapes / polylines (ADR 0014)
+├── V29__add_location_groups_*.sql       # TAD location groups + booking rules (ADR 0015)
+├── V30__add_fares_v2.sql                # Fares v2 core (ADR 0021)
+├── V31__add_fares_v2_networks_*.sql     # Networks + fare media follow-up
+├── V32__link_booking_rules_*.sql        # schedules ↔ booking_rules wiring
+├── V33__add_stop_parent_*.sql           # Per-platform stops (ADR 0022)
+└── V34__add_fare_leg_join_rules.sql     # Closes Fares v2 spec
 ```
 
 - **Dev profile**: Flyway is disabled. Hibernate `create-drop` manages the schema, and the DataLoader seeds sample data (multiple users, lines, stops, etc.).
@@ -278,7 +292,7 @@ backend/src/main/resources/db/migration/
 
 > **Important**: Change the default admin password immediately after first login.
 
-To add future migrations, create files following the naming convention `V3__description.sql`, `V4__description.sql`, etc.
+To add future migrations, create files following the naming convention `V35__description.sql`, `V36__description.sql`, etc. — never edit a migration that has already shipped.
 
 ---
 

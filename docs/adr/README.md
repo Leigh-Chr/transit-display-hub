@@ -25,6 +25,9 @@ should think twice before reverting.
 | [0017](0017-gtfs-realtime-service-alerts.md) | GTFS-Realtime ServiceAlerts |
 | [0018](0018-gtfs-realtime-trip-updates.md) | GTFS-Realtime TripUpdates |
 | [0019](0019-gtfs-realtime-vehicle-positions.md) | GTFS-Realtime VehiclePositions |
+| [0020](0020-frequencies-fanout.md) | Frequency fan-out at import — per-departure schedule rows |
+| [0021](0021-fares-v2.md) | GTFS Fares v2 (areas, timeframes, products, leg / transfer rules) |
+| [0022](0022-per-platform-stops.md) | Per-platform Stops with parent station aggregation |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

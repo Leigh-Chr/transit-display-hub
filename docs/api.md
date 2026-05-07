@@ -939,3 +939,41 @@ Depending on the type of violation:
   record is referenced by other data
 - **Missing required field**: A required field is
   missing
+
+---
+
+## Admin GTFS browsers
+
+Read-only endpoints over the imported GTFS extension
+tables. All require `ROLE_ADMIN` and are gated by the
+`/api/admin/**` security rule. Each is mirrored by a
+dedicated admin page in the UI.
+
+| Method | Endpoint                                  | Purpose                                              |
+| ------ | ----------------------------------------- | ---------------------------------------------------- |
+| `GET`  | `/api/admin/data-overview`                | aggregate counters of every persisted entity         |
+| `GET`  | `/api/admin/feed-info`                    | `feed_info.txt` singleton row                        |
+| `GET`  | `/api/admin/import-audit?limit=N`         | last N import attempts (success / skip / fail)       |
+| `GET`  | `/api/admin/fares`                        | Fares v1 (`fare_attributes` + `fare_rules`)          |
+| `GET`  | `/api/admin/fares-v2`                     | Fares v2 graph (areas, timeframes, products, rules)  |
+| `GET`  | `/api/admin/booking-rules`                | `booking_rules.txt` rows                             |
+| `GET`  | `/api/admin/translations?lang=…&table=…`  | translations for a target language                   |
+| `GET`  | `/api/admin/realtime/alerts`              | GTFS-RT ServiceAlerts cache snapshot                 |
+| `POST` | `/api/admin/realtime/alerts/refresh`      | force an immediate poll of the alerts URL            |
+| `GET`  | `/api/admin/realtime/vehicles`            | GTFS-RT VehiclePositions cache snapshot              |
+| `POST` | `/api/admin/realtime/vehicles/refresh`    | force an immediate poll of the vehicles URL          |
+
+## Public GTFS read-only endpoints
+
+| Method | Endpoint                       | Purpose                                  |
+| ------ | ------------------------------ | ---------------------------------------- |
+| `GET`  | `/api/agencies`                | exploiting agencies                      |
+| `GET`  | `/api/attributions`            | public credit block (`attributions.txt`) |
+| `GET`  | `/api/itineraries/{id}/shape`  | GTFS polyline of an itinerary            |
+| `GET`  | `/api/stops/{id}/pathways`     | indoor topology for a station            |
+| `GET`  | `/api/network-map`             | full schematic + lines + transfers       |
+| `GET`  | `/api/network-map/alerts`      | active broadcast + GTFS-RT alerts        |
+
+The full machine-readable spec is bundled at
+`/v3/api-docs` and a Swagger UI is exposed at
+`/swagger-ui.html`.

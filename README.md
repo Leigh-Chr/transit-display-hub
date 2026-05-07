@@ -12,17 +12,40 @@ on screens at stops.
 
 ### Key Features
 
-- **Network management**: Configure lines (metro, bus,
-  tram, train), stops, itineraries, and schedules
-- **Broadcast messages**: Send alerts (Info, Warning,
-  Critical) with scope targeting (network, line, stop)
-- **Real-time display**: Kiosk screens with automatic
+- **GTFS coverage**: full schedule import (20 standard
+  files) — agency, routes, stops with parent_station /
+  platform hierarchy, trips, stop_times, multi-day
+  calendars, transfers, attributions, frequencies (with
+  fan-out into per-departure rows), pathways, levels,
+  translations, fares v1, shapes, location groups,
+  booking rules, feed_info
+- **GTFS Fares v2**: areas, timeframes, products,
+  leg / transfer / leg-join rules, networks and fare media
+- **GTFS-Realtime**: ServiceAlerts, TripUpdates and
+  VehiclePositions polled via vendored protobuf bindings;
+  live delay badges and projected times on the kiosk
+- **Demand-responsive transit (TAD)**: `booking_rules`
+  resolved per arrival; phone / URL CTA on kiosk and hub
+- **Per-platform routing** (Phase 1.3): each GTFS platform
+  persists separately; kiosks bound to a parent station
+  aggregate child schedules transparently
+- **Network management**: lines (metro, bus, tram, train,
+  ferry, funicular, cable car, trolleybus, monorail),
+  stops, itineraries, and schedules
+- **Broadcast messages**: alerts (Info, Warning, Critical)
+  with scope targeting (network, line, stop)
+- **Real-time display**: kiosk screens with automatic
   updates via WebSocket
-- **Network map**: Interactive network visualization with
-  route search
-- **Device management**: Registration and monitoring of
+- **Network map**: interactive schematic with parent /
+  platform collapse, fare-zone and accessibility filters,
+  frequency-scaled stroke width and TAD-ring indicators
+- **Admin browsers**: read-only pages for every imported
+  GTFS family — fares v1+v2, TAD, translations, pathways,
+  shapes, import audit, real-time caches
+- **OpenAPI / Swagger UI** bundled at `/swagger-ui.html`
+- **Device management**: registration and monitoring of
   display screens
-- **User management**: Account administration (Admin,
+- **User management**: account administration (Admin,
   Agent)
 
 ## Tech Stack

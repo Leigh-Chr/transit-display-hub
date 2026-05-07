@@ -394,14 +394,26 @@ The map is publicly accessible at `/map`
 
 ### Features
 
-- **Schematic view**: Clear network visualization with
-  lines and stops
-- **Stop information**: Click a stop to see upcoming
-  departures and served lines
-- **Route search**: Use the search bar to find a route
-  between two stops
-- **Active alerts**: Current alert messages are displayed
-  on the map
+- **Schematic view**: clear network visualization with
+  lines and stops; stroke width scales with each line's
+  schedule volume so the busy backbone reads at a glance
+- **Parent-station collapse**: a station with several
+  platforms appears as one node; the popup shows the
+  union of lines, accessibility info and TAD status
+- **Stop popup**: click a stop for departures and served
+  lines, with pictogram pills for accessibility
+  (`ACCESSIBLE` / `NOT_ACCESSIBLE`), TAD ("Réservation
+  requise") and Fares v2 zones the stop belongs to
+- **Filters**: line chips per category, "Accessible PMR"
+  toggle that dims non-accessible stops, single-select
+  fare-zone chip row that dims stops outside the chosen
+  zone (only visible when the feed ships `areas.txt`)
+- **TAD ring**: dashed blue circle around stops with at
+  least one on-request schedule
+- **Route search**: dual stop search to plan a journey
+  with transfer-cost weighting from `transfers.txt`
+- **Active alerts**: broadcast messages and GTFS-RT
+  ServiceAlerts overlay both lines and stops
 
 ---
 
@@ -445,11 +457,28 @@ The kiosk screen displays passenger information for a single stop.
 
 ### Displayed Elements
 
-1. **Header**: Stop name and served lines
+1. **Header**: Stop name, GTFS `stop_code` (the small id
+   printed on the physical signpost), and served lines
 2. **Next departures**: List of upcoming services with:
-   - Line and direction (terminus)
-   - Scheduled time
-3. **Messages**: Alerts and information
+   - Line code, destination (`stop_headsign` when the
+     feed publishes a per-stop one)
+   - Scheduled time, projected time when GTFS-RT delays
+     apply
+   - **Live badge** (green / amber / red) when GTFS-RT
+     covers the trip — shows "+3 min", "−1 min" or
+     "à l'heure" — pulses to signal real-time data
+   - **TAD CTA** with phone number and minimum prior
+     notice on on-request arrivals (`pickup_type` 2 / 3)
+   - Wheelchair / bicycle pictograms reflecting the
+     itinerary defaults plus per-schedule overrides
+   - **Per-arrival platform badge** when the kiosk is
+     bound to a parent station that aggregates several
+     platforms — indicates which quay each arrival
+     departs from
+   - Frequency badge ("toutes les 6 min") when the trip
+     comes from `frequencies.txt`
+3. **Messages**: Broadcast alerts plus GTFS-RT
+   ServiceAlerts overlaid in the same ticker
 4. **Footer**: Current time and connection status
 
 ### Connection Status

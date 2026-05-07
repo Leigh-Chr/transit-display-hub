@@ -91,6 +91,33 @@ The configuration file is located at
   Default: `transit`
 - `JWT_SECRET`: JWT secret key (min 256 bits).
   Required in prod
+- `APP_TIMEZONE`: operator local timezone for schedule
+  comparisons. Default: `Europe/Paris`
+
+##### GTFS-Realtime feeds (optional)
+
+Each polling URL is independent — leave blank to disable
+the corresponding feed without affecting the others.
+
+- `app.gtfs-rt.alerts-url`: ServiceAlerts GTFS-RT feed
+- `app.gtfs-rt.alerts-poll-cron`: cron for the alert
+  refresh; default every 30 s
+- `app.gtfs-rt.trip-updates-url`: TripUpdates feed (delays
+  per arrival, projected times)
+- `app.gtfs-rt.trip-updates-poll-cron`: cron, default
+  every 30 s
+- `app.gtfs-rt.vehicle-positions-url`: VehiclePositions
+  feed (live geographic positions)
+- `app.gtfs-rt.vehicle-positions-poll-cron`: cron, default
+  every 15 s
+- `app.gtfs-rt.timeout-seconds`: HTTP timeout per poll;
+  default 10
+
+##### Translations (optional)
+
+- `app.translations.preferred-language`: ISO 639 code the
+  kiosk fleet should display (`fr`, `en`, …). Falls back
+  to the GTFS feed's default language when unset.
 
 #### Development Profile (default)
 
