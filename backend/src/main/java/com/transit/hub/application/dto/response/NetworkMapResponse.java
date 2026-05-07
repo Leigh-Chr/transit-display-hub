@@ -2,6 +2,7 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.MessageSeverity;
+import com.transit.hub.domain.model.enums.WheelchairAccess;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,18 @@ public record NetworkMapResponse(
             Double longitude,
             Double schematicX,
             Double schematicY,
-            List<String> lineCodes
+            List<String> lineCodes,
+            /** GTFS wheelchair_boarding tri-state on the stop itself
+             *  (or on its first wheelchair-accessible child for parent
+             *  stations). Drives the accessibility filter and the
+             *  pictogram in the popup. */
+            WheelchairAccess wheelchairBoarding,
+            /** True when at least one schedule on this stop (or any of
+             *  its child platforms) requires booking — pickup_type 2
+             *  (on-request agency) or 3 (on-request driver). The kiosk
+             *  + map render a phone icon on these stops so passengers
+             *  know not to wait without calling first. */
+            boolean hasOnDemand
     ) {}
 
     /** Inline transfer between two stops. {@code transferType} mirrors

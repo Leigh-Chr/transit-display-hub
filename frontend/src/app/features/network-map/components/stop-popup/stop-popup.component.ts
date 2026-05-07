@@ -60,6 +60,27 @@ interface TimetableGroup {
             </span>
           }
         </div>
+        @if (showStopMeta()) {
+          <div class="stop-meta">
+            @if (data.stop.hasOnDemand) {
+              <span class="meta-pill meta-tad">
+                <mat-icon>phone_callback</mat-icon>
+                Réservation requise
+              </span>
+            }
+            @if (data.stop.wheelchairBoarding === 'ACCESSIBLE') {
+              <span class="meta-pill meta-access">
+                <mat-icon>accessible_forward</mat-icon>
+                Accessible PMR
+              </span>
+            } @else if (data.stop.wheelchairBoarding === 'NOT_ACCESSIBLE') {
+              <span class="meta-pill meta-no-access">
+                <mat-icon>do_not_disturb</mat-icon>
+                Non accessible
+              </span>
+            }
+          </div>
+        }
       </div>
       <button mat-icon-button mat-dialog-close aria-label="Close">
         <mat-icon>close</mat-icon>
@@ -166,6 +187,45 @@ interface TimetableGroup {
       font-size: 0.75rem;
       border-radius: var(--app-radius-xs);
       flex-shrink: 0;
+    }
+
+    /* Accessibility / TAD metadata row — only renders when at least
+       one signal is meaningful, see showStopMeta(). */
+    .stop-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .meta-pill mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+    .meta-pill.meta-tad {
+      background: rgba(56, 142, 235, 0.16);
+      color: rgb(34, 105, 192);
+      border: 1px solid rgba(56, 142, 235, 0.55);
+    }
+    .meta-pill.meta-access {
+      background: rgba(46, 204, 113, 0.16);
+      color: rgb(46, 174, 96);
+      border: 1px solid rgba(46, 204, 113, 0.55);
+    }
+    .meta-pill.meta-no-access {
+      background: rgba(231, 76, 60, 0.14);
+      color: rgb(180, 50, 38);
+      border: 1px solid rgba(231, 76, 60, 0.5);
     }
 
     :host {
@@ -447,6 +507,16 @@ export class StopPopupComponent implements OnInit {
 
   getLineColor(code: string): string {
     return this.data.lineColorMap.get(code) ?? '#666';
+  }
+
+  /** True when the stop has at least one accessibility / TAD signal
+   *  worth surfacing — keeps the metadata row out of the popup
+   *  entirely on stops without notable info, so the popup stays
+   *  light on dense networks. */
+  showStopMeta(): boolean {
+    return this.data.stop.hasOnDemand === true
+        || this.data.stop.wheelchairBoarding === 'ACCESSIBLE'
+        || this.data.stop.wheelchairBoarding === 'NOT_ACCESSIBLE';
   }
 
   getMessageIcon(severity: string): string {

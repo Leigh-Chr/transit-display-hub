@@ -15,8 +15,10 @@ import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
+import com.transit.hub.domain.model.enums.WheelchairAccess;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
@@ -43,6 +45,7 @@ public class NetworkMapService {
     private final StopRepository stopRepository;
     private final BroadcastMessageRepository broadcastMessageRepository;
     private final TransferRepository transferRepository;
+    private final ScheduleRepository scheduleRepository;
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActiveDisplayTracker activeDisplayTracker;
@@ -61,17 +64,52 @@ public class NetworkMapService {
                 .map(this::toNetworkLine)
                 .toList();
 
-        List<NetworkStop> networkStops = stops.stream()
-                .map(this::toNetworkStop)
-                .toList();
+        // Phase 1.3 ripple: the importer now persists every platform plus
+        // its parent station as separate rows. The schematic map should
+        // still show ONE node per logical stop, so we collapse children
+        // back into their parent at render time. Standalone stops (no
+        // parent) keep rendering as themselves; parent stations gather
+        // the union of their children's line codes since lines attach
+        // to platforms after Phase 1.3, not to the parent.
+        Map<UUID, List<Stop>> childrenByParentId = new HashMap<>();
+        for (Stop s : stops) {
+            if (s.getParentStop() != null) {
+                childrenByParentId.computeIfAbsent(s.getParentStop().getId(), k -> new ArrayList<>()).add(s);
+            }
+        }
+        // Set of stops with at least one on-request schedule. The
+        // single query happens once per cache miss; the set lookup is
+        // O(1) per stop. For parent stations we OR the parent's own
+        // value with each child's so a TAD platform "lights up" its
+        // parent on the map. Guard against the null fallback Mockito's
+        // default for Set returns gives in tests that don't stub it.
+        Set<UUID> onDemandStopIds = scheduleRepository.findStopIdsWithOnDemandPickup();
+        if (onDemandStopIds == null) {onDemandStopIds = Set.of();}
 
-        List<NetworkTransfer> networkTransfers = transfers.stream()
-                .map(t -> new NetworkTransfer(
-                        t.getFromStop().getId(),
-                        t.getToStop().getId(),
-                        t.getTransferType(),
-                        t.getMinTransferTime()))
-                .toList();
+        // Surface stops = parent stations + free-standing platforms.
+        // Platforms with a parent disappear into their parent.
+        Map<UUID, UUID> platformToParentId = new HashMap<>();
+        List<NetworkStop> networkStops = new ArrayList<>();
+        for (Stop s : stops) {
+            if (s.getParentStop() != null) {
+                platformToParentId.put(s.getId(), s.getParentStop().getId());
+                continue;
+            }
+            networkStops.add(toNetworkStop(s, childrenByParentId.get(s.getId()), onDemandStopIds));
+        }
+
+        // Transfers between platforms collapse to transfers between their
+        // parents; intra-station transfers (same parent both ends) drop
+        // off the map since they're walking inside a single node.
+        Set<List<UUID>> seenTransfers = new HashSet<>();
+        List<NetworkTransfer> networkTransfers = new ArrayList<>();
+        for (Transfer t : transfers) {
+            UUID from = platformToParentId.getOrDefault(t.getFromStop().getId(), t.getFromStop().getId());
+            UUID to = platformToParentId.getOrDefault(t.getToStop().getId(), t.getToStop().getId());
+            if (from.equals(to)) {continue;}
+            if (!seenTransfers.add(List.of(from, to))) {continue;}
+            networkTransfers.add(new NetworkTransfer(from, to, t.getTransferType(), t.getMinTransferTime()));
+        }
 
         Bounds bounds = calculateBounds(networkStops);
 
@@ -138,11 +176,47 @@ public class NetworkMapService {
         );
     }
 
-    private NetworkStop toNetworkStop(Stop stop) {
-        List<String> lineCodes = stop.getLines().stream()
-                .map(Line::getCode)
-                .sorted()
-                .toList();
+    private NetworkStop toNetworkStop(Stop stop, List<Stop> children, Set<UUID> onDemandStopIds) {
+        // Union of own lines + children's lines, deduped + sorted.
+        // Pre-Phase 1.3 a parent station carried its own lines via the
+        // schedule collapse; post-Phase 1.3 parents are bare and the
+        // children own the line bindings — so the union covers both
+        // shapes without a special case.
+        Set<String> codeSet = new java.util.LinkedHashSet<>();
+        for (Line line : stop.getLines()) {
+            codeSet.add(line.getCode());
+        }
+        if (children != null) {
+            for (Stop child : children) {
+                for (Line line : child.getLines()) {
+                    codeSet.add(line.getCode());
+                }
+            }
+        }
+        List<String> lineCodes = codeSet.stream().sorted().toList();
+
+        // hasOnDemand: stop or any of its children has on-request
+        // schedules. Same OR over the children for wheelchair, with
+        // a small priority tweak — a parent's own ACCESSIBLE wins over
+        // a NOT_ACCESSIBLE child (operator entered the parent value
+        // explicitly), but a NULL parent inherits the most accessible
+        // child so the filter doesn't hide stations that have at least
+        // one accessible quay.
+        boolean hasOnDemand = onDemandStopIds.contains(stop.getId());
+        WheelchairAccess wheelchair = stop.getWheelchairBoarding();
+        if (children != null) {
+            for (Stop child : children) {
+                if (onDemandStopIds.contains(child.getId())) {
+                    hasOnDemand = true;
+                }
+                if (wheelchair == null && child.getWheelchairBoarding() != null) {
+                    wheelchair = child.getWheelchairBoarding();
+                } else if (wheelchair == WheelchairAccess.NOT_ACCESSIBLE
+                        && child.getWheelchairBoarding() == WheelchairAccess.ACCESSIBLE) {
+                    wheelchair = WheelchairAccess.ACCESSIBLE;
+                }
+            }
+        }
 
         return new NetworkStop(
                 stop.getId(),
@@ -151,7 +225,9 @@ public class NetworkMapService {
                 stop.getLongitude(),
                 stop.getSchematicX(),
                 stop.getSchematicY(),
-                lineCodes
+                lineCodes,
+                wheelchair,
+                hasOnDemand
         );
     }
 

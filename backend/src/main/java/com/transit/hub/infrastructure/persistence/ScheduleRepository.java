@@ -73,4 +73,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
 
     void deleteByItineraryLineId(UUID lineId);
 
+    /** Returns the set of stop ids that carry at least one schedule
+     *  with an on-request pickup_type (2 = call agency, 3 = wave the
+     *  driver). Powers the network-map TAD indicator without joining
+     *  schedules client-side. */
+    @Query("SELECT DISTINCT s.stop.id FROM Schedule s WHERE s.pickupType IN (2, 3)")
+    java.util.Set<UUID> findStopIdsWithOnDemandPickup();
+
 }

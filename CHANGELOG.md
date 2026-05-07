@@ -21,6 +21,17 @@ schedule import produces real per-departure rows from
   with v1 — feeds in transition publish both, both get persisted.
   V34 adds `fare_leg_join_rules.txt` — closing the v2 spec — as its
   own table with stop FKs (network references stay raw strings).
+- **Schematic network-map enrichment** (Phase 1.3 follow-up). The
+  map collapses parent_station + child platforms back into one
+  logical node — fixing the duplicate-dots regression introduced by
+  Phase 1.3's per-platform persistence. Parent stations gather the
+  union of their children's line codes, transfers between platforms
+  collapse to transfers between parents (intra-station transfers
+  drop off as they're walking inside the same node). Each
+  `NetworkStop` now carries `wheelchairBoarding` and `hasOnDemand`
+  so the popup surfaces accessibility / TAD pills, and the
+  schematic adds a dashed ring around on-request stops to flag
+  booking-required service at a glance.
 - **Per-arrival platform badge on the kiosk** (ADR 0022 follow-up).
   `ArrivalInfo.platformCode` carries the actual stop's platform_code
   through DisplayState; the kiosk renders a badge between the line

@@ -157,6 +157,17 @@
   animation: search-pulse 1.5s ease-in-out infinite;
 }
 
+/* TAD ring: dashed outer halo on on-request stops. The fill is
+ * transparent so the underlying stop dot stays the dominant element;
+ * passengers learn "dashed = booking required" from the legend. */
+.tad-ring {
+  fill: none;
+  stroke: rgb(34, 105, 192);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 2.5;
+  pointer-events: none;
+}
+
 @keyframes search-pulse {
   0%, 100% { opacity: 1; stroke-width: 3; }
   50% { opacity: 0.4; stroke-width: 5; }

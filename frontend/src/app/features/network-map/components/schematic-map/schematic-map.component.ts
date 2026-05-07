@@ -262,6 +262,15 @@ interface NetworkStopLabel {
                   <circle class="search-highlight-ring" [attr.r]="isSingleLineMode() ? 20 : 14" />
                 }
 
+                <!-- TAD indicator: dashed ring around on-request stops.
+                     Subtle enough that it doesn't shout on dense feeds
+                     but recognisable as the "soft / on-demand" idiom.
+                     The popup still carries the full booking flow. -->
+                @if (s.stop.hasOnDemand) {
+                  <circle class="tad-ring"
+                          [attr.r]="(isSingleLineMode() ? 14 : 10) + 3" />
+                }
+
                 <!-- Alert severity badge -->
                 @if (!hasRoute() && alertSeverityMap().get(s.stop.id); as severity) {
                   <g [attr.transform]="'translate(' + getAlertOffset() + ',' + (-getAlertOffset()) + ')'"

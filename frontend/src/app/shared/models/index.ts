@@ -393,6 +393,15 @@ export interface NetworkStop {
   schematicX: number | null;
   schematicY: number | null;
   lineCodes: string[];
+  /** GTFS wheelchair_boarding tri-state aggregated over the station's
+   *  children when applicable. Drives the "accessible only" filter
+   *  and the pictogram in the stop popup. */
+  wheelchairBoarding?: WheelchairAccess | null;
+  /** True when the stop or any of its child platforms has at least
+   *  one on-request schedule (pickup_type 2/3). The map renders an
+   *  on-demand indicator on the stop dot and the popup surfaces the
+   *  per-arrival booking flow. */
+  hasOnDemand?: boolean;
 }
 
 export interface NetworkBounds {

@@ -57,6 +57,9 @@ class NetworkMapServiceTest {
     private TransferRepository transferRepository;
 
     @Mock
+    private com.transit.hub.infrastructure.persistence.ScheduleRepository scheduleRepository;
+
+    @Mock
     private CacheManager cacheManager;
 
     @Mock
