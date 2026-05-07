@@ -60,6 +60,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.zip.ZipFile;
 
 /**
@@ -220,7 +221,17 @@ public class GtfsImportService {
      * the timezone resolution path can rely on a non-null reference.
      */
     private Map<String, Agency> importAgencies(Path agenciesFile) throws IOException {
+        // Index pre-existing agencies by external_id so a re-import keeps
+        // the same UUID — Lines reference it via FK and we don't want to
+        // bounce that reference on every refresh. See ADR 0013.
+        Map<String, Agency> existingByExternalId = agencyRepository.findAll().stream()
+                .filter(a -> a.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        Agency::getExternalId, java.util.function.Function.identity(),
+                        (a, b) -> a));
+
         Map<String, Agency> result = new LinkedHashMap<>();
+        Set<UUID> seenIds = new HashSet<>();
         if (!Files.exists(agenciesFile)) {
             log.info("GTFS import: agency.txt missing, no agencies persisted");
             return result;
@@ -234,29 +245,53 @@ public class GtfsImportService {
                     // one agency, but we need *something* to render in the UI.
                     name = "Unnamed agency";
                 }
+                String externalId = isBlank(agencyId) ? null : truncate(agencyId.trim(), 100);
 
-                Agency agency = Agency.builder()
-                        .externalId(isBlank(agencyId) ? null : truncate(agencyId.trim(), 100))
-                        .name(name)
-                        .url(truncate(optional(record, "agency_url"), 500))
-                        .timezone(truncate(optional(record, "agency_timezone"), 60))
-                        .lang(truncate(optional(record, "agency_lang"), 10))
-                        .phone(truncate(optional(record, "agency_phone"), 30))
-                        .fareUrl(truncate(optional(record, "agency_fare_url"), 500))
-                        .email(truncate(optional(record, "agency_email"), 100))
-                        .build();
+                Agency agency = (externalId != null && existingByExternalId.containsKey(externalId))
+                        ? existingByExternalId.get(externalId)
+                        : new Agency();
+                agency.setExternalId(externalId);
+                agency.setName(name);
+                agency.setUrl(truncate(optional(record, "agency_url"), 500));
+                agency.setTimezone(truncate(optional(record, "agency_timezone"), 60));
+                agency.setLang(truncate(optional(record, "agency_lang"), 10));
+                agency.setPhone(truncate(optional(record, "agency_phone"), 30));
+                agency.setFareUrl(truncate(optional(record, "agency_fare_url"), 500));
+                agency.setEmail(truncate(optional(record, "agency_email"), 100));
+
                 Agency saved = agencyRepository.save(agency);
+                seenIds.add(saved.getId());
                 // Index both by the GTFS agency_id (when present) and by the
                 // empty string so single-agency feeds can resolve to it.
                 result.put(isBlank(agencyId) ? "" : agencyId, saved);
             }
         }
-        log.info("GTFS import: {} agencies created", result.size());
+        // Drop agencies the new feed no longer declares. Lines that used
+        // to reference them have been or will be re-bound by importRoutes.
+        int orphans = 0;
+        for (Agency old : existingByExternalId.values()) {
+            if (!seenIds.contains(old.getId())) {
+                agencyRepository.delete(old);
+                orphans++;
+            }
+        }
+        log.info("GTFS import: {} agencies upserted ({} orphans removed)", result.size(), orphans);
         return result;
     }
 
     private Map<String, Line> importRoutes(Path routesFile, Map<String, Agency> agencies) throws IOException {
+        // Pre-load existing lines by external_id so re-imports keep the
+        // same UUID — both Devices (via Stop → stop_lines) and
+        // BroadcastMessages (scope=LINE) reference it semantically.
+        // See ADR 0013.
+        Map<String, Line> existingByExternalId = lineRepository.findAll().stream()
+                .filter(l -> l.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        Line::getExternalId, java.util.function.Function.identity(),
+                        (a, b) -> a));
+
         Map<String, Line> result = new LinkedHashMap<>();
+        Set<UUID> seenIds = new HashSet<>();
         try (CSVParser parser = openCsv(routesFile)) {
             for (CSVRecord record : parser) {
                 String routeId = record.get("route_id");
@@ -283,23 +318,42 @@ public class GtfsImportService {
                 String routeDesc = truncate(optional(record, "route_desc"), 500);
                 String routeUrl = truncate(optional(record, "route_url"), 255);
 
-                Line line = lineRepository.save(Line.builder()
-                        .externalId(truncate(routeId, 100))
-                        .code(uniqueCode(code, result.values()))
-                        .name(name)
-                        .color(formattedColor)
-                        .textColor(formattedTextColor)
-                        .type(type)
-                        .category(category)
-                        .agency(agency)
-                        .continuousPickup(continuousPickup)
-                        .continuousDropOff(continuousDropOff)
-                        .sortOrder(sortOrder)
-                        .description(isBlank(routeDesc) ? null : routeDesc)
-                        .url(isBlank(routeUrl) ? null : routeUrl)
-                        .build());
-                result.put(routeId, line);
+                String externalId = truncate(routeId, 100);
+                Line line = existingByExternalId.containsKey(externalId)
+                        ? existingByExternalId.get(externalId)
+                        : new Line();
+                line.setExternalId(externalId);
+                line.setCode(uniqueCode(code, result.values()));
+                line.setName(name);
+                line.setColor(formattedColor);
+                line.setTextColor(formattedTextColor);
+                line.setType(type);
+                line.setCategory(category);
+                line.setAgency(agency);
+                line.setContinuousPickup(continuousPickup);
+                line.setContinuousDropOff(continuousDropOff);
+                line.setSortOrder(sortOrder);
+                line.setDescription(isBlank(routeDesc) ? null : routeDesc);
+                line.setUrl(isBlank(routeUrl) ? null : routeUrl);
+
+                Line saved = lineRepository.save(line);
+                seenIds.add(saved.getId());
+                result.put(routeId, saved);
             }
+        }
+        // Drop lines the new feed no longer declares. Cascade clears
+        // schedules, itineraries, stop_lines automatically; orphan
+        // BroadcastMessages with scope=LINE referencing the dropped UUID
+        // simply stop matching, which is the right behaviour.
+        int orphans = 0;
+        for (Line old : existingByExternalId.values()) {
+            if (!seenIds.contains(old.getId())) {
+                lineRepository.delete(old);
+                orphans++;
+            }
+        }
+        if (orphans > 0) {
+            log.info("GTFS import: {} obsolete lines removed", orphans);
         }
         // Collapse to route-type labels when network_id is absent or degenerate (single bucket)
         long distinctCategories = result.values().stream().map(Line::getCategory).distinct().count();
@@ -426,31 +480,64 @@ public class GtfsImportService {
             rootByGtfsId.put(r.id, current);
         }
 
+        // Pre-load existing stops by external_id so re-imports keep the
+        // same UUID — Devices reference Stop.id directly, and dropping
+        // the row on re-import would unbind every kiosk in the field.
+        // See ADR 0013.
+        Map<String, Stop> existingByExternalId = stopRepository.findAll().stream()
+                .filter(s -> s.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        Stop::getExternalId, java.util.function.Function.identity(),
+                        (a, b) -> a));
+
         // Persist only root stops with a name and coordinates
         Map<String, Stop> result = new LinkedHashMap<>();
+        Set<UUID> seenIds = new HashSet<>();
         Set<String> rootIds = new HashSet<>(rootByGtfsId.values());
         for (String rootId : rootIds) {
             RawStop r = byId.get(rootId);
             if (r == null || isBlank(r.name)) {
                 continue;
             }
-            Stop stop = Stop.builder()
-                    .externalId(truncate(rootId, 100))
-                    .name(truncate(r.name, STOP_NAME_MAX_LENGTH))
-                    .latitude(r.lat)
-                    .longitude(r.lon)
-                    .shortCode(truncate(r.shortCode, 50))
-                    .ttsName(truncate(r.ttsName, 150))
-                    .stopTimezone(truncate(r.timezone, 60))
-                    .description(truncate(r.description, 500))
-                    .url(truncate(r.url, 255))
-                    .wheelchairBoarding(
-                            com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding))
-                    .platformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10))
-                    .build();
-            result.put(rootId, stopRepository.save(stop));
+            String externalId = truncate(rootId, 100);
+            Stop stop = existingByExternalId.containsKey(externalId)
+                    ? existingByExternalId.get(externalId)
+                    : new Stop();
+            stop.setExternalId(externalId);
+            stop.setName(truncate(r.name, STOP_NAME_MAX_LENGTH));
+            stop.setLatitude(r.lat);
+            stop.setLongitude(r.lon);
+            stop.setShortCode(truncate(r.shortCode, 50));
+            stop.setTtsName(truncate(r.ttsName, 150));
+            stop.setStopTimezone(truncate(r.timezone, 60));
+            stop.setDescription(truncate(r.description, 500));
+            stop.setUrl(truncate(r.url, 255));
+            stop.setWheelchairBoarding(
+                    com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding));
+            stop.setPlatformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10));
+            // Re-enable on every import: a stop that disappeared in a
+            // previous feed and reappears in the current one should
+            // become live again.
+            stop.setDisabled(false);
+            Stop saved = stopRepository.save(stop);
+            seenIds.add(saved.getId());
+            result.put(rootId, saved);
         }
-        log.info("GTFS import: {} stops created (from {} raw entries)", result.size(), raw.size());
+        // Stops the new feed no longer declares: flag disabled rather
+        // than delete so Devices keep their stop_id FK valid. The kiosk
+        // still gets a clean "stop removed" payload via existing event
+        // handling on disabled toggle (StopService treats disabled as
+        // a soft-delete from the operator's perspective).
+        int disabled = 0;
+        for (Stop old : existingByExternalId.values()) {
+            if (!seenIds.contains(old.getId()) && !old.isDisabled()) {
+                old.setDisabled(true);
+                stopRepository.save(old);
+                disabled++;
+            }
+        }
+        log.info("GTFS import: {} stops upserted (from {} raw entries, {} flagged disabled as orphans)",
+                result.size(), raw.size(), disabled);
         return new StopImport(result, rootByGtfsId);
     }
 
@@ -541,11 +628,31 @@ public class GtfsImportService {
             }
         }
 
+        // Pre-load existing itineraries by external_id so re-imports
+        // refresh a stable UUID. The representative trip_id can shift
+        // between feeds (a longer variant becomes the most-stops one),
+        // in which case the old itinerary becomes orphan and gets
+        // dropped at the end of this method. See ADR 0013.
+        Map<String, Itinerary> existingItinerariesByExternalId = itineraryRepository.findAll().stream()
+                .filter(i -> i.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        Itinerary::getExternalId, java.util.function.Function.identity(),
+                        (a, b) -> a));
+
+        // Clear stop ↔ line membership before rebuilding so a route
+        // reassigning its stops doesn't leave the previous lines
+        // permanently attached. The `stop.getLines()` collection is a
+        // Set, so adding stays idempotent below.
+        for (Stop stop : stopImport.stopsByGtfsId.values()) {
+            stop.getLines().clear();
+        }
+
         // 5. Build itineraries
         int itineraryCount = 0;
         int itineraryStopCount = 0;
         Set<Stop> stopsTouched = new HashSet<>();
         Map<RouteDirKey, Itinerary> itinerariesByRouteDir = new HashMap<>();
+        Set<UUID> seenItineraryIds = new HashSet<>();
 
         for (Map.Entry<RouteDirKey, String> entry : bestTrip.entrySet()) {
             RouteDirKey key = entry.getKey();
@@ -567,14 +674,28 @@ public class GtfsImportService {
                     majorityWheelchair(tripInfos, key);
             com.transit.hub.domain.model.enums.BikesAllowed bikesDefault =
                     majorityBikes(tripInfos, key);
-            Itinerary itinerary = Itinerary.builder()
-                    .externalId(truncate(tripId, 100))
-                    .line(line)
-                    .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
-                    .wheelchairDefault(wheelchairDefault)
-                    .bikesAllowedDefault(bikesDefault)
-                    .itineraryStops(new ArrayList<>())
-                    .build();
+
+            String externalId = truncate(tripId, 100);
+            Itinerary itinerary = existingItinerariesByExternalId.get(externalId);
+            if (itinerary == null) {
+                itinerary = Itinerary.builder()
+                        .externalId(externalId)
+                        .line(line)
+                        .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
+                        .wheelchairDefault(wheelchairDefault)
+                        .bikesAllowedDefault(bikesDefault)
+                        .itineraryStops(new ArrayList<>())
+                        .build();
+            } else {
+                itinerary.setExternalId(externalId);
+                itinerary.setLine(line);
+                itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
+                itinerary.setWheelchairDefault(wheelchairDefault);
+                itinerary.setBikesAllowedDefault(bikesDefault);
+                // orphanRemoval=true on the OneToMany picks up the
+                // cleared rows when we save the parent again below.
+                itinerary.getItineraryStops().clear();
+            }
             itinerary = itineraryRepository.save(itinerary);
 
             int position = 0;
@@ -605,13 +726,30 @@ public class GtfsImportService {
             }
             itineraryRepository.save(itinerary);
             itinerariesByRouteDir.put(key, itinerary);
+            seenItineraryIds.add(itinerary.getId());
             itineraryCount++;
         }
 
         // Persist stop ↔ line associations
         stopRepository.saveAll(stopsTouched);
 
-        log.info("GTFS import: {} itineraries / {} itinerary stops created", itineraryCount, itineraryStopCount);
+        // Drop itineraries the new feed no longer declares. No FK is
+        // semantically attached from outside the import scope (no
+        // BroadcastMessage scope=ITINERARY exists), so a hard delete
+        // is safe.
+        int orphans = 0;
+        for (Itinerary old : existingItinerariesByExternalId.values()) {
+            if (!seenItineraryIds.contains(old.getId())) {
+                itineraryRepository.delete(old);
+                orphans++;
+            }
+        }
+        if (orphans > 0) {
+            log.info("GTFS import: {} obsolete itineraries removed", orphans);
+        }
+
+        log.info("GTFS import: {} itineraries upserted / {} itinerary stops created",
+                itineraryCount, itineraryStopCount);
         return new ItineraryImport(itineraryCount, itineraryStopCount, tripInfos, itinerariesByRouteDir);
     }
 
@@ -694,6 +832,19 @@ public class GtfsImportService {
             log.warn("GTFS import: stop_times.txt missing, skipping schedule import");
             return 0;
         }
+
+        // Wipe schedules before re-importing. Phase 0.5c made Lines /
+        // Stops / Itineraries idempotent (UUIDs preserved across
+        // reimports), and the persisted-calendar refactor of Phase 1.4
+        // introduced FK SET NULL on calendar deletion — together those
+        // changes meant repeating an import would otherwise pile new
+        // schedules on top of orphaned ones with `service_calendar_id`
+        // nulled out. Schedules carry no external_id and no Device /
+        // BroadcastMessage references, so a clean slate is safe; the
+        // boot loader skip-when-seeded guard means installs without
+        // GTFS aren't affected. See ADR 0013.
+        scheduleRepository.deleteAllInBatch();
+        scheduleRepository.flush();
 
         Map<String, ServiceCalendarSnapshot> snapshots = loadServiceCalendars(workDir);
         if (snapshots.isEmpty()) {

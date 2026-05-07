@@ -18,6 +18,7 @@ should think twice before reverting.
 | [0010](0010-translations.md) | GTFS translations and the per-installation language |
 | [0011](0011-openapi-swagger.md) | Bundled OpenAPI / Swagger UI for API discoverability |
 | [0012](0012-fares-v1.md) | GTFS Fares v1 (fare_attributes + fare_rules) |
+| [0013](0013-idempotent-import-by-external-id.md) | Idempotent GTFS import keyed by external_id |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
