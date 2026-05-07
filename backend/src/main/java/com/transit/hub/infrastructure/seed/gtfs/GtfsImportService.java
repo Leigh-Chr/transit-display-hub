@@ -162,7 +162,13 @@ public class GtfsImportService {
 
             Map<String, List<FrequencyWindow>> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
 
-            int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies);
+            // Booking rules must land before schedules so each Schedule can
+            // resolve its pickup_booking_rule_id / drop_off_booking_rule_id
+            // FK during import. The rules table is small, so loading it
+            // upfront has no measurable cost.
+            Map<String, BookingRule> bookingRules = importBookingRules(workDir.resolve("booking_rules.txt"));
+
+            int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies, bookingRules);
 
             importTransfers(workDir.resolve("transfers.txt"), stopImport);
 
@@ -177,8 +183,6 @@ public class GtfsImportService {
             importFaresV2(workDir, stopImport, linesByGtfsId);
 
             importLocationGroups(workDir, stopImport);
-
-            importBookingRules(workDir.resolve("booking_rules.txt"));
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -917,7 +921,8 @@ public class GtfsImportService {
     }
 
     private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport,
-                                Map<String, List<FrequencyWindow>> frequencies)
+                                Map<String, List<FrequencyWindow>> frequencies,
+                                Map<String, BookingRule> bookingRules)
             throws IOException {
         Path stopTimesFile = workDir.resolve("stop_times.txt");
         if (!Files.exists(stopTimesFile)) {
@@ -1016,6 +1021,13 @@ public class GtfsImportService {
                 String timepointRaw = optional(record, "timepoint");
                 boolean timepoint = isBlank(timepointRaw) || !"0".equals(timepointRaw.trim());
 
+                // TAD bookings: stop_times.pickup_booking_rule_id /
+                // drop_off_booking_rule_id reference booking_rules.txt by id.
+                // Looked up against the map populated upstream so the FK is
+                // set in the same insert as the schedule row.
+                BookingRule pickupBooking = bookingRules.get(optional(record, "pickup_booking_rule_id"));
+                BookingRule dropOffBooking = bookingRules.get(optional(record, "drop_off_booking_rule_id"));
+
                 List<FrequencyWindow> windows = frequencies.get(tripId);
 
                 if (windows == null || windows.isEmpty()) {
@@ -1035,6 +1047,8 @@ public class GtfsImportService {
                             .frequencyExactTimes(null)
                             .blockId(trip.blockId)
                             .serviceCalendar(calendar)
+                            .pickupBookingRule(pickupBooking)
+                            .dropOffBookingRule(dropOffBooking)
                             .build());
                     if (batch.size() >= MAX_SCHEDULE_BATCH) {
                         scheduleRepository.saveAll(batch);
@@ -1081,6 +1095,8 @@ public class GtfsImportService {
                                 .frequencyExactTimes(window.exactTimes)
                                 .blockId(trip.blockId)
                                 .serviceCalendar(calendar)
+                                .pickupBookingRule(pickupBooking)
+                                .dropOffBookingRule(dropOffBooking)
                                 .build());
                         if (batch.size() >= MAX_SCHEDULE_BATCH) {
                             scheduleRepository.saveAll(batch);
@@ -1998,15 +2014,15 @@ public class GtfsImportService {
      * fall to "no booking info" rather than dangle, which is what we
      * want until a passenger surface justifies the FKs.
      */
-    private void importBookingRules(Path bookingRulesFile) throws IOException {
+    private Map<String, BookingRule> importBookingRules(Path bookingRulesFile) throws IOException {
         bookingRuleRepository.deleteAllInBatch();
         bookingRuleRepository.flush();
 
+        Map<String, BookingRule> result = new HashMap<>();
         if (!Files.exists(bookingRulesFile)) {
             log.info("GTFS import: booking_rules.txt missing, skipping");
-            return;
+            return result;
         }
-        List<BookingRule> batch = new ArrayList<>();
         int skippedBadType = 0;
         try (CSVParser parser = openCsv(bookingRulesFile)) {
             for (CSVRecord record : parser) {
@@ -2024,8 +2040,9 @@ public class GtfsImportService {
                 }
                 LocalTime cutoff = GtfsParse.parseGtfsTime(optional(record, "prior_notice_last_time"));
 
-                batch.add(BookingRule.builder()
-                        .externalId(truncate(externalId.trim(), 100))
+                String trimmed = externalId.trim();
+                BookingRule rule = BookingRule.builder()
+                        .externalId(truncate(trimmed, 100))
                         .bookingType(bookingType)
                         .priorNoticeDurationMin(parseIntOrNull(optional(record, "prior_notice_duration_min")))
                         .priorNoticeDurationMax(parseIntOrNull(optional(record, "prior_notice_duration_max")))
@@ -2036,17 +2053,19 @@ public class GtfsImportService {
                         .bookingUrl(truncate(optional(record, "booking_url"), 500))
                         .infoUrl(truncate(optional(record, "info_url"), 500))
                         .message(truncate(optional(record, "message"), 1000))
-                        .build());
+                        .build();
+                result.put(trimmed, rule);
             }
         }
-        if (!batch.isEmpty()) {
-            bookingRuleRepository.saveAll(batch);
+        if (!result.isEmpty()) {
+            bookingRuleRepository.saveAll(result.values());
         }
         if (skippedBadType > 0) {
             log.warn("GTFS import: skipped {} booking_rules rows with invalid booking_type",
                     skippedBadType);
         }
-        log.info("GTFS import: {} booking rules persisted", batch.size());
+        log.info("GTFS import: {} booking rules persisted", result.size());
+        return result;
     }
 
     /**

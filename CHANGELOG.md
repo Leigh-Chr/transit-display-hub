@@ -20,6 +20,13 @@ schedule import produces real per-departure rows from
   `route_networks` and `fare_media` from the V31 follow-up. Coexists
   with v1 — feeds in transition publish both, both get persisted.
   Only `fare_leg_join_rules.txt` remains out of scope (niche).
+- **TAD booking link on schedules** (V32). Each `Schedule` now carries
+  optional `pickupBookingRule` / `dropOffBookingRule` FKs from
+  `stop_times.pickup_booking_rule_id` / `drop_off_booking_rule_id`,
+  populated at import. Closes the previously-orphaned link between
+  `booking_rules.txt` (Phase 5.3) and individual arrivals — a future
+  kiosk surface can render "Réservation : 0123…" badges on TAD-only
+  arrivals without joining tables at request time.
 - **Aggregate browse endpoint** `GET /api/admin/fares-v2` returns the
   entire v2 graph (areas, timeframes, products, leg rules, transfer
   rules) in a single round-trip.

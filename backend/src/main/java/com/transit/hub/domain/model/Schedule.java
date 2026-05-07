@@ -123,4 +123,17 @@ public class Schedule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_calendar_id")
     private ServiceCalendar serviceCalendar;
+
+    /** TAD pickup flow when this schedule's pickup_type is on-request.
+     *  Carries the {@link BookingRule} the passenger should follow —
+     *  phone, URL, prior notice. Null on regular fixed-route arrivals. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pickup_booking_rule_id")
+    private BookingRule pickupBookingRule;
+
+    /** TAD drop-off flow, symmetric to {@link #pickupBookingRule}.
+     *  Used when alighting requires advance notice (rare but legal). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "drop_off_booking_rule_id")
+    private BookingRule dropOffBookingRule;
 }
