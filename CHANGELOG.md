@@ -5,6 +5,79 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-05-07
+
+The kiosk turns "live". GTFS-Realtime ServiceAlerts and TripUpdates
+are polled from the agency's feed every 30 s, alerts overlay onto
+the existing message ticker, and per-arrival delays surface as a
+green / amber / red badge with the projected time. Static GTFS gets
+its remaining major files persisted (location groups, booking rules,
+fare attributes, shapes), and the import becomes idempotent —
+re-imports preserve UUIDs so kiosks no longer unbind on the nightly
+refresh. Architecture decisions captured in `docs/adr/0012..0018`.
+
+### Added
+
+#### GTFS-Realtime alerts (Phase 3 light)
+- **`gtfs-realtime.proto` vendored** at
+  `backend/src/main/proto/gtfs-realtime.proto`. The Gradle Protobuf
+  plugin generates the Java bindings at build time — no system-wide
+  `protoc` install required, no non-Maven-Central repos.
+- **`RealtimeAlertCache`** holds the parsed snapshot atomically;
+  `RealtimeAlertScheduler` polls the configured URL on
+  `app.gtfs-rt.alerts-poll-cron` (default every 30 s) and on
+  `ApplicationReadyEvent` so the first kiosk request after boot
+  sees alerts immediately. See ADR 0017.
+- **Display overlay** — alerts matching the stop / line / agency
+  external_id append to the existing `MessageInfo` list with a
+  GTFS-RT-derived severity (`SEVERE` → `CRITICAL`,
+  `WARNING` → `WARNING`, otherwise inferred from `effect`).
+- **`GET /api/admin/realtime/alerts`** + `POST .../refresh` for
+  admin browse and on-demand re-poll.
+
+#### GTFS-Realtime trip updates (Phase 3.2)
+- **`RealtimeTripUpdateCache`** indexes per-trip / per-stop
+  delay seconds (`Map<tripId, TripAdjustment>`), polled at the same
+  cadence as alerts via `app.gtfs-rt.trip-updates-url`.
+- **`ArrivalInfo.realtimeDelaySeconds`** — positive late, negative
+  early, null when no update covers the arrival. Mirrored on
+  `HubArrivalInfo`. The kiosk renders a "live" badge whenever it's
+  non-null and projects the displayed time as
+  `scheduledTime + delay` so passengers see both numbers when they
+  matter. See ADR 0018.
+- **SKIPPED stop_time_updates** drop the schedule entirely — the
+  kiosk doesn't show a phantom departure with a delay badge.
+
+#### Demand-responsive transit (Phase 5.3)
+- **`LocationGroup` + `LocationGroupStop`** persist location
+  bundles for flexible-route services.
+- **`BookingRule` entity** captures the booking channel (phone /
+  URL), advance-notice duration window, and prior-day cutoff.
+- **`GET /api/admin/booking-rules`** sorts rules by booking type
+  (real-time → same-day → prior-days). See ADR 0015.
+
+### Changed
+- **GTFS import is now idempotent** (Phase 0.5c) — `Agency` /
+  `Line` / `Stop` / `Itinerary` upsert by `external_id` so
+  `Device.stop_id` and `BroadcastMessage.scope_id` stay stable
+  across re-imports. Stops that disappear from the feed are
+  flagged `disabled = true` rather than deleted, preserving the FK
+  for any kiosk still pointing at them. Re-enabled automatically
+  if the stop reappears. See ADR 0013.
+- **Schedules are wiped on every import** — required to keep them
+  consistent with the wiped-and-rebuilt `service_calendars` table
+  introduced in 0.4.0.
+- **OpenAPI controllers tagged in French** (Phase 7b) — see
+  ADR 0016 for the convention.
+
+### Frontend
+- **Kiosk renders the live badge** with projected time. Late
+  arrivals (>60 s) get a red tint, early (<−60 s) amber, on-time a
+  green pulse. The scheduled time remains in the payload so a
+  future "scheduled / live" tooltip can compare both.
+
+---
+
 ## [0.5.0] - 2026-05-07
 
 Round of GTFS coverage hardening: imports now preserve UUIDs across
