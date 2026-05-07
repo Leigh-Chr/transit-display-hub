@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +23,6 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
   standalone: true,
   imports: [
     DatePipe,
-    DecimalPipe,
     MatCardModule,
     MatButtonModule,
     MatIconModule,

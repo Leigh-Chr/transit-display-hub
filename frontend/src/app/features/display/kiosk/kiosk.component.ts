@@ -517,7 +517,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
       background: rgba(46, 204, 113, 0.18);
       color: rgb(46, 174, 96);
       border: 1px solid rgba(46, 204, 113, 0.6);
-      // Pulsing dot evokes the "live data" idiom from broadcast UIs
+      /* Pulsing dot evokes the "live data" idiom from broadcast UIs */
       animation: live-pulse 2s ease-in-out infinite;
     }
 
