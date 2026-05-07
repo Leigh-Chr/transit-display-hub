@@ -5,6 +5,71 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-05-07
+
+Round of GTFS coverage hardening: imports now preserve UUIDs across
+runs (so kiosks no longer unbind on the nightly refresh), Fares v1
+and shapes are persisted, and operators get a Swagger-UI shortcut to
+the API. Five new Flyway migrations (V24 already shipped in 0.4.0;
+V25–V28 land here for pathways/levels, translations, fares,
+shapes), all additive. Architecture decisions captured in
+`docs/adr/0009..0014`.
+
+### Added
+
+#### Idempotent import (Phase 0.5c)
+- **Upsert by `external_id`** for `Agency`, `Line`, `Stop`,
+  `Itinerary`. Re-imports update the same rows in place rather than
+  recreating them — UUIDs stay stable, `Device.stop_id` and
+  `BroadcastMessage.scope_id` survive. See ADR 0013.
+- **Stops dropped from the feed** are now flagged
+  `disabled = true` instead of being deleted, so kiosks holding the
+  FK don't lose their binding. Re-enabled automatically when the
+  stop reappears.
+- **Lines / Itineraries dropped** are hard-deleted (cascade clears
+  their schedules / itinerary stops / stop_lines).
+- **Schedules wiped on every import** (no `external_id`, no outside
+  FK) — Phase 1.4's calendar refactor made this necessary so
+  schedules with a nulled-out `service_calendar_id` don't become
+  "always active" zombies.
+- **`stop_lines` rebuilt** on every import so a line dropped from
+  the feed actually disappears from `stop.getLines()`.
+
+#### GTFS Fares v1 (Phase 4.1)
+- **`FareAttribute` entity** persists `fare_attributes.txt`: price
+  (`BigDecimal`, scale 4), currency (ISO-4217), payment method
+  (`ON_BOARD` | `PREPAID`), transfer policy (`null` = unlimited
+  per spec), optional agency FK.
+- **`FareRule` entity** persists `fare_rules.txt` with optional
+  route FK plus three free-form zone strings (`origin_id`,
+  `destination_id`, `contains_id`). See ADR 0012.
+- **`GET /api/admin/fares`** returns every fare attribute with its
+  rules inline, sorted cheapest first.
+
+#### GTFS shapes (Phase 2.1)
+- **`Shape` + `ShapePoint` entities** persist `shapes.txt`. The
+  `(shape_id, sequence)` pair is unique by spec; we enforce it at
+  the schema level so a malformed feed surfaces immediately.
+- **`Itinerary.shape`** FK (nullable) links to the representative
+  trip's `shape_id`. Null = the feed didn't ship a shape for this
+  trip. See ADR 0014.
+- **`GET /api/itineraries/{id}/shape`** exposes the polyline as
+  `[{lat, lon, distTraveled?}]`. Returns 204 (not 404) when the
+  itinerary exists but has no shape, so a future map view falls
+  back to stop-to-stop lines without distinguishing
+  itinerary-not-found from feed-shipped-no-shape.
+
+### Changed
+- `GtfsImportService.TripInfo` now carries `shapeId` so the
+  itinerary loop can wire the shape FK during the same upsert.
+- `importItineraries()` clears `stop.getLines()` before rebuilding
+  to honour the idempotent-import contract.
+- `importSchedules()` now wipes the schedules table at the start
+  (was implicit before — the boot loader's seed-once guard masked
+  the issue).
+
+---
+
 ## [0.4.0] - 2026-05-07
 
 Second wave of GTFS integration: the kiosk now respects the day of
