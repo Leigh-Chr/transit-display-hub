@@ -105,6 +105,12 @@ import { lineTextColor } from '@shared/utils/color.utils';
                     >
                       {{ arrival.line.code }}
                     </span>
+                    @if (showPerArrivalPlatform(arrival)) {
+                      <span class="platform-badge"
+                            [attr.aria-label]="'Quai ' + arrival.platformCode">
+                        {{ arrival.platformCode }}
+                      </span>
+                    }
                     <span class="destination">
                       {{ arrival.destinationName }}
                       @if (arrival.wheelchairAccessible === 'ACCESSIBLE') {
@@ -532,6 +538,28 @@ import { lineTextColor } from '@shared/utils/color.utils';
       50% { opacity: 0.65; }
     }
 
+    /* Per-arrival platform badge — only renders on parent-station
+       kiosks where each arrival comes from a different quay. Sized
+       to read at the same scale as the line badge so the eye groups
+       them as "where + which line". */
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 4vw;
+      padding: 0.4vh 0.8vw;
+      margin-left: 1vw;
+      border-radius: 0.4vh;
+      font-size: clamp(2vh, 2.6vh, 3.2vh);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: var(--mat-sys-tertiary-container, rgba(96, 56, 200, 0.18));
+      color: var(--mat-sys-on-tertiary-container, rgb(72, 38, 156));
+      border: 1px solid var(--mat-sys-tertiary, rgba(96, 56, 200, 0.55));
+      vertical-align: middle;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* TAD booking CTA — phone or "Réservation" inline so a passenger
        reading a TAD arrival sees the action immediately. */
     .booking-badge {
@@ -868,6 +896,17 @@ export class KioskComponent implements OnInit, OnDestroy {
     const abs = Math.round(Math.abs(delaySeconds) / 60);
     if (abs === 0) {return 'à l\'heure';}
     return `${sign}${abs} min`;
+  }
+
+  /** True when the per-arrival platform_code adds information vs.
+   *  the kiosk's stop-level platform_code. On a per-platform kiosk
+   *  the two match and rendering would be noise; on a parent-station
+   *  kiosk the per-arrival value varies and is critical info. */
+  showPerArrivalPlatform(arrival: ArrivalInfo): boolean {
+    const arrivalPlatform = arrival.platformCode;
+    if (!arrivalPlatform) {return false;}
+    const stopPlatform = this.displayState()?.stopPlatformCode ?? null;
+    return stopPlatform !== arrivalPlatform;
   }
 
   /** ARIA label for the booking badge — screen readers announce

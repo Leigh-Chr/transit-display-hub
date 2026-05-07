@@ -20,6 +20,14 @@ schedule import produces real per-departure rows from
   `route_networks` and `fare_media` from the V31 follow-up. Coexists
   with v1 — feeds in transition publish both, both get persisted.
   Only `fare_leg_join_rules.txt` remains out of scope (niche).
+- **Per-arrival platform badge on the kiosk** (ADR 0022 follow-up).
+  `ArrivalInfo.platformCode` carries the actual stop's platform_code
+  through DisplayState; the kiosk renders a badge between the line
+  code and the destination when the per-arrival platform differs
+  from the stop's own (parent-station kiosks aggregating multiple
+  quays). On regular per-platform kiosks the value is suppressed to
+  avoid redundancy. Hub display now prefers the per-arrival platform
+  over the stop-level one too.
 - **Per-platform Stops** (V33, ADR 0022). The importer no longer
   collapses parent_station chains. Each GTFS platform persists as
   its own Stop with `parent_stop_id` pointing at its station, plus

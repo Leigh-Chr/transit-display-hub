@@ -44,6 +44,13 @@ public record DisplayState(
              *  trip / stop pair. The kiosk can render a "live" badge
              *  whenever this is non-null, even when the value is 0. */
             Integer realtimeDelaySeconds,
+            /** Platform_code of the actual stop this arrival comes
+             *  from. On a per-platform kiosk this matches the stop's
+             *  own platformCode and the kiosk can ignore it. On a
+             *  parent-station kiosk (Phase 1.3 aggregation) it varies
+             *  per arrival and the kiosk renders it as a badge so
+             *  passengers know which quay to head for. */
+            String platformCode,
             /** Booking flow attached to this arrival when the pickup
              *  is on-demand (TAD). Null on regular fixed-route trips.
              *  The kiosk renders the phone / URL as a CTA so a

@@ -415,6 +415,7 @@ public class DisplayStateCalculator {
                 schedule.isTimepoint(),
                 schedule.getFrequencyHeadwaySeconds(),
                 delay,
+                schedule.getStop() != null ? schedule.getStop().getPlatformCode() : null,
                 resolveBookingInfo(schedule)
         );
     }

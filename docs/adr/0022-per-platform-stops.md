@@ -105,11 +105,11 @@ behave identically before and after.
   refresh (the IN-based variant). Acceptable — the parent path is
   exercised only by the few devices bound to a station-level stop,
   most kiosks stay on the platform fast path.
-- **No platform-aware kiosk template change in this commit.** The
-  current kiosk template still shows a single platform_code on the
-  header. When a parent-bound kiosk aggregates children, it inherits
-  the parent's (usually empty) platform_code; the per-arrival
-  platform info isn't surfaced. Future work: extend `ArrivalInfo`
-  with an optional `platformCode` so a parent-bound kiosk can render
-  per-arrival platform badges (matching the hub display's `platform`
-  column).
+- **Per-arrival platform_code surfaced.** `ArrivalInfo.platformCode`
+  carries the actual stop's platform_code; the kiosk renders a
+  badge between the line code and the destination, but only when
+  the per-arrival value differs from the displayed stop's own
+  platform_code (otherwise it would be redundant noise on a
+  per-platform kiosk). The hub display also prefers the per-arrival
+  value over the stop-level platform_code, fixing aggregation when
+  the hub includes a parent station.

@@ -63,13 +63,17 @@ public class HubDisplayService {
                         .map(a -> new HubDisplayState.HubArrivalInfo(
                                 a.scheduledTime(),
                                 a.destinationName(),
-                                // Prefer the GTFS platform_code when the stop
-                                // publishes one; fall back to the human stop
-                                // name (typical for bus hubs without numbered
-                                // platforms).
-                                s.stopPlatformCode() != null && !s.stopPlatformCode().isBlank()
-                                        ? s.stopPlatformCode()
-                                        : s.stopName(),
+                                // Prefer the per-arrival platform_code (Phase 1.3:
+                                // a parent-station stop aggregates multiple
+                                // platforms with different codes), then the
+                                // stop's overall platform_code, then the human
+                                // stop name (typical for bus hubs without
+                                // numbered platforms).
+                                a.platformCode() != null && !a.platformCode().isBlank()
+                                        ? a.platformCode()
+                                        : (s.stopPlatformCode() != null && !s.stopPlatformCode().isBlank()
+                                                ? s.stopPlatformCode()
+                                                : s.stopName()),
                                 a.line(),
                                 a.pickupKind(),
                                 a.wheelchairAccessible(),

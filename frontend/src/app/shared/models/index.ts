@@ -305,6 +305,12 @@ export interface ArrivalInfo {
    *  unchanged. Zero is meaningful — "the feed says on time" — and
    *  triggers the live indicator. */
   realtimeDelaySeconds?: number | null;
+  /** Platform_code of the actual stop this arrival comes from.
+   *  On a per-platform kiosk this matches the stop's own
+   *  platformCode and is redundant. On a parent-station kiosk
+   *  (Phase 1.3 aggregation) it varies per arrival and the kiosk
+   *  renders it as a badge. */
+  platformCode?: string | null;
   /** TAD booking flow attached to this arrival when the pickup is
    *  on-demand. Null on regular fixed-route trips. */
   booking?: BookingInfo | null;
