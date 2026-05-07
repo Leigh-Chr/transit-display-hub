@@ -774,4 +774,141 @@ describe('SchematicMapComponent', () => {
       expect(component.isStopActiveOnLine('s4', 'line1')).toBe(false);
     });
   });
+
+  describe('accessibility filter', () => {
+    it('defaults to disabled', () => {
+      fixture.detectChanges();
+      expect(component.accessibleOnly()).toBe(false);
+    });
+
+    it('isStopAccessible returns true only for explicit ACCESSIBLE — UNKNOWN must err on the cautious side', () => {
+      fixture.detectChanges();
+
+      const accessible: LayoutStop = { ...mockStops[0]!, wheelchairBoarding: 'ACCESSIBLE' };
+      const inaccessible: LayoutStop = { ...mockStops[0]!, wheelchairBoarding: 'NOT_ACCESSIBLE' };
+      const unknown: LayoutStop = { ...mockStops[0]!, wheelchairBoarding: 'UNKNOWN' };
+      const missing: LayoutStop = { ...mockStops[0]! };
+
+      expect(component.isStopAccessible(accessible)).toBe(true);
+      expect(component.isStopAccessible(inaccessible)).toBe(false);
+      expect(component.isStopAccessible(unknown)).toBe(false);
+      expect(component.isStopAccessible(missing)).toBe(false);
+    });
+
+    it('toggling accessibleOnly flips the signal', () => {
+      fixture.detectChanges();
+      expect(component.accessibleOnly()).toBe(false);
+      component.accessibleOnly.set(true);
+      expect(component.accessibleOnly()).toBe(true);
+      component.accessibleOnly.set(false);
+      expect(component.accessibleOnly()).toBe(false);
+    });
+  });
+
+  describe('zone filter', () => {
+    it('defaults to no zone selected', () => {
+      fixture.detectChanges();
+      expect(component.selectedZone()).toBeNull();
+    });
+
+    it('isStopInSelectedZone returns true for every stop when no zone is selected', () => {
+      fixture.detectChanges();
+      const stopWithZones: LayoutStop = { ...mockStops[0]!, fareAreaNames: ['Zone 1'] };
+      const stopWithoutZones: LayoutStop = { ...mockStops[0]! };
+
+      expect(component.isStopInSelectedZone(stopWithZones)).toBe(true);
+      expect(component.isStopInSelectedZone(stopWithoutZones)).toBe(true);
+    });
+
+    it('isStopInSelectedZone matches a stop whose fareAreaNames contains the selected zone', () => {
+      fixture.detectChanges();
+      component.selectedZone.set('Zone 2');
+
+      const inside: LayoutStop = { ...mockStops[0]!, fareAreaNames: ['Zone 1', 'Zone 2'] };
+      const outside: LayoutStop = { ...mockStops[0]!, fareAreaNames: ['Zone 1'] };
+      const noZones: LayoutStop = { ...mockStops[0]! };
+
+      expect(component.isStopInSelectedZone(inside)).toBe(true);
+      expect(component.isStopInSelectedZone(outside)).toBe(false);
+      expect(component.isStopInSelectedZone(noZones)).toBe(false);
+    });
+
+    it('availableZones is empty when the loaded feed has no fare zones', () => {
+      fixture.detectChanges();
+      expect(component.availableZones()).toEqual([]);
+    });
+
+    it('availableZones returns the sorted, deduped union of fareAreaNames across stops', () => {
+      const zonedStops: LayoutStop[] = [
+        { ...mockStops[0]!, fareAreaNames: ['Zone 2', 'Zone 1'] },
+        { ...mockStops[1]!, fareAreaNames: ['Zone 3'] },
+        { ...mockStops[2]!, fareAreaNames: ['Zone 1'] },
+        { ...mockStops[3]! },
+        { ...mockStops[4]!, fareAreaNames: ['Zone 2'] },
+      ];
+      fixture.componentRef.setInput('stops', zonedStops);
+      fixture.detectChanges();
+
+      expect(component.availableZones()).toEqual(['Zone 1', 'Zone 2', 'Zone 3']);
+    });
+  });
+
+  describe('frequency-scaled stroke width', () => {
+    function lineWith(scheduleCount: number, code = 'LX'): NetworkLine {
+      return {
+        id: `id-${code}`, code, name: code, color: '#000', type: 'BUS',
+        itineraries: [['s1', 's2']], scheduleCount,
+      };
+    }
+
+    it('maxLineScheduleCount returns 0 when no line ships a scheduleCount', () => {
+      fixture.detectChanges();
+      expect(component.maxLineScheduleCount()).toBe(0);
+    });
+
+    it('maxLineScheduleCount returns the highest scheduleCount across the loaded lines', () => {
+      const lines = [lineWith(120, 'LA'), lineWith(35, 'LB'), lineWith(800, 'LC')];
+      fixture.componentRef.setInput('lines', lines);
+      fixture.componentRef.setInput('visibleLineCodes', ['LA', 'LB', 'LC']);
+      fixture.detectChanges();
+
+      expect(component.maxLineScheduleCount()).toBe(800);
+    });
+
+    it('busy line strokes wider than a sleepy line of the same mode', () => {
+      const busy = lineWith(2_000, 'LA');
+      const sleepy = lineWith(20, 'LB');
+      fixture.componentRef.setInput('lines', [busy, sleepy]);
+      fixture.componentRef.setInput('visibleLineCodes', ['LA', 'LB']);
+      fixture.detectChanges();
+
+      expect(component.getLineStrokeWidth(busy)).toBeGreaterThan(component.getLineStrokeWidth(sleepy));
+      expect(component.getRouteStrokeWidth(busy.id)).toBeGreaterThan(component.getRouteStrokeWidth(sleepy.id));
+    });
+
+    it('falls back to a constant width in single-line mode (frequency scaling only matters in network view)', () => {
+      const busy = lineWith(5_000, 'LA');
+      fixture.componentRef.setInput('lines', [busy]);
+      fixture.componentRef.setInput('visibleLineCodes', ['LA']);
+      fixture.detectChanges();
+
+      expect(component.isSingleLineMode()).toBe(true);
+      expect(component.getLineStrokeWidth(busy)).toBe(8);
+      expect(component.getRouteStrokeWidth(busy.id)).toBe(10);
+    });
+
+    it('a missing scheduleCount lands on the lower 0.75× bound, never blowing up the visible weight', () => {
+      const busy = lineWith(1_000, 'LA');
+      const empty: NetworkLine = {
+        id: 'id-LB', code: 'LB', name: 'LB', color: '#000', type: 'BUS',
+        itineraries: [['s4', 's5']],
+      };
+      fixture.componentRef.setInput('lines', [busy, empty]);
+      fixture.componentRef.setInput('visibleLineCodes', ['LA', 'LB']);
+      fixture.detectChanges();
+
+      // Bus base = 7, low-bound multiplier = 0.75 → round(5.25) = 5.
+      expect(component.getLineStrokeWidth(empty)).toBe(5);
+    });
+  });
 });
