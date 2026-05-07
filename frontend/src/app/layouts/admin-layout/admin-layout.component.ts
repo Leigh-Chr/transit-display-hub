@@ -160,6 +160,16 @@ import {
               <span matListItemTitle>Temps réel</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/gtfs-data"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>dataset</mat-icon>
+              <span matListItemTitle>Données GTFS</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 

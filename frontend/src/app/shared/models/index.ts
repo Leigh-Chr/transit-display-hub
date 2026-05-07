@@ -494,6 +494,63 @@ export interface VehiclePosition {
   timestampEpochSeconds: number | null;
 }
 
+// GTFS Fares v1 (admin browse)
+export type FarePaymentMethod = 'ON_BOARD' | 'BEFORE_BOARDING';
+
+export interface FareAttribute {
+  id: string;
+  externalId: string | null;
+  price: string;
+  currency: string;
+  paymentMethod: FarePaymentMethod | null;
+  /** GTFS transfers: 0=no transfers, 1=one, 2=two, null=unlimited. */
+  transfers: number | null;
+  /** Seconds during which a transfer remains valid. */
+  transferDuration: number | null;
+  agencyId: string | null;
+  agencyName: string | null;
+  rules: FareRuleSummary[];
+}
+
+export interface FareRuleSummary {
+  id: string;
+  routeId: string | null;
+  routeCode: string | null;
+  originId: string | null;
+  destinationId: string | null;
+  containsId: string | null;
+}
+
+// GTFS booking rules (TAD — admin browse)
+export type BookingType = 'REAL_TIME' | 'SAME_DAY' | 'PRIOR_DAYS';
+
+export interface BookingRule {
+  id: string;
+  externalId: string | null;
+  bookingType: BookingType;
+  priorNoticeDurationMin: number | null;
+  priorNoticeDurationMax: number | null;
+  priorNoticeLastDay: number | null;
+  /** ISO-8601 "HH:mm:ss". */
+  priorNoticeLastTime: string | null;
+  priorNoticeStartDay: number | null;
+  phone: string | null;
+  bookingUrl: string | null;
+  infoUrl: string | null;
+  message: string | null;
+}
+
+// GTFS translations (admin browse)
+export interface Translation {
+  id: string;
+  tableName: string;
+  recordId: string | null;
+  fieldValue: string | null;
+  fieldName: string;
+  language: string;
+  translation: string;
+}
+
 // GTFS Feed Info (admin)
 export interface FeedInfo {
   publisherName: string | null;

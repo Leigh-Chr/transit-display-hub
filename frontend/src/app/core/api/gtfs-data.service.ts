@@ -1,0 +1,35 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { BookingRule, FareAttribute, Translation } from '@shared/models';
+
+/**
+ * Read-only access to the GTFS extension tables that the importer
+ * persists but the existing admin CRUD doesn't surface — fares,
+ * booking rules (demand-responsive transit), translations.
+ *
+ * Each endpoint returns the latest imported snapshot; admins refresh
+ * by re-running the GTFS import.
+ */
+@Injectable({ providedIn: 'root' })
+export class GtfsDataService {
+  private readonly http = inject(HttpClient);
+
+  getFares(): Observable<FareAttribute[]> {
+    return this.http.get<FareAttribute[]>('/api/admin/fares');
+  }
+
+  getBookingRules(): Observable<BookingRule[]> {
+    return this.http.get<BookingRule[]>('/api/admin/booking-rules');
+  }
+
+  /** Translation browse requires a target language; an optional table
+   *  filter narrows the result to e.g. "stops" or "routes". */
+  getTranslations(language: string, tableName?: string): Observable<Translation[]> {
+    let params = new HttpParams().set('lang', language);
+    if (tableName) {
+      params = params.set('table', tableName);
+    }
+    return this.http.get<Translation[]>('/api/admin/translations', { params });
+  }
+}

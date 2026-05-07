@@ -67,6 +67,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
       },
       {
+        path: 'gtfs-data',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
+        loadComponent: () => import('./features/admin/gtfs-data/gtfs-data.component').then(m => m.GtfsDataComponent)
+      },
+      {
         path: 'users',
         canActivate: [roleGuard],
         data: { requiredRole: 'ADMIN' },
