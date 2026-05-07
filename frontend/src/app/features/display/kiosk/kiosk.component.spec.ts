@@ -203,36 +203,43 @@ describe('KioskComponent', () => {
   });
 
   describe('formatRelativeTime', () => {
+    // Freeze the system clock at a stable HH:MM mid-day reference so the
+    // "Imminent" / "1 min" / "N min" assertions can't straddle a minute
+    // boundary between file load and test execution. The component reads
+    // `new Date()` inside getMinutesUntil(), so faking the clock is the
+    // safest way to make these assertions deterministic.
+    const frozen = new Date(2025, 0, 15, 10, 30, 0, 0);
+
     beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(frozen);
       fixture.detectChanges();
       paramsSubject.next({ stopId: 'stop-123' });
       queryParamsSubject.next({});
     });
 
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should return minutes for future time', () => {
-      const result = component.formatRelativeTime(futureTime);
-      // Should contain "min" for future departures
+      const result = component.formatRelativeTime('12:30:00');
       expect(result).toContain('min');
     });
 
     it('should return Imminent for current time (0 minutes)', () => {
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-      const result = component.formatRelativeTime(currentTime);
+      const result = component.formatRelativeTime('10:30:00');
       expect(result).toBe('Imminent');
     });
 
     it('should return "1 min" for exactly 1 minute in the future', () => {
-      const oneMinLater = new Date(now.getTime() + 60000);
-      const time = `${String(oneMinLater.getHours()).padStart(2, '0')}:${String(oneMinLater.getMinutes()).padStart(2, '0')}:00`;
-      const result = component.formatRelativeTime(time);
-      // Should be "1 min" (getMinutesUntil returns 1 for exactly 1 minute ahead)
+      const result = component.formatRelativeTime('10:31:00');
       expect(result).toBe('1 min');
     });
 
     it('should return "N min" for N minutes in the future', () => {
-      const result = component.formatRelativeTime(futureTime);
-      const expectedMinutes = component.getMinutesUntil(futureTime);
-      expect(result).toBe(`${expectedMinutes} min`);
+      const result = component.formatRelativeTime('10:45:00');
+      expect(result).toBe('15 min');
     });
   });
 
@@ -253,24 +260,27 @@ describe('KioskComponent', () => {
   });
 
   describe('getMinutesUntil', () => {
+    const frozen = new Date(2025, 0, 15, 10, 30, 0, 0);
+
     beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(frozen);
       fixture.detectChanges();
       paramsSubject.next({ stopId: 'stop-123' });
       queryParamsSubject.next({});
     });
 
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should return correct minute difference for future time', () => {
-      const result = component.getMinutesUntil(futureTime);
-      // futureTime is now.getHours() + 2, at :30
-      const expectedHours = futureHour;
-      const expectedMinutes = expectedHours * 60 + 30;
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      expect(result).toBe(Math.max(0, expectedMinutes - nowMinutes));
+      // 10:30 → 12:45 = 2h15m = 135 min.
+      expect(component.getMinutesUntil('12:45:00')).toBe(135);
     });
 
     it('should return 0 for current time', () => {
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-      expect(component.getMinutesUntil(currentTime)).toBe(0);
+      expect(component.getMinutesUntil('10:30:00')).toBe(0);
     });
   });
 
