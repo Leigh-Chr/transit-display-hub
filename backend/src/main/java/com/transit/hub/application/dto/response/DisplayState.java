@@ -37,7 +37,13 @@ public record DisplayState(
             /** Headway from frequencies.txt when applicable. The kiosk
              *  surfaces it as "every X min" so passengers don't expect
              *  a strict timetable on high-frequency lines. */
-            Integer frequencyHeadwaySeconds
+            Integer frequencyHeadwaySeconds,
+            /** Realtime delay applied to {@code scheduledTime} (in
+             *  seconds). Positive means late, negative means early.
+             *  Null when the GTFS-RT cache has no update for this
+             *  trip / stop pair. The kiosk can render a "live" badge
+             *  whenever this is non-null, even when the value is 0. */
+            Integer realtimeDelaySeconds
     ) {}
 
     public record MessageInfo(

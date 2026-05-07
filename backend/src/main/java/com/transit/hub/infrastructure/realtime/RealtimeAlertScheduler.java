@@ -23,26 +23,42 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class RealtimeAlertScheduler {
 
-    private final RealtimeAlertCache cache;
+    private final RealtimeAlertCache alertCache;
+    private final RealtimeTripUpdateCache tripUpdateCache;
 
     @Value("${app.gtfs-rt.alerts-url:}")
     private String alertsUrl = "";
 
+    @Value("${app.gtfs-rt.trip-updates-url:}")
+    private String tripUpdatesUrl = "";
+
     @EventListener(ApplicationReadyEvent.class)
     public void refreshOnStartup() {
-        if (alertsUrl == null || alertsUrl.isBlank()) {
-            log.info("GTFS-RT alerts: no app.gtfs-rt.alerts-url configured, skipping realtime");
-            return;
+        if (alertCache.isEnabled()) {
+            log.info("GTFS-RT alerts: priming cache from {}", alertsUrl);
+            alertCache.refresh();
+        } else {
+            log.info("GTFS-RT alerts: no app.gtfs-rt.alerts-url configured, skipping");
         }
-        log.info("GTFS-RT alerts: priming cache from {}", alertsUrl);
-        cache.refresh();
+        if (tripUpdateCache.isEnabled()) {
+            log.info("GTFS-RT trip updates: priming cache from {}", tripUpdatesUrl);
+            tripUpdateCache.refresh();
+        } else {
+            log.info("GTFS-RT trip updates: no app.gtfs-rt.trip-updates-url configured, skipping");
+        }
     }
 
     @Scheduled(cron = "${app.gtfs-rt.alerts-poll-cron:*/30 * * * * *}")
-    public void scheduledRefresh() {
-        if (alertsUrl == null || alertsUrl.isBlank()) {
-            return;
+    public void scheduledAlertRefresh() {
+        if (alertCache.isEnabled()) {
+            alertCache.refresh();
         }
-        cache.refresh();
+    }
+
+    @Scheduled(cron = "${app.gtfs-rt.trip-updates-poll-cron:*/30 * * * * *}")
+    public void scheduledTripUpdateRefresh() {
+        if (tripUpdateCache.isEnabled()) {
+            tripUpdateCache.refresh();
+        }
     }
 }

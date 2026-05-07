@@ -15,6 +15,7 @@ import com.transit.hub.domain.util.ServiceCalendarMatcher;
 import com.transit.hub.domain.util.TranslationLookup;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
+import com.transit.hub.infrastructure.realtime.RealtimeTripUpdateCache;
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
@@ -53,6 +54,7 @@ public class DisplayStateCalculator {
     private final ServiceCalendarRepository serviceCalendarRepository;
     private final TranslationRepository translationRepository;
     private final RealtimeAlertCache realtimeAlertCache;
+    private final RealtimeTripUpdateCache realtimeTripUpdateCache;
 
     /** Operator-facing zone used to compare wall-clock schedule times against
      *  the server's now(). Pinning it here means the JVM's TZ — which can be
@@ -112,15 +114,22 @@ public class DisplayStateCalculator {
         List<Schedule> upcoming = loadUpcomingSchedules(stopId, now, windowEnd);
         // Filter on the service calendar of the day each schedule actually
         // belongs to: schedules pulled from the cross-midnight tail belong
-        // to tomorrow's calendar, the rest to today's.
+        // to tomorrow's calendar, the rest to today's. Also drop
+        // schedules whose realtime update marks them as SKIPPED — the
+        // operator pulled the trip and we shouldn't show a phantom
+        // departure.
         LocalDate tomorrow = today.plusDays(1);
         List<Schedule> activeToday = new java.util.ArrayList<>(upcoming.size());
         for (Schedule s : upcoming) {
             LocalDate effectiveDate = (crossesMidnight && s.getTime().isBefore(now)) ? tomorrow : today;
             ServiceCalendar calendar = resolveCalendar(s, calendarsById);
-            if (ServiceCalendarMatcher.isActive(calendar, effectiveDate)) {
-                activeToday.add(s);
+            if (!ServiceCalendarMatcher.isActive(calendar, effectiveDate)) {
+                continue;
             }
+            if (isRealtimeSkipped(s)) {
+                continue;
+            }
+            activeToday.add(s);
         }
 
         List<DisplayState.ArrivalInfo> arrivals = activeToday.stream()
@@ -367,6 +376,10 @@ public class DisplayStateCalculator {
             destination = translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign",
                     resolveTranslatedTerminus(itinerary, translations));
         }
+        // Realtime delay: positive = late, negative = early. The
+        // scheduled time stays as-published; the kiosk applies the
+        // delta itself so a "scheduled / live" comparison is possible.
+        Integer delay = resolveRealtimeDelay(schedule);
         return new DisplayState.ArrivalInfo(
                 schedule.getTime(),
                 destination,
@@ -376,8 +389,50 @@ public class DisplayStateCalculator {
                 resolveWheelchair(schedule, itinerary),
                 resolveBikes(schedule, itinerary),
                 schedule.isTimepoint(),
-                schedule.getFrequencyHeadwaySeconds()
+                schedule.getFrequencyHeadwaySeconds(),
+                delay
         );
+    }
+
+    /**
+     * Looks the schedule up against the GTFS-RT trip-update cache.
+     * Matching: itinerary's representative trip_id → trip-level
+     * adjustment, then stop's external_id → stop-level adjustment.
+     * The stop-level delay wins when both are present.
+     */
+    private Integer resolveRealtimeDelay(Schedule schedule) {
+        Itinerary itinerary = schedule.getItinerary();
+        if (itinerary.getExternalId() == null) {return null;}
+        return realtimeTripUpdateCache.findUpdate(itinerary.getExternalId())
+                .map(update -> {
+                    String stopExternalId = schedule.getStop() != null
+                            ? schedule.getStop().getExternalId() : null;
+                    if (stopExternalId != null && update.byStopExternalId().containsKey(stopExternalId)) {
+                        Integer perStop = update.byStopExternalId().get(stopExternalId).effectiveDelaySeconds();
+                        if (perStop != null) {return perStop;}
+                    }
+                    return update.tripLevelDelaySeconds();
+                })
+                .orElse(null);
+    }
+
+    /**
+     * True when the GTFS-RT feed marks this stop / trip pair as
+     * skipped. The display calculator drops the schedule entirely so
+     * the kiosk doesn't show a phantom departure.
+     */
+    private boolean isRealtimeSkipped(Schedule schedule) {
+        Itinerary itinerary = schedule.getItinerary();
+        if (itinerary.getExternalId() == null) {return false;}
+        String stopExternalId = schedule.getStop() != null
+                ? schedule.getStop().getExternalId() : null;
+        if (stopExternalId == null) {return false;}
+        return realtimeTripUpdateCache.findUpdate(itinerary.getExternalId())
+                .map(update -> {
+                    var stopAdj = update.byStopExternalId().get(stopExternalId);
+                    return stopAdj != null && stopAdj.skipped();
+                })
+                .orElse(false);
     }
 
     /**

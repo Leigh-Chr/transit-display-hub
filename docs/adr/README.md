@@ -23,6 +23,7 @@ should think twice before reverting.
 | [0015](0015-flexible-transport-tad.md) | Demand-responsive transit (location groups + booking rules) |
 | [0016](0016-openapi-tags.md) | Conventions de tags OpenAPI |
 | [0017](0017-gtfs-realtime-service-alerts.md) | GTFS-Realtime ServiceAlerts |
+| [0018](0018-gtfs-realtime-trip-updates.md) | GTFS-Realtime TripUpdates |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

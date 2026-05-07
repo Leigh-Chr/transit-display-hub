@@ -23,6 +23,9 @@ public record HubDisplayState(
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
             com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed,
             boolean timepoint,
-            Integer frequencyHeadwaySeconds
+            Integer frequencyHeadwaySeconds,
+            /** Realtime delay applied to {@code scheduledTime} (seconds).
+             *  Same semantics as {@link DisplayState.ArrivalInfo#realtimeDelaySeconds}. */
+            Integer realtimeDelaySeconds
     ) {}
 }

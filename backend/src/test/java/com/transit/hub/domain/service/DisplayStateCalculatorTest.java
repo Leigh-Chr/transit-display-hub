@@ -15,6 +15,7 @@ import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
+import com.transit.hub.infrastructure.realtime.RealtimeTripUpdateCache;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +60,9 @@ class DisplayStateCalculatorTest {
     @Mock
     private RealtimeAlertCache realtimeAlertCache;
 
+    @Mock
+    private RealtimeTripUpdateCache realtimeTripUpdateCache;
+
     @InjectMocks
     private DisplayStateCalculator calculator;
 
@@ -90,6 +94,12 @@ class DisplayStateCalculatorTest {
         // up an empty list cleanly.
         lenient().when(realtimeAlertCache.activeAlerts(any(Instant.class)))
                 .thenReturn(List.of());
+        // Default to "no trip updates" — schedules render with their
+        // theoretical times, no delay applied. Tests that exercise
+        // the realtime path can override per-trip with their own
+        // when(...).
+        lenient().when(realtimeTripUpdateCache.findUpdate(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(java.util.Optional.empty());
     }
 
     @Nested
