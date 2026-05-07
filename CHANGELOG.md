@@ -5,6 +5,51 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-05-07
+
+GTFS Fares v2 lands alongside v1, the admin UI gains read-only
+browsers for every previously-headless backend endpoint (realtime,
+fares, TAD, translations, import history, pathways, shapes), and the
+schedule import produces real per-departure rows from
+`frequencies.txt` instead of a single annotated row.
+
+### Added
+- **GTFS Fares v2** (ADR 0021). Five new tables persist the v2 model
+  alongside v1: `areas`, `stop_areas`, `timeframes`, `fare_products`,
+  `fare_leg_rules`, `fare_transfer_rules`. Coexists with v1 — feeds
+  in transition publish both, both get persisted. Skipped files
+  (`networks.txt`, `fare_media.txt`, `fare_leg_join_rules.txt`) keep
+  their referenced ids as raw strings so a follow-up migration can
+  promote them to FKs without rewriting consumers.
+- **Aggregate browse endpoint** `GET /api/admin/fares-v2` returns the
+  entire v2 graph (areas, timeframes, products, leg rules, transfer
+  rules) in a single round-trip.
+- **Admin browser pages** for every previously-headless endpoint —
+  `/admin/realtime` (alerts + vehicles), `/admin/gtfs-data` (Fares v1,
+  Fares v2, TAD, Translations), `/admin/import-audit`,
+  `/admin/pathways` (per-stop autocomplete), `/admin/shapes` (SVG
+  polyline preview, no Leaflet dependency).
+- **Frequency fan-out** at import (ADR 0020). `frequencies.txt`
+  windows now expand into per-departure `Schedule` rows
+  (`windowStart + (stopTime - tripStart)` for every trip start in
+  `[start_time, end_time)` step `headway_secs`). Trips with multiple
+  windows (peak / off-peak / late) emit per-window rows with the
+  right headway each.
+- **OpenAPI tags** on the eight remaining admin controllers (Lines,
+  Stops, Itineraries, Schedules, Devices, Messages, Users,
+  Dashboard). Swagger UI groups every route under an explicit
+  `Administration — *` heading; no more "default" bucket.
+
+### Changed
+- `loadFrequencies` returns `Map<String, List<FrequencyWindow>>`
+  (start, end, headway, exact_times) instead of collapsing to the
+  smallest declared headway. Loaded windows feed the fan-out
+  iterator in `importSchedules`.
+- Schedule importer makes one extra streaming pass over
+  `stop_times.txt` to anchor trip start times — restricted to trips
+  with frequency windows, so feeds without `frequencies.txt` pay
+  zero overhead.
+
 ## [0.7.0] - 2026-05-07
 
 OpenAPI documentation reaches feature parity with the controller surface

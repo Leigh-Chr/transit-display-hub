@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,7 +11,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
-import { BookingRule, FareAttribute, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 
 /**
@@ -29,6 +30,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
   standalone: true,
   imports: [
     FormsModule,
+    DecimalPipe,
     MatCardModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -104,6 +106,149 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 <tr mat-header-row *matHeaderRowDef="fareColumns"></tr>
                 <tr mat-row *matRowDef="let row; columns: fareColumns"></tr>
               </table>
+            }
+          </div>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">confirmation_number</mat-icon>
+            Fares v2
+            @if (faresV2(); as fv2) {
+              <span class="tab-count">{{ fv2.products.length }}</span>
+            }
+          </ng-template>
+
+          <div class="tab-content">
+            @if (faresV2(); as fv2) {
+              @if (fv2.products.length === 0 && fv2.areas.length === 0) {
+                <app-empty-state
+                  icon="confirmation_number"
+                  title="Pas de Fares v2"
+                  description="Le feed n'a pas de fare_products.txt / areas.txt. La page Tarifs affiche la v1 si elle est présente." />
+              } @else {
+                @if (fv2.products.length > 0) {
+                  <h3 class="section-title">Produits ({{ fv2.products.length }})</h3>
+                  <table mat-table [dataSource]="fv2.products" class="data-table">
+                    <ng-container matColumnDef="externalId">
+                      <th mat-header-cell *matHeaderCellDef>fare_product_id</th>
+                      <td mat-cell *matCellDef="let p"><code>{{ p.externalId }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="name">
+                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <td mat-cell *matCellDef="let p">{{ p.name || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="amount">
+                      <th mat-header-cell *matHeaderCellDef>Prix</th>
+                      <td mat-cell *matCellDef="let p"><strong>{{ p.amount }}</strong> {{ p.currency }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="media">
+                      <th mat-header-cell *matHeaderCellDef>Support</th>
+                      <td mat-cell *matCellDef="let p">{{ p.fareMediaId || '—' }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2ProductColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2ProductColumns"></tr>
+                  </table>
+                }
+
+                @if (fv2.areas.length > 0) {
+                  <h3 class="section-title">Zones ({{ fv2.areas.length }})</h3>
+                  <table mat-table [dataSource]="fv2.areas" class="data-table">
+                    <ng-container matColumnDef="externalId">
+                      <th mat-header-cell *matHeaderCellDef>area_id</th>
+                      <td mat-cell *matCellDef="let a"><code>{{ a.externalId }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="name">
+                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <td mat-cell *matCellDef="let a">{{ a.name || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="stopCount">
+                      <th mat-header-cell *matHeaderCellDef>Arrêts</th>
+                      <td mat-cell *matCellDef="let a">{{ a.stopCount }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2AreaColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2AreaColumns"></tr>
+                  </table>
+                }
+
+                @if (fv2.legRules.length > 0) {
+                  <h3 class="section-title">Leg rules ({{ fv2.legRules.length }})</h3>
+                  <table mat-table [dataSource]="fv2.legRules" class="data-table">
+                    <ng-container matColumnDef="legGroup">
+                      <th mat-header-cell *matHeaderCellDef>leg_group</th>
+                      <td mat-cell *matCellDef="let r"><code>{{ r.legGroupId || '—' }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="from">
+                      <th mat-header-cell *matHeaderCellDef>De</th>
+                      <td mat-cell *matCellDef="let r">{{ r.fromAreaName || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="to">
+                      <th mat-header-cell *matHeaderCellDef>Vers</th>
+                      <td mat-cell *matCellDef="let r">{{ r.toAreaName || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="window">
+                      <th mat-header-cell *matHeaderCellDef>Fenêtre</th>
+                      <td mat-cell *matCellDef="let r">{{ r.fromTimeframeGroupId || r.toTimeframeGroupId || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="product">
+                      <th mat-header-cell *matHeaderCellDef>Produit</th>
+                      <td mat-cell *matCellDef="let r">
+                        @if (r.productExternalId) {
+                          <code>{{ r.productExternalId }}</code>
+                          @if (r.productAmount) {
+                            <span class="muted">— {{ r.productAmount }} {{ r.productCurrency }}</span>
+                          }
+                        } @else { — }
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="priority">
+                      <th mat-header-cell *matHeaderCellDef>Priorité</th>
+                      <td mat-cell *matCellDef="let r">{{ r.rulePriority ?? '—' }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2LegColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2LegColumns"></tr>
+                  </table>
+                }
+
+                @if (fv2.transferRules.length > 0) {
+                  <h3 class="section-title">Transfer rules ({{ fv2.transferRules.length }})</h3>
+                  <table mat-table [dataSource]="fv2.transferRules" class="data-table">
+                    <ng-container matColumnDef="from">
+                      <th mat-header-cell *matHeaderCellDef>Depuis</th>
+                      <td mat-cell *matCellDef="let r"><code>{{ r.fromLegGroupId || '—' }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="to">
+                      <th mat-header-cell *matHeaderCellDef>Vers</th>
+                      <td mat-cell *matCellDef="let r"><code>{{ r.toLegGroupId || '—' }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="duration">
+                      <th mat-header-cell *matHeaderCellDef>Validité</th>
+                      <td mat-cell *matCellDef="let r">
+                        @if (r.durationLimit) {
+                          {{ r.durationLimit / 60 | number:'1.0-0' }} min
+                        } @else { — }
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="type">
+                      <th mat-header-cell *matHeaderCellDef>Type</th>
+                      <td mat-cell *matCellDef="let r">{{ transferTypeLabel(r.fareTransferType) }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="product">
+                      <th mat-header-cell *matHeaderCellDef>Produit</th>
+                      <td mat-cell *matCellDef="let r">
+                        @if (r.productExternalId) {
+                          <code>{{ r.productExternalId }}</code>
+                          @if (r.productAmount) {
+                            <span class="muted">— {{ r.productAmount }} {{ r.productCurrency }}</span>
+                          }
+                        } @else { — }
+                      </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2TransferColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2TransferColumns"></tr>
+                  </table>
+                }
+              }
             }
           </div>
         </mat-tab>
@@ -301,6 +446,17 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       flex-wrap: wrap;
     }
     .lang-field { width: 140px; }
+
+    .section-title {
+      margin: 24px 0 12px 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface-variant);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .section-title:first-of-type { margin-top: 0; }
+    .muted { color: var(--mat-sys-on-surface-variant); margin-left: 4px; font-size: 0.85em; }
     .table-field { width: 200px; }
 
     .inline-icon {
@@ -315,6 +471,7 @@ export class GtfsDataComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
 
   readonly fares = signal<FareAttribute[]>([]);
+  readonly faresV2 = signal<FaresV2 | null>(null);
   readonly bookingRules = signal<BookingRule[]>([]);
   readonly translations = signal<Translation[]>([]);
   readonly loadingTranslations = signal(false);
@@ -328,6 +485,10 @@ export class GtfsDataComponent implements OnInit {
   readonly fareColumns = ['externalId', 'price', 'paymentMethod', 'transfers', 'agency', 'rules'];
   readonly bookingColumns = ['externalId', 'bookingType', 'notice', 'phone', 'bookingUrl', 'message'];
   readonly translationColumns = ['tableName', 'recordId', 'fieldName', 'fieldValue', 'translation'];
+  readonly v2ProductColumns = ['externalId', 'name', 'amount', 'media'];
+  readonly v2AreaColumns = ['externalId', 'name', 'stopCount'];
+  readonly v2LegColumns = ['legGroup', 'from', 'to', 'window', 'product', 'priority'];
+  readonly v2TransferColumns = ['from', 'to', 'duration', 'type', 'product'];
 
   ngOnInit(): void {
     this.gtfsData.getFares().subscribe({
@@ -337,6 +498,10 @@ export class GtfsDataComponent implements OnInit {
     this.gtfsData.getBookingRules().subscribe({
       next: (data) => this.bookingRules.set(data),
       error: () => this.bookingRules.set([]),
+    });
+    this.gtfsData.getFaresV2().subscribe({
+      next: (data) => this.faresV2.set(data),
+      error: () => this.faresV2.set(null),
     });
     this.loadTranslations();
   }
@@ -385,6 +550,15 @@ export class GtfsDataComponent implements OnInit {
       case 'SAME_DAY': return 'Jour même';
       case 'PRIOR_DAYS': return 'À l\'avance';
       default: return t;
+    }
+  }
+
+  transferTypeLabel(t: number): string {
+    switch (t) {
+      case 0: return 'A + transfer combinés';
+      case 1: return 'A puis transfer séparé';
+      case 2: return 'Transfer remplace A';
+      default: return `Type ${t}`;
     }
   }
 

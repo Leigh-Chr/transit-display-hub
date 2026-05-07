@@ -521,6 +521,68 @@ export interface FareRuleSummary {
   containsId: string | null;
 }
 
+// GTFS Fares v2 (admin browse)
+export interface FaresV2 {
+  areas: FareArea[];
+  timeframes: FareTimeframe[];
+  products: FareProduct[];
+  legRules: FareLegRule[];
+  transferRules: FareTransferRule[];
+}
+
+export interface FareArea {
+  id: string;
+  externalId: string;
+  name: string | null;
+  stopCount: number;
+}
+
+export interface FareTimeframe {
+  id: string;
+  timeframeGroupId: string;
+  /** ISO-8601 "HH:mm:ss". */
+  startTime: string | null;
+  endTime: string | null;
+  serviceId: string | null;
+}
+
+export interface FareProduct {
+  id: string;
+  externalId: string;
+  name: string | null;
+  fareMediaId: string | null;
+  amount: string;
+  currency: string;
+}
+
+export interface FareLegRule {
+  id: string;
+  legGroupId: string | null;
+  networkId: string | null;
+  fromAreaName: string | null;
+  toAreaName: string | null;
+  fromTimeframeGroupId: string | null;
+  toTimeframeGroupId: string | null;
+  productExternalId: string | null;
+  productAmount: string | null;
+  productCurrency: string | null;
+  rulePriority: number | null;
+}
+
+export interface FareTransferRule {
+  id: string;
+  fromLegGroupId: string | null;
+  toLegGroupId: string | null;
+  transferCount: number | null;
+  durationLimit: number | null;
+  durationLimitType: number | null;
+  /** GTFS fare_transfer_type: 0=combined, 1=A-then-transfer, 2=transfer-replaces-A. */
+  fareTransferType: number;
+  productExternalId: string | null;
+  productAmount: string | null;
+  productCurrency: string | null;
+}
+
 // GTFS booking rules (TAD — admin browse)
 export type BookingType = 'REAL_TIME' | 'SAME_DAY' | 'PRIOR_DAYS';
 

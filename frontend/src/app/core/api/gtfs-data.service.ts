@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BookingRule, FareAttribute, ImportAudit, Pathway, Shape, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, FaresV2, ImportAudit, Pathway, Shape, Translation } from '@shared/models';
 
 /**
  * Read-only access to the GTFS extension tables that the importer
@@ -21,6 +21,13 @@ export class GtfsDataService {
 
   getBookingRules(): Observable<BookingRule[]> {
     return this.http.get<BookingRule[]>('/api/admin/booking-rules');
+  }
+
+  /** Aggregate Fares v2 payload: areas, timeframes, products, leg
+   *  rules, transfer rules. Returned as a single object because the
+   *  v2 graph is small enough to fit in one round-trip. */
+  getFaresV2(): Observable<FaresV2> {
+    return this.http.get<FaresV2>('/api/admin/fares-v2');
   }
 
   /** Translation browse requires a target language; an optional table
