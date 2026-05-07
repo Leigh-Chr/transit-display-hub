@@ -42,6 +42,11 @@ dependencies {
     // GTFS import (CSV parsing)
     implementation("org.apache.commons:commons-csv:1.12.0")
 
+    // OpenAPI / Swagger UI — exposes /swagger-ui.html and /v3/api-docs
+    // for admins and frontend devs. Keeps the bundled Swagger UI rather
+    // than hosting an external one so the docs travel with the binary.
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+
     // Database
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")

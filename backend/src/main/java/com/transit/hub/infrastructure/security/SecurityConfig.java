@@ -55,6 +55,16 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        // OpenAPI / Swagger UI — Springdoc serves the spec
+                        // and the UI on these paths. Both are read-only and
+                        // describe only the endpoint shape, not the data,
+                        // so leaving them open keeps the docs reachable
+                        // for external dev tooling. Production deployments
+                        // can fence them off via reverse-proxy rules if
+                        // desired.
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
 
                         // Read-only public access to itineraries (for schedule dialog)
                         .requestMatchers(HttpMethod.GET, "/api/itineraries/**").permitAll()
