@@ -5,11 +5,13 @@ import com.transit.hub.application.dto.response.NetworkMapResponse.AlertMessage;
 import com.transit.hub.application.dto.response.NetworkMapResponse.AlertsResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkLine;
 import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkStop;
+import com.transit.hub.application.dto.response.NetworkMapResponse.NetworkTransfer;
 import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.*;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
+import com.transit.hub.domain.model.enums.WheelchairAccess;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -28,6 +30,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -307,6 +310,259 @@ class NetworkMapServiceTest {
             assertThat(result.bounds().minY()).isEqualTo(75.0);
             assertThat(result.bounds().maxX()).isEqualTo(50.0);
             assertThat(result.bounds().maxY()).isEqualTo(75.0);
+        }
+    }
+
+    @Nested
+    @DisplayName("Phase 1.3 parent / platform collapse")
+    class Phase13ParentCollapse {
+
+        private Stop parentStation(String name) {
+            Stop parent = TestDataFactory.createStop(name);
+            parent.setLocationType((short) 1);
+            return parent;
+        }
+
+        private Stop platformOf(Stop parent, String code, Line line) {
+            Stop p = TestDataFactory.createStop(parent.getName() + " quay " + code, line);
+            p.setPlatformCode(code);
+            p.setParentStop(parent);
+            return p;
+        }
+
+        @Test
+        @DisplayName("platforms collapse into their parent station — only the parent shows up as a surface stop")
+        void platformsCollapseIntoParent() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop parent = parentStation("Central");
+            Stop platformA = platformOf(parent, "A", line);
+            Stop platformB = platformOf(parent, "B", line);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops()).hasSize(1);
+            assertThat(result.stops().get(0).id()).isEqualTo(parent.getId());
+            assertThat(result.stops().get(0).name()).isEqualTo("Central");
+        }
+
+        @Test
+        @DisplayName("parent station inherits the union of its children's line codes")
+        void parentInheritsChildLineCodes() {
+            Line m1 = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Line m2 = TestDataFactory.createLine("M2", "Metro 2", "#00FF00");
+            Stop parent = parentStation("Interchange");
+            Stop platform1 = platformOf(parent, "1", m1);
+            Stop platform2 = platformOf(parent, "2", m2);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(m1, m2));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platform1, platform2));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops()).hasSize(1);
+            assertThat(result.stops().get(0).lineCodes()).containsExactly("M1", "M2");
+        }
+
+        @Test
+        @DisplayName("itinerary stop ids are remapped from platform UUID to parent UUID")
+        void itineraryRemappedToParent() {
+            Line line = TestDataFactory.createLine("T1", "Tram 1", "#FF0000");
+            Stop terminusStart = TestDataFactory.createStop("Start", line);
+            Stop centralParent = parentStation("Central");
+            Stop centralPlatform = platformOf(centralParent, "A", line);
+            Stop terminusEnd = TestDataFactory.createStop("End", line);
+            Itinerary itinerary = TestDataFactory.createItineraryWithStops(line,
+                    "ToEnd", terminusStart, centralPlatform, terminusEnd);
+            line.getItineraries().add(itinerary);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines())
+                    .thenReturn(List.of(terminusStart, centralParent, centralPlatform, terminusEnd));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            List<UUID> stopIds = result.lines().get(0).itineraries().get(0);
+            assertThat(stopIds).containsExactly(
+                    terminusStart.getId(), centralParent.getId(), terminusEnd.getId());
+        }
+
+        @Test
+        @DisplayName("consecutive platforms of the same parent collapse to a single itinerary entry")
+        void consecutivePlatformsDedupe() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop start = TestDataFactory.createStop("Start", line);
+            Stop centralParent = parentStation("Central");
+            Stop centralA = platformOf(centralParent, "A", line);
+            Stop centralB = platformOf(centralParent, "B", line);
+            Stop end = TestDataFactory.createStop("End", line);
+            Itinerary itinerary = TestDataFactory.createItineraryWithStops(line,
+                    "ToEnd", start, centralA, centralB, end);
+            line.getItineraries().add(itinerary);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines())
+                    .thenReturn(List.of(start, centralParent, centralA, centralB, end));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            List<UUID> stopIds = result.lines().get(0).itineraries().get(0);
+            assertThat(stopIds).containsExactly(start.getId(), centralParent.getId(), end.getId());
+        }
+
+        @Test
+        @DisplayName("transfers between platforms of the same station are dropped (intra-station walking)")
+        void intraStationTransfersDropped() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop parent = parentStation("Central");
+            Stop platformA = platformOf(parent, "A", line);
+            Stop platformB = platformOf(parent, "B", line);
+            Transfer transfer = Transfer.builder()
+                    .id(UUID.randomUUID())
+                    .fromStop(platformA)
+                    .toStop(platformB)
+                    .transferType((short) 0)
+                    .minTransferTime(60)
+                    .build();
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(transferRepository.findAllWithStops()).thenReturn(List.of(transfer));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.transfers()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("transfers between platforms of different stations collapse to parent UUIDs")
+        void interStationTransfersCollapseToParents() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop parentA = parentStation("Alpha");
+            Stop platformA = platformOf(parentA, "1", line);
+            Stop parentB = parentStation("Beta");
+            Stop platformB = platformOf(parentB, "1", line);
+            Transfer transfer = Transfer.builder()
+                    .id(UUID.randomUUID())
+                    .fromStop(platformA)
+                    .toStop(platformB)
+                    .transferType((short) 2)
+                    .minTransferTime(120)
+                    .build();
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines())
+                    .thenReturn(List.of(parentA, platformA, parentB, platformB));
+            when(transferRepository.findAllWithStops()).thenReturn(List.of(transfer));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.transfers()).hasSize(1);
+            NetworkTransfer t = result.transfers().get(0);
+            assertThat(t.fromStopId()).isEqualTo(parentA.getId());
+            assertThat(t.toStopId()).isEqualTo(parentB.getId());
+            assertThat(t.minTransferTimeSeconds()).isEqualTo(120);
+        }
+
+        @Test
+        @DisplayName("parent station hasOnDemand when any of its child platforms has on-request schedule")
+        void parentInheritsHasOnDemandFromChild() {
+            Line line = TestDataFactory.createLine("B1", "Bus 1", "#0000FF");
+            Stop parent = parentStation("Hub");
+            Stop platformA = platformOf(parent, "A", line);
+            Stop platformB = platformOf(parent, "B", line);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(scheduleRepository.findStopIdsWithOnDemandPickup()).thenReturn(Set.of(platformB.getId()));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops()).hasSize(1);
+            assertThat(result.stops().get(0).hasOnDemand()).isTrue();
+        }
+
+        @Test
+        @DisplayName("parent's own ACCESSIBLE flag wins over a NOT_ACCESSIBLE child")
+        void parentAccessibleWinsOverNotAccessibleChild() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop parent = parentStation("Central");
+            parent.setWheelchairBoarding(WheelchairAccess.ACCESSIBLE);
+            Stop platform = platformOf(parent, "A", line);
+            platform.setWheelchairBoarding(WheelchairAccess.NOT_ACCESSIBLE);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platform));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops().get(0).wheelchairBoarding())
+                    .isEqualTo(WheelchairAccess.ACCESSIBLE);
+        }
+
+        @Test
+        @DisplayName("a null-wheelchair parent inherits an ACCESSIBLE child so the filter doesn't hide partially-accessible stations")
+        void nullParentInheritsAccessibleChild() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop parent = parentStation("Central");
+            // parent.wheelchairBoarding stays null
+            Stop platform = platformOf(parent, "A", line);
+            platform.setWheelchairBoarding(WheelchairAccess.ACCESSIBLE);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platform));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops().get(0).wheelchairBoarding())
+                    .isEqualTo(WheelchairAccess.ACCESSIBLE);
+        }
+
+        @Test
+        @DisplayName("parent station fareAreaNames is the union of parent's own areas and each child's areas, sorted")
+        void parentFareAreaNamesUnion() {
+            Line line = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            Stop parent = parentStation("Central");
+            Stop platformA = platformOf(parent, "A", line);
+            Stop platformB = platformOf(parent, "B", line);
+
+            Area zone2 = Area.builder()
+                    .id(UUID.randomUUID()).externalId("Z2").name("Zone 2")
+                    .stops(new HashSet<>(Set.of(parent))).build();
+            Area zone1 = Area.builder()
+                    .id(UUID.randomUUID()).externalId("Z1").name("Zone 1")
+                    .stops(new HashSet<>(Set.of(platformA))).build();
+            Area zone3 = Area.builder()
+                    .id(UUID.randomUUID()).externalId("Z3").name("Zone 3")
+                    .stops(new HashSet<>(Set.of(platformB))).build();
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(areaRepository.findAllWithStops()).thenReturn(List.of(zone1, zone2, zone3));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops()).hasSize(1);
+            assertThat(result.stops().get(0).fareAreaNames())
+                    .containsExactly("Zone 1", "Zone 2", "Zone 3");
+        }
+
+        @Test
+        @DisplayName("free-standing stops without a parent stay as their own surface node and keep their own line codes")
+        void freeStandingStopsRemainTheirOwnNode() {
+            Line line = TestDataFactory.createLine("B1", "Bus 1", "#0000FF");
+            Stop bus = TestDataFactory.createStop("Free Bus Pole", line);
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
+            when(stopRepository.findAllWithLines()).thenReturn(List.of(bus));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.stops()).hasSize(1);
+            assertThat(result.stops().get(0).id()).isEqualTo(bus.getId());
+            assertThat(result.stops().get(0).lineCodes()).containsExactly("B1");
         }
     }
 
