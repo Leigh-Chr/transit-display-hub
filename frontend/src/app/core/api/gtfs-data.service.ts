@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BookingRule, FareAttribute, ImportAudit, Pathway, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, ImportAudit, Pathway, Shape, Translation } from '@shared/models';
 
 /**
  * Read-only access to the GTFS extension tables that the importer
@@ -44,5 +44,12 @@ export class GtfsDataService {
    *  inbound/outbound segments. */
   getPathwaysForStop(stopId: string): Observable<Pathway[]> {
     return this.http.get<Pathway[]>(`/api/stops/${stopId}/pathways`);
+  }
+
+  /** Geographic polyline of an itinerary's shape, ordered along the
+   *  trip's natural direction. Returns 404 when the itinerary has
+   *  no shape attached (feed shipped no shape_id). */
+  getShapeForItinerary(itineraryId: string): Observable<Shape> {
+    return this.http.get<Shape>(`/api/itineraries/${itineraryId}/shape`);
   }
 }

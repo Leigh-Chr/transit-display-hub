@@ -85,6 +85,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pathways/pathways.component').then(m => m.PathwaysComponent)
       },
       {
+        path: 'shapes',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
+        loadComponent: () => import('./features/admin/shapes/shapes.component').then(m => m.ShapesComponent)
+      },
+      {
         path: 'users',
         canActivate: [roleGuard],
         data: { requiredRole: 'ADMIN' },
