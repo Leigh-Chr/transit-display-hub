@@ -682,6 +682,14 @@ export class SchematicMapComponent {
       }
     }
 
+    // When the visible rows have no stops at all (mid-filter transition,
+    // category with empty rows), the min/max sentinels stay at ±Infinity
+    // and would propagate as "Infinity" into the viewBox attribute. Fall
+    // back to a sane default so the SVG keeps rendering.
+    if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+      return { x: 0, y: 0, w: 1000, h: 600 };
+    }
+
     const sideMargin = 80;
     // Rotated labels span ~150 SVG units along their axis for the longest French
     // stop names. We reserve that on every side that can host them: top is always
