@@ -14,13 +14,12 @@ schedule import produces real per-departure rows from
 `frequencies.txt` instead of a single annotated row.
 
 ### Added
-- **GTFS Fares v2** (ADR 0021). Five new tables persist the v2 model
+- **GTFS Fares v2** (ADR 0021). Eight new tables persist the v2 model
   alongside v1: `areas`, `stop_areas`, `timeframes`, `fare_products`,
-  `fare_leg_rules`, `fare_transfer_rules`. Coexists with v1 — feeds
-  in transition publish both, both get persisted. Skipped files
-  (`networks.txt`, `fare_media.txt`, `fare_leg_join_rules.txt`) keep
-  their referenced ids as raw strings so a follow-up migration can
-  promote them to FKs without rewriting consumers.
+  `fare_leg_rules`, `fare_transfer_rules`, plus `networks` /
+  `route_networks` and `fare_media` from the V31 follow-up. Coexists
+  with v1 — feeds in transition publish both, both get persisted.
+  Only `fare_leg_join_rules.txt` remains out of scope (niche).
 - **Aggregate browse endpoint** `GET /api/admin/fares-v2` returns the
   entire v2 graph (areas, timeframes, products, leg rules, transfer
   rules) in a single round-trip.

@@ -528,6 +528,24 @@ export interface FaresV2 {
   products: FareProduct[];
   legRules: FareLegRule[];
   transferRules: FareTransferRule[];
+  networks: FareNetwork[];
+  fareMedia: FareMedia[];
+}
+
+export interface FareNetwork {
+  id: string;
+  externalId: string;
+  name: string | null;
+  routeCount: number;
+}
+
+export interface FareMedia {
+  id: string;
+  externalId: string;
+  name: string | null;
+  /** GTFS fare_media_type: 0=none, 1=paper, 2=transit_card,
+   *  3=contactless_emv, 4=mobile_app. */
+  mediaType: number | null;
 }
 
 export interface FareArea {

@@ -127,6 +127,46 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   title="Pas de Fares v2"
                   description="Le feed n'a pas de fare_products.txt / areas.txt. La page Tarifs affiche la v1 si elle est présente." />
               } @else {
+                @if (fv2.networks.length > 0) {
+                  <h3 class="section-title">Réseaux ({{ fv2.networks.length }})</h3>
+                  <table mat-table [dataSource]="fv2.networks" class="data-table">
+                    <ng-container matColumnDef="externalId">
+                      <th mat-header-cell *matHeaderCellDef>network_id</th>
+                      <td mat-cell *matCellDef="let n"><code>{{ n.externalId }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="name">
+                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <td mat-cell *matCellDef="let n">{{ n.name || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="routeCount">
+                      <th mat-header-cell *matHeaderCellDef>Lignes</th>
+                      <td mat-cell *matCellDef="let n">{{ n.routeCount }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2NetworkColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2NetworkColumns"></tr>
+                  </table>
+                }
+
+                @if (fv2.fareMedia.length > 0) {
+                  <h3 class="section-title">Supports ({{ fv2.fareMedia.length }})</h3>
+                  <table mat-table [dataSource]="fv2.fareMedia" class="data-table">
+                    <ng-container matColumnDef="externalId">
+                      <th mat-header-cell *matHeaderCellDef>fare_media_id</th>
+                      <td mat-cell *matCellDef="let m"><code>{{ m.externalId }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="name">
+                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <td mat-cell *matCellDef="let m">{{ m.name || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="mediaType">
+                      <th mat-header-cell *matHeaderCellDef>Type</th>
+                      <td mat-cell *matCellDef="let m">{{ mediaTypeLabel(m.mediaType) }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2MediaColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2MediaColumns"></tr>
+                  </table>
+                }
+
                 @if (fv2.products.length > 0) {
                   <h3 class="section-title">Produits ({{ fv2.products.length }})</h3>
                   <table mat-table [dataSource]="fv2.products" class="data-table">
@@ -489,6 +529,8 @@ export class GtfsDataComponent implements OnInit {
   readonly v2AreaColumns = ['externalId', 'name', 'stopCount'];
   readonly v2LegColumns = ['legGroup', 'from', 'to', 'window', 'product', 'priority'];
   readonly v2TransferColumns = ['from', 'to', 'duration', 'type', 'product'];
+  readonly v2NetworkColumns = ['externalId', 'name', 'routeCount'];
+  readonly v2MediaColumns = ['externalId', 'name', 'mediaType'];
 
   ngOnInit(): void {
     this.gtfsData.getFares().subscribe({
@@ -559,6 +601,17 @@ export class GtfsDataComponent implements OnInit {
       case 1: return 'A puis transfer séparé';
       case 2: return 'Transfer remplace A';
       default: return `Type ${t}`;
+    }
+  }
+
+  mediaTypeLabel(t: number | null): string {
+    switch (t) {
+      case 0: return 'Aucun';
+      case 1: return 'Papier';
+      case 2: return 'Carte transport';
+      case 3: return 'Sans contact (EMV)';
+      case 4: return 'Mobile';
+      default: return t === null ? '—' : `Type ${t}`;
     }
   }
 

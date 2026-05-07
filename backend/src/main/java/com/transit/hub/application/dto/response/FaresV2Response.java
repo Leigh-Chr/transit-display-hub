@@ -2,8 +2,10 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Area;
 import com.transit.hub.domain.model.FareLegRule;
+import com.transit.hub.domain.model.FareMedia;
 import com.transit.hub.domain.model.FareProduct;
 import com.transit.hub.domain.model.FareTransferRule;
+import com.transit.hub.domain.model.Network;
 import com.transit.hub.domain.model.Timeframe;
 
 import java.math.BigDecimal;
@@ -22,8 +24,23 @@ public record FaresV2Response(
         List<TimeframeSummary> timeframes,
         List<ProductSummary> products,
         List<LegRuleSummary> legRules,
-        List<TransferRuleSummary> transferRules
+        List<TransferRuleSummary> transferRules,
+        List<NetworkSummary> networks,
+        List<FareMediaSummary> fareMedia
 ) {
+    public record NetworkSummary(UUID id, String externalId, String name, int routeCount) {
+        public static NetworkSummary from(Network n) {
+            return new NetworkSummary(n.getId(), n.getExternalId(), n.getName(),
+                    n.getRoutes() == null ? 0 : n.getRoutes().size());
+        }
+    }
+
+    public record FareMediaSummary(UUID id, String externalId, String name, Short mediaType) {
+        public static FareMediaSummary from(FareMedia m) {
+            return new FareMediaSummary(m.getId(), m.getExternalId(), m.getName(), m.getMediaType());
+        }
+    }
+
     public record AreaSummary(UUID id, String externalId, String name, int stopCount) {
         public static AreaSummary from(Area a) {
             return new AreaSummary(a.getId(), a.getExternalId(), a.getName(),

@@ -40,14 +40,27 @@ fare_transfer_rules (id, from_leg_group_id, to_leg_group_id,
 shares them across multiple rule rows, so a surrogate FK would force
 us to materialise the group as its own table for no semantic gain.
 
-### 2. Skipped v2 files
+### 2. Networks and media (V31)
 
-- **`networks.txt` / `route_networks.txt`**: networks are an
-  organisational layer used to filter `fare_leg_rules.network_id`.
-  We persist the raw string; when an actual networks table lands,
-  the column promotes to an FK.
-- **`fare_media.txt`**: media (cards, mobile, paper) is mostly UX.
-  Products keep the raw `fare_media_id` for now.
+A follow-up migration adds three more tables:
+
+```
+networks (id, external_id, name)
+route_networks (network_id, route_id)             — M2M, cascade both ways
+fare_media (id, external_id, name, media_type)
+```
+
+`fare_leg_rules.network_id` and `fare_products.fare_media_id` keep
+their raw-string columns rather than promoting to FKs. Reasoning:
+the v2 import sequence already serialises (areas → timeframes →
+products → leg rules → transfer rules); adding a hard FK on
+networks / media would reorder the wipe cadence and risk
+SET-NULL spurious fires during partial re-imports. The raw-string
+loose link is harmless for browse and the future fare-computation
+path can resolve client-side.
+
+### 3. Skipped v2 files
+
 - **`fare_leg_join_rules.txt`**: niche, used by very few feeds.
 
 The data being available behind raw-string columns means each

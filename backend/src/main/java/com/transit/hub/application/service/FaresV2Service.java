@@ -3,8 +3,10 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.response.FaresV2Response;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
+import com.transit.hub.infrastructure.persistence.FareMediaRepository;
 import com.transit.hub.infrastructure.persistence.FareProductRepository;
 import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
+import com.transit.hub.infrastructure.persistence.NetworkRepository;
 import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,8 @@ public class FaresV2Service {
     private final FareProductRepository fareProductRepository;
     private final FareLegRuleRepository fareLegRuleRepository;
     private final FareTransferRuleRepository fareTransferRuleRepository;
+    private final NetworkRepository networkRepository;
+    private final FareMediaRepository fareMediaRepository;
 
     @Transactional(readOnly = true)
     public FaresV2Response browse() {
@@ -37,6 +41,12 @@ public class FaresV2Service {
                         .toList(),
                 fareTransferRuleRepository.findAllWithProduct().stream()
                         .map(FaresV2Response.TransferRuleSummary::from)
+                        .toList(),
+                networkRepository.findAllWithRoutes().stream()
+                        .map(FaresV2Response.NetworkSummary::from)
+                        .toList(),
+                fareMediaRepository.findAll().stream()
+                        .map(FaresV2Response.FareMediaSummary::from)
                         .toList()
         );
     }
