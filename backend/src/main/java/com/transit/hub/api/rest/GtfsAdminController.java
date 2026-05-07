@@ -2,6 +2,8 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.service.GtfsImportOrchestrator;
 import com.transit.hub.domain.model.enums.ImportStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/gtfs")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Administration — feed GTFS",
+     description = "Déclenchement manuel d'un import GTFS et journal d'activité.")
 public class GtfsAdminController {
 
     private final GtfsImportOrchestrator orchestrator;
@@ -29,6 +33,10 @@ public class GtfsAdminController {
     private String feedUrl;
 
     @PostMapping("/reimport")
+    @Operation(summary = "Force un réimport GTFS",
+               description = "Synchrone : télécharge le feed (avec cache If-Modified-Since), "
+                       + "calcule le SHA-256, importe si modifié, et écrit une ligne d'audit. "
+                       + "Identifie l'utilisateur via l'identité authentifiée pour la traçabilité.")
     public ResponseEntity<RefreshResponse> reimport(Authentication authentication) {
         if (feedUrl == null || feedUrl.isBlank()) {
             return ResponseEntity.badRequest()

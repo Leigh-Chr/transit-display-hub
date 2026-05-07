@@ -2,6 +2,7 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.dto.response.AgencyResponse;
 import com.transit.hub.application.service.AgencyService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/agencies")
 @RequiredArgsConstructor
+@Tag(name = "Données GTFS — agences",
+     description = "Liste des agences exploitantes connues du réseau.")
 public class AgencyController {
 
     private final AgencyService agencyService;

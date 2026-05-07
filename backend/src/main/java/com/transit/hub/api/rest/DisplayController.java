@@ -6,6 +6,7 @@ import com.transit.hub.application.dto.response.HubDisplayState;
 import com.transit.hub.application.service.DeviceService;
 import com.transit.hub.application.service.DisplayStateService;
 import com.transit.hub.application.service.HubDisplayService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/display")
 @RequiredArgsConstructor
+@Tag(name = "Écrans publics",
+     description = "État d'affichage temps-réel pour les kiosques individuels et les hubs.")
 public class DisplayController {
 
     private final DisplayStateService displayStateService;

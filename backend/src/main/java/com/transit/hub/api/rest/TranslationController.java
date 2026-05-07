@@ -2,6 +2,7 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.dto.response.TranslationResponse;
 import com.transit.hub.application.service.TranslationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/translations")
 @RequiredArgsConstructor
+@Tag(name = "Administration — traductions",
+     description = "Browse des traductions GTFS importées (translations.txt).")
 public class TranslationController {
 
     private final TranslationService translationService;

@@ -2,6 +2,7 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.dto.response.ImportAuditResponse;
 import com.transit.hub.application.service.ImportAuditService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/import-audit")
 @RequiredArgsConstructor
+@Tag(name = "Administration — feed GTFS",
+     description = "Journal des tentatives d'import GTFS (succès, skip, échec).")
 public class ImportAuditController {
 
     private final ImportAuditService importAuditService;

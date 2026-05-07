@@ -2,6 +2,7 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.dto.response.BookingRuleResponse;
 import com.transit.hub.application.service.BookingRuleService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/booking-rules")
 @RequiredArgsConstructor
+@Tag(name = "Administration — TAD",
+     description = "Règles de réservation des services demand-responsive (booking_rules).")
 public class BookingRuleController {
 
     private final BookingRuleService bookingRuleService;

@@ -2,6 +2,7 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.dto.response.PathwayResponse;
 import com.transit.hub.application.service.PathwayService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/stops/{stopId}/pathways")
 @RequiredArgsConstructor
+@Tag(name = "Données GTFS — pathways",
+     description = "Topologie indoor d'une station (escaliers, ascenseurs, sorties).")
 public class PathwayController {
 
     private final PathwayService pathwayService;
