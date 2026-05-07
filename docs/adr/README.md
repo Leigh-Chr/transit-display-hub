@@ -24,6 +24,7 @@ should think twice before reverting.
 | [0016](0016-openapi-tags.md) | Conventions de tags OpenAPI |
 | [0017](0017-gtfs-realtime-service-alerts.md) | GTFS-Realtime ServiceAlerts |
 | [0018](0018-gtfs-realtime-trip-updates.md) | GTFS-Realtime TripUpdates |
+| [0019](0019-gtfs-realtime-vehicle-positions.md) | GTFS-Realtime VehiclePositions |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

@@ -82,8 +82,58 @@ message TripUpdate {
     }
 }
 
+message Position {
+    required float latitude = 1;
+    required float longitude = 2;
+    optional float bearing = 3;
+    optional double odometer = 4;
+    optional float speed = 5;
+}
+
+message VehicleDescriptor {
+    optional string id = 1;
+    optional string label = 2;
+    optional string license_plate = 3;
+}
+
 message VehiclePosition {
     optional TripDescriptor trip = 1;
+    optional VehicleDescriptor vehicle = 8;
+    optional Position position = 2;
+    optional uint32 current_stop_sequence = 3;
+    optional string stop_id = 7;
+
+    enum VehicleStopStatus {
+        INCOMING_AT = 0;
+        STOPPED_AT = 1;
+        IN_TRANSIT_TO = 2;
+    }
+    optional VehicleStopStatus current_status = 4 [default = IN_TRANSIT_TO];
+
+    optional uint64 timestamp = 5;
+
+    enum CongestionLevel {
+        UNKNOWN_CONGESTION_LEVEL = 0;
+        RUNNING_SMOOTHLY = 1;
+        STOP_AND_GO = 2;
+        CONGESTION = 3;
+        SEVERE_CONGESTION = 4;
+    }
+    optional CongestionLevel congestion_level = 6;
+
+    enum OccupancyStatus {
+        EMPTY = 0;
+        MANY_SEATS_AVAILABLE = 1;
+        FEW_SEATS_AVAILABLE = 2;
+        STANDING_ROOM_ONLY = 3;
+        CRUSHED_STANDING_ROOM_ONLY = 4;
+        FULL = 5;
+        NOT_ACCEPTING_PASSENGERS = 6;
+        NO_DATA_AVAILABLE = 7;
+        NOT_BOARDABLE = 8;
+    }
+    optional OccupancyStatus occupancy_status = 9;
+    optional uint32 occupancy_percentage = 10;
 }
 
 // ---------------------------------------------------------------------

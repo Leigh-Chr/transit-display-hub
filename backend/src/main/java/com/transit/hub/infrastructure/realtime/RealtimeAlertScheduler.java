@@ -25,12 +25,16 @@ public class RealtimeAlertScheduler {
 
     private final RealtimeAlertCache alertCache;
     private final RealtimeTripUpdateCache tripUpdateCache;
+    private final RealtimeVehiclePositionCache vehiclePositionCache;
 
     @Value("${app.gtfs-rt.alerts-url:}")
     private String alertsUrl = "";
 
     @Value("${app.gtfs-rt.trip-updates-url:}")
     private String tripUpdatesUrl = "";
+
+    @Value("${app.gtfs-rt.vehicle-positions-url:}")
+    private String vehiclePositionsUrl = "";
 
     @EventListener(ApplicationReadyEvent.class)
     public void refreshOnStartup() {
@@ -46,6 +50,12 @@ public class RealtimeAlertScheduler {
         } else {
             log.info("GTFS-RT trip updates: no app.gtfs-rt.trip-updates-url configured, skipping");
         }
+        if (vehiclePositionCache.isEnabled()) {
+            log.info("GTFS-RT vehicle positions: priming cache from {}", vehiclePositionsUrl);
+            vehiclePositionCache.refresh();
+        } else {
+            log.info("GTFS-RT vehicle positions: no app.gtfs-rt.vehicle-positions-url configured, skipping");
+        }
     }
 
     @Scheduled(cron = "${app.gtfs-rt.alerts-poll-cron:*/30 * * * * *}")
@@ -59,6 +69,13 @@ public class RealtimeAlertScheduler {
     public void scheduledTripUpdateRefresh() {
         if (tripUpdateCache.isEnabled()) {
             tripUpdateCache.refresh();
+        }
+    }
+
+    @Scheduled(cron = "${app.gtfs-rt.vehicle-positions-poll-cron:*/15 * * * * *}")
+    public void scheduledVehiclePositionRefresh() {
+        if (vehiclePositionCache.isEnabled()) {
+            vehiclePositionCache.refresh();
         }
     }
 }
