@@ -173,6 +173,71 @@
   50% { opacity: 0.4; stroke-width: 5; }
 }
 
+/* --- Accessibility filter --- */
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--app-map-surface-variant);
+  border-bottom: 1px solid var(--app-map-outline-subtle);
+  padding-right: 12px;
+}
+
+.filter-row > app-line-filter-chips {
+  flex: 1;
+  min-width: 0;
+}
+
+.accessibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 2px solid var(--app-map-chip-inactive);
+  border-radius: var(--app-radius-pill);
+  background: var(--app-map-surface);
+  color: var(--app-map-chip-inactive);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  user-select: none;
+  letter-spacing: 0.04em;
+}
+.accessibility-toggle:hover {
+  opacity: 0.85;
+}
+.accessibility-toggle.active {
+  background: rgb(46, 174, 96);
+  border-color: rgb(46, 174, 96);
+  color: white;
+}
+.accessibility-label {
+  font-size: 11px;
+}
+
+@media (max-width: 600px) {
+  .filter-row {
+    padding-right: 8px;
+  }
+  .accessibility-toggle {
+    padding: 5px 10px;
+  }
+  .accessibility-label {
+    display: none;
+  }
+}
+
+/* Dim non-accessible stops without removing them entirely so the
+ * line geometry stays intact and the user can still see context. */
+.access-dimmed {
+  opacity: 0.18;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
 /* --- Route overlay --- */
 
 .route-dimmed {

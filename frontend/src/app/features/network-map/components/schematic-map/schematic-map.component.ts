@@ -66,14 +66,31 @@ interface NetworkStopLabel {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="map-container" #container>
-      <app-line-filter-chips
-        [lines]="sortedLines()"
-        [visibleLineCodes]="visibleLineCodes()"
-        [alertSeverityByLineId]="lineAlertSeverityMap()"
-        (lineToggle)="toggleLine($event)"
-        (toggleAll)="toggleAllLines()"
-        (focusLine)="showOnlyLine($event)"
-      />
+      <div class="filter-row">
+        <app-line-filter-chips
+          [lines]="sortedLines()"
+          [visibleLineCodes]="visibleLineCodes()"
+          [alertSeverityByLineId]="lineAlertSeverityMap()"
+          (lineToggle)="toggleLine($event)"
+          (toggleAll)="toggleAllLines()"
+          (focusLine)="showOnlyLine($event)"
+        />
+        <button
+          type="button"
+          class="accessibility-toggle"
+          [class.active]="accessibleOnly()"
+          [attr.aria-pressed]="accessibleOnly()"
+          [attr.title]="accessibleOnly()
+            ? 'Désactiver le filtre PMR — afficher tous les arrêts'
+            : 'Filtre PMR — atténuer les arrêts non accessibles'"
+          (click)="accessibleOnly.set(!accessibleOnly())"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zM7.95 9.18c0 .61.31 1.18.81 1.51l3.18 2.07v6.04c0 .55.45 1 1 1s1-.45 1-1V14h2.5l3.34 5.36c.36.58 1.13.74 1.69.36.55-.38.71-1.13.34-1.7L17.84 12H14V9c0-.55-.45-1-1-1h-3c-1.1 0-2 .9-2 2v.18z"/>
+          </svg>
+          <span class="accessibility-label">PMR</span>
+        </button>
+      </div>
 
       @if (visibleLineCodes().length === 0) {
         <div class="empty-selection">
@@ -211,6 +228,7 @@ interface NetworkStopLabel {
                 [attr.transform]="'translate(' + s.x + ',' + row.y + ') scale(' + invZoom() + ')'"
                 class="stop-group"
                 [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(s.stop.id, row.line.id)"
+                [class.access-dimmed]="accessibleOnly() && !isStopAccessible(s.stop)"
                 (click)="onStopClick(s.stop, $event)"
               >
                 <title>{{ s.stop.name }}</title>
@@ -370,6 +388,12 @@ export class SchematicMapComponent {
 
   svgElement = viewChild<ElementRef<SVGSVGElement>>('svgElement');
   container = viewChild<ElementRef<HTMLDivElement>>('container');
+
+  /** "Accessible only" filter: dims stops whose wheelchairBoarding is
+   *  NOT_ACCESSIBLE or unknown. Doesn't rebuild the layout — the
+   *  schematic structure stays stable, only the per-stop opacity
+   *  changes — so toggling is fluid even on large networks. */
+  accessibleOnly = signal(false);
 
   isPanning = signal(false);
   /** Shown once per browser the first time the user scrolls the wheel
@@ -1029,6 +1053,16 @@ export class SchematicMapComponent {
 
   isInterchange(stop: LayoutStop): boolean {
     return stop.lineCodes.length > 1;
+  }
+
+  /** Whether the stop counts as wheelchair-accessible for the
+   *  "Accessible only" filter. Treats UNKNOWN as non-accessible —
+   *  the operator may have left the field empty, but the
+   *  passenger filter must err on the cautious side ("if I'm
+   *  filtering for accessibility, only show me stops I'm sure
+   *  about"). NOT_ACCESSIBLE is the explicit no. */
+  isStopAccessible(stop: LayoutStop): boolean {
+    return stop.wheelchairBoarding === 'ACCESSIBLE';
   }
 
   /** Level-of-detail filter (zoom-driven) for stop labels in multi-line mode.
