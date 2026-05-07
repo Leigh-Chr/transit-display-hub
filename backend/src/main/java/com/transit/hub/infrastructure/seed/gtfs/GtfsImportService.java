@@ -26,10 +26,20 @@ import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.PathwayMode;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
+import com.transit.hub.domain.model.Area;
+import com.transit.hub.domain.model.FareLegRule;
+import com.transit.hub.domain.model.FareProduct;
+import com.transit.hub.domain.model.FareTransferRule;
+import com.transit.hub.domain.model.Timeframe;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
+import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
+import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
+import com.transit.hub.infrastructure.persistence.FareProductRepository;
+import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
+import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
@@ -104,6 +114,11 @@ public class GtfsImportService {
     private final ShapeRepository shapeRepository;
     private final LocationGroupRepository locationGroupRepository;
     private final BookingRuleRepository bookingRuleRepository;
+    private final AreaRepository areaRepository;
+    private final TimeframeRepository timeframeRepository;
+    private final FareProductRepository fareProductRepository;
+    private final FareLegRuleRepository fareLegRuleRepository;
+    private final FareTransferRuleRepository fareTransferRuleRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -152,6 +167,8 @@ public class GtfsImportService {
             importTranslations(workDir.resolve("translations.txt"));
 
             importFares(workDir, linesByGtfsId, agenciesByGtfsId);
+
+            importFaresV2(workDir, stopImport);
 
             importLocationGroups(workDir, stopImport);
 
@@ -1634,6 +1651,209 @@ public class GtfsImportService {
     private Integer parseTransfersField(String raw) {
         if (isBlank(raw)) {return null;}
         return parseIntOrNull(raw.trim());
+    }
+
+    /**
+     * Imports the GTFS Fares v2 family — areas, timeframes, fare
+     * products, leg rules, transfer rules — in dependency order.
+     * Each table wipes and re-inserts; cross-references resolve via
+     * the maps built up as we go.
+     *
+     * v2 coexists with v1 (which {@link #importFares} populates):
+     * feeds in transition often ship both, and the kiosk can prefer
+     * v2 when present without dropping v1 data.
+     *
+     * Skipped GTFS-v2 files (kept as raw strings or unimported):
+     *   - networks.txt / route_networks.txt → leg rules store the
+     *     network_id verbatim, no FK.
+     *   - fare_media.txt → products store the fare_media_id verbatim.
+     *   - fare_leg_join_rules.txt → not consumed by any current
+     *     surface, niche.
+     */
+    private void importFaresV2(Path workDir, StopImport stopImport) throws IOException {
+        // Order matters: leg rules reference areas / products, transfer
+        // rules reference products. Wipe the dependents first so FK
+        // SET NULL doesn't fire spuriously during the rebuild.
+        fareTransferRuleRepository.deleteAllInBatch();
+        fareLegRuleRepository.deleteAllInBatch();
+        fareProductRepository.deleteAllInBatch();
+        timeframeRepository.deleteAllInBatch();
+        areaRepository.deleteAllInBatch();
+        fareTransferRuleRepository.flush();
+
+        Map<String, Area> areasByExternalId = importAreas(workDir.resolve("areas.txt"),
+                workDir.resolve("stop_areas.txt"), stopImport);
+        importTimeframes(workDir.resolve("timeframes.txt"));
+        Map<String, FareProduct> productsByExternalId = importFareProducts(workDir.resolve("fare_products.txt"));
+        importFareLegRules(workDir.resolve("fare_leg_rules.txt"), areasByExternalId, productsByExternalId);
+        importFareTransferRules(workDir.resolve("fare_transfer_rules.txt"), productsByExternalId);
+    }
+
+    private Map<String, Area> importAreas(Path areasFile, Path stopAreasFile, StopImport stopImport)
+            throws IOException {
+        Map<String, Area> result = new HashMap<>();
+        if (!Files.exists(areasFile)) {
+            log.info("GTFS import: areas.txt missing, skipping Fares v2 areas");
+            return result;
+        }
+        try (CSVParser parser = openCsv(areasFile)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "area_id");
+                if (isBlank(externalId)) {continue;}
+                Area area = Area.builder()
+                        .externalId(truncate(externalId, 100))
+                        .name(truncate(optional(record, "area_name"), 200))
+                        .build();
+                result.put(externalId, area);
+            }
+        }
+        if (result.isEmpty()) {
+            return result;
+        }
+
+        // Resolve stop memberships before persist so the @ManyToMany
+        // join rows go in atomically with their parents.
+        if (Files.exists(stopAreasFile)) {
+            try (CSVParser parser = openCsv(stopAreasFile)) {
+                for (CSVRecord record : parser) {
+                    String areaId = optional(record, "area_id");
+                    String stopGtfsId = optional(record, "stop_id");
+                    Area area = result.get(areaId);
+                    if (area == null || isBlank(stopGtfsId)) {continue;}
+                    String rootStopId = stopImport.rootStopIdByGtfsId.get(stopGtfsId);
+                    if (rootStopId == null) {continue;}
+                    Stop stop = stopImport.stopsByGtfsId.get(rootStopId);
+                    if (stop != null) {
+                        area.getStops().add(stop);
+                    }
+                }
+            }
+        }
+        areaRepository.saveAll(result.values());
+        log.info("GTFS import: {} fares-v2 areas persisted", result.size());
+        return result;
+    }
+
+    private void importTimeframes(Path timeframesFile) throws IOException {
+        if (!Files.exists(timeframesFile)) {
+            log.info("GTFS import: timeframes.txt missing, skipping");
+            return;
+        }
+        List<Timeframe> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(timeframesFile)) {
+            for (CSVRecord record : parser) {
+                String groupId = optional(record, "timeframe_group_id");
+                if (isBlank(groupId)) {continue;}
+                batch.add(Timeframe.builder()
+                        .timeframeGroupId(truncate(groupId, 100))
+                        .startTime(GtfsParse.parseGtfsTime(optional(record, "start_time")))
+                        .endTime(GtfsParse.parseGtfsTime(optional(record, "end_time")))
+                        .serviceId(truncate(optional(record, "service_id"), 100))
+                        .build());
+            }
+        }
+        timeframeRepository.saveAll(batch);
+        log.info("GTFS import: {} timeframe windows persisted", batch.size());
+    }
+
+    private Map<String, FareProduct> importFareProducts(Path productsFile) throws IOException {
+        Map<String, FareProduct> result = new HashMap<>();
+        if (!Files.exists(productsFile)) {
+            log.info("GTFS import: fare_products.txt missing, skipping");
+            return result;
+        }
+        try (CSVParser parser = openCsv(productsFile)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "fare_product_id");
+                String amountRaw = optional(record, "amount");
+                String currency = optional(record, "currency");
+                if (isBlank(externalId) || isBlank(amountRaw) || isBlank(currency)) {continue;}
+                java.math.BigDecimal amount;
+                try {
+                    amount = new java.math.BigDecimal(amountRaw.trim());
+                } catch (NumberFormatException e) {
+                    log.warn("GTFS import: fare_product {} has invalid amount '{}', skipping",
+                            externalId, amountRaw);
+                    continue;
+                }
+                FareProduct product = FareProduct.builder()
+                        .externalId(truncate(externalId, 100))
+                        .name(truncate(optional(record, "fare_product_name"), 200))
+                        .fareMediaId(truncate(optional(record, "fare_media_id"), 100))
+                        .amount(amount)
+                        .currency(truncate(currency, 3))
+                        .build();
+                result.put(externalId, product);
+            }
+        }
+        fareProductRepository.saveAll(result.values());
+        log.info("GTFS import: {} fare products persisted", result.size());
+        return result;
+    }
+
+    private void importFareLegRules(Path legRulesFile,
+                                     Map<String, Area> areasByExternalId,
+                                     Map<String, FareProduct> productsByExternalId) throws IOException {
+        if (!Files.exists(legRulesFile)) {
+            log.info("GTFS import: fare_leg_rules.txt missing, skipping");
+            return;
+        }
+        List<FareLegRule> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(legRulesFile)) {
+            for (CSVRecord record : parser) {
+                FareLegRule rule = FareLegRule.builder()
+                        .legGroupId(truncate(optional(record, "leg_group_id"), 100))
+                        .networkId(truncate(optional(record, "network_id"), 100))
+                        .fromArea(areasByExternalId.get(optional(record, "from_area_id")))
+                        .toArea(areasByExternalId.get(optional(record, "to_area_id")))
+                        .fromTimeframeGroupId(truncate(optional(record, "from_timeframe_group_id"), 100))
+                        .toTimeframeGroupId(truncate(optional(record, "to_timeframe_group_id"), 100))
+                        .fareProduct(productsByExternalId.get(optional(record, "fare_product_id")))
+                        .rulePriority(parseIntOrNull(optional(record, "rule_priority")))
+                        .build();
+                batch.add(rule);
+            }
+        }
+        fareLegRuleRepository.saveAll(batch);
+        log.info("GTFS import: {} fare leg rules persisted", batch.size());
+    }
+
+    private void importFareTransferRules(Path transferRulesFile,
+                                          Map<String, FareProduct> productsByExternalId) throws IOException {
+        if (!Files.exists(transferRulesFile)) {
+            log.info("GTFS import: fare_transfer_rules.txt missing, skipping");
+            return;
+        }
+        List<FareTransferRule> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(transferRulesFile)) {
+            for (CSVRecord record : parser) {
+                String typeRaw = optional(record, "fare_transfer_type");
+                if (isBlank(typeRaw)) {continue;}
+                short transferType;
+                try {
+                    transferType = Short.parseShort(typeRaw.trim());
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                FareTransferRule rule = FareTransferRule.builder()
+                        .fromLegGroupId(truncate(optional(record, "from_leg_group_id"), 100))
+                        .toLegGroupId(truncate(optional(record, "to_leg_group_id"), 100))
+                        .transferCount(parseIntOrNull(optional(record, "transfer_count")))
+                        .durationLimit(parseIntOrNull(optional(record, "duration_limit")))
+                        .durationLimitType(parseShortOrNull(optional(record, "duration_limit_type")))
+                        .fareTransferType(transferType)
+                        .fareProduct(productsByExternalId.get(optional(record, "fare_product_id")))
+                        .build();
+                batch.add(rule);
+            }
+        }
+        fareTransferRuleRepository.saveAll(batch);
+        log.info("GTFS import: {} fare transfer rules persisted", batch.size());
+    }
+
+    private static Short parseShortOrNull(String s) {
+        if (s == null || s.isBlank()) {return null;}
+        try {return Short.parseShort(s.trim());} catch (NumberFormatException e) {return null;}
     }
 
     /**
