@@ -2,6 +2,8 @@ package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.Attribution;
+import com.transit.hub.domain.model.FareAttribute;
+import com.transit.hub.domain.model.FareRule;
 import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
@@ -14,12 +16,14 @@ import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Translation;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
+import com.transit.hub.domain.model.enums.FarePaymentMethod;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.PathwayMode;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
+import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
@@ -87,6 +91,7 @@ public class GtfsImportService {
     private final StationLevelRepository stationLevelRepository;
     private final PathwayRepository pathwayRepository;
     private final TranslationRepository translationRepository;
+    private final FareAttributeRepository fareAttributeRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -130,6 +135,8 @@ public class GtfsImportService {
             importPathways(workDir.resolve("pathways.txt"), stopImport);
 
             importTranslations(workDir.resolve("translations.txt"));
+
+            importFares(workDir, linesByGtfsId, agenciesByGtfsId);
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -1167,6 +1174,120 @@ public class GtfsImportService {
         }
         log.info("GTFS import: {} translations created ({} duplicates skipped)",
                 batch.size(), skippedDuplicates);
+    }
+
+    /**
+     * Reads GTFS Fares v1 ({@code fare_attributes.txt} +
+     * {@code fare_rules.txt}). Wipes both tables first so each import
+     * starts from a clean slate. The pair is GTFS-optional; when
+     * {@code fare_attributes.txt} is missing we skip the entire fare
+     * pipeline rather than persisting orphan rules.
+     */
+    private void importFares(Path workDir, Map<String, Line> linesByGtfsId,
+                             Map<String, Agency> agenciesByGtfsId) throws IOException {
+        fareAttributeRepository.deleteAllInBatch();
+        fareAttributeRepository.flush();
+
+        Path fareAttributesFile = workDir.resolve("fare_attributes.txt");
+        if (!Files.exists(fareAttributesFile)) {
+            log.info("GTFS import: fare_attributes.txt missing, skipping fares");
+            return;
+        }
+
+        Map<String, FareAttribute> attributesByGtfsId = new HashMap<>();
+        int skippedAttrs = 0;
+        try (CSVParser parser = openCsv(fareAttributesFile)) {
+            for (CSVRecord record : parser) {
+                String fareId = optional(record, "fare_id");
+                String priceRaw = optional(record, "price");
+                String currency = optional(record, "currency_type");
+                if (isBlank(fareId) || isBlank(priceRaw) || isBlank(currency)) {
+                    skippedAttrs++;
+                    continue;
+                }
+                java.math.BigDecimal price;
+                try {
+                    price = new java.math.BigDecimal(priceRaw.trim());
+                } catch (NumberFormatException e) {
+                    skippedAttrs++;
+                    continue;
+                }
+                int paymentCode = parseInt(optional(record, "payment_method"), 0);
+                Integer transfers = parseTransfersField(optional(record, "transfers"));
+                Integer transferDuration = parseIntOrNull(optional(record, "transfer_duration"));
+                Agency agency = resolveAgency(optional(record, "agency_id"), agenciesByGtfsId);
+
+                FareAttribute attr = FareAttribute.builder()
+                        .externalId(truncate(fareId.trim(), 100))
+                        .price(price)
+                        .currency(truncate(currency.trim().toUpperCase(java.util.Locale.ROOT), 3))
+                        .paymentMethod(FarePaymentMethod.fromGtfsCode(paymentCode))
+                        .transfers(transfers)
+                        .transferDuration(transferDuration)
+                        .agency(agency)
+                        .build();
+                attributesByGtfsId.put(fareId, fareAttributeRepository.save(attr));
+            }
+        }
+        if (skippedAttrs > 0) {
+            log.warn("GTFS import: skipped {} malformed fare_attributes.txt rows", skippedAttrs);
+        }
+        log.info("GTFS import: {} fare attributes persisted", attributesByGtfsId.size());
+
+        // fare_rules.txt is optional — when absent, fare_attributes alone
+        // describe a flat fare that applies to every trip in the feed.
+        Path fareRulesFile = workDir.resolve("fare_rules.txt");
+        if (!Files.exists(fareRulesFile)) {
+            log.info("GTFS import: fare_rules.txt missing, fare attributes will apply unconditionally");
+            return;
+        }
+        int rulesPersisted = 0;
+        int skippedRules = 0;
+        try (CSVParser parser = openCsv(fareRulesFile)) {
+            for (CSVRecord record : parser) {
+                String fareId = optional(record, "fare_id");
+                if (isBlank(fareId)) {
+                    skippedRules++;
+                    continue;
+                }
+                FareAttribute attr = attributesByGtfsId.get(fareId);
+                if (attr == null) {
+                    skippedRules++;
+                    continue;
+                }
+                Line route = null;
+                String routeId = optional(record, "route_id");
+                if (!isBlank(routeId)) {
+                    route = linesByGtfsId.get(routeId);
+                }
+                FareRule rule = FareRule.builder()
+                        .fareAttribute(attr)
+                        .route(route)
+                        .originId(truncate(optional(record, "origin_id"), 100))
+                        .destinationId(truncate(optional(record, "destination_id"), 100))
+                        .containsId(truncate(optional(record, "contains_id"), 100))
+                        .build();
+                attr.getRules().add(rule);
+                rulesPersisted++;
+            }
+        }
+        // Attributes already saved; cascade on the rules collection picks
+        // up the new rows when we save the parent again.
+        fareAttributeRepository.saveAll(attributesByGtfsId.values());
+        if (skippedRules > 0) {
+            log.warn("GTFS import: skipped {} fare_rules.txt rows referencing unknown fare_id", skippedRules);
+        }
+        log.info("GTFS import: {} fare rules persisted", rulesPersisted);
+    }
+
+    /**
+     * GTFS encodes "unlimited transfers" by leaving the cell empty —
+     * this differs from "0 transfers" which is "no transfers allowed".
+     * Returning {@code null} preserves that distinction.
+     */
+    private Integer parseTransfersField(String raw) {
+        if (isBlank(raw)) {return null;}
+        return parseIntOrNull(raw.trim());
     }
 
     /**
