@@ -422,6 +422,44 @@ export interface Agency {
   email: string | null;
 }
 
+// Aggregated data overview (admin diagnostic)
+export interface DataOverview {
+  staticGtfs: DataOverviewStaticGtfs;
+  realtime: DataOverviewRealtime;
+}
+
+export interface DataOverviewStaticGtfs {
+  agencies: number;
+  lines: number;
+  stops: number;
+  /** Stops flagged disabled because the latest import didn't reference
+   *  them. Counted separately so the dashboard can surface "X orphaned"
+   *  without forcing the admin to scroll the full stop list. */
+  disabledStops: number;
+  itineraries: number;
+  itineraryStops: number;
+  schedules: number;
+  serviceCalendars: number;
+  transfers: number;
+  shapes: number;
+  pathways: number;
+  stationLevels: number;
+  fareAttributes: number;
+  locationGroups: number;
+  bookingRules: number;
+  translations: number;
+  attributions: number;
+}
+
+export interface DataOverviewRealtime {
+  alerts: number;
+  tripUpdates: number;
+  vehiclePositions: number;
+  alertsEnabled: boolean;
+  tripUpdatesEnabled: boolean;
+  vehiclePositionsEnabled: boolean;
+}
+
 // GTFS Feed Info (admin)
 export interface FeedInfo {
   publisherName: string | null;
