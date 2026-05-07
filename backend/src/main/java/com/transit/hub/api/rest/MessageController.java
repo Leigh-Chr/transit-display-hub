@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.request.CreateMessageRequest;
 import com.transit.hub.application.dto.response.MessageResponse;
 import com.transit.hub.application.service.MessageService;
 import com.transit.hub.domain.model.enums.MessageSeverity;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/messages")
 @RequiredArgsConstructor
+@Tag(name = "Administration — messages",
+     description = "Messages d'information diffusés sur les écrans publics (réseau, ligne, ou arrêt).")
 public class MessageController {
 
     private final MessageService messageService;

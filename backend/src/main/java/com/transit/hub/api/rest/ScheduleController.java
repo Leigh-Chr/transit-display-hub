@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import com.transit.hub.application.dto.request.CreateScheduleRequest;
 import com.transit.hub.application.dto.response.ScheduleResponse;
 import com.transit.hub.application.service.ScheduleService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Tag(name = "Administration — horaires",
+     description = "CRUD des horaires de passage rattachés à un arrêt et un itinéraire.")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;

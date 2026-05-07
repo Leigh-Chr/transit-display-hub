@@ -7,6 +7,7 @@ import com.transit.hub.application.dto.response.DeviceRegistrationResponse;
 import com.transit.hub.application.dto.response.DeviceResponse;
 import com.transit.hub.application.service.DeviceService;
 import com.transit.hub.domain.model.enums.DeviceStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/devices")
 @RequiredArgsConstructor
+@Tag(name = "Administration — appareils",
+     description = "Enregistrement et supervision des écrans déployés (kiosques) et leurs jetons.")
 public class DeviceController {
 
     private final DeviceService deviceService;

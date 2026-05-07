@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.request.CreateUserRequest;
 import com.transit.hub.application.dto.request.UpdateUserRequest;
 import com.transit.hub.application.dto.response.UserResponse;
 import com.transit.hub.application.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "Administration — utilisateurs",
+     description = "CRUD des comptes admin/agent et de leurs droits.")
 public class UserController {
 
     private final UserService userService;

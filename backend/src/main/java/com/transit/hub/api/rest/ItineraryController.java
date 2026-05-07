@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.request.CreateItineraryRequest;
 import com.transit.hub.application.dto.request.UpdateItineraryStopsRequest;
 import com.transit.hub.application.dto.response.ItineraryResponse;
 import com.transit.hub.application.service.ItineraryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +28,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/itineraries")
 @RequiredArgsConstructor
+@Tag(name = "Administration — itinéraires",
+     description = "CRUD des itinéraires (séquences ordonnées d'arrêts pour une ligne et une direction).")
 public class ItineraryController {
 
     private final ItineraryService itineraryService;

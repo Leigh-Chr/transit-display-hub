@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import com.transit.hub.application.dto.request.CreateLineRequest;
 import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.service.LineService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/lines")
 @RequiredArgsConstructor
+@Tag(name = "Administration — lignes",
+     description = "CRUD des lignes du réseau (routes GTFS).")
 public class LineController {
 
     private final LineService lineService;

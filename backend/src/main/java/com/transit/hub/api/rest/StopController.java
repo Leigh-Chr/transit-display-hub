@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import com.transit.hub.application.dto.request.CreateStopRequest;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.service.StopService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/stops")
 @RequiredArgsConstructor
+@Tag(name = "Administration — arrêts",
+     description = "CRUD des arrêts physiques et association aux lignes.")
 public class StopController {
 
     private final StopService stopService;
