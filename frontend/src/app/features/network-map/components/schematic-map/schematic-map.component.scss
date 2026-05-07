@@ -238,6 +238,73 @@
   pointer-events: none;
 }
 
+/* Same dim treatment when a stop falls outside the selected fare
+ * zone. Compound with .access-dimmed (multiplies the fade) when
+ * both filters are active — both are intentionally subtle. */
+.zone-dimmed {
+  opacity: 0.18;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* Zone chip row sits below the line / accessibility filter row.
+ * Only renders when the feed ships Fares v2 areas, so the layout
+ * stays tight on bus-only feeds. */
+.zone-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--app-map-surface-variant);
+  border-bottom: 1px solid var(--app-map-outline-subtle);
+  flex-wrap: wrap;
+}
+.zone-row-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-map-on-surface-variant, #555);
+  margin-right: 4px;
+}
+.zone-chip {
+  padding: 4px 12px;
+  border: 2px solid rgba(96, 56, 200, 0.5);
+  border-radius: var(--app-radius-pill);
+  background: var(--app-map-surface);
+  color: rgb(72, 38, 156);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+.zone-chip:hover {
+  opacity: 0.85;
+}
+.zone-chip.active {
+  background: rgb(96, 56, 200);
+  color: white;
+  border-color: rgb(96, 56, 200);
+}
+.zone-chip:not(.active) {
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .zone-row {
+    padding: 6px 10px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .zone-chip {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+}
+
 /* --- Route overlay --- */
 
 .route-dimmed {

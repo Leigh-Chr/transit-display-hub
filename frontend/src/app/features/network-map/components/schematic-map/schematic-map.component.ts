@@ -92,6 +92,28 @@ interface NetworkStopLabel {
         </button>
       </div>
 
+      @if (availableZones().length > 0) {
+        <div class="zone-row">
+          <span class="zone-row-label">Zones :</span>
+          <button
+            type="button"
+            class="zone-chip"
+            [class.active]="selectedZone() === null"
+            (click)="selectedZone.set(null)"
+            [attr.aria-pressed]="selectedZone() === null"
+          >Toutes</button>
+          @for (zone of availableZones(); track zone) {
+            <button
+              type="button"
+              class="zone-chip"
+              [class.active]="selectedZone() === zone"
+              (click)="selectedZone.set(selectedZone() === zone ? null : zone)"
+              [attr.aria-pressed]="selectedZone() === zone"
+            >{{ zone }}</button>
+          }
+        </div>
+      }
+
       @if (visibleLineCodes().length === 0) {
         <div class="empty-selection">
           <span class="empty-selection-text">Select a line to display it on the map</span>
@@ -229,6 +251,7 @@ interface NetworkStopLabel {
                 class="stop-group"
                 [class.route-dimmed]="hasRoute() && !isStopActiveOnLine(s.stop.id, row.line.id)"
                 [class.access-dimmed]="accessibleOnly() && !isStopAccessible(s.stop)"
+                [class.zone-dimmed]="!isStopInSelectedZone(s.stop)"
                 (click)="onStopClick(s.stop, $event)"
               >
                 <title>{{ s.stop.name }}</title>
@@ -395,6 +418,14 @@ export class SchematicMapComponent {
    *  changes — so toggling is fluid even on large networks. */
   accessibleOnly = signal(false);
 
+  /** Single-select zone filter — null means "all zones". Same dim
+   *  pattern as the accessibility filter: stops outside the selected
+   *  zone fade rather than disappear so the line geometry stays
+   *  intact. The chip row only renders when the feed actually ships
+   *  Fares v2 areas, so passenger-bus-only feeds don't see a dead
+   *  control. */
+  selectedZone = signal<string | null>(null);
+
   isPanning = signal(false);
   /** Shown once per browser the first time the user scrolls the wheel
    *  without Ctrl/Cmd, to teach the new "Ctrl + scroll = zoom" gesture. */
@@ -479,6 +510,19 @@ export class SchematicMapComponent {
 
   /** Whether some lines are filtered out */
   hasHiddenLines = computed(() => this.visibleLineCodes().length < this.sortedLines().length);
+
+  /** Sorted, deduped list of every Fares v2 zone the loaded stops
+   *  reference. Drives the zone chip row; empty when the feed
+   *  doesn't ship areas.txt. */
+  availableZones = computed<string[]>(() => {
+    const zones = new Set<string>();
+    for (const stop of this.stops()) {
+      for (const z of stop.fareAreaNames ?? []) {
+        zones.add(z);
+      }
+    }
+    return [...zones].sort();
+  });
 
   // --- Route overlay computed ---
 
@@ -1063,6 +1107,14 @@ export class SchematicMapComponent {
    *  about"). NOT_ACCESSIBLE is the explicit no. */
   isStopAccessible(stop: LayoutStop): boolean {
     return stop.wheelchairBoarding === 'ACCESSIBLE';
+  }
+
+  /** Whether the stop should be rendered at full opacity given the
+   *  current zone filter. No zone selected = every stop passes. */
+  isStopInSelectedZone(stop: LayoutStop): boolean {
+    const target = this.selectedZone();
+    if (!target) {return true;}
+    return (stop.fareAreaNames ?? []).includes(target);
   }
 
   /** Level-of-detail filter (zoom-driven) for stop labels in multi-line mode.
