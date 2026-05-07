@@ -540,6 +540,27 @@ export interface BookingRule {
   message: string | null;
 }
 
+// GTFS import audit (admin browse)
+export type ImportStatus = 'RUNNING' | 'SUCCESS' | 'SKIPPED_UNCHANGED' | 'FAILED';
+
+export interface ImportAudit {
+  id: string;
+  sourceUrl: string | null;
+  sourceHash: string | null;
+  /** ISO-8601 instant. */
+  startedAt: string;
+  /** ISO-8601 instant. Null while RUNNING. */
+  completedAt: string | null;
+  durationMs: number | null;
+  linesCount: number | null;
+  stopsCount: number | null;
+  itinerariesCount: number | null;
+  schedulesCount: number | null;
+  status: ImportStatus;
+  errorMessage: string | null;
+  triggeredBy: string | null;
+}
+
 // GTFS translations (admin browse)
 export interface Translation {
   id: string;

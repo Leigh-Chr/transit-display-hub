@@ -73,6 +73,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/gtfs-data/gtfs-data.component').then(m => m.GtfsDataComponent)
       },
       {
+        path: 'import-audit',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
+        loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
+      },
+      {
         path: 'users',
         canActivate: [roleGuard],
         data: { requiredRole: 'ADMIN' },

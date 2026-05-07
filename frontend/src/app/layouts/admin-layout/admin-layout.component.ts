@@ -170,6 +170,16 @@ import {
               <span matListItemTitle>Données GTFS</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/import-audit"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>history</mat-icon>
+              <span matListItemTitle>Historique imports</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 

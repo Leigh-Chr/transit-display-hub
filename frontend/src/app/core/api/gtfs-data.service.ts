@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BookingRule, FareAttribute, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, ImportAudit, Translation } from '@shared/models';
 
 /**
  * Read-only access to the GTFS extension tables that the importer
@@ -31,5 +31,11 @@ export class GtfsDataService {
       params = params.set('table', tableName);
     }
     return this.http.get<Translation[]>('/api/admin/translations', { params });
+  }
+
+  /** Import history, capped server-side to 200 rows. Sorted newest first. */
+  getImportAudit(limit = 50): Observable<ImportAudit[]> {
+    const params = new HttpParams().set('limit', limit.toString());
+    return this.http.get<ImportAudit[]>('/api/admin/import-audit', { params });
   }
 }
