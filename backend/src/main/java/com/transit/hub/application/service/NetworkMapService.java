@@ -63,8 +63,14 @@ public class NetworkMapService {
         List<Stop> stops = stopRepository.findAllWithLines();
         List<Transfer> transfers = transferRepository.findAllWithStops();
 
+        // Map<lineId, scheduleCount> built from a single COUNT(*)
+        // GROUP BY query so the per-line lookup below stays O(1).
+        Map<UUID, Long> scheduleCountByLineId = new HashMap<>();
+        for (Object[] row : scheduleRepository.countByLineId()) {
+            scheduleCountByLineId.put((UUID) row[0], (Long) row[1]);
+        }
         List<NetworkLine> networkLines = lines.stream()
-                .map(this::toNetworkLine)
+                .map(line -> toNetworkLine(line, scheduleCountByLineId.getOrDefault(line.getId(), 0L)))
                 .toList();
 
         // Phase 1.3 ripple: the importer now persists every platform plus
@@ -168,7 +174,7 @@ public class NetworkMapService {
         return new AlertsResponse(networkAlerts, lineAlerts, stopAlerts);
     }
 
-    private NetworkLine toNetworkLine(Line line) {
+    private NetworkLine toNetworkLine(Line line, long scheduleCount) {
         List<Itinerary> sortedItineraries = line.getItineraries().stream()
                 .sorted(Comparator.comparing(Itinerary::getName))
                 .toList();
@@ -197,7 +203,8 @@ public class NetworkMapService {
                 line.getTextColor(),
                 line.getType(),
                 line.getCategory(),
-                itineraries
+                itineraries,
+                scheduleCount
         );
     }
 

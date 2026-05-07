@@ -511,6 +511,18 @@ export class SchematicMapComponent {
   /** Whether some lines are filtered out */
   hasHiddenLines = computed(() => this.visibleLineCodes().length < this.sortedLines().length);
 
+  /** Highest schedule count across every loaded line. Anchors the
+   *  log-scale that drives stroke-width, so a busy line in the
+   *  current network always renders at the upper bound. */
+  maxLineScheduleCount = computed<number>(() => {
+    let max = 0;
+    for (const line of this.lines()) {
+      const count = line.scheduleCount ?? 0;
+      if (count > max) {max = count;}
+    }
+    return max;
+  });
+
   /** Sorted, deduped list of every Fares v2 zone the loaded stops
    *  reference. Drives the zone chip row; empty when the feed
    *  doesn't ship areas.txt. */
@@ -1056,16 +1068,35 @@ export class SchematicMapComponent {
 
   /** Stroke width for line paths in SVG user units. Trunk modes (METRO,
    *  TRAM, TRAIN) get a heavier weight than buses so the structuring
-   *  backbone of the network reads at a glance. */
+   *  backbone of the network reads at a glance. The frequency
+   *  multiplier on top scales by relative {@code scheduleCount}
+   *  within the visible set so a busy bus line and a sleepy metro
+   *  line of similar volume read close in weight. */
   getLineStrokeWidth(line: NetworkLine): number {
     if (this.isSingleLineMode()) {return 8;}
-    return this.isTrunkLine(line) ? 10 : 7;
+    const base = this.isTrunkLine(line) ? 10 : 7;
+    return Math.round(base * this.frequencyScaleFor(line));
   }
 
   getRouteStrokeWidth(lineId: string): number {
     if (this.isSingleLineMode()) {return 10;}
     const line = this.lineById().get(lineId);
-    return line && this.isTrunkLine(line) ? 13 : 10;
+    if (!line) {return 10;}
+    const base = this.isTrunkLine(line) ? 13 : 10;
+    return Math.round(base * this.frequencyScaleFor(line));
+  }
+
+  /** Multiplier in [0.75, 1.3] driven by the line's scheduleCount
+   *  relative to the busiest line in the loaded network. Logarithmic
+   *  rather than linear so a 100× volume difference doesn't blow up
+   *  the high end into unreadable thicknesses. */
+  private frequencyScaleFor(line: NetworkLine): number {
+    const max = this.maxLineScheduleCount();
+    if (max <= 0) {return 1;}
+    const own = Math.max(0, line.scheduleCount ?? 0);
+    if (own <= 0) {return 0.75;}
+    const ratio = Math.log10(own + 1) / Math.log10(max + 1);
+    return 0.75 + ratio * 0.55;
   }
 
   private isTrunkLine(line: NetworkLine): boolean {

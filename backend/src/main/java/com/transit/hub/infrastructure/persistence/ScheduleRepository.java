@@ -80,4 +80,14 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     @Query("SELECT DISTINCT s.stop.id FROM Schedule s WHERE s.pickupType IN (2, 3)")
     java.util.Set<UUID> findStopIdsWithOnDemandPickup();
 
+    /** Total schedule count per line (across every itinerary, every
+     *  stop, every service calendar). Drives the network-map's edge
+     *  thickness mapping: a line with 10 000 daily schedules draws
+     *  a fatter trace than one with 200. The aggregate is rough — it
+     *  doesn't normalise per stop or per service day — but it lets
+     *  consumers rank lines by activity without shipping every
+     *  schedule. */
+    @Query("SELECT i.line.id, COUNT(s) FROM Schedule s JOIN s.itinerary i GROUP BY i.line.id")
+    List<Object[]> countByLineId();
+
 }

@@ -383,6 +383,11 @@ export interface NetworkLine {
   type: LineType | null;
   category?: string | null;
   itineraries: string[][];
+  /** Aggregate schedule count across every itinerary, stop and
+   *  service calendar. Drives the schematic edge thickness scale —
+   *  busier lines draw fatter. Falls back to 0 on legacy payloads
+   *  predating this field. */
+  scheduleCount?: number;
 }
 
 export interface NetworkStop {

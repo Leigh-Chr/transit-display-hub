@@ -23,7 +23,14 @@ public record NetworkMapResponse(
             String textColor,
             LineType type,
             String category,
-            List<List<UUID>> itineraries
+            List<List<UUID>> itineraries,
+            /** Aggregate schedule count for the line (across every
+             *  itinerary, every stop, every service calendar). The
+             *  schematic uses it to scale stroke-width — busier lines
+             *  draw fatter. Zero is a legitimate value (admin-created
+             *  line with no schedules) and renders at the minimum
+             *  thickness. */
+            long scheduleCount
     ) {}
 
     public record NetworkStop(
