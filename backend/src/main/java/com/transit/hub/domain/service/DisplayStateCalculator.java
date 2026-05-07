@@ -390,7 +390,8 @@ public class DisplayStateCalculator {
                 resolveBikes(schedule, itinerary),
                 schedule.isTimepoint(),
                 schedule.getFrequencyHeadwaySeconds(),
-                delay
+                delay,
+                resolveBookingInfo(schedule)
         );
     }
 
@@ -400,6 +401,33 @@ public class DisplayStateCalculator {
      * adjustment, then stop's external_id → stop-level adjustment.
      * The stop-level delay wins when both are present.
      */
+    /**
+     * Surfaces the schedule's pickup booking rule as a passenger DTO
+     * — phone, URL, prior notice — when the arrival's pickup is
+     * on-demand (TAD). Returns null on regular fixed-route arrivals
+     * so the kiosk doesn't render a CTA where none applies.
+     *
+     * Drop-off bookings are intentionally not surfaced: a passenger
+     * arriving at a stop has already booked, and rendering an
+     * "alighting reservation" message at boarding time confuses more
+     * than it helps.
+     */
+    private DisplayState.BookingInfo resolveBookingInfo(Schedule schedule) {
+        com.transit.hub.domain.model.BookingRule rule = schedule.getPickupBookingRule();
+        if (rule == null) {return null;}
+        // Only surface when the pickup type signals "on-demand" — a
+        // booking rule attached to a regular pickup_type=0 trip is
+        // unusual but legal in the spec and shouldn't trigger a CTA.
+        short pt = schedule.getPickupType();
+        if (pt != 2 && pt != 3) {return null;}
+        return new DisplayState.BookingInfo(
+                rule.getPhone(),
+                rule.getBookingUrl(),
+                rule.getInfoUrl(),
+                rule.getMessage(),
+                rule.getPriorNoticeDurationMin());
+    }
+
     private Integer resolveRealtimeDelay(Schedule schedule) {
         Itinerary itinerary = schedule.getItinerary();
         if (itinerary.getExternalId() == null) {return null;}

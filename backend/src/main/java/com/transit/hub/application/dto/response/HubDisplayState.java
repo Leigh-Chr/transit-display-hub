@@ -26,6 +26,9 @@ public record HubDisplayState(
             Integer frequencyHeadwaySeconds,
             /** Realtime delay applied to {@code scheduledTime} (seconds).
              *  Same semantics as {@link DisplayState.ArrivalInfo#realtimeDelaySeconds}. */
-            Integer realtimeDelaySeconds
+            Integer realtimeDelaySeconds,
+            /** TAD booking flow when this arrival's pickup is on-demand;
+             *  null on regular fixed-route trips. */
+            DisplayState.BookingInfo booking
     ) {}
 }

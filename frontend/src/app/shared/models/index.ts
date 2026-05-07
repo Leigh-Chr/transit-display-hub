@@ -294,6 +294,17 @@ export interface ArrivalInfo {
    *  unchanged. Zero is meaningful — "the feed says on time" — and
    *  triggers the live indicator. */
   realtimeDelaySeconds?: number | null;
+  /** TAD booking flow attached to this arrival when the pickup is
+   *  on-demand. Null on regular fixed-route trips. */
+  booking?: BookingInfo | null;
+}
+
+export interface BookingInfo {
+  phone: string | null;
+  bookingUrl: string | null;
+  infoUrl: string | null;
+  message: string | null;
+  priorNoticeMinutes: number | null;
 }
 
 export interface MessageInfo {
@@ -323,6 +334,7 @@ export interface HubArrivalInfo {
   timepoint?: boolean;
   frequencyHeadwaySeconds?: number | null;
   realtimeDelaySeconds?: number | null;
+  booking?: BookingInfo | null;
 }
 
 // Network Map

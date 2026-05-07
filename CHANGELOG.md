@@ -24,9 +24,16 @@ schedule import produces real per-departure rows from
   optional `pickupBookingRule` / `dropOffBookingRule` FKs from
   `stop_times.pickup_booking_rule_id` / `drop_off_booking_rule_id`,
   populated at import. Closes the previously-orphaned link between
-  `booking_rules.txt` (Phase 5.3) and individual arrivals — a future
-  kiosk surface can render "Réservation : 0123…" badges on TAD-only
-  arrivals without joining tables at request time.
+  `booking_rules.txt` (Phase 5.3) and individual arrivals.
+- **Kiosk booking CTA on TAD arrivals**. When an arrival's pickup is
+  `ON_REQUEST_AGENCY` / `ON_REQUEST_DRIVER` and a booking rule is
+  attached, the kiosk renders a prominent badge with the phone
+  number and minimum prior notice ("≥ 30 min"). `ArrivalInfo.booking`
+  surfaces the booking rule's phone, URL, info URL, message and
+  prior-notice minutes; null on regular fixed-route trips.
+  HubArrivalInfo carries the same field. Drop-off bookings stay
+  internal — surfacing them to a passenger boarding the trip would
+  confuse more than it helps.
 - **Aggregate browse endpoint** `GET /api/admin/fares-v2` returns the
   entire v2 graph (areas, timeframes, products, leg rules, transfer
   rules) in a single round-trip.

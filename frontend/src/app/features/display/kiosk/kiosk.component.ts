@@ -129,6 +129,19 @@ import { lineTextColor } from '@shared/utils/color.utils';
                           ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
                         </span>
                       }
+                      @if (arrival.booking; as b) {
+                        <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
+                          <mat-icon class="booking-icon">phone_callback</mat-icon>
+                          @if (b.phone) {
+                            {{ b.phone }}
+                          } @else {
+                            Réservation
+                          }
+                          @if (b.priorNoticeMinutes) {
+                            <span class="booking-notice">≥ {{ b.priorNoticeMinutes }} min</span>
+                          }
+                        </span>
+                      }
                     </span>
                     <span class="time-info">
                       <span
@@ -519,6 +532,37 @@ import { lineTextColor } from '@shared/utils/color.utils';
       50% { opacity: 0.65; }
     }
 
+    /* TAD booking CTA — phone or "Réservation" inline so a passenger
+       reading a TAD arrival sees the action immediately. */
+    .booking-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4vw;
+      margin-left: 1vw;
+      padding: 0.3vh 0.8vw;
+      border-radius: 0.4vh;
+      font-size: clamp(1.5vh, 2vh, 2.5vh);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      vertical-align: middle;
+      background: rgba(56, 142, 235, 0.16);
+      color: rgb(34, 105, 192);
+      border: 1px solid rgba(56, 142, 235, 0.55);
+    }
+
+    .booking-icon {
+      font-size: clamp(2vh, 2.5vh, 3vh) !important;
+      width: clamp(2vh, 2.5vh, 3vh) !important;
+      height: clamp(2vh, 2.5vh, 3vh) !important;
+    }
+
+    .booking-notice {
+      font-size: 0.85em;
+      font-weight: 500;
+      opacity: 0.8;
+      margin-left: 0.4vw;
+    }
+
     .access-icon {
       vertical-align: middle;
       margin-left: 0.8vw;
@@ -824,6 +868,16 @@ export class KioskComponent implements OnInit, OnDestroy {
     const abs = Math.round(Math.abs(delaySeconds) / 60);
     if (abs === 0) {return 'à l\'heure';}
     return `${sign}${abs} min`;
+  }
+
+  /** ARIA label for the booking badge — screen readers announce
+   *  "réservation 0123456789, 30 minutes minimum" rather than just
+   *  "phone_callback 0123456789". */
+  bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
+    const parts: string[] = ['Réservation requise'];
+    if (b.phone) {parts.push(b.phone);}
+    if (b.priorNoticeMinutes) {parts.push(`${b.priorNoticeMinutes} minutes minimum`);}
+    return parts.join(', ');
   }
 
   /** Adds the realtime delay to the scheduled HH:mm so the relative

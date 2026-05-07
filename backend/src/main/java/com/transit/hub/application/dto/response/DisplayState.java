@@ -43,7 +43,24 @@ public record DisplayState(
              *  Null when the GTFS-RT cache has no update for this
              *  trip / stop pair. The kiosk can render a "live" badge
              *  whenever this is non-null, even when the value is 0. */
-            Integer realtimeDelaySeconds
+            Integer realtimeDelaySeconds,
+            /** Booking flow attached to this arrival when the pickup
+             *  is on-demand (TAD). Null on regular fixed-route trips.
+             *  The kiosk renders the phone / URL as a CTA so a
+             *  passenger looking at a TAD arrival can immediately
+             *  call or book without leaving the screen. */
+            BookingInfo booking
+    ) {}
+
+    /** Subset of {@link com.transit.hub.domain.model.BookingRule}
+     *  exposed on passenger surfaces — phone, URL, prior notice,
+     *  free-form message. Stripped of admin-only metadata. */
+    public record BookingInfo(
+            String phone,
+            String bookingUrl,
+            String infoUrl,
+            String message,
+            Integer priorNoticeMinutes
     ) {}
 
     public record MessageInfo(

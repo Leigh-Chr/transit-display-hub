@@ -76,7 +76,8 @@ public class HubDisplayService {
                                 a.bikesAllowed(),
                                 a.timepoint(),
                                 a.frequencyHeadwaySeconds(),
-                                a.realtimeDelaySeconds()
+                                a.realtimeDelaySeconds(),
+                                a.booking()
                         )))
                 .sorted(Comparator.comparing(HubDisplayState.HubArrivalInfo::scheduledTime))
                 .limit(MAX_ARRIVALS)
