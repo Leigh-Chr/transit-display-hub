@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -55,6 +56,10 @@ public class DisplayStateCalculator {
     private final TranslationRepository translationRepository;
     private final RealtimeAlertCache realtimeAlertCache;
     private final RealtimeTripUpdateCache realtimeTripUpdateCache;
+    /** Indirected so tests can pin "now" via Clock.fixed and not depend
+     *  on wall-clock time. Production wires the system default-zone
+     *  clock through {@link com.transit.hub.infrastructure.config.ClockConfig}. */
+    private final Clock clock;
 
     /** Operator-facing zone used to compare wall-clock schedule times against
      *  the server's now(). Pinning it here means the JVM's TZ — which can be
@@ -100,8 +105,9 @@ public class DisplayStateCalculator {
         // Handles the midnight wrap (e.g., 23:50 → 00:20) by issuing two queries
         // concatenated in chronological order — see `loadUpcomingSchedules`.
         ZoneId zone = resolveZone(stop);
-        LocalTime now = LocalTime.now(zone);
-        LocalDate today = LocalDate.now(zone);
+        Clock zonedClock = clock.withZone(zone);
+        LocalTime now = LocalTime.now(zonedClock);
+        LocalDate today = LocalDate.now(zonedClock);
         LocalTime windowEnd = now.plusMinutes(WINDOW_MINUTES);
         boolean crossesMidnight = !windowEnd.isAfter(now);
 
@@ -160,7 +166,7 @@ public class DisplayStateCalculator {
                 .toList();
 
         // Get active messages for this stop (for all its lines)
-        Instant instant = Instant.now();
+        Instant instant = clock.instant();
         Set<UUID> lineIds = stop.getLines().stream()
                 .map(Line::getId)
                 .collect(Collectors.toSet());
@@ -202,7 +208,7 @@ public class DisplayStateCalculator {
                 arrivals,
                 messages,
                 version,
-                Instant.now()
+                clock.instant()
         );
     }
 

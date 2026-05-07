@@ -26,8 +26,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -64,7 +66,15 @@ class DisplayStateCalculatorTest {
     @Mock
     private RealtimeTripUpdateCache realtimeTripUpdateCache;
 
-    @InjectMocks
+    /** Pin "now" mid-day so the calculator's 30-minute window never
+     *  crosses midnight. The DSC tests stub the in-window query
+     *  variant, so a wall-clock-driven now() near 23:30 would silently
+     *  reroute the calculator to the cross-midnight branch and trip
+     *  Mockito's strict-stubbing audit. */
+    private static final Instant FIXED_NOW =
+            Instant.parse("2026-01-15T10:00:00Z");
+    private final Clock clock = Clock.fixed(FIXED_NOW, ZoneId.of("Europe/Paris"));
+
     private DisplayStateCalculator calculator;
 
     private Line testLine;
@@ -76,6 +86,19 @@ class DisplayStateCalculatorTest {
 
     @BeforeEach
     void setUp() {
+        // Manual construction so we can pass a fixed Clock alongside
+        // the Mockito mocks. @InjectMocks doesn't pick up plain
+        // (non-@Mock) fields like our Clock.fixed instance.
+        calculator = new DisplayStateCalculator(
+                stopRepository,
+                scheduleRepository,
+                messageRepository,
+                serviceCalendarRepository,
+                translationRepository,
+                realtimeAlertCache,
+                realtimeTripUpdateCache,
+                clock
+        );
         testLineId = UUID.randomUUID();
         testStopId = UUID.randomUUID();
         testItineraryId = UUID.randomUUID();
@@ -162,11 +185,13 @@ class DisplayStateCalculatorTest {
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
 
-            Instant before = Instant.now();
             DisplayState result = calculator.calculateForStop(testStopId);
-            Instant after = Instant.now();
 
-            assertThat(result.generatedAt()).isBetween(before, after);
+            // The calculator reads its own clock (fixed in this test
+            // class), so the generated timestamp is exactly the pinned
+            // instant — not "between two reads of Instant.now()" like
+            // the original wall-clock-driven assertion.
+            assertThat(result.generatedAt()).isEqualTo(FIXED_NOW);
         }
     }
 
