@@ -15,6 +15,7 @@ should think twice before reverting.
 | [0007](0007-import-orchestrator.md) | Single orchestrator for boot, scheduler and manual reimport |
 | [0008](0008-multi-day-service-calendars.md) | Multi-day service calendars and per-day display filtering |
 | [0009](0009-pathways-and-levels.md) | Persisting station levels and pathways for indoor topology |
+| [0010](0010-translations.md) | GTFS translations and the per-installation language |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

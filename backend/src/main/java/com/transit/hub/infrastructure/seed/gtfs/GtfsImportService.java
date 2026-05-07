@@ -11,6 +11,7 @@ import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.StationLevel;
+import com.transit.hub.domain.model.Translation;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.domain.model.enums.LineType;
@@ -28,6 +29,7 @@ import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
+import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -84,6 +86,7 @@ public class GtfsImportService {
     private final ServiceCalendarRepository serviceCalendarRepository;
     private final StationLevelRepository stationLevelRepository;
     private final PathwayRepository pathwayRepository;
+    private final TranslationRepository translationRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -125,6 +128,8 @@ public class GtfsImportService {
             importStationLevels(workDir.resolve("levels.txt"));
 
             importPathways(workDir.resolve("pathways.txt"), stopImport);
+
+            importTranslations(workDir.resolve("translations.txt"));
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -1104,6 +1109,64 @@ public class GtfsImportService {
         }
         log.info("GTFS import: {} pathways created ({} skipped unknown stop, {} skipped unknown mode)",
                 batch.size(), skippedUnknownStop, skippedUnknownMode);
+    }
+
+    /**
+     * Reads {@code translations.txt} when present. The spec requires
+     * {@code (table_name, record_id, field_name, language)} or
+     * {@code (table_name, field_value, field_name, language)} as the
+     * row identifier. We persist both halves and let the runtime
+     * lookup pick the record-id form first; the field-value form is
+     * usable for future deduplication scenarios.
+     */
+    private void importTranslations(Path translationsFile) throws IOException {
+        translationRepository.deleteAllInBatch();
+        translationRepository.flush();
+
+        if (!Files.exists(translationsFile)) {
+            log.info("GTFS import: translations.txt missing, skipping");
+            return;
+        }
+        List<Translation> batch = new ArrayList<>();
+        // (table, record_id|field_value, field, lang) seen-set so feeds with
+        // duplicate translation rows don't blow up the unique constraint.
+        Set<String> seen = new HashSet<>();
+        int skippedDuplicates = 0;
+        try (CSVParser parser = openCsv(translationsFile)) {
+            for (CSVRecord record : parser) {
+                String tableName = optional(record, "table_name");
+                String fieldName = optional(record, "field_name");
+                String language = optional(record, "language");
+                String translationValue = optional(record, "translation");
+                if (isBlank(tableName) || isBlank(fieldName) || isBlank(language) || isBlank(translationValue)) {
+                    continue;
+                }
+                String recordId = optional(record, "record_id");
+                String fieldValue = optional(record, "field_value");
+                if (isBlank(recordId) && isBlank(fieldValue)) {
+                    continue;
+                }
+                String dedupeKey = tableName + "|" + (isBlank(recordId) ? fieldValue : recordId)
+                        + "|" + fieldName + "|" + language;
+                if (!seen.add(dedupeKey)) {
+                    skippedDuplicates++;
+                    continue;
+                }
+                batch.add(Translation.builder()
+                        .tableName(truncate(tableName, 60))
+                        .recordId(isBlank(recordId) ? null : truncate(recordId.trim(), 100))
+                        .fieldValue(isBlank(fieldValue) ? null : truncate(fieldValue.trim(), 200))
+                        .fieldName(truncate(fieldName, 60))
+                        .language(truncate(language.trim(), 20))
+                        .translation(translationValue)
+                        .build());
+            }
+        }
+        if (!batch.isEmpty()) {
+            translationRepository.saveAll(batch);
+        }
+        log.info("GTFS import: {} translations created ({} duplicates skipped)",
+                batch.size(), skippedDuplicates);
     }
 
     /**

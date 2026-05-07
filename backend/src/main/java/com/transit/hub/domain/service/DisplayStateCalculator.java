@@ -11,10 +11,12 @@ import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.event.StopDeletedEvent;
 import com.transit.hub.domain.util.ServiceCalendarMatcher;
+import com.transit.hub.domain.util.TranslationLookup;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,7 @@ public class DisplayStateCalculator {
     private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
+    private final TranslationRepository translationRepository;
 
     /** Operator-facing zone used to compare wall-clock schedule times against
      *  the server's now(). Pinning it here means the JVM's TZ — which can be
@@ -55,6 +58,14 @@ public class DisplayStateCalculator {
      *  for installs without GTFS data or without {@code agency.txt}. */
     @Value("${app.timezone:Europe/Paris}")
     private String appTimezone = "Europe/Paris";
+
+    /** BCP-47 tag (e.g. {@code "fr"}, {@code "en-GB"}) used to look up
+     *  GTFS translations. Empty (default) means the kiosk renders the
+     *  feed's primary language as-is — backwards compatible with every
+     *  install up to Phase 4.2. The single global value matches the
+     *  kiosk hardware reality: each screen runs in one language. */
+    @Value("${app.translations.preferred-language:}")
+    private String preferredLanguage = "";
 
     private static final int MAX_MESSAGES = 3;
     private static final int WINDOW_MINUTES = 30;
@@ -67,10 +78,16 @@ public class DisplayStateCalculator {
         Stop stop = stopRepository.findByIdWithLines(stopId)
                 .orElseThrow(() -> new EntityNotFoundException("Stop", stopId));
 
+        // Pull translations for the kiosk's preferred language once per
+        // calculation. Empty (no language configured, or no rows in the
+        // table) collapses to a no-op lookup, so the install behaves
+        // identically to pre-Phase-4.2 when no translations exist.
+        TranslationLookup translations = loadTranslations();
+
         // Get all lines info for this stop
         List<LineInfo> lineInfos = stop.getLines().stream()
                 .sorted(Comparator.comparing(Line::getCode))
-                .map(LineInfo::from)
+                .map(line -> translatedLineInfo(line, translations))
                 .toList();
 
         // Get upcoming arrivals within 30-minute window, one per itinerary/direction.
@@ -114,7 +131,7 @@ public class DisplayStateCalculator {
                 ))
                 .values()
                 .stream()
-                .map(s -> toArrivalInfo(s, stopId))
+                .map(s -> toArrivalInfo(s, stopId, translations))
                 .toList();
 
         // Get active messages for this stop (for all its lines)
@@ -136,7 +153,7 @@ public class DisplayStateCalculator {
 
         return new DisplayState(
                 stopId,
-                stop.getName(),
+                translations.resolveOr("stops", stop.getExternalId(), "stop_name", stop.getName()),
                 stop.getPlatformCode(),
                 stop.getShortCode(),
                 lineInfos,
@@ -145,6 +162,46 @@ public class DisplayStateCalculator {
                 version,
                 Instant.now()
         );
+    }
+
+    private TranslationLookup loadTranslations() {
+        if (preferredLanguage == null || preferredLanguage.isBlank()) {
+            return TranslationLookup.empty();
+        }
+        return TranslationLookup.from(translationRepository.findByLanguage(preferredLanguage.trim()));
+    }
+
+    /**
+     * Builds a {@link LineInfo} with {@code code} / {@code name} swapped
+     * for their translated equivalents when the feed provides them. The
+     * fallback is the original value, so a partially-translated feed
+     * still renders without holes.
+     */
+    private static LineInfo translatedLineInfo(Line line, TranslationLookup translations) {
+        if (translations.isEmpty()) {
+            return LineInfo.from(line);
+        }
+        String code = translations.resolveOr("routes", line.getExternalId(), "route_short_name", line.getCode());
+        String name = translations.resolveOr("routes", line.getExternalId(), "route_long_name", line.getName());
+        return new LineInfo(line.getId(), code, name, line.getColor(), line.getTextColor());
+    }
+
+    /**
+     * Resolves the itinerary's terminus name, applying the translation
+     * for the underlying terminus stop when one exists. Used as the
+     * final fallback for {@code destination} when neither a per-stop
+     * {@code stop_headsign} nor a trip-level {@code trip_headsign}
+     * translation is available.
+     */
+    private static String resolveTranslatedTerminus(Itinerary itinerary, TranslationLookup translations) {
+        if (itinerary.getItineraryStops() == null || itinerary.getItineraryStops().isEmpty()) {
+            return itinerary.getTerminusName();
+        }
+        Stop terminus = itinerary.getItineraryStops().getLast().getStop();
+        if (terminus == null) {
+            return itinerary.getTerminusName();
+        }
+        return translations.resolveOr("stops", terminus.getExternalId(), "stop_name", terminus.getName());
     }
 
     private Map<UUID, ServiceCalendar> loadCalendarsById() {
@@ -192,16 +249,18 @@ public class DisplayStateCalculator {
         versionMap.remove(event.getStopId());
     }
 
-    private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule, UUID stopId) {
+    private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule, UUID stopId,
+                                                   TranslationLookup translations) {
         Itinerary itinerary = schedule.getItinerary();
-        LineInfo lineInfo = LineInfo.from(itinerary.getLine());
+        LineInfo lineInfo = translatedLineInfo(itinerary.getLine(), translations);
         // stop_headsign overrides the trip-level terminus when the feed
         // declares a stop-specific destination (loop services, terminus
         // short-running, branching). Falls through to the itinerary's
-        // terminus name on null/blank.
+        // trip_headsign translation, then to the terminus name.
         String destination = resolveStopHeadsign(itinerary, stopId);
         if (destination == null) {
-            destination = itinerary.getTerminusName();
+            destination = translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign",
+                    resolveTranslatedTerminus(itinerary, translations));
         }
         return new DisplayState.ArrivalInfo(
                 schedule.getTime(),

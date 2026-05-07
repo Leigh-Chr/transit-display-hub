@@ -13,6 +13,7 @@ import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +51,9 @@ class DisplayStateCalculatorTest {
 
     @Mock
     private ServiceCalendarRepository serviceCalendarRepository;
+
+    @Mock
+    private TranslationRepository translationRepository;
 
     @InjectMocks
     private DisplayStateCalculator calculator;
