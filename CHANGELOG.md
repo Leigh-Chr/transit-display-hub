@@ -5,6 +5,38 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-05-07
+
+OpenAPI documentation reaches feature parity with the controller surface
+— every admin route is now grouped under a tag — and `frequencies.txt`
+finally drives actual departures, not just an "every X min" badge.
+
+### Added
+- **Frequency fan-out at import** (ADR 0020). High-frequency lines
+  declared with `frequencies.txt` windows now persist one `Schedule`
+  per generated departure (`windowStart + (stopTime - tripStart)` for
+  every trip start in `[start_time, end_time)` step `headway_secs`)
+  instead of a single annotated row per stop_time. The kiosk shows
+  real upcoming times on metro / BRT lines, the hub display can
+  aggregate frequency-mode arrivals, and the "every X min" badge
+  keeps appearing because the headway annotation is preserved on
+  every fan-out row. Trips with multiple windows (peak / off-peak /
+  late) emit per-window rows with the right headway each.
+- **OpenAPI tags** on the eight remaining admin controllers
+  (Lines, Stops, Itineraries, Schedules, Devices, Messages, Users,
+  Dashboard). Swagger UI groups every route under an explicit
+  `Administration — *` heading; no more "default" bucket.
+
+### Changed
+- `loadFrequencies` returns `Map<String, List<FrequencyWindow>>`
+  (start, end, headway, exact_times) instead of collapsing to the
+  smallest declared headway. Loaded windows feed the fan-out
+  iterator in `importSchedules`.
+- Schedule importer makes one extra streaming pass over
+  `stop_times.txt` to anchor trip start times — restricted to trips
+  with frequency windows, so feeds without `frequencies.txt` pay
+  zero overhead.
+
 ## [0.6.0] - 2026-05-07
 
 The kiosk turns "live". GTFS-Realtime ServiceAlerts and TripUpdates

@@ -139,7 +139,7 @@ public class GtfsImportService {
                     stopImport,
                     shapesByGtfsId);
 
-            Map<String, FrequencyInfo> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
+            Map<String, List<FrequencyWindow>> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
 
             int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies);
 
@@ -568,10 +568,16 @@ public class GtfsImportService {
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
                             int wheelchairAccessible, int bikesAllowed, String blockId, String shapeId) {}
 
-    /** Headway annotation derived from frequencies.txt. We pick the
-     *  smallest headway among all entries declared for a trip — that's
-     *  the "best case" frequency the kiosk can confidently advertise. */
-    private record FrequencyInfo(int headwaySeconds, Boolean exactTimes) {}
+    /** A single frequency window from frequencies.txt, opening from
+     *  {@code start} (inclusive) to {@code end} (exclusive) with a
+     *  recurring trip every {@code headwaySeconds}. {@code exactTimes}
+     *  follows the GTFS convention: 1 = schedule-based replication,
+     *  0/null = headway-based (passenger expectation tracks "every X
+     *  min"). Times are GTFS wall-clock so a window crossing midnight
+     *  (start &gt; end after mod-24 folding) is normalised by the
+     *  iterator below. */
+    private record FrequencyWindow(LocalTime start, LocalTime end,
+                                   int headwaySeconds, Boolean exactTimes) {}
 
     private record RouteDirKey(String routeId, String directionId) {}
 
@@ -823,16 +829,18 @@ public class GtfsImportService {
     }
 
     private static final int MAX_SCHEDULE_BATCH = 5_000;
+    private static final long DAY_SECONDS = 24L * 3600L;
 
     /**
-     * Reads {@code frequencies.txt} into a {@code tripId -> FrequencyInfo}
-     * map. Trips with multiple windows (e.g. peak vs off-peak) collapse
-     * to the smallest headway — that's the most useful number for
-     * "every X min" display since passenger expectation tracks the best
-     * case more than the worst. Absent file = empty map.
+     * Reads {@code frequencies.txt} into a {@code tripId -> List<FrequencyWindow>}
+     * map. Each row becomes a separate window so a trip declared for
+     * peak / off-peak / late hours fans out into the right number of
+     * synthetic departures during the schedule import. Absent file or
+     * missing required fields yield an empty list for that trip (which
+     * the importer treats as "fixed timetable").
      */
-    private Map<String, FrequencyInfo> loadFrequencies(Path frequenciesFile) throws IOException {
-        Map<String, FrequencyInfo> result = new HashMap<>();
+    private Map<String, List<FrequencyWindow>> loadFrequencies(Path frequenciesFile) throws IOException {
+        Map<String, List<FrequencyWindow>> result = new HashMap<>();
         if (!Files.exists(frequenciesFile)) {
             return result;
         }
@@ -840,21 +848,53 @@ public class GtfsImportService {
             for (CSVRecord record : parser) {
                 String tripId = record.get("trip_id");
                 int headway = parseInt(optional(record, "headway_secs"), 0);
-                if (isBlank(tripId) || headway <= 0) {continue;}
+                LocalTime start = GtfsParse.parseGtfsTime(optional(record, "start_time"));
+                LocalTime end = GtfsParse.parseGtfsTime(optional(record, "end_time"));
+                if (isBlank(tripId) || headway <= 0 || start == null || end == null) {continue;}
                 String exactRaw = optional(record, "exact_times");
                 Boolean exact = isBlank(exactRaw) ? null : "1".equals(exactRaw.trim());
-                FrequencyInfo current = result.get(tripId);
-                if (current == null || headway < current.headwaySeconds) {
-                    result.put(tripId, new FrequencyInfo(headway, exact));
+                result.computeIfAbsent(tripId, k -> new ArrayList<>())
+                        .add(new FrequencyWindow(start, end, headway, exact));
+            }
+        }
+        int totalWindows = result.values().stream().mapToInt(List::size).sum();
+        log.info("GTFS import: {} trips carry frequency annotations across {} window(s)",
+                result.size(), totalWindows);
+        return result;
+    }
+
+    /**
+     * Reads {@code stop_times.txt} once and returns the earliest wall-clock
+     * time per trip, restricted to {@code targetTrips} (typically the trips
+     * that have at least one frequency window). The result is the offset
+     * anchor for fan-out: every stop_time of a frequency-mode trip is
+     * persisted at {@code windowStart + (stopTime - tripStart)}.
+     */
+    private Map<String, LocalTime> loadTripStartTimes(Path stopTimesFile, Set<String> targetTrips)
+            throws IOException {
+        Map<String, LocalTime> result = new HashMap<>();
+        if (targetTrips.isEmpty() || !Files.exists(stopTimesFile)) {
+            return result;
+        }
+        try (CSVParser parser = openCsv(stopTimesFile)) {
+            for (CSVRecord record : parser) {
+                String tripId = record.get("trip_id");
+                if (!targetTrips.contains(tripId)) {continue;}
+                LocalTime time = GtfsParse.parseGtfsTime(firstNonBlank(
+                        optional(record, "departure_time"),
+                        optional(record, "arrival_time")));
+                if (time == null) {continue;}
+                LocalTime current = result.get(tripId);
+                if (current == null || time.isBefore(current)) {
+                    result.put(tripId, time);
                 }
             }
         }
-        log.info("GTFS import: {} trips carry frequency annotations", result.size());
         return result;
     }
 
     private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport,
-                                Map<String, FrequencyInfo> frequencies)
+                                Map<String, List<FrequencyWindow>> frequencies)
             throws IOException {
         Path stopTimesFile = workDir.resolve("stop_times.txt");
         if (!Files.exists(stopTimesFile)) {
@@ -874,6 +914,13 @@ public class GtfsImportService {
         // GTFS aren't affected. See ADR 0013.
         scheduleRepository.deleteAllInBatch();
         scheduleRepository.flush();
+
+        // Fan-out anchor: every stop_time of a frequency-mode trip is replicated
+        // for every (window, k) departure as windowStart + (stopTime - tripStart).
+        // We only fetch start times for trips that actually have frequency
+        // windows so feeds without frequencies.txt pay zero overhead.
+        Map<String, LocalTime> tripStartTimes = loadTripStartTimes(
+                workDir.resolve("stop_times.txt"), frequencies.keySet());
 
         Map<String, ServiceCalendarSnapshot> snapshots = loadServiceCalendars(workDir);
         if (snapshots.isEmpty()) {
@@ -934,9 +981,6 @@ public class GtfsImportService {
                 // Filter so the row never shows up on a kiosk as a phantom arrival.
                 if (pickupType == 1 && dropOffType == 1) {continue;}
 
-                ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time, calendar.getId());
-                if (!seen.add(key)) {continue;}
-
                 // Wheelchair / bikes overrides: only stored when the trip's
                 // value diverges from the itinerary's majority default. Saves
                 // ~2 bytes × millions of rows on most feeds.
@@ -949,29 +993,80 @@ public class GtfsImportService {
                 String timepointRaw = optional(record, "timepoint");
                 boolean timepoint = isBlank(timepointRaw) || !"0".equals(timepointRaw.trim());
 
-                FrequencyInfo freq = frequencies.get(tripId);
+                List<FrequencyWindow> windows = frequencies.get(tripId);
 
-                batch.add(Schedule.builder()
-                        .time(time)
-                        .stop(stop)
-                        .itinerary(itinerary)
-                        .pickupType(pickupType)
-                        .dropOffType(dropOffType)
-                        .wheelchairOverride(wheelchairOverride)
-                        .bikesAllowedOverride(bikesOverride)
-                        .timepoint(timepoint)
-                        .frequencyHeadwaySeconds(freq == null ? null : freq.headwaySeconds)
-                        .frequencyExactTimes(freq == null ? null : freq.exactTimes)
-                        .blockId(trip.blockId)
-                        .serviceCalendar(calendar)
-                        .build());
+                if (windows == null || windows.isEmpty()) {
+                    // Fixed timetable: persist the stop_time as-is.
+                    ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time, calendar.getId());
+                    if (!seen.add(key)) {continue;}
+                    batch.add(Schedule.builder()
+                            .time(time)
+                            .stop(stop)
+                            .itinerary(itinerary)
+                            .pickupType(pickupType)
+                            .dropOffType(dropOffType)
+                            .wheelchairOverride(wheelchairOverride)
+                            .bikesAllowedOverride(bikesOverride)
+                            .timepoint(timepoint)
+                            .frequencyHeadwaySeconds(null)
+                            .frequencyExactTimes(null)
+                            .blockId(trip.blockId)
+                            .serviceCalendar(calendar)
+                            .build());
+                    if (batch.size() >= MAX_SCHEDULE_BATCH) {
+                        scheduleRepository.saveAll(batch);
+                        total += batch.size();
+                        batch.clear();
+                        if (log.isDebugEnabled()) {
+                            log.debug("GTFS import: {} schedules persisted so far", total);
+                        }
+                    }
+                    continue;
+                }
 
-                if (batch.size() >= MAX_SCHEDULE_BATCH) {
-                    scheduleRepository.saveAll(batch);
-                    total += batch.size();
-                    batch.clear();
-                    if (log.isDebugEnabled()) {
-                        log.debug("GTFS import: {} schedules persisted so far", total);
+                // Fan-out: replicate the stop_time across every frequency window
+                // as windowStart + (stopTime - tripStart). The dedupe set absorbs
+                // collisions between overlapping windows on the same trip.
+                LocalTime tripStart = tripStartTimes.get(tripId);
+                if (tripStart == null) {continue;}
+                long deltaSeconds = ((long) time.toSecondOfDay() - tripStart.toSecondOfDay() + DAY_SECONDS)
+                        % DAY_SECONDS;
+
+                for (FrequencyWindow window : windows) {
+                    long winStart = window.start.toSecondOfDay();
+                    long winEnd = window.end.toSecondOfDay();
+                    // Window crossing midnight: end falls earlier than start
+                    // because parseGtfsTime folds hours mod 24. Shift end up
+                    // by a full day so the iterator emits the right count.
+                    if (winEnd <= winStart) {winEnd += DAY_SECONDS;}
+
+                    for (long ts = winStart; ts < winEnd; ts += window.headwaySeconds) {
+                        LocalTime stopTime = LocalTime.ofSecondOfDay((ts + deltaSeconds) % DAY_SECONDS);
+                        ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(),
+                                stopTime, calendar.getId());
+                        if (!seen.add(key)) {continue;}
+                        batch.add(Schedule.builder()
+                                .time(stopTime)
+                                .stop(stop)
+                                .itinerary(itinerary)
+                                .pickupType(pickupType)
+                                .dropOffType(dropOffType)
+                                .wheelchairOverride(wheelchairOverride)
+                                .bikesAllowedOverride(bikesOverride)
+                                .timepoint(timepoint)
+                                .frequencyHeadwaySeconds(window.headwaySeconds)
+                                .frequencyExactTimes(window.exactTimes)
+                                .blockId(trip.blockId)
+                                .serviceCalendar(calendar)
+                                .build());
+                        if (batch.size() >= MAX_SCHEDULE_BATCH) {
+                            scheduleRepository.saveAll(batch);
+                            total += batch.size();
+                            batch.clear();
+                            if (log.isDebugEnabled()) {
+                                log.debug("GTFS import: {} schedules persisted so far", total);
+                            }
+                        }
                     }
                 }
             }
