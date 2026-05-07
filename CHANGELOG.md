@@ -5,6 +5,78 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-05-07
+
+Second wave of GTFS integration: the kiosk now respects the day of
+the week, surfaces indoor topology, supports localised feeds, and the
+API gains a bundled Swagger UI. Three new Flyway migrations (V24–V26),
+all additive except for `schedules`'s unique key swap to allow
+multiple service calendars to share `(stop, itinerary, time)` triples.
+Architecture decisions are captured in `docs/adr/0008..0011`.
+
+### Added
+
+#### Multi-day service calendars (Phase 1.4)
+- **`ServiceCalendar` and `ServiceCalendarException` entities** mirror
+  GTFS `calendar.txt` and `calendar_dates.txt`. Persisted instead of
+  collapsed onto a single representative day as before.
+- **`Schedule.service_calendar_id`** FK (nullable) ties each row to
+  its calendar. Null = "always active" so admin-created and legacy
+  rows keep showing every day. See ADR 0008.
+- **`ServiceCalendarMatcher` domain util** decides whether a calendar
+  is active on a given date — exception > validity range > weekly
+  pattern, matching the GTFS resolution order.
+- **`DisplayStateCalculator` filters arrivals by day**, with the
+  cross-midnight tail evaluated against tomorrow's calendar.
+- Unique key on `schedules` swapped from
+  `(stop, itinerary, time)` to
+  `(stop, itinerary, time, service_calendar_id)` so two services
+  can share a triple as long as they run on different days.
+
+#### Indoor topology (Phase 5.1)
+- **`StationLevel` entity** persists `levels.txt` (level_index plus
+  level_name) for every floor of a station.
+- **`Pathway` entity** persists `pathways.txt` with the full GTFS
+  payload: `pathway_mode` (`WALKWAY` / `STAIRS` / `MOVING_SIDEWALK` /
+  `ESCALATOR` / `ELEVATOR` / `FARE_GATE` / `EXIT_GATE`), bidirectional
+  flag, optional length / traversal time / stair count / max slope /
+  min width / signpost text. See ADR 0009.
+- **`GET /api/stops/{id}/pathways`** returns every pathway touching
+  the stop, outgoing first, then sorted by mode and signpost text.
+
+#### Translations (Phase 4.2)
+- **`Translation` entity** persists `translations.txt` polymorphically
+  (`table_name`, `record_id`, `field_value`, `field_name`, `language`,
+  `translation`).
+- **`TranslationLookup` domain util** loads the chosen language into
+  an in-memory map keyed by `(table, record_id, field)` for O(1)
+  resolution at render time.
+- **`app.translations.preferred-language`** config (BCP-47 tag, empty
+  by default) drives stop / line / destination translation across
+  the kiosk and hub displays. Empty = no behaviour change. See
+  ADR 0010.
+- **`GET /api/admin/translations?lang=fr&table=stops`** lets admins
+  audit which rows are localised before flipping the property.
+
+#### API discoverability (Phase 7)
+- **Springdoc OpenAPI** bundled at `/swagger-ui.html` and
+  `/v3/api-docs`. Bearer-JWT security scheme declared so the
+  "Authorize" button on Swagger UI takes a token from
+  `POST /api/auth/login` and re-uses it on every "Try it out" call.
+  See ADR 0011.
+
+### Changed
+- `GtfsImportService` now imports schedules for **every** active
+  service rather than collapsing onto a single representative day,
+  multiplying the schedule volume by the number of services in the
+  feed (typically 3–10×). Postgres handles it without indexing
+  changes; the kiosk SQL still returns ≤ 50 rows per stop per
+  30-minute window before filtering.
+- `GtfsImportService` adds top-level imports for `levels.txt`,
+  `pathways.txt` and `translations.txt`.
+
+---
+
 ## [0.3.0] - 2026-05-06
 
 GTFS integration deepened across the model, the import pipeline and the
