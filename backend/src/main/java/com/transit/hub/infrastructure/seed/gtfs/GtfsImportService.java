@@ -2,9 +2,11 @@ package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.Attribution;
+import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.domain.model.FareAttribute;
 import com.transit.hub.domain.model.FareRule;
 import com.transit.hub.domain.model.FeedInfo;
+import com.transit.hub.domain.model.LocationGroup;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
@@ -18,6 +20,7 @@ import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Translation;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
+import com.transit.hub.domain.model.enums.BookingType;
 import com.transit.hub.domain.model.enums.FarePaymentMethod;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.PathwayMode;
@@ -25,8 +28,10 @@ import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
+import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
+import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
@@ -97,6 +102,8 @@ public class GtfsImportService {
     private final TranslationRepository translationRepository;
     private final FareAttributeRepository fareAttributeRepository;
     private final ShapeRepository shapeRepository;
+    private final LocationGroupRepository locationGroupRepository;
+    private final BookingRuleRepository bookingRuleRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -145,6 +152,10 @@ public class GtfsImportService {
             importTranslations(workDir.resolve("translations.txt"));
 
             importFares(workDir, linesByGtfsId, agenciesByGtfsId);
+
+            importLocationGroups(workDir, stopImport);
+
+            importBookingRules(workDir.resolve("booking_rules.txt"));
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -1528,6 +1539,125 @@ public class GtfsImportService {
     private Integer parseTransfersField(String raw) {
         if (isBlank(raw)) {return null;}
         return parseIntOrNull(raw.trim());
+    }
+
+    /**
+     * Reads {@code location_groups.txt} + {@code location_group_stops.txt}.
+     * Wipes both before re-inserting; cascade on the join table picks
+     * up the stop memberships when we delete the parent.
+     */
+    private void importLocationGroups(Path workDir, StopImport stopImport) throws IOException {
+        locationGroupRepository.deleteAllInBatch();
+        locationGroupRepository.flush();
+
+        Path groupsFile = workDir.resolve("location_groups.txt");
+        if (!Files.exists(groupsFile)) {
+            log.info("GTFS import: location_groups.txt missing, skipping");
+            return;
+        }
+        Map<String, LocationGroup> groupsByGtfsId = new HashMap<>();
+        try (CSVParser parser = openCsv(groupsFile)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "location_group_id");
+                if (isBlank(externalId)) {continue;}
+                LocationGroup group = LocationGroup.builder()
+                        .externalId(truncate(externalId.trim(), 100))
+                        .groupName(truncate(optional(record, "location_group_name"), 200))
+                        .build();
+                groupsByGtfsId.put(externalId, locationGroupRepository.save(group));
+            }
+        }
+        log.info("GTFS import: {} location groups persisted", groupsByGtfsId.size());
+
+        Path membershipFile = workDir.resolve("location_group_stops.txt");
+        if (!Files.exists(membershipFile)) {
+            return;
+        }
+        int memberships = 0;
+        int skipped = 0;
+        try (CSVParser parser = openCsv(membershipFile)) {
+            for (CSVRecord record : parser) {
+                String groupId = optional(record, "location_group_id");
+                String gtfsStopId = optional(record, "stop_id");
+                if (isBlank(groupId) || isBlank(gtfsStopId)) {continue;}
+                LocationGroup group = groupsByGtfsId.get(groupId);
+                if (group == null) {
+                    skipped++;
+                    continue;
+                }
+                Stop stop = resolveStop(gtfsStopId, stopImport);
+                if (stop == null) {
+                    skipped++;
+                    continue;
+                }
+                group.getStops().add(stop);
+                memberships++;
+            }
+        }
+        // Saving the parents commits the new join-table rows.
+        locationGroupRepository.saveAll(groupsByGtfsId.values());
+        if (skipped > 0) {
+            log.warn("GTFS import: skipped {} location_group_stops rows referencing unknown group/stop",
+                    skipped);
+        }
+        log.info("GTFS import: {} location group / stop memberships created", memberships);
+    }
+
+    /**
+     * Reads {@code booking_rules.txt}. Replaces the table on every
+     * import — the stop_times FKs that would reference a deleted rule
+     * fall to "no booking info" rather than dangle, which is what we
+     * want until a passenger surface justifies the FKs.
+     */
+    private void importBookingRules(Path bookingRulesFile) throws IOException {
+        bookingRuleRepository.deleteAllInBatch();
+        bookingRuleRepository.flush();
+
+        if (!Files.exists(bookingRulesFile)) {
+            log.info("GTFS import: booking_rules.txt missing, skipping");
+            return;
+        }
+        List<BookingRule> batch = new ArrayList<>();
+        int skippedBadType = 0;
+        try (CSVParser parser = openCsv(bookingRulesFile)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "booking_rule_id");
+                if (isBlank(externalId)) {continue;}
+                Integer typeCode = parseIntOrNull(optional(record, "booking_type"));
+                if (typeCode == null) {
+                    skippedBadType++;
+                    continue;
+                }
+                BookingType bookingType = BookingType.fromGtfsCode(typeCode);
+                if (bookingType == null) {
+                    skippedBadType++;
+                    continue;
+                }
+                LocalTime cutoff = GtfsParse.parseGtfsTime(optional(record, "prior_notice_last_time"));
+
+                batch.add(BookingRule.builder()
+                        .externalId(truncate(externalId.trim(), 100))
+                        .bookingType(bookingType)
+                        .priorNoticeDurationMin(parseIntOrNull(optional(record, "prior_notice_duration_min")))
+                        .priorNoticeDurationMax(parseIntOrNull(optional(record, "prior_notice_duration_max")))
+                        .priorNoticeLastDay(parseIntOrNull(optional(record, "prior_notice_last_day")))
+                        .priorNoticeLastTime(cutoff)
+                        .priorNoticeStartDay(parseIntOrNull(optional(record, "prior_notice_start_day")))
+                        .phone(truncate(optional(record, "phone_number"), 30))
+                        .bookingUrl(truncate(optional(record, "booking_url"), 500))
+                        .infoUrl(truncate(optional(record, "info_url"), 500))
+                        .message(truncate(optional(record, "message"), 1000))
+                        .build());
+            }
+        }
+        if (!batch.isEmpty()) {
+            bookingRuleRepository.saveAll(batch);
+        }
+        if (skippedBadType > 0) {
+            log.warn("GTFS import: skipped {} booking_rules rows with invalid booking_type",
+                    skippedBadType);
+        }
+        log.info("GTFS import: {} booking rules persisted", batch.size());
     }
 
     /**

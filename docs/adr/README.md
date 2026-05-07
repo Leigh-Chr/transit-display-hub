@@ -20,6 +20,7 @@ should think twice before reverting.
 | [0012](0012-fares-v1.md) | GTFS Fares v1 (fare_attributes + fare_rules) |
 | [0013](0013-idempotent-import-by-external-id.md) | Idempotent GTFS import keyed by external_id |
 | [0014](0014-shapes-and-polylines.md) | Persisting GTFS shapes for future map views |
+| [0015](0015-flexible-transport-tad.md) | Demand-responsive transit (location groups + booking rules) |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
