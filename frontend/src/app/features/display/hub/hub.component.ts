@@ -108,7 +108,15 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       {{ arrival.line.code }}
                     </span>
                     <span class="platform">{{ arrival.platform }}</span>
-                    <span class="destination">{{ arrival.destinationName }}</span>
+                    <span class="destination">
+                      {{ arrival.destinationName }}
+                      @if (arrival.booking; as b) {
+                        <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
+                          <mat-icon class="booking-icon">phone_callback</mat-icon>
+                          @if (b.phone) { {{ b.phone }} } @else { Réservation }
+                        </span>
+                      }
+                    </span>
                     <span class="time-info">
                       <span
                         class="time-relative"
@@ -137,7 +145,15 @@ import { lineTextColor } from '@shared/utils/color.utils';
                         {{ arrival.line.code }}
                       </span>
                       <span class="platform">{{ arrival.platform }}</span>
-                      <span class="destination">{{ arrival.destinationName }}</span>
+                      <span class="destination">
+                        {{ arrival.destinationName }}
+                        @if (arrival.booking; as b) {
+                          <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
+                            <mat-icon class="booking-icon">phone_callback</mat-icon>
+                            @if (b.phone) { {{ b.phone }} } @else { Réservation }
+                          </span>
+                        }
+                      </span>
                       <span class="time-info">
                         <span
                         class="time-relative"
@@ -442,6 +458,31 @@ import { lineTextColor } from '@shared/utils/color.utils';
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 1vw;
+    }
+
+    /* TAD booking CTA — shorter on the hub since rows are dense.
+       Phone number stays prominent; the icon signals the action. */
+    .booking-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4vw;
+      padding: 0.25vh 0.7vw;
+      border-radius: 0.4vh;
+      font-size: clamp(2vh, 2.6vh, 3.2vh);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: rgba(56, 142, 235, 0.16);
+      color: rgb(34, 105, 192);
+      border: 1px solid rgba(56, 142, 235, 0.55);
+      white-space: nowrap;
+    }
+    .booking-icon {
+      font-size: clamp(2.2vh, 2.8vh, 3.4vh) !important;
+      width: clamp(2.2vh, 2.8vh, 3.4vh) !important;
+      height: clamp(2.2vh, 2.8vh, 3.4vh) !important;
     }
 
     .time-info {
@@ -686,6 +727,16 @@ export class HubComponent implements OnInit, OnDestroy {
   // Exposed to the template: prefer the server-resolved foreground color
   // (route_text_color) before falling back to a YIQ-derived contrast.
   readonly lineTextColor = lineTextColor;
+
+  /** ARIA label for the booking badge — screen readers announce
+   *  "réservation 0123456789, 30 minutes minimum" rather than just
+   *  "phone_callback 0123456789". Mirrors the kiosk implementation. */
+  bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
+    const parts: string[] = ['Réservation requise'];
+    if (b.phone) {parts.push(b.phone);}
+    if (b.priorNoticeMinutes) {parts.push(`${b.priorNoticeMinutes} minutes minimum`);}
+    return parts.join(', ');
+  }
 
   private stopIds: string[] = [];
   private hubName = 'Hub';
