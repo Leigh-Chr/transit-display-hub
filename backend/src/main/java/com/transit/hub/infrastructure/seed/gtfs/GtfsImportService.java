@@ -27,6 +27,7 @@ import com.transit.hub.domain.model.enums.PathwayMode;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.domain.model.Area;
+import com.transit.hub.domain.model.FareLegJoinRule;
 import com.transit.hub.domain.model.FareLegRule;
 import com.transit.hub.domain.model.FareMedia;
 import com.transit.hub.domain.model.FareProduct;
@@ -38,6 +39,7 @@ import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
+import com.transit.hub.infrastructure.persistence.FareLegJoinRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareMediaRepository;
 import com.transit.hub.infrastructure.persistence.FareProductRepository;
@@ -125,6 +127,7 @@ public class GtfsImportService {
     private final FareTransferRuleRepository fareTransferRuleRepository;
     private final NetworkRepository networkRepository;
     private final FareMediaRepository fareMediaRepository;
+    private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
 
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
@@ -1690,6 +1693,7 @@ public class GtfsImportService {
         // Order matters: leg rules reference areas / products, transfer
         // rules reference products. Wipe the dependents first so FK
         // SET NULL doesn't fire spuriously during the rebuild.
+        fareLegJoinRuleRepository.deleteAllInBatch();
         fareTransferRuleRepository.deleteAllInBatch();
         fareLegRuleRepository.deleteAllInBatch();
         fareProductRepository.deleteAllInBatch();
@@ -1708,6 +1712,38 @@ public class GtfsImportService {
         Map<String, FareProduct> productsByExternalId = importFareProducts(workDir.resolve("fare_products.txt"));
         importFareLegRules(workDir.resolve("fare_leg_rules.txt"), areasByExternalId, productsByExternalId);
         importFareTransferRules(workDir.resolve("fare_transfer_rules.txt"), productsByExternalId);
+        importFareLegJoinRules(workDir.resolve("fare_leg_join_rules.txt"), stopImport);
+    }
+
+    private void importFareLegJoinRules(Path joinRulesFile, StopImport stopImport) throws IOException {
+        if (!Files.exists(joinRulesFile)) {
+            log.info("GTFS import: fare_leg_join_rules.txt missing, skipping");
+            return;
+        }
+        List<FareLegJoinRule> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(joinRulesFile)) {
+            for (CSVRecord record : parser) {
+                String fromStopId = optional(record, "from_stop_id");
+                String toStopId = optional(record, "to_stop_id");
+                String fromNet = optional(record, "from_network_id");
+                String toNet = optional(record, "to_network_id");
+                // Spec requires either a network pair or a stop pair —
+                // skip rows missing both, they're feed errors.
+                Stop fromStop = isBlank(fromStopId) ? null : stopImport.stopsByGtfsId.get(fromStopId);
+                Stop toStop = isBlank(toStopId) ? null : stopImport.stopsByGtfsId.get(toStopId);
+                if (isBlank(fromNet) && isBlank(toNet) && fromStop == null && toStop == null) {
+                    continue;
+                }
+                batch.add(FareLegJoinRule.builder()
+                        .fromNetworkId(truncate(fromNet, 100))
+                        .toNetworkId(truncate(toNet, 100))
+                        .fromStop(fromStop)
+                        .toStop(toStop)
+                        .build());
+            }
+        }
+        fareLegJoinRuleRepository.saveAll(batch);
+        log.info("GTFS import: {} fare leg join rules persisted", batch.size());
     }
 
     private void importNetworks(Path networksFile, Path routeNetworksFile,

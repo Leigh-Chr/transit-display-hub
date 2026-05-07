@@ -59,9 +59,12 @@ SET-NULL spurious fires during partial re-imports. The raw-string
 loose link is harmless for browse and the future fare-computation
 path can resolve client-side.
 
-### 3. Skipped v2 files
+### 3. Leg join rules (V34)
 
-- **`fare_leg_join_rules.txt`**: niche, used by very few feeds.
+V34 closes the spec with `fare_leg_join_rules.txt` — niche, used by
+very few feeds, but persisted in its own table for completeness.
+Stop references are FK (with SET NULL on deletion), network
+references stay as raw strings (consistent with V30 / V31).
 
 The data being available behind raw-string columns means each
 deferred file becomes a follow-up migration, not a model rewrite.

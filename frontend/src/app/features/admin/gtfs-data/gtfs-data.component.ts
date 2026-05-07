@@ -250,6 +250,30 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   </table>
                 }
 
+                @if (fv2.legJoinRules.length > 0) {
+                  <h3 class="section-title">Leg join rules ({{ fv2.legJoinRules.length }})</h3>
+                  <table mat-table [dataSource]="fv2.legJoinRules" class="data-table">
+                    <ng-container matColumnDef="fromNetwork">
+                      <th mat-header-cell *matHeaderCellDef>Réseau source</th>
+                      <td mat-cell *matCellDef="let r"><code>{{ r.fromNetworkId || '—' }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="toNetwork">
+                      <th mat-header-cell *matHeaderCellDef>Réseau cible</th>
+                      <td mat-cell *matCellDef="let r"><code>{{ r.toNetworkId || '—' }}</code></td>
+                    </ng-container>
+                    <ng-container matColumnDef="fromStop">
+                      <th mat-header-cell *matHeaderCellDef>Arrêt source</th>
+                      <td mat-cell *matCellDef="let r">{{ r.fromStopName || '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="toStop">
+                      <th mat-header-cell *matHeaderCellDef>Arrêt cible</th>
+                      <td mat-cell *matCellDef="let r">{{ r.toStopName || '—' }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="v2LegJoinColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: v2LegJoinColumns"></tr>
+                  </table>
+                }
+
                 @if (fv2.transferRules.length > 0) {
                   <h3 class="section-title">Transfer rules ({{ fv2.transferRules.length }})</h3>
                   <table mat-table [dataSource]="fv2.transferRules" class="data-table">
@@ -531,6 +555,7 @@ export class GtfsDataComponent implements OnInit {
   readonly v2TransferColumns = ['from', 'to', 'duration', 'type', 'product'];
   readonly v2NetworkColumns = ['externalId', 'name', 'routeCount'];
   readonly v2MediaColumns = ['externalId', 'name', 'mediaType'];
+  readonly v2LegJoinColumns = ['fromNetwork', 'toNetwork', 'fromStop', 'toStop'];
 
   ngOnInit(): void {
     this.gtfsData.getFares().subscribe({

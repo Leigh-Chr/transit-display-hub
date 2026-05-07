@@ -559,6 +559,15 @@ export interface FaresV2 {
   transferRules: FareTransferRule[];
   networks: FareNetwork[];
   fareMedia: FareMedia[];
+  legJoinRules: FareLegJoinRule[];
+}
+
+export interface FareLegJoinRule {
+  id: string;
+  fromNetworkId: string | null;
+  toNetworkId: string | null;
+  fromStopName: string | null;
+  toStopName: string | null;
 }
 
 export interface FareNetwork {

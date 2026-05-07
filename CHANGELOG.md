@@ -19,7 +19,8 @@ schedule import produces real per-departure rows from
   `fare_leg_rules`, `fare_transfer_rules`, plus `networks` /
   `route_networks` and `fare_media` from the V31 follow-up. Coexists
   with v1 — feeds in transition publish both, both get persisted.
-  Only `fare_leg_join_rules.txt` remains out of scope (niche).
+  V34 adds `fare_leg_join_rules.txt` — closing the v2 spec — as its
+  own table with stop FKs (network references stay raw strings).
 - **Per-arrival platform badge on the kiosk** (ADR 0022 follow-up).
   `ArrivalInfo.platformCode` carries the actual stop's platform_code
   through DisplayState; the kiosk renders a badge between the line

@@ -2,6 +2,7 @@ package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.FaresV2Response;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
+import com.transit.hub.infrastructure.persistence.FareLegJoinRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareMediaRepository;
 import com.transit.hub.infrastructure.persistence.FareProductRepository;
@@ -23,6 +24,7 @@ public class FaresV2Service {
     private final FareTransferRuleRepository fareTransferRuleRepository;
     private final NetworkRepository networkRepository;
     private final FareMediaRepository fareMediaRepository;
+    private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
 
     @Transactional(readOnly = true)
     public FaresV2Response browse() {
@@ -47,6 +49,9 @@ public class FaresV2Service {
                         .toList(),
                 fareMediaRepository.findAll().stream()
                         .map(FaresV2Response.FareMediaSummary::from)
+                        .toList(),
+                fareLegJoinRuleRepository.findAllWithStops().stream()
+                        .map(FaresV2Response.LegJoinRuleSummary::from)
                         .toList()
         );
     }

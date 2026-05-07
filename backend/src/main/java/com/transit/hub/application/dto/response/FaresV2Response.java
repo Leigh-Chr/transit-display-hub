@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Area;
+import com.transit.hub.domain.model.FareLegJoinRule;
 import com.transit.hub.domain.model.FareLegRule;
 import com.transit.hub.domain.model.FareMedia;
 import com.transit.hub.domain.model.FareProduct;
@@ -26,8 +27,21 @@ public record FaresV2Response(
         List<LegRuleSummary> legRules,
         List<TransferRuleSummary> transferRules,
         List<NetworkSummary> networks,
-        List<FareMediaSummary> fareMedia
+        List<FareMediaSummary> fareMedia,
+        List<LegJoinRuleSummary> legJoinRules
 ) {
+    public record LegJoinRuleSummary(UUID id, String fromNetworkId, String toNetworkId,
+                                      String fromStopName, String toStopName) {
+        public static LegJoinRuleSummary from(FareLegJoinRule r) {
+            return new LegJoinRuleSummary(
+                    r.getId(),
+                    r.getFromNetworkId(),
+                    r.getToNetworkId(),
+                    r.getFromStop() != null ? r.getFromStop().getName() : null,
+                    r.getToStop() != null ? r.getToStop().getName() : null);
+        }
+    }
+
     public record NetworkSummary(UUID id, String externalId, String name, int routeCount) {
         public static NetworkSummary from(Network n) {
             return new NetworkSummary(n.getId(), n.getExternalId(), n.getName(),
