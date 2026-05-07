@@ -292,45 +292,63 @@ class LineServiceTest {
         private final Pageable pageable = PageRequest.of(0, 10);
 
         @Test
-        @DisplayName("with search string calls findBySearchWithStopsAndRoutes")
+        @DisplayName("with search string pages over ids first then hydrates the page")
         void withSearch() {
-            Page<Line> page = new PageImpl<>(List.of(testLine), pageable, 1);
-            when(lineRepository.findBySearchWithStopsAndRoutes(eq("Metro"), eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testLineId), pageable, 1);
+            when(lineRepository.findIdsBySearch(eq("Metro"), eq(pageable))).thenReturn(idsPage);
+            when(lineRepository.findAllByIdInWithStopsAndRoutes(List.of(testLineId)))
+                    .thenReturn(List.of(testLine));
 
             PageResponse<LineResponse> result = lineService.getAllLines("Metro", pageable);
 
             assertThat(result.content()).hasSize(1);
             assertThat(result.totalElements()).isEqualTo(1);
-            verify(lineRepository).findBySearchWithStopsAndRoutes("Metro", pageable);
+            verify(lineRepository).findIdsBySearch("Metro", pageable);
+            verify(lineRepository).findAllByIdInWithStopsAndRoutes(List.of(testLineId));
         }
 
         @Test
-        @DisplayName("without search calls findAllWithStopsAndRoutes")
+        @DisplayName("without search pages over all ids and hydrates that page")
         void withoutSearch() {
-            Page<Line> page = new PageImpl<>(List.of(testLine), pageable, 1);
-            when(lineRepository.findAllWithStopsAndRoutes(eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testLineId), pageable, 1);
+            when(lineRepository.findAllIds(eq(pageable))).thenReturn(idsPage);
+            when(lineRepository.findAllByIdInWithStopsAndRoutes(List.of(testLineId)))
+                    .thenReturn(List.of(testLine));
 
             PageResponse<LineResponse> result = lineService.getAllLines(null, pageable);
 
             assertThat(result.content()).hasSize(1);
             assertThat(result.totalElements()).isEqualTo(1);
-            verify(lineRepository).findAllWithStopsAndRoutes(pageable);
+            verify(lineRepository).findAllIds(pageable);
+            verify(lineRepository).findAllByIdInWithStopsAndRoutes(List.of(testLineId));
         }
 
         @Test
-        @DisplayName("with blank search treats as no search")
+        @DisplayName("with blank search treats as no search and skips findIdsBySearch")
         void withBlankSearch() {
-            Page<Line> page = new PageImpl<>(List.of(testLine), pageable, 1);
-            when(lineRepository.findAllWithStopsAndRoutes(eq(pageable)))
-                    .thenReturn(page);
+            Page<UUID> idsPage = new PageImpl<>(List.of(testLineId), pageable, 1);
+            when(lineRepository.findAllIds(eq(pageable))).thenReturn(idsPage);
+            when(lineRepository.findAllByIdInWithStopsAndRoutes(List.of(testLineId)))
+                    .thenReturn(List.of(testLine));
 
             PageResponse<LineResponse> result = lineService.getAllLines("   ", pageable);
 
             assertThat(result.content()).hasSize(1);
-            verify(lineRepository).findAllWithStopsAndRoutes(pageable);
-            verify(lineRepository, never()).findBySearchWithStopsAndRoutes(any(), any());
+            verify(lineRepository).findAllIds(pageable);
+            verify(lineRepository, never()).findIdsBySearch(any(), any());
+        }
+
+        @Test
+        @DisplayName("empty id page short-circuits the second query")
+        void emptyIdsSkipHydrate() {
+            Page<UUID> empty = new PageImpl<>(List.of(), pageable, 0);
+            when(lineRepository.findAllIds(eq(pageable))).thenReturn(empty);
+
+            PageResponse<LineResponse> result = lineService.getAllLines(null, pageable);
+
+            assertThat(result.content()).isEmpty();
+            assertThat(result.totalElements()).isZero();
+            verify(lineRepository, never()).findAllByIdInWithStopsAndRoutes(any());
         }
     }
 

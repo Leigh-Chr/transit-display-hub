@@ -54,9 +54,19 @@ public class DashboardService {
         long stopCount = stopRepository.count();
         long itineraryCount = itineraryRepository.count();
 
-        var topLinesPage = lineRepository.findAllWithStopsAndRoutes(
+        // Two-step: page over Line ids first (no JOIN FETCH so the
+        // pagination stays in SQL), then hydrate the page with the
+        // collections needed for the response.
+        var topIdsPage = lineRepository.findAllIds(
                 PageRequest.of(0, TOP_LINES, Sort.by("code")));
-        List<LineResponse> topLines = topLinesPage.getContent().stream()
+        List<Line> topLineEntities = topIdsPage.getContent().isEmpty()
+                ? List.of()
+                : lineRepository.findAllByIdInWithStopsAndRoutes(topIdsPage.getContent());
+        Map<UUID, Line> topLineById = topLineEntities.stream()
+                .collect(Collectors.toMap(Line::getId, l -> l));
+        List<LineResponse> topLines = topIdsPage.getContent().stream()
+                .map(topLineById::get)
+                .filter(java.util.Objects::nonNull)
                 .map(LineResponse::from)
                 .toList();
 

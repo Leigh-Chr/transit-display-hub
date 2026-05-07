@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -261,70 +262,71 @@ class LineRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findBySearchWithStopsAndRoutes")
-    class FindBySearchWithStopsAndRoutes {
+    @DisplayName("findIdsBySearch + findAllByIdInWithStopsAndRoutes (two-step pagination)")
+    class FindBySearchTwoStep {
 
         @Test
         @DisplayName("searches by code case-insensitively")
         void searchesByCode() {
-            Page<Line> result = repository.findBySearchWithStopsAndRoutes(
-                    "m1", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("m1", PageRequest.of(0, 10));
+            List<Line> hydrated = repository.findAllByIdInWithStopsAndRoutes(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getCode()).isEqualTo("M1");
-            assertThat(result.getContent().getFirst().getStops()).hasSize(2);
+            assertThat(idsPage.getContent()).hasSize(1);
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getCode()).isEqualTo("M1");
+            assertThat(hydrated.getFirst().getStops()).hasSize(2);
         }
 
         @Test
         @DisplayName("searches by name case-insensitively")
         void searchesByName() {
-            Page<Line> result = repository.findBySearchWithStopsAndRoutes(
-                    "bus", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("bus", PageRequest.of(0, 10));
+            List<Line> hydrated = repository.findAllByIdInWithStopsAndRoutes(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getCode()).isEqualTo("B2");
+            assertThat(hydrated).hasSize(1);
+            assertThat(hydrated.getFirst().getCode()).isEqualTo("B2");
         }
 
         @Test
         @DisplayName("searches by partial match on code or name")
         void searchesByPartialMatch() {
-            Page<Line> result = repository.findBySearchWithStopsAndRoutes(
-                    "line", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("line", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).hasSize(3);
+            assertThat(idsPage.getContent()).hasSize(3);
         }
 
         @Test
         @DisplayName("returns empty page when no match")
         void returnsEmptyWhenNoMatch() {
-            Page<Line> result = repository.findBySearchWithStopsAndRoutes(
-                    "nonexistent", PageRequest.of(0, 10));
+            Page<UUID> idsPage = repository.findIdsBySearch("nonexistent", PageRequest.of(0, 10));
 
-            assertThat(result.getContent()).isEmpty();
-            assertThat(result.getTotalElements()).isZero();
+            assertThat(idsPage.getContent()).isEmpty();
+            assertThat(idsPage.getTotalElements()).isZero();
         }
     }
 
     @Nested
-    @DisplayName("findAllWithStopsAndRoutes (paginated)")
-    class FindAllWithStopsAndRoutesPaginated {
+    @DisplayName("findAllIds + findAllByIdInWithStopsAndRoutes (paginated two-step)")
+    class FindAllPaginatedTwoStep {
 
         @Test
-        @DisplayName("returns paginated results with stops and itineraries")
+        @DisplayName("first page returns ids that hydrate to entities with stops + itineraries")
         void returnsPaginatedResults() {
-            Page<Line> result = repository.findAllWithStopsAndRoutes(PageRequest.of(0, 2));
+            Page<UUID> idsPage = repository.findAllIds(PageRequest.of(0, 2));
+            List<Line> hydrated = repository.findAllByIdInWithStopsAndRoutes(idsPage.getContent());
 
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getTotalElements()).isEqualTo(3);
-            assertThat(result.getTotalPages()).isEqualTo(2);
+            assertThat(idsPage.getContent()).hasSize(2);
+            assertThat(idsPage.getTotalElements()).isEqualTo(3);
+            assertThat(idsPage.getTotalPages()).isEqualTo(2);
+            assertThat(hydrated).hasSize(2);
         }
 
         @Test
-        @DisplayName("second page contains remaining lines")
+        @DisplayName("second page contains the remaining line")
         void secondPageContainsRemaining() {
-            Page<Line> result = repository.findAllWithStopsAndRoutes(PageRequest.of(1, 2));
+            Page<UUID> idsPage = repository.findAllIds(PageRequest.of(1, 2));
 
-            assertThat(result.getContent()).hasSize(1);
+            assertThat(idsPage.getContent()).hasSize(1);
         }
     }
 

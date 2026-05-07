@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,12 +50,21 @@ public class LineService {
 
     @Transactional(readOnly = true)
     public PageResponse<LineResponse> getAllLines(String search, Pageable pageable) {
-        Page<Line> page;
-        if (search != null && !search.isBlank()) {
-            page = lineRepository.findBySearchWithStopsAndRoutes(search.trim(), pageable);
-        } else {
-            page = lineRepository.findAllWithStopsAndRoutes(pageable);
+        // Two-step: page over Line ids without JOIN FETCH (Hibernate
+        // paginates in SQL), then hydrate only the page's entities with
+        // their collections in a second query.
+        Page<UUID> idsPage = (search != null && !search.isBlank())
+                ? lineRepository.findIdsBySearch(search.trim(), pageable)
+                : lineRepository.findAllIds(pageable);
+        if (idsPage.getContent().isEmpty()) {
+            return PageResponse.from(Page.empty(pageable), LineResponse::from);
         }
+        List<Line> hydrated = lineRepository.findAllByIdInWithStopsAndRoutes(idsPage.getContent());
+        // Preserve the page's order. The hydrate query uses IN (:ids)
+        // which doesn't guarantee order.
+        Map<UUID, Line> byId = hydrated.stream().collect(Collectors.toMap(Line::getId, l -> l));
+        List<Line> ordered = idsPage.getContent().stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
+        Page<Line> page = new org.springframework.data.domain.PageImpl<>(ordered, pageable, idsPage.getTotalElements());
         return PageResponse.from(page, LineResponse::from);
     }
 

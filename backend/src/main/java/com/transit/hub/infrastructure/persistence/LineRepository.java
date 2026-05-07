@@ -25,17 +25,30 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
     @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.itineraries i LEFT JOIN FETCH i.itineraryStops ist LEFT JOIN FETCH ist.stop ORDER BY l.code")
     List<Line> findAllWithItineraryStops();
 
-    @Query(value = "SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE " +
+    /** Two-step pagination, step 1: page Line ids matching the search.
+     *  Without {@code JOIN FETCH} on collection associations Hibernate
+     *  can paginate in SQL — the {@code WithStopsAndRoutes} variant did
+     *  the opposite and dragged the entire result set into memory
+     *  before slicing (HHH90003004). */
+    @Query(value = "SELECT l.id FROM Line l WHERE " +
            "LOWER(l.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.name) LIKE LOWER(CONCAT('%', :search, '%'))",
-           countQuery = "SELECT COUNT(DISTINCT l) FROM Line l WHERE " +
+           countQuery = "SELECT COUNT(l) FROM Line l WHERE " +
            "LOWER(l.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(l.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Line> findBySearchWithStopsAndRoutes(String search, Pageable pageable);
+    Page<UUID> findIdsBySearch(String search, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries",
+    /** Two-step pagination, step 1 — full listing variant. */
+    @Query(value = "SELECT l.id FROM Line l",
            countQuery = "SELECT COUNT(l) FROM Line l")
-    Page<Line> findAllWithStopsAndRoutes(Pageable pageable);
+    Page<UUID> findAllIds(Pageable pageable);
+
+    /** Two-step pagination, step 2: hydrate the page's entities together
+     *  with the collections the response needs, in one round-trip but
+     *  bounded by the id list. */
+    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries " +
+           "WHERE l.id IN :ids")
+    List<Line> findAllByIdInWithStopsAndRoutes(List<UUID> ids);
 
     @Query("SELECT l FROM Line l WHERE " +
            "LOWER(l.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
