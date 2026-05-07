@@ -15,7 +15,9 @@ import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.Transfer;
+import com.transit.hub.domain.model.Area;
 import com.transit.hub.domain.model.enums.WheelchairAccess;
+import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
@@ -46,6 +48,7 @@ public class NetworkMapService {
     private final BroadcastMessageRepository broadcastMessageRepository;
     private final TransferRepository transferRepository;
     private final ScheduleRepository scheduleRepository;
+    private final AreaRepository areaRepository;
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActiveDisplayTracker activeDisplayTracker;
@@ -86,6 +89,27 @@ public class NetworkMapService {
         Set<UUID> onDemandStopIds = scheduleRepository.findStopIdsWithOnDemandPickup();
         if (onDemandStopIds == null) {onDemandStopIds = Set.of();}
 
+        // Reverse map: stop UUID → sorted list of Fares v2 area names.
+        // Built once per cache miss from a single fetch-with-stops query
+        // so the popup-side display doesn't trigger N+1. Empty when the
+        // feed didn't ship areas.txt; the popup hides the zone pill in
+        // that case. Defensive null check matches the onDemand pattern
+        // for tests that don't stub the repo explicitly.
+        Map<UUID, List<String>> areaNamesByStopId = new HashMap<>();
+        List<Area> areas = areaRepository.findAllWithStops();
+        if (areas != null) {
+            for (Area area : areas) {
+                String name = area.getName() != null ? area.getName() : area.getExternalId();
+                if (name == null) {continue;}
+                for (Stop s : area.getStops()) {
+                    areaNamesByStopId.computeIfAbsent(s.getId(), k -> new ArrayList<>()).add(name);
+                }
+            }
+            for (List<String> names : areaNamesByStopId.values()) {
+                Collections.sort(names);
+            }
+        }
+
         // Surface stops = parent stations + free-standing platforms.
         // Platforms with a parent disappear into their parent.
         Map<UUID, UUID> platformToParentId = new HashMap<>();
@@ -95,7 +119,8 @@ public class NetworkMapService {
                 platformToParentId.put(s.getId(), s.getParentStop().getId());
                 continue;
             }
-            networkStops.add(toNetworkStop(s, childrenByParentId.get(s.getId()), onDemandStopIds));
+            networkStops.add(toNetworkStop(s, childrenByParentId.get(s.getId()),
+                    onDemandStopIds, areaNamesByStopId));
         }
 
         // Transfers between platforms collapse to transfers between their
@@ -176,7 +201,9 @@ public class NetworkMapService {
         );
     }
 
-    private NetworkStop toNetworkStop(Stop stop, List<Stop> children, Set<UUID> onDemandStopIds) {
+    private NetworkStop toNetworkStop(Stop stop, List<Stop> children,
+                                       Set<UUID> onDemandStopIds,
+                                       Map<UUID, List<String>> areaNamesByStopId) {
         // Union of own lines + children's lines, deduped + sorted.
         // Pre-Phase 1.3 a parent station carried its own lines via the
         // schedule collapse; post-Phase 1.3 parents are bare and the
@@ -218,6 +245,21 @@ public class NetworkMapService {
             }
         }
 
+        // Area names: own + children's, deduped + sorted. Same union
+        // pattern as line codes — Phase 1.3 may have stop_areas attach
+        // to platforms while the parent (the surface node on the map)
+        // gets nothing on its own row.
+        Set<String> areaSet = new java.util.LinkedHashSet<>();
+        List<String> ownAreas = areaNamesByStopId.get(stop.getId());
+        if (ownAreas != null) {areaSet.addAll(ownAreas);}
+        if (children != null) {
+            for (Stop child : children) {
+                List<String> childAreas = areaNamesByStopId.get(child.getId());
+                if (childAreas != null) {areaSet.addAll(childAreas);}
+            }
+        }
+        List<String> fareAreaNames = areaSet.stream().sorted().toList();
+
         return new NetworkStop(
                 stop.getId(),
                 stop.getName(),
@@ -227,7 +269,8 @@ public class NetworkMapService {
                 stop.getSchematicY(),
                 lineCodes,
                 wheelchair,
-                hasOnDemand
+                hasOnDemand,
+                fareAreaNames
         );
     }
 

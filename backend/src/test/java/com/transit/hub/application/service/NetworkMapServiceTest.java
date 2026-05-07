@@ -60,6 +60,9 @@ class NetworkMapServiceTest {
     private com.transit.hub.infrastructure.persistence.ScheduleRepository scheduleRepository;
 
     @Mock
+    private com.transit.hub.infrastructure.persistence.AreaRepository areaRepository;
+
+    @Mock
     private CacheManager cacheManager;
 
     @Mock

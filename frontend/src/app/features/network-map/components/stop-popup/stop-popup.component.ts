@@ -79,6 +79,12 @@ interface TimetableGroup {
                 Non accessible
               </span>
             }
+            @for (zone of data.stop.fareAreaNames ?? []; track zone) {
+              <span class="meta-pill meta-zone">
+                <mat-icon>place</mat-icon>
+                {{ zone }}
+              </span>
+            }
           </div>
         }
       </div>
@@ -226,6 +232,11 @@ interface TimetableGroup {
       background: rgba(231, 76, 60, 0.14);
       color: rgb(180, 50, 38);
       border: 1px solid rgba(231, 76, 60, 0.5);
+    }
+    .meta-pill.meta-zone {
+      background: rgba(96, 56, 200, 0.14);
+      color: rgb(72, 38, 156);
+      border: 1px solid rgba(96, 56, 200, 0.5);
     }
 
     :host {
@@ -509,14 +520,15 @@ export class StopPopupComponent implements OnInit {
     return this.data.lineColorMap.get(code) ?? '#666';
   }
 
-  /** True when the stop has at least one accessibility / TAD signal
-   *  worth surfacing — keeps the metadata row out of the popup
-   *  entirely on stops without notable info, so the popup stays
-   *  light on dense networks. */
+  /** True when the stop has at least one accessibility / TAD / zone
+   *  signal worth surfacing — keeps the metadata row out of the
+   *  popup entirely on stops without notable info, so the popup
+   *  stays light on dense networks. */
   showStopMeta(): boolean {
     return this.data.stop.hasOnDemand === true
         || this.data.stop.wheelchairBoarding === 'ACCESSIBLE'
-        || this.data.stop.wheelchairBoarding === 'NOT_ACCESSIBLE';
+        || this.data.stop.wheelchairBoarding === 'NOT_ACCESSIBLE'
+        || (this.data.stop.fareAreaNames?.length ?? 0) > 0;
   }
 
   getMessageIcon(severity: string): string {

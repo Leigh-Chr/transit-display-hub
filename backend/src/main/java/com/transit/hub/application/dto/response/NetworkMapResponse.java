@@ -44,7 +44,14 @@ public record NetworkMapResponse(
              *  (on-request agency) or 3 (on-request driver). The kiosk
              *  + map render a phone icon on these stops so passengers
              *  know not to wait without calling first. */
-            boolean hasOnDemand
+            boolean hasOnDemand,
+            /** Names of every Fares v2 area this stop belongs to (or any
+             *  of its child platforms when the stop is a parent station).
+             *  Empty when the feed has no Fares v2 areas — the popup
+             *  hides the zone pill in that case. Stored as names rather
+             *  than ids because the popup is a leaf consumer; admins
+             *  who need ids go through {@code /api/admin/fares-v2}. */
+            List<String> fareAreaNames
     ) {}
 
     /** Inline transfer between two stops. {@code transferType} mirrors

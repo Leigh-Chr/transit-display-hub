@@ -402,6 +402,10 @@ export interface NetworkStop {
    *  on-demand indicator on the stop dot and the popup surfaces the
    *  per-arrival booking flow. */
   hasOnDemand?: boolean;
+  /** Names of every Fares v2 area this stop belongs to, sorted.
+   *  Empty when the feed has no areas.txt; the popup hides the
+   *  zone pill in that case. */
+  fareAreaNames?: string[];
 }
 
 export interface NetworkBounds {
