@@ -111,7 +111,19 @@ public class DisplayStateCalculator {
         // avoids the 1+N "fetch exceptions per schedule" trap.
         Map<UUID, ServiceCalendar> calendarsById = loadCalendarsById();
 
-        List<Schedule> upcoming = loadUpcomingSchedules(stopId, now, windowEnd);
+        // Parent-station aggregation: a kiosk bound to a station with
+        // children pulls every child's schedules in addition to its
+        // own. Existing devices anchored to a previously-collapsed
+        // parent station keep showing the same arrivals after the
+        // platforms split out into their own rows. Free-standing
+        // platforms (location_type=0) and stops without children skip
+        // the extra query — `findChildIds` returns empty.
+        java.util.Set<UUID> targetStopIds = new java.util.HashSet<>();
+        targetStopIds.add(stopId);
+        if (stop.getLocationType() == 1) {
+            targetStopIds.addAll(stopRepository.findChildIds(stopId));
+        }
+        List<Schedule> upcoming = loadUpcomingSchedules(targetStopIds, now, windowEnd);
         // Filter on the service calendar of the day each schedule actually
         // belongs to: schedules pulled from the cross-midnight tail belong
         // to tomorrow's calendar, the rest to today's. Also drop
@@ -341,13 +353,25 @@ public class DisplayStateCalculator {
         return calendarsById.get(lazy.getId());
     }
 
-    private List<Schedule> loadUpcomingSchedules(UUID stopId, LocalTime now, LocalTime windowEnd) {
+    private List<Schedule> loadUpcomingSchedules(java.util.Set<UUID> stopIds,
+                                                  LocalTime now, LocalTime windowEnd) {
+        // Single-element fast path uses the original = comparison
+        // instead of IN; saves one planning step on the hot path
+        // (most kiosks bind to a single platform).
+        boolean singleStop = stopIds.size() == 1;
+        UUID singleId = singleStop ? stopIds.iterator().next() : null;
         if (windowEnd.isAfter(now)) {
-            return scheduleRepository.findByStopIdAndTimeWindowWithItinerary(stopId, now, windowEnd);
+            return singleStop
+                    ? scheduleRepository.findByStopIdAndTimeWindowWithItinerary(singleId, now, windowEnd)
+                    : scheduleRepository.findByStopIdsAndTimeWindowWithItinerary(stopIds, now, windowEnd);
         }
         // Window crosses midnight: union of "after now today" and "up to windowEnd tomorrow"
-        List<Schedule> beforeMidnight = scheduleRepository.findByStopIdAndTimeAfterWithItinerary(stopId, now);
-        List<Schedule> afterMidnight = scheduleRepository.findByStopIdAndTimeBeforeOrEqualWithItinerary(stopId, windowEnd);
+        List<Schedule> beforeMidnight = singleStop
+                ? scheduleRepository.findByStopIdAndTimeAfterWithItinerary(singleId, now)
+                : scheduleRepository.findByStopIdsAndTimeAfterWithItinerary(stopIds, now);
+        List<Schedule> afterMidnight = singleStop
+                ? scheduleRepository.findByStopIdAndTimeBeforeOrEqualWithItinerary(singleId, windowEnd)
+                : scheduleRepository.findByStopIdsAndTimeBeforeOrEqualWithItinerary(stopIds, windowEnd);
         List<Schedule> combined = new java.util.ArrayList<>(beforeMidnight.size() + afterMidnight.size());
         combined.addAll(beforeMidnight);
         combined.addAll(afterMidnight);

@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -116,13 +117,30 @@ public class Stop {
     private com.transit.hub.domain.model.enums.WheelchairAccess wheelchairBoarding;
 
     /** GTFS {@code platform_code}. Short identifier for the platform
-     *  ("A", "12bis"). Persisted whenever the stop the importer keeps
-     *  publishes one at root level. The full per-platform display
-     *  (where a station expands into multiple selectable rows) lives
-     *  in a follow-up that splits the parent-station collapse logic. */
+     *  ("A", "12bis"). Each platform persists as its own Stop row with
+     *  {@link #parentStop} pointing at its station — see Phase 1.3 in
+     *  ADR 0022. Null on stops that don't represent a platform (parent
+     *  stations themselves and free-standing bus poles). */
     @Size(max = 10)
     @Column(name = "platform_code", length = 10)
     private String platformCode;
+
+    /** GTFS {@code location_type}: 0 platform / regular stop (default),
+     *  1 station / parent. Other values (entrance, generic node,
+     *  boarding area) are skipped at import. The display calculator
+     *  uses 1 to decide whether to aggregate children. */
+    @Column(name = "location_type", nullable = false)
+    @Builder.Default
+    private short locationType = 0;
+
+    /** Parent station for a platform. The display calculator follows
+     *  this link in reverse — a kiosk bound to a station aggregates
+     *  arrivals from every child platform — so existing devices
+     *  bound to a previously-collapsed parent keep working. Null on
+     *  free-standing stops without a parent. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_stop_id")
+    private Stop parentStop;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",

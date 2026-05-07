@@ -21,6 +21,13 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
      *  admin to scroll the full list. */
     long countByDisabledTrue();
 
+    /** Child platforms attached to a parent station. Phase 1.3
+     *  fan-out: when a kiosk is bound to a parent stop, the display
+     *  calculator unions the parent's own schedules with every
+     *  child's so previously-collapsed bindings keep working. */
+    @Query("SELECT s.id FROM Stop s WHERE s.parentStop.id = :parentId AND s.disabled = false")
+    List<UUID> findChildIds(UUID parentId);
+
     @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices")
     List<Stop> findAllWithLinesAndDevices();
 

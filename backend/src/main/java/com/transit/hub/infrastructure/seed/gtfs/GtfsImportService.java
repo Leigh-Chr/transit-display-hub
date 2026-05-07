@@ -467,9 +467,14 @@ public class GtfsImportService {
     }
 
 
-    private record StopImport(
-            Map<String, Stop> stopsByGtfsId,
-            Map<String, String> rootStopIdByGtfsId) {}
+    /**
+     * Persisted-stop lookup keyed by the GTFS {@code stop_id}. Phase
+     * 1.3 keeps every platform and parent station as its own row, so
+     * downstream consumers (schedules, itineraries, transfers, areas,
+     * pathways) just resolve their {@code stop_id} reference directly
+     * — no parent-collapse walk anymore.
+     */
+    private record StopImport(Map<String, Stop> stopsByGtfsId) {}
 
     private StopImport importStops(Path stopsFile) throws IOException {
         record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
@@ -480,7 +485,9 @@ public class GtfsImportService {
         try (CSVParser parser = openCsv(stopsFile)) {
             for (CSVRecord record : parser) {
                 int locationType = parseInt(optional(record, "location_type"), 0);
-                // Skip entrances/exits (2), generic nodes (3), boarding areas (4)
+                // Phase 1.3: keep platforms (0) and parent stations (1).
+                // Skip entrances/exits (2), generic nodes (3), boarding
+                // areas (4) — none are referenced by stop_times.
                 if (locationType >= 2) {
                     continue;
                 }
@@ -501,30 +508,6 @@ public class GtfsImportService {
             }
         }
 
-        // Resolve each stop to its root (a stop with no parent_station).
-        // This generic rule handles both standard and non-standard feeds:
-        //   - standard: keep location_type=1 (station) when present
-        //   - non-standard: keep stops without parent_station regardless of location_type
-        Map<String, RawStop> byId = new HashMap<>();
-        for (RawStop r : raw) {
-            byId.put(r.id, r);
-        }
-
-        Map<String, String> rootByGtfsId = new HashMap<>();
-        for (RawStop r : raw) {
-            String current = r.id;
-            int hops = 0;
-            while (true) {
-                RawStop currentStop = byId.get(current);
-                if (currentStop == null || isBlank(currentStop.parent) || hops > 5) {
-                    break;
-                }
-                current = currentStop.parent;
-                hops++;
-            }
-            rootByGtfsId.put(r.id, current);
-        }
-
         // Pre-load existing stops by external_id so re-imports keep the
         // same UUID — Devices reference Stop.id directly, and dropping
         // the row on re-import would unbind every kiosk in the field.
@@ -535,16 +518,13 @@ public class GtfsImportService {
                         Stop::getExternalId, java.util.function.Function.identity(),
                         (a, b) -> a));
 
-        // Persist only root stops with a name and coordinates
+        // Two-pass persistence: parent stations first (so children can
+        // reference them via parentStop FK), then platforms.
         Map<String, Stop> result = new LinkedHashMap<>();
         Set<UUID> seenIds = new HashSet<>();
-        Set<String> rootIds = new HashSet<>(rootByGtfsId.values());
-        for (String rootId : rootIds) {
-            RawStop r = byId.get(rootId);
-            if (r == null || isBlank(r.name)) {
-                continue;
-            }
-            String externalId = truncate(rootId, 100);
+        java.util.function.BiConsumer<RawStop, Stop> persist = (r, parent) -> {
+            if (isBlank(r.name)) {return;}
+            String externalId = truncate(r.id, 100);
             Stop stop = existingByExternalId.containsKey(externalId)
                     ? existingByExternalId.get(externalId)
                     : new Stop();
@@ -560,13 +540,30 @@ public class GtfsImportService {
             stop.setWheelchairBoarding(
                     com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding));
             stop.setPlatformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10));
+            stop.setLocationType((short) r.locationType);
+            stop.setParentStop(parent);
             // Re-enable on every import: a stop that disappeared in a
             // previous feed and reappears in the current one should
             // become live again.
             stop.setDisabled(false);
             Stop saved = stopRepository.save(stop);
             seenIds.add(saved.getId());
-            result.put(rootId, saved);
+            result.put(r.id, saved);
+        };
+
+        // Pass 1: parent stations. Platforms whose declared parent
+        // isn't in the feed at all (broken reference) are kept as
+        // free-standing in pass 2.
+        for (RawStop r : raw) {
+            if (r.locationType == 1) {persist.accept(r, null);}
+        }
+        // Pass 2: platforms (location_type=0). The parent FK resolves
+        // against the pass-1 map; missing parents fall through to null.
+        for (RawStop r : raw) {
+            if (r.locationType != 1) {
+                Stop parent = isBlank(r.parent) ? null : result.get(r.parent);
+                persist.accept(r, parent);
+            }
         }
         // Stops the new feed no longer declares: flag disabled rather
         // than delete so Devices keep their stop_id FK valid. The kiosk
@@ -581,10 +578,12 @@ public class GtfsImportService {
                 disabled++;
             }
         }
-        log.info("GTFS import: {} stops upserted (from {} raw entries, {} flagged disabled as orphans)",
-                result.size(), raw.size(), disabled);
-        return new StopImport(result, rootByGtfsId);
+        long parents = result.values().stream().filter(s -> s.getLocationType() == 1).count();
+        log.info("GTFS import: {} stops upserted ({} platforms, {} stations, {} flagged disabled)",
+                result.size(), result.size() - parents, parents, disabled);
+        return new StopImport(result);
     }
+
 
     private record ItineraryImport(
             int itineraryCount,
@@ -763,11 +762,7 @@ public class GtfsImportService {
             int position = 0;
             Set<Stop> seenInItinerary = new HashSet<>();
             for (TimedStop ts : trip) {
-                String rootStopId = stopImport.rootStopIdByGtfsId.get(ts.stopId);
-                if (rootStopId == null) {
-                    continue;
-                }
-                Stop stop = stopImport.stopsByGtfsId.get(rootStopId);
+                Stop stop = stopImport.stopsByGtfsId.get(ts.stopId);
                 if (stop == null) {
                     continue;
                 }
@@ -993,9 +988,7 @@ public class GtfsImportService {
                 Itinerary itinerary = itineraries.get(new RouteDirKey(trip.routeId, trip.directionId));
                 if (itinerary == null) {continue;}
 
-                String rootStopId = stopImport.rootStopIdByGtfsId.get(record.get("stop_id"));
-                if (rootStopId == null) {continue;}
-                Stop stop = stopImport.stopsByGtfsId.get(rootStopId);
+                Stop stop = stopImport.stopsByGtfsId.get(record.get("stop_id"));
                 if (stop == null) {continue;}
 
                 LocalTime time = GtfsParse.parseGtfsTime(firstNonBlank(
@@ -1810,9 +1803,7 @@ public class GtfsImportService {
                     String stopGtfsId = optional(record, "stop_id");
                     Area area = result.get(areaId);
                     if (area == null || isBlank(stopGtfsId)) {continue;}
-                    String rootStopId = stopImport.rootStopIdByGtfsId.get(stopGtfsId);
-                    if (rootStopId == null) {continue;}
-                    Stop stop = stopImport.stopsByGtfsId.get(rootStopId);
+                    Stop stop = stopImport.stopsByGtfsId.get(stopGtfsId);
                     if (stop != null) {
                         area.getStops().add(stop);
                     }
@@ -2108,12 +2099,12 @@ public class GtfsImportService {
         log.info("GTFS import: {} attributions created", batch.size());
     }
 
-    /** Resolves a GTFS stop_id to a persisted root Stop, walking through
-     *  the parent_station chain the way stop_times does. */
+    /** Resolves a GTFS stop_id to its persisted Stop. Phase 1.3 keeps
+     *  every platform and station as a separate row, so a direct
+     *  lookup against {@code stopsByGtfsId} is enough — no
+     *  parent-walk required. */
     private static Stop resolveStop(String gtfsStopId, StopImport stopImport) {
-        String rootId = stopImport.rootStopIdByGtfsId.get(gtfsStopId);
-        if (rootId == null) {return null;}
-        return stopImport.stopsByGtfsId.get(rootId);
+        return stopImport.stopsByGtfsId.get(gtfsStopId);
     }
 
     private void assignSchematicCoordinates(Collection<Stop> stops) {

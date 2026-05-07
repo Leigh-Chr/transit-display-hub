@@ -32,6 +32,27 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
            "WHERE s.stop.id = :stopId AND s.time <= :endTime ORDER BY s.time")
     List<Schedule> findByStopIdAndTimeBeforeOrEqualWithItinerary(UUID stopId, LocalTime endTime);
 
+    /** Phase 1.3 parent-station aggregation. Same shape as
+     *  {@link #findByStopIdAndTimeWindowWithItinerary} but accepts a
+     *  collection so a kiosk bound to a parent station can fan out
+     *  across its child platforms. The single-id methods above still
+     *  cover the regular per-platform case at lower JPQL cost. */
+    @Query("SELECT s FROM Schedule s JOIN FETCH s.itinerary i JOIN FETCH i.line " +
+           "LEFT JOIN FETCH i.itineraryStops is LEFT JOIN FETCH is.stop " +
+           "WHERE s.stop.id IN :stopIds AND s.time > :startTime AND s.time <= :endTime ORDER BY s.time")
+    List<Schedule> findByStopIdsAndTimeWindowWithItinerary(java.util.Collection<UUID> stopIds,
+                                                            LocalTime startTime, LocalTime endTime);
+
+    @Query("SELECT s FROM Schedule s JOIN FETCH s.itinerary i JOIN FETCH i.line " +
+           "LEFT JOIN FETCH i.itineraryStops is LEFT JOIN FETCH is.stop " +
+           "WHERE s.stop.id IN :stopIds AND s.time > :time ORDER BY s.time")
+    List<Schedule> findByStopIdsAndTimeAfterWithItinerary(java.util.Collection<UUID> stopIds, LocalTime time);
+
+    @Query("SELECT s FROM Schedule s JOIN FETCH s.itinerary i JOIN FETCH i.line " +
+           "LEFT JOIN FETCH i.itineraryStops is LEFT JOIN FETCH is.stop " +
+           "WHERE s.stop.id IN :stopIds AND s.time <= :endTime ORDER BY s.time")
+    List<Schedule> findByStopIdsAndTimeBeforeOrEqualWithItinerary(java.util.Collection<UUID> stopIds, LocalTime endTime);
+
     void deleteByStopId(UUID stopId);
 
     /**

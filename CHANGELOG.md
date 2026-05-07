@@ -20,6 +20,18 @@ schedule import produces real per-departure rows from
   `route_networks` and `fare_media` from the V31 follow-up. Coexists
   with v1 — feeds in transition publish both, both get persisted.
   Only `fare_leg_join_rules.txt` remains out of scope (niche).
+- **Per-platform Stops** (V33, ADR 0022). The importer no longer
+  collapses parent_station chains. Each GTFS platform persists as
+  its own Stop with `parent_stop_id` pointing at its station, plus
+  the station itself. Schedules anchor to the actual platform; a
+  kiosk bound to a parent station aggregates schedules from every
+  child platform via a new `findChildIds` repo + `IN`-based
+  schedule query. Existing devices bound to a previously-collapsed
+  parent keep their UUID and start aggregating their newly-created
+  platforms automatically — no rebinding needed. The downstream
+  importers (itineraries, schedules, transfers, pathways, areas)
+  shed their `rootStopIdByGtfsId` parent-walk: a GTFS `stop_id`
+  resolves directly to the persisted Stop now.
 - **TAD booking link on schedules** (V32). Each `Schedule` now carries
   optional `pickupBookingRule` / `dropOffBookingRule` FKs from
   `stop_times.pickup_booking_rule_id` / `drop_off_booking_rule_id`,
