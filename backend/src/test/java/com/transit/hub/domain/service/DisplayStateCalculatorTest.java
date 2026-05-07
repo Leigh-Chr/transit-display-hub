@@ -14,6 +14,7 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
+import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +56,9 @@ class DisplayStateCalculatorTest {
     @Mock
     private TranslationRepository translationRepository;
 
+    @Mock
+    private RealtimeAlertCache realtimeAlertCache;
+
     @InjectMocks
     private DisplayStateCalculator calculator;
 
@@ -80,6 +84,11 @@ class DisplayStateCalculatorTest {
         // out before the calculator reaches the calendar lookup (e.g. the
         // "stop not found" path).
         lenient().when(serviceCalendarRepository.findAllWithExceptions())
+                .thenReturn(List.of());
+        // Default to "no realtime alerts" — keeps the existing message
+        // assertions stable while the new MAX_MESSAGES path still picks
+        // up an empty list cleanly.
+        lenient().when(realtimeAlertCache.activeAlerts(any(Instant.class)))
                 .thenReturn(List.of());
     }
 

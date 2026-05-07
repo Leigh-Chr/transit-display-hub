@@ -10,9 +10,12 @@ import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.event.StopDeletedEvent;
+import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.domain.util.ServiceCalendarMatcher;
 import com.transit.hub.domain.util.TranslationLookup;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
+import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -49,6 +52,7 @@ public class DisplayStateCalculator {
     private final BroadcastMessageRepository messageRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
     private final TranslationRepository translationRepository;
+    private final RealtimeAlertCache realtimeAlertCache;
 
     /** Operator-facing zone used to compare wall-clock schedule times against
      *  the server's now(). Pinning it here means the JVM's TZ — which can be
@@ -139,12 +143,29 @@ public class DisplayStateCalculator {
         Set<UUID> lineIds = stop.getLines().stream()
                 .map(Line::getId)
                 .collect(Collectors.toSet());
-        List<DisplayState.MessageInfo> messages = messageRepository
+        List<DisplayState.MessageInfo> persistedMessages = messageRepository
                 .findActiveMessagesForStop(instant, lineIds, stopId)
                 .stream()
-                .limit(MAX_MESSAGES)
                 .map(this::toMessageInfo)
                 .toList();
+        // GTFS-RT alerts overlay: persisted broadcast messages already
+        // count toward MAX_MESSAGES, the realtime alerts append
+        // until we hit the cap. Realtime alerts come from a different
+        // operator surface (the agency's alerts API rather than the
+        // local admin), so we keep them visually distinct by appending
+        // — the kiosk renders them with the same styling as broadcast
+        // alerts of equivalent severity.
+        List<DisplayState.MessageInfo> realtimeMessages =
+                buildRealtimeMessages(stop, instant);
+        List<DisplayState.MessageInfo> messages = new java.util.ArrayList<>(MAX_MESSAGES);
+        for (DisplayState.MessageInfo m : persistedMessages) {
+            if (messages.size() >= MAX_MESSAGES) {break;}
+            messages.add(m);
+        }
+        for (DisplayState.MessageInfo m : realtimeMessages) {
+            if (messages.size() >= MAX_MESSAGES) {break;}
+            messages.add(m);
+        }
 
         // Get and increment version
         long version = versionMap
@@ -162,6 +183,90 @@ public class DisplayStateCalculator {
                 version,
                 Instant.now()
         );
+    }
+
+    /**
+     * Pulls active GTFS-RT alerts that target the stop or any of its
+     * lines / agencies, and converts them to {@link DisplayState.MessageInfo}.
+     * The match uses {@code external_id} on both ends because the
+     * realtime feed identifies entities by their GTFS ids, not by our
+     * UUIDs.
+     */
+    private List<DisplayState.MessageInfo> buildRealtimeMessages(Stop stop, Instant now) {
+        List<RealtimeAlertCache.AlertSnapshot> alerts = realtimeAlertCache.activeAlerts(now);
+        if (alerts.isEmpty()) {
+            return List.of();
+        }
+        String stopExternalId = stop.getExternalId();
+        Set<String> lineExternalIds = new java.util.HashSet<>();
+        Set<String> agencyExternalIds = new java.util.HashSet<>();
+        for (Line l : stop.getLines()) {
+            if (l.getExternalId() != null) {lineExternalIds.add(l.getExternalId());}
+            if (l.getAgency() != null && l.getAgency().getExternalId() != null) {
+                agencyExternalIds.add(l.getAgency().getExternalId());
+            }
+        }
+        List<DisplayState.MessageInfo> result = new java.util.ArrayList<>();
+        for (RealtimeAlertCache.AlertSnapshot a : alerts) {
+            if (!matchesStop(a, stopExternalId, lineExternalIds, agencyExternalIds)) {
+                continue;
+            }
+            String header = a.headerText();
+            String description = a.descriptionText();
+            // Skip alerts with no usable text — kiosks can't render
+            // anything meaningful from a header-less alert.
+            if ((header == null || header.isBlank())
+                    && (description == null || description.isBlank())) {
+                continue;
+            }
+            result.add(new DisplayState.MessageInfo(
+                    header == null || header.isBlank() ? "Alerte" : header,
+                    description == null ? "" : description,
+                    severityFromAlert(a)
+            ));
+        }
+        return result;
+    }
+
+    private static boolean matchesStop(RealtimeAlertCache.AlertSnapshot a,
+                                       String stopExternalId,
+                                       Set<String> lineExternalIds,
+                                       Set<String> agencyExternalIds) {
+        // Empty informed_entity means "applies to the whole network";
+        // treat as a network-wide alert that surfaces everywhere.
+        boolean noTargets = a.routeExternalIds().isEmpty()
+                && a.stopExternalIds().isEmpty()
+                && a.agencyExternalIds().isEmpty();
+        if (noTargets) {return true;}
+        if (stopExternalId != null && a.stopExternalIds().contains(stopExternalId)) {return true;}
+        for (String lineId : lineExternalIds) {
+            if (a.routeExternalIds().contains(lineId)) {return true;}
+        }
+        for (String agencyId : agencyExternalIds) {
+            if (a.agencyExternalIds().contains(agencyId)) {return true;}
+        }
+        return false;
+    }
+
+    /**
+     * Maps GTFS-RT severity to our three-state {@link MessageSeverity}.
+     * When the feed leaves severity unset, we infer from {@code effect}
+     * — {@code NO_SERVICE} on a line maps to CRITICAL, partial
+     * disruptions to WARNING, the rest to INFO.
+     */
+    private static MessageSeverity severityFromAlert(RealtimeAlertCache.AlertSnapshot a) {
+        GtfsRealtime.Alert.SeverityLevel level = a.severity();
+        if (level == GtfsRealtime.Alert.SeverityLevel.SEVERE) {return MessageSeverity.CRITICAL;}
+        if (level == GtfsRealtime.Alert.SeverityLevel.WARNING) {return MessageSeverity.WARNING;}
+        if (level == GtfsRealtime.Alert.SeverityLevel.INFO) {return MessageSeverity.INFO;}
+        // UNKNOWN_SEVERITY → fall back to effect inference
+        GtfsRealtime.Alert.Effect effect = a.effect();
+        return switch (effect) {
+            case NO_SERVICE, STOP_MOVING -> MessageSeverity.CRITICAL;
+            case REDUCED_SERVICE, SIGNIFICANT_DELAYS, DETOUR, ACCESSIBILITY_ISSUE,
+                 MODIFIED_SERVICE -> MessageSeverity.WARNING;
+            default -> MessageSeverity.INFO;
+        };
     }
 
     private TranslationLookup loadTranslations() {

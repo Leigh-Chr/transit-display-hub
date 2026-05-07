@@ -1,0 +1,158 @@
+// Subset of the official GTFS-Realtime proto definition (Google,
+// transit/gtfs-realtime). We persist only what Phase 3 light needs —
+// ServiceAlerts and just enough surrounding scaffolding to parse them
+// — and the field numbers are kept identical to the upstream so a
+// real feed parses correctly.
+//
+// TripUpdate and VehiclePosition message bodies are intentionally
+// stubbed: the parser still recognises the wire tags (matching field
+// numbers 3 / 4 of FeedEntity), and unknown fields inside their
+// bodies are skipped without error. A future phase wanting full
+// realtime trip / vehicle data should expand them in place.
+//
+// Source: https://github.com/google/transit/blob/master/gtfs-realtime/proto/gtfs-realtime.proto
+syntax = "proto2";
+
+option java_package = "com.google.transit.realtime";
+option java_outer_classname = "GtfsRealtime";
+
+package transit_realtime;
+
+// ---------------------------------------------------------------------
+// Feed envelope
+// ---------------------------------------------------------------------
+
+message FeedMessage {
+    required FeedHeader header = 1;
+    repeated FeedEntity entity = 2;
+}
+
+message FeedHeader {
+    required string gtfs_realtime_version = 1;
+
+    enum Incrementality {
+        FULL_DATASET = 0;
+        DIFFERENTIAL = 1;
+    }
+    optional Incrementality incrementality = 2 [default = FULL_DATASET];
+
+    optional uint64 timestamp = 3;
+}
+
+message FeedEntity {
+    required string id = 1;
+    optional bool is_deleted = 2 [default = false];
+
+    // Stubs — the parser still skips their bodies cleanly.
+    optional TripUpdate trip_update = 3;
+    optional VehiclePosition vehicle = 4;
+
+    optional Alert alert = 5;
+}
+
+// ---------------------------------------------------------------------
+// Stubs
+// ---------------------------------------------------------------------
+
+message TripUpdate {
+    optional TripDescriptor trip = 1;
+}
+
+message VehiclePosition {
+    optional TripDescriptor trip = 1;
+}
+
+// ---------------------------------------------------------------------
+// Service alerts
+// ---------------------------------------------------------------------
+
+message TimeRange {
+    optional uint64 start = 1;
+    optional uint64 end = 2;
+}
+
+message TripDescriptor {
+    optional string trip_id = 1;
+    optional string route_id = 5;
+    optional uint32 direction_id = 6;
+    optional string start_time = 2;
+    optional string start_date = 3;
+
+    enum ScheduleRelationship {
+        SCHEDULED = 0;
+        ADDED = 1;
+        UNSCHEDULED = 2;
+        CANCELED = 3;
+        REPLACEMENT = 5;
+        DUPLICATED = 6;
+        DELETED = 7;
+    }
+    optional ScheduleRelationship schedule_relationship = 4;
+}
+
+message EntitySelector {
+    optional string agency_id = 1;
+    optional string route_id = 2;
+    optional int32 route_type = 3;
+    optional TripDescriptor trip = 4;
+    optional string stop_id = 5;
+    optional uint32 direction_id = 6;
+}
+
+message TranslatedString {
+    message Translation {
+        required string text = 1;
+        optional string language = 2;
+    }
+    repeated Translation translation = 1;
+}
+
+message Alert {
+    repeated TimeRange active_period = 1;
+    repeated EntitySelector informed_entity = 5;
+
+    enum Cause {
+        UNKNOWN_CAUSE = 1;
+        OTHER_CAUSE = 2;
+        TECHNICAL_PROBLEM = 3;
+        STRIKE = 4;
+        DEMONSTRATION = 5;
+        ACCIDENT = 6;
+        HOLIDAY = 7;
+        WEATHER = 8;
+        MAINTENANCE = 9;
+        CONSTRUCTION = 10;
+        POLICE_ACTIVITY = 11;
+        MEDICAL_EMERGENCY = 12;
+    }
+    optional Cause cause = 6 [default = UNKNOWN_CAUSE];
+
+    enum Effect {
+        NO_SERVICE = 1;
+        REDUCED_SERVICE = 2;
+        SIGNIFICANT_DELAYS = 3;
+        DETOUR = 4;
+        ADDITIONAL_SERVICE = 5;
+        MODIFIED_SERVICE = 6;
+        OTHER_EFFECT = 7;
+        UNKNOWN_EFFECT = 8;
+        STOP_MOVING = 9;
+        NO_EFFECT = 10;
+        ACCESSIBILITY_ISSUE = 11;
+    }
+    optional Effect effect = 7 [default = UNKNOWN_EFFECT];
+
+    optional TranslatedString url = 8;
+    optional TranslatedString header_text = 10;
+    optional TranslatedString description_text = 11;
+    optional TranslatedString tts_header_text = 12;
+    optional TranslatedString tts_description_text = 13;
+
+    enum SeverityLevel {
+        UNKNOWN_SEVERITY = 1;
+        INFO = 2;
+        WARNING = 3;
+        SEVERE = 4;
+    }
+    optional SeverityLevel severity_level = 14 [default = UNKNOWN_SEVERITY];
+}

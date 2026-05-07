@@ -2,6 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.google.protobuf") version "0.9.4"
 }
 
 group = "com.transit"
@@ -47,6 +48,12 @@ dependencies {
     // than hosting an external one so the docs travel with the binary.
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 
+    // GTFS-Realtime — Protobuf bindings generated from the official
+    // gtfs-realtime.proto file in src/main/proto/. Used by the
+    // ServiceAlerts cache to surface operator-pushed alerts on
+    // kiosks and hubs.
+    implementation("com.google.protobuf:protobuf-java:3.25.5")
+
     // Database
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")
@@ -68,6 +75,15 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-data-jpa-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+// Protobuf code generation for gtfs-realtime.proto. The plugin
+// downloads the protoc binary from Maven Central as a Maven artefact;
+// no system-wide protoc install required.
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.5"
+    }
 }
 
 tasks.withType<Test> {
