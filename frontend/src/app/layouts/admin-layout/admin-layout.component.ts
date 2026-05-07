@@ -180,6 +180,16 @@ import {
               <span matListItemTitle>Historique imports</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/pathways"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>alt_route</mat-icon>
+              <span matListItemTitle>Pathways</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 

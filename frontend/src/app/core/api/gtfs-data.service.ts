@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BookingRule, FareAttribute, ImportAudit, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, ImportAudit, Pathway, Translation } from '@shared/models';
 
 /**
  * Read-only access to the GTFS extension tables that the importer
@@ -37,5 +37,12 @@ export class GtfsDataService {
   getImportAudit(limit = 50): Observable<ImportAudit[]> {
     const params = new HttpParams().set('limit', limit.toString());
     return this.http.get<ImportAudit[]>('/api/admin/import-audit', { params });
+  }
+
+  /** Indoor topology around a stop — escalators, lifts, exits, etc.
+   *  Empty list when the feed has no pathways.txt or the stop has no
+   *  inbound/outbound segments. */
+  getPathwaysForStop(stopId: string): Observable<Pathway[]> {
+    return this.http.get<Pathway[]>(`/api/stops/${stopId}/pathways`);
   }
 }

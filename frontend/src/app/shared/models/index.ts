@@ -540,6 +540,34 @@ export interface BookingRule {
   message: string | null;
 }
 
+// GTFS pathways (admin browse, per-stop)
+export type PathwayMode =
+  | 'WALKWAY'
+  | 'STAIRS'
+  | 'MOVING_SIDEWALK'
+  | 'ESCALATOR'
+  | 'ELEVATOR'
+  | 'FARE_GATE'
+  | 'EXIT_GATE';
+
+export interface Pathway {
+  id: string;
+  externalId: string | null;
+  fromStopId: string;
+  fromStopName: string;
+  toStopId: string;
+  toStopName: string;
+  pathwayMode: PathwayMode;
+  bidirectional: boolean;
+  lengthMetres: number | null;
+  traversalTimeSeconds: number | null;
+  stairCount: number | null;
+  maxSlope: number | null;
+  minWidthMetres: number | null;
+  signpostedAs: string | null;
+  reversedSignpostedAs: string | null;
+}
+
 // GTFS import audit (admin browse)
 export type ImportStatus = 'RUNNING' | 'SUCCESS' | 'SKIPPED_UNCHANGED' | 'FAILED';
 
