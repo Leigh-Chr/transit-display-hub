@@ -11,7 +11,7 @@ describe('ThemeService', () => {
 
     // Mock matchMedia (happy-dom may not define it natively)
     (window as unknown as { matchMedia: (query: string) => Partial<MediaQueryList> }).matchMedia =
-      vi.fn().mockReturnValue({ matches: false } as MediaQueryList);
+      vi.fn().mockReturnValue({ matches: false });
 
     TestBed.configureTestingModule({
       providers: [ThemeService]

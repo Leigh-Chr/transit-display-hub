@@ -18,7 +18,7 @@ import { RouteFinderService, RouteResult } from './services/route-finder.service
 import { SchematicMapComponent } from './components/schematic-map/schematic-map.component';
 import { RouteSearchBarComponent } from './components/route-search-bar/route-search-bar.component';
 import { LineIndexComponent } from './components/line-index/line-index.component';
-import { StopPopupComponent, StopPopupData, LineAlertInfo } from './components/stop-popup/stop-popup.component';
+import { StopPopupComponent, LineAlertInfo } from './components/stop-popup/stop-popup.component';
 import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
@@ -1012,7 +1012,7 @@ export class NetworkMapComponent implements OnInit {
         networkAlerts: this.alerts().networkAlerts,
         stopAlerts: this.alerts().stopAlerts[stop.id] ?? [],
         lineAlerts: this.getLineAlertsForStop(stop),
-      } as StopPopupData,
+      },
       panelClass: 'dark-theme',
       width: '460px',
       maxWidth: '95vw',

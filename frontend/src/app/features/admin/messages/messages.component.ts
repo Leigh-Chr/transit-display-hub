@@ -15,10 +15,9 @@ import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
 import { Line, BroadcastMessage, MessageSeverity, PageResponse, CreateMessageRequest } from '@shared/models';
-import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
+import { MessageDialogComponent } from './message-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -515,7 +514,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(MessageDialogComponent, {
-      data: { lines: this.lines() } as MessageDialogData,
+      data: { lines: this.lines() },
       width: '500px',
       ariaLabel: 'Create new broadcast message',
     });
@@ -544,7 +543,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   openEditDialog(message: BroadcastMessage): void {
     const dialogRef = this.dialog.open(MessageDialogComponent, {
-      data: { message, lines: this.lines() } as MessageDialogData,
+      data: { message, lines: this.lines() },
       width: '500px',
       ariaLabel: `Edit message ${message.title}`,
     });
@@ -576,7 +575,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         message: `Delete message "${message.title}"?`,
         confirmText: 'Delete',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm deletion of message ${message.title}`,
     });
 

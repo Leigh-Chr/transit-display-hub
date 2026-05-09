@@ -22,4 +22,4 @@ TestBed.configureTestingModule = function configureTestingModuleWithZoneless(
   }
 
   return originalConfigureTestingModule(moduleDef);
-} as typeof TestBed.configureTestingModule;
+};

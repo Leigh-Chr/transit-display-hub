@@ -10,7 +10,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   HubDisplayDialogComponent,
-  HubDisplayDialogData,
   HubDisplayDialogResult,
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { AuthService } from '@core/auth/auth.service';
@@ -1065,7 +1064,7 @@ export class DashboardComponent implements OnInit {
   private openHubDialogWith(lines: Line[]): void {
     this.dialog
       .open(HubDisplayDialogComponent, {
-        data: { lines } as HubDisplayDialogData,
+        data: { lines },
         width: '550px',
       })
       .afterClosed()

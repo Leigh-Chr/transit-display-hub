@@ -16,7 +16,6 @@ import { Line, PageResponse, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -411,7 +410,7 @@ export class LinesComponent implements OnInit, OnDestroy {
         message: `Delete line "${line.name}"? Itineraries, schedules and line-scoped messages will be removed; stops served by this line are kept.`,
         confirmText: 'Delete',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm deletion of line ${line.name}`,
     });
 

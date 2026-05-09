@@ -329,6 +329,6 @@ export class HubDisplayDialogComponent implements OnInit {
     this.dialogRef.close({
       stopIds: [...this.selectedIds()],
       hubName: this.hubName(),
-    } as HubDisplayDialogResult);
+    });
   }
 }

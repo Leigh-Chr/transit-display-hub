@@ -387,7 +387,7 @@ describe('NetworkMapComponent', () => {
     });
 
     it('should return empty string for falsy input', () => {
-      expect(component.stopDisplayFn('' as unknown as string)).toBe('');
+      expect(component.stopDisplayFn('')).toBe('');
       expect(component.stopDisplayFn(null as unknown as string)).toBe('');
     });
 

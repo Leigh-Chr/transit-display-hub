@@ -14,10 +14,9 @@ import { Subject, takeUntil } from 'rxjs';
 import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
 import { User, PageResponse, CreateUserRequest, UpdateUserRequest } from '@shared/models';
-import { UserDialogComponent, UserDialogData } from './user-dialog.component';
+import { UserDialogComponent } from './user-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -365,7 +364,7 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: { isEdit: false } as UserDialogData,
+      data: { isEdit: false },
       width: '450px',
       ariaLabel: 'Create new user',
     });
@@ -397,7 +396,7 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openEditDialog(user: User): void {
     const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: { user, isEdit: true } as UserDialogData,
+      data: { user, isEdit: true },
       width: '450px',
       ariaLabel: `Edit user ${user.username}`,
     });
@@ -432,7 +431,7 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
         message: `Delete user "${user.username}"? This action cannot be undone.`,
         confirmText: 'Delete',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm deletion of user ${user.username}`,
     });
 

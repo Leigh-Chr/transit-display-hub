@@ -14,7 +14,6 @@ import { BreakpointService } from '@core/services/breakpoint.service';
 import { LineService } from '@core/api/line.service';
 import {
   HubDisplayDialogComponent,
-  HubDisplayDialogData,
   HubDisplayDialogResult,
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 
@@ -401,7 +400,7 @@ export class AdminLayoutComponent {
     this.lineService.getAll().subscribe((lines) => {
       this.dialog
         .open(HubDisplayDialogComponent, {
-          data: { lines } as HubDisplayDialogData,
+          data: { lines },
           width: '550px',
         })
         .afterClosed()

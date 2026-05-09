@@ -14,10 +14,9 @@ import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
 import { Line, Stop, Schedule, CreateScheduleRequest } from '@shared/models';
-import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
+import { ScheduleDialogComponent } from './schedule-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -321,7 +320,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!stop) {return;}
 
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: { lines: stop.lines } as ScheduleDialogData,
+      data: { lines: stop.lines },
       width: '450px',
       ariaLabel: 'Create new schedule entry',
     });
@@ -351,7 +350,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!stop) {return;}
 
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: { entry, lines: stop.lines } as ScheduleDialogData,
+      data: { entry, lines: stop.lines },
       width: '450px',
       ariaLabel: `Edit schedule entry at ${this.formatTime(entry.time)}`,
     });
@@ -384,7 +383,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
         message: `Delete schedule entry at ${this.formatTime(entry.time)} to ${terminusName}?`,
         confirmText: 'Delete',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm deletion of schedule entry at ${this.formatTime(entry.time)}`,
     });
 

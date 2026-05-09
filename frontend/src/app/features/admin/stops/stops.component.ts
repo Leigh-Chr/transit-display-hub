@@ -16,14 +16,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop, PageResponse, CreateStopRequest } from '@shared/models';
-import { StopDialogComponent, StopDialogData } from './stop-dialog.component';
+import { StopDialogComponent } from './stop-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import {
   HubDisplayDialogComponent,
-  HubDisplayDialogData,
   HubDisplayDialogResult,
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
@@ -475,7 +473,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
       data: {
         lines: this.lines(),
         selectedLineId: this.lineId,
-      } as StopDialogData,
+      },
       width: '450px',
       ariaLabel: 'Create new stop',
     });
@@ -507,7 +505,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
       data: {
         stop,
         lines: this.lines(),
-      } as StopDialogData,
+      },
       width: '450px',
       ariaLabel: `Edit stop ${stop.name}`,
     });
@@ -539,7 +537,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
         message: `Delete stop "${stop.name}"? This will also delete all associated schedules.`,
         confirmText: 'Delete',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm deletion of stop ${stop.name}`,
     });
 
@@ -566,7 +564,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
   openHubDisplay(): void {
     this.dialog
       .open(HubDisplayDialogComponent, {
-        data: { lines: this.lines() } as HubDisplayDialogData,
+        data: { lines: this.lines() },
         width: '550px',
       })
       .afterClosed()

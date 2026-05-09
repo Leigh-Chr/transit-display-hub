@@ -12,10 +12,9 @@ import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Device, DeviceStatus, RegisterDeviceRequest } from '@shared/models';
-import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
+import { DeviceDialogComponent } from './device-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -355,7 +354,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(DeviceDialogComponent, {
-      data: { lines: this.lines() } as DeviceDialogData,
+      data: { lines: this.lines() },
       width: '450px',
       ariaLabel: 'Register new device',
     });
@@ -408,7 +407,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
         message: `Remove device at "${device.stopName}"?`,
         confirmText: 'Remove',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm removal of device at ${device.stopName}`,
     });
 

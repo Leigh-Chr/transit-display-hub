@@ -415,7 +415,7 @@ describe('SchematicMapComponent', () => {
         svg.getBoundingClientRect = (): DOMRect => ({
           left: 0, top: 0, right: 1000, bottom: 800,
           width: 1000, height: 800, x: 0, y: 0, toJSON: () => ({}),
-        }) as DOMRect;
+        });
       }
     }
 

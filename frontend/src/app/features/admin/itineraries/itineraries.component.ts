@@ -18,11 +18,10 @@ import { ItineraryService } from '@core/api/itinerary.service';
 import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
 import { Itinerary, Line, PageResponse, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
-import { ItineraryDialogComponent, ItineraryDialogData } from './itinerary-dialog.component';
-import { ItineraryStopsDialogComponent, ItineraryStopsDialogData } from './itinerary-stops-dialog.component';
+import { ItineraryDialogComponent } from './itinerary-dialog.component';
+import { ItineraryStopsDialogComponent } from './itinerary-stops-dialog.component';
 import {
   ConfirmDialogComponent,
-  ConfirmDialogData,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -395,7 +394,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(ItineraryDialogComponent, {
-      data: { lines: this.lines() } as ItineraryDialogData,
+      data: { lines: this.lines() },
       width: '450px',
       ariaLabel: 'Create new itinerary',
     });
@@ -424,7 +423,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openEditDialog(itinerary: Itinerary): void {
     const dialogRef = this.dialog.open(ItineraryDialogComponent, {
-      data: { itinerary, lines: this.lines() } as ItineraryDialogData,
+      data: { itinerary, lines: this.lines() },
       width: '450px',
       ariaLabel: `Edit itinerary ${itinerary.name}`,
     });
@@ -451,7 +450,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openStopsDialog(itinerary: Itinerary): void {
     const dialogRef = this.dialog.open(ItineraryStopsDialogComponent, {
-      data: { itinerary } as ItineraryStopsDialogData,
+      data: { itinerary },
       width: '500px',
       ariaLabel: `Manage stops for itinerary ${itinerary.name}`,
     });
@@ -483,7 +482,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
         message: `Delete itinerary "${itinerary.name}"? This will also delete all associated schedules.`,
         confirmText: 'Delete',
         confirmColor: 'warn',
-      } as ConfirmDialogData,
+      },
       ariaLabel: `Confirm deletion of itinerary ${itinerary.name}`,
     });
 
