@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **GTFS-flex zone polygon in the stop popup** on the network map.
+  When the clicked stop has `hasOnDemand=true`, the popup now lazy-loads
+  the zone polygon from the new public endpoint
+  `GET /api/network-map/stops/{stopId}/tad-zone` and renders it inline
+  in a 220-px SVG canvas. Falls back silently to the existing booking
+  badge when the stop is on-demand but has no zone polygon. The
+  `tad-zones.utils` were promoted to `@shared/utils/flex-locations.utils`
+  so the schematic admin and the public stop popup share the same
+  projection / ring-flattening helpers.
+- **Grafana dashboard** at `ops/grafana/transit-display-hub.json` plus
+  README. Four rows (HTTP / GTFS import / Caffeine cache / JVM)
+  consume the Prometheus surface introduced in 0.8.2; every query is
+  scoped to `application="transit-display-hub"` so the dashboard is
+  portable across deployments.
+
 ## [0.8.2] - 2026-05-09
 
 Carte-blanche pass on top of 0.8.1: the three deferred items from the
