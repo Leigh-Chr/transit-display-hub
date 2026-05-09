@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   consume the Prometheus surface introduced in 0.8.2; every query is
   scoped to `application="transit-display-hub"` so the dashboard is
   portable across deployments.
+- **Full-stack JMH benchmark** for `DisplayStateCalculator.calculateForStop`
+  alongside the existing micro-benchmarks. Boots a real Spring Boot
+  context with H2 in-memory, builds a parameterised fixture (5 / 30
+  schedules) and measures the wall-clock cost of a kiosk refresh
+  including the datasource round-trips. Lives at
+  `backend/src/jmh/java/com/transit/hub/bench/integration/`. Per
+  ADR 0028, the integration source set is kept separate from the
+  micro-benchmarks so a Spring cold start doesn't pollute the
+  pure-compute numbers.
 
 ## [0.8.2] - 2026-05-09
 
