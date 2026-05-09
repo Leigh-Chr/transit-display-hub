@@ -66,6 +66,16 @@ export interface Line {
   /** Denormalised agency name so the admin UI can render the column
    *  without a second request. */
   agencyName?: string | null;
+  /** GTFS routes.continuous_pickup — 0 = continuous service (any
+   *  point along the route), 1 = no continuous (default), 2 = phone
+   *  agency, 3 = coordinate with driver. Optional on legacy / mocked
+   *  rows that predate the field; defaults to 1 in the renderer. */
+  continuousPickup?: 0 | 1 | 2 | 3;
+  /** GTFS routes.continuous_drop_off — same encoding. */
+  continuousDropOff?: 0 | 1 | 2 | 3;
+  /** GTFS routes.cemv_support — contactless EMV (card-tap) at line
+   *  level. 0 not supported, 1 supported, 2 ask the operator. */
+  cemvSupport?: 0 | 1 | 2 | null;
   stopCount: number;
   itineraryCount: number;
 }
@@ -469,6 +479,9 @@ export interface Agency {
   phone: string | null;
   fareUrl: string | null;
   email: string | null;
+  /** GTFS agency.cemv_support — contactless EMV. May be overridden per
+   *  line via Line.cemvSupport. */
+  cemvSupport?: 0 | 1 | 2 | null;
 }
 
 // Aggregated data overview (admin diagnostic)

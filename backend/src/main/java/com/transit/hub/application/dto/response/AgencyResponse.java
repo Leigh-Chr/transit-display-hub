@@ -13,7 +13,10 @@ public record AgencyResponse(
         String lang,
         String phone,
         String fareUrl,
-        String email
+        String email,
+        /** GTFS {@code agency.cemv_support}: contactless EMV (card-tap) acceptance.
+         *  0 not supported, 1 supported, 2 ask the operator. */
+        Short cemvSupport
 ) {
     public static AgencyResponse from(Agency agency) {
         return new AgencyResponse(
@@ -25,7 +28,8 @@ public record AgencyResponse(
                 agency.getLang(),
                 agency.getPhone(),
                 agency.getFareUrl(),
-                agency.getEmail()
+                agency.getEmail(),
+                agency.getCemvSupport()
         );
     }
 }

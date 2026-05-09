@@ -22,6 +22,15 @@ public record LineResponse(
         /** Convenience name of the operating agency, denormalised so the
          *  admin UI can render the column without a second request. */
         String agencyName,
+        /** GTFS {@code routes.continuous_pickup}: 0 = continuous (any
+         *  point), 1 = no continuous service (default), 2 = phone agency,
+         *  3 = coordinate with the driver. */
+        short continuousPickup,
+        /** GTFS {@code routes.continuous_drop_off}. Same encoding. */
+        short continuousDropOff,
+        /** GTFS {@code routes.cemv_support}: contactless EMV acceptance
+         *  for this line. Takes precedence over the agency value. */
+        Short cemvSupport,
         int stopCount,
         int itineraryCount
 ) {
@@ -38,6 +47,9 @@ public record LineResponse(
                 line.getUrl(),
                 line.getAgency() != null ? line.getAgency().getId() : null,
                 line.getAgency() != null ? line.getAgency().getName() : null,
+                line.getContinuousPickup(),
+                line.getContinuousDropOff(),
+                line.getCemvSupport(),
                 line.getStops() != null ? line.getStops().size() : 0,
                 line.getItineraries() != null ? line.getItineraries().size() : 0
         );

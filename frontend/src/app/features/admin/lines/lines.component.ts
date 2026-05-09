@@ -124,6 +124,25 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
                     <span>{{ line.itineraryCount }} itineraries</span>
                   </div>
                 </div>
+                <div class="line-tags">
+                  @if (line.continuousPickup === 0 || line.continuousDropOff === 0) {
+                    <span class="line-tag tag-hop" matTooltip="Continuous pickup/drop-off — passengers can board/alight anywhere along the route">
+                      <mat-icon>swap_horiz</mat-icon>
+                      Hop-on/hop-off
+                    </span>
+                  }
+                  @if (line.cemvSupport === 1) {
+                    <span class="line-tag tag-cemv" matTooltip="Contactless EMV (card-tap) accepted on this line">
+                      <mat-icon>contactless</mat-icon>
+                      Sans contact
+                    </span>
+                  } @else if (line.cemvSupport === 2) {
+                    <span class="line-tag tag-cemv-ask" matTooltip="cEMV availability varies — ask the operator">
+                      <mat-icon>contactless</mat-icon>
+                      cEMV variable
+                    </span>
+                  }
+                </div>
               </mat-card-content>
             </mat-card>
           }
@@ -230,6 +249,45 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       width: 18px;
       height: 18px;
       color: var(--app-on-surface-muted);
+    }
+
+    .line-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .line-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .line-tag mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    .line-tag.tag-hop {
+      background: var(--app-tone-tertiary, rgba(99, 102, 241, 0.14));
+      color: var(--app-on-tertiary-container, #4338ca);
+    }
+
+    .line-tag.tag-cemv {
+      background: var(--app-tone-success, rgba(16, 185, 129, 0.14));
+      color: var(--app-on-success-container, #047857);
+    }
+
+    .line-tag.tag-cemv-ask {
+      background: var(--app-tone-warning, rgba(234, 179, 8, 0.18));
+      color: var(--app-on-warning-container, #92400e);
     }
 
     mat-paginator {
