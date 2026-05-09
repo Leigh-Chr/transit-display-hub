@@ -1,8 +1,10 @@
 package com.transit.hub.api.rest;
 
+import com.transit.hub.application.dto.response.BookingRuleResponse;
 import com.transit.hub.application.dto.response.LocationResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse.AlertsResponse;
+import com.transit.hub.application.service.BookingRuleService;
 import com.transit.hub.application.service.LocationService;
 import com.transit.hub.application.service.NetworkMapService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +27,7 @@ public class NetworkMapController {
 
     private final NetworkMapService networkMapService;
     private final LocationService locationService;
+    private final BookingRuleService bookingRuleService;
 
     @GetMapping
     public ResponseEntity<NetworkMapResponse> getNetworkMap() {
@@ -47,5 +51,17 @@ public class NetworkMapController {
         return locationService.findByStop(stopId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Public endpoint exposing the GTFS booking_rules attached to the
+     * schedules and flex_stop_times of this stop. The popup uses it to
+     * render booking instructions (phone, URL, prior notice) for an
+     * on-demand stop. Always returns 200 — empty list when the stop
+     * has no on-demand service.
+     */
+    @GetMapping("/stops/{stopId}/booking-rules")
+    public ResponseEntity<List<BookingRuleResponse>> getStopBookingRules(@PathVariable UUID stopId) {
+        return ResponseEntity.ok(bookingRuleService.findByStopId(stopId));
     }
 }

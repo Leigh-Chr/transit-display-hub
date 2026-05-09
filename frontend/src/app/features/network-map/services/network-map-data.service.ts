@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
-import { FlexLocation, NetworkMap, NetworkMapAlerts } from '@shared/models';
+import { BookingRule, FlexLocation, NetworkMap, NetworkMapAlerts } from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -26,5 +26,15 @@ export class NetworkMapDataService {
     return this.http
       .get<FlexLocation>(`/api/network-map/stops/${stopId}/tad-zone`)
       .pipe(catchError(() => of(null)));
+  }
+
+  /** Fetch the GTFS booking_rules referenced by this stop's schedules
+   *  and flex_stop_times. Used by the popup to render booking
+   *  instructions on an on-demand pickup. Empty array when the stop
+   *  has no on-demand service. */
+  getStopBookingRules(stopId: string): Observable<BookingRule[]> {
+    return this.http
+      .get<BookingRule[]>(`/api/network-map/stops/${stopId}/booking-rules`)
+      .pipe(catchError(() => of([] as BookingRule[])));
   }
 }

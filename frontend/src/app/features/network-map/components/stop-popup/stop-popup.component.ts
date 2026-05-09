@@ -5,7 +5,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ScheduleService } from '@core/api/schedule.service';
-import { AlertMessage, FlexLocation, MessageInfo, MessageSeverity, Schedule } from '@shared/models';
+import { AlertMessage, BookingRule, FlexLocation, MessageInfo, MessageSeverity, Schedule } from '@shared/models';
 import {
   buildViewport,
   ringToSvgPath,
@@ -147,6 +147,49 @@ interface TimetableGroup {
                 vector-effect="non-scaling-stroke" />
             }
           </svg>
+        </div>
+        <mat-divider />
+      }
+
+      @if (bookingRules().length > 0) {
+        <div class="booking-rules-section">
+          <h3 class="section-title">
+            <mat-icon>phone_callback</mat-icon>
+            Comment réserver
+          </h3>
+          @for (rule of bookingRules(); track rule.id) {
+            <div class="booking-rule-card">
+              <div class="rule-header">
+                <strong>{{ bookingTypeLabel(rule) }}</strong>
+                @if (formatPriorNotice(rule); as notice) {
+                  <span class="rule-notice">{{ notice }}</span>
+                }
+              </div>
+              @if (rule.message) {
+                <p class="rule-message">{{ rule.message }}</p>
+              }
+              <div class="rule-actions">
+                @if (rule.phone) {
+                  <a class="rule-action rule-action-phone" [href]="'tel:' + rule.phone" rel="noopener">
+                    <mat-icon>phone</mat-icon>
+                    {{ rule.phone }}
+                  </a>
+                }
+                @if (rule.bookingUrl) {
+                  <a class="rule-action rule-action-book" [href]="rule.bookingUrl" target="_blank" rel="noopener noreferrer">
+                    <mat-icon>open_in_new</mat-icon>
+                    Réserver en ligne
+                  </a>
+                }
+                @if (rule.infoUrl) {
+                  <a class="rule-action rule-action-info" [href]="rule.infoUrl" target="_blank" rel="noopener noreferrer">
+                    <mat-icon>info</mat-icon>
+                    Plus d'infos
+                  </a>
+                }
+              </div>
+            </div>
+          }
         </div>
         <mat-divider />
       }
@@ -308,6 +351,83 @@ interface TimetableGroup {
       height: 220px;
       background: var(--mat-sys-surface-container-low);
       border-radius: 6px;
+    }
+
+    .booking-rules-section {
+      padding: 14px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .booking-rules-section .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .booking-rules-section .section-title mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .booking-rule-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--mat-sys-surface-container-low);
+      border-left: 3px solid var(--mat-sys-tertiary, #6366f1);
+      border-radius: 4px;
+    }
+    .rule-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 0.92rem;
+    }
+    .rule-notice {
+      font-size: 0.8rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .rule-message {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+      line-height: 1.4;
+    }
+    .rule-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .rule-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+    .rule-action mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+    .rule-action-phone {
+      background: rgba(16, 185, 129, 0.16);
+      color: #047857;
+    }
+    .rule-action-book {
+      background: rgba(99, 102, 241, 0.16);
+      color: #4338ca;
     }
 
     .messages-section {
@@ -484,6 +604,11 @@ export class StopPopupComponent implements OnInit {
    *  feeds, fall in this category. */
   readonly tadZone = signal<FlexLocation | null>(null);
 
+  /** GTFS booking_rules attached to schedules / flex_stop_times of
+   *  this stop. Lazily fetched when {@code hasOnDemand} is true so a
+   *  passenger can see "phone +33… at least 1h before" inline. */
+  readonly bookingRules = signal<BookingRule[]>([]);
+
   /** SVG paths + viewBox for {@link tadZone}, reprojected once per
    *  zone change. Empty when no zone is loaded. */
   readonly tadZoneRings = computed<RenderedTadRing[]>(() => {
@@ -513,6 +638,31 @@ export class StopPopupComponent implements OnInit {
       this.networkMapData.getStopTadZone(this.data.stop.id).subscribe(zone => {
         this.tadZone.set(zone);
       });
+      this.networkMapData.getStopBookingRules(this.data.stop.id).subscribe(rules => {
+        this.bookingRules.set(rules);
+      });
+    }
+  }
+
+  /** Format a booking-rule prior_notice_duration_min into a human label
+   *  ("au moins 30 min", "au moins 2h"). Returns null when the rule
+   *  doesn't carry a value. */
+  formatPriorNotice(rule: BookingRule): string | null {
+    const min = rule.priorNoticeDurationMin;
+    if (min === null || min === undefined) {return null;}
+    if (min >= 3600) {
+      const hours = Math.round(min / 3600);
+      return `au moins ${hours}h à l'avance`;
+    }
+    return `au moins ${Math.round(min / 60)} min à l'avance`;
+  }
+
+  bookingTypeLabel(rule: BookingRule): string {
+    switch (rule.bookingType) {
+      case 'REAL_TIME': return 'Réservation temps réel';
+      case 'SAME_DAY': return 'Réservation le jour même';
+      case 'PRIOR_DAYS': return 'Réservation à l\'avance';
+      default: return 'Réservation';
     }
   }
 
