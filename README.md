@@ -38,11 +38,28 @@ on screens at stops.
   updates via WebSocket
 - **Network map**: interactive schematic with parent /
   platform collapse, fare-zone and accessibility filters,
-  frequency-scaled stroke width and TAD-ring indicators
+  frequency-scaled stroke width, TAD-ring indicators and
+  toggleable fare-zone color overlay; the stop popup
+  inlines the GTFS-flex zone polygon when the stop carries
+  one
+- **GTFS-flex `locations.geojson`**: polygons persisted
+  with a pre-computed bounding box, browsable on the
+  `/admin/tad-zones` map, point-in-polygon spatial query
+  on `/api/admin/locations/contains?lat=…&lon=…` (no JTS
+  / PostGIS — see ADR 0026 + 0029)
 - **Admin browsers**: read-only pages for every imported
   GTFS family — fares v1+v2, TAD, translations, pathways,
-  shapes, import audit, real-time caches
+  shapes, locations, import audit, real-time caches
 - **OpenAPI / Swagger UI** bundled at `/swagger-ui.html`
+- **Observability**: Prometheus scrape at
+  `/actuator/prometheus` with custom GTFS import meters,
+  JVM / HTTP / Caffeine cache series; ready-to-import
+  Grafana dashboard at `ops/grafana/transit-display-hub.json`
+  (see ADR 0027)
+- **Performance benchmarks**: JMH micro-benchmarks for the
+  three hot-path utilities plus a full-stack Spring-context
+  benchmark on the kiosk refresh path (`./gradlew jmh`,
+  see ADR 0028)
 - **Device management**: registration and monitoring of
   display screens
 - **User management**: account administration (Admin,
@@ -50,14 +67,16 @@ on screens at stops.
 
 ## Tech Stack
 
-| Component      | Technology                                 |
-| -------------- | ------------------------------------------ |
-| Backend        | Spring Boot 4.0.2, Java 21                 |
-| Frontend       | Angular 21, Tailwind CSS, Angular Material |
-| Database       | H2 (dev), PostgreSQL (prod)                |
-| Real-time      | WebSocket with STOMP                       |
-| Authentication | JWT                                        |
-| Tests          | JUnit 5, Vitest, Playwright                |
+| Component      | Technology                                                  |
+| -------------- | ----------------------------------------------------------- |
+| Backend        | Spring Boot 4.0.2, Java 21                                  |
+| Frontend       | Angular 21.2, Angular Material (M3)                         |
+| Database       | H2 (dev), PostgreSQL (prod)                                 |
+| Real-time      | WebSocket with STOMP                                        |
+| Authentication | JWT                                                         |
+| Tests          | JUnit 5, Vitest, Playwright                                 |
+| Benchmarks     | JMH (micro + Spring full-stack)                             |
+| Observability  | Spring Actuator + Micrometer + Prometheus + Grafana         |
 
 ## Quick Start
 
@@ -118,7 +137,10 @@ transit-display-hub/
 |   |   +-- features/       # Admin, display, map
 |   |   +-- layouts/        # Admin/display layouts
 |   +-- package.json
++-- ops/                     # Operations artifacts
+|   +-- grafana/            # Dashboard JSON + provisioning notes
 +-- docs/                    # Documentation
+|   +-- adr/                # Architecture Decision Records (29)
 ```
 
 ## Documentation
@@ -133,6 +155,10 @@ transit-display-hub/
   Production deployment
 - [User Guide](docs/user-guide.md) -
   Admin interface usage
+- [Architecture Decision Records](docs/adr/README.md) -
+  29 ADRs documenting non-obvious choices
+- [Grafana provisioning](ops/grafana/README.md) -
+  Importing the bundled dashboard
 - [Changelog](CHANGELOG.md) - Version history
 - [Contributing](CONTRIBUTING.md) - Contribution guide
 

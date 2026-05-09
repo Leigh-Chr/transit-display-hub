@@ -382,6 +382,42 @@ their account:
 
 ---
 
+## TAD Zones (GTFS-flex)
+
+The `Zones TAD` admin page (under
+`/admin/tad-zones`) renders every polygon imported from
+the feed's `locations.geojson` — the pickup / dropoff
+zones of demand-responsive trips.
+
+### Access
+
+Sidebar → "Zones TAD". Admin role required.
+
+### Features
+
+- **Map canvas**: every zone painted on a single SVG with
+  an equirectangular projection and a deterministic hue
+  per feature. Holes (interior rings of a `Polygon`) are
+  rendered with the `evenodd` fill rule so they show
+  through.
+- **Side list**: scrollable zone list with the colour
+  swatch, the GTFS `external_id`, the optional bound
+  `stop_id` and the geometry type. Click a row or a
+  polygon to highlight that zone — the others fade.
+- **Empty state**: shown when the imported feed doesn't
+  ship a `locations.geojson` (most published feeds today).
+
+### Spatial query
+
+Admins can ask "which zones cover this point?" via
+`GET /api/admin/locations/contains?lat=…&lon=…`. Two-step
+internally: a SQL bounding-box pre-filter on the
+indexed min/max columns, then a Java ray-casting pass on
+the raw GeoJSON. No PostGIS dependency. See ADR 0026 +
+0029 for the design rationale.
+
+---
+
 ## Network Map
 
 The network map offers an interactive visualization of
@@ -403,11 +439,19 @@ The map is publicly accessible at `/map`
 - **Stop popup**: click a stop for departures and served
   lines, with pictogram pills for accessibility
   (`ACCESSIBLE` / `NOT_ACCESSIBLE`), TAD ("Réservation
-  requise") and Fares v2 zones the stop belongs to
+  requise") and Fares v2 zones the stop belongs to.
+  When the stop is on-demand and a `locations.geojson`
+  polygon is attached to it, the popup inlines a small
+  SVG preview of the pickup zone.
 - **Filters**: line chips per category, "Accessible PMR"
   toggle that dims non-accessible stops, single-select
   fare-zone chip row that dims stops outside the chosen
   zone (only visible when the feed ships `areas.txt`)
+- **Fare-zone overlay**: "Zones" toggle next to the PMR
+  filter paints a translucent halo behind every stop
+  coloured by its primary fare zone. Orthogonal to the
+  chip filter — the chip dims, the overlay paints. Off
+  by default to avoid visual noise on dense feeds.
 - **TAD ring**: dashed blue circle around stops with at
   least one on-request schedule
 - **Route search**: dual stop search to plan a journey

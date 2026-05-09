@@ -673,6 +673,71 @@ npm run e2e
 Component and service tests with zoneless configuration
 (`provideZonelessChangeDetection`).
 
+### Real-feed integration tests (opt-in)
+
+Hits the public GTFS endpoints (Grenoble / Strasbourg /
+Bordeaux) to validate the importer end-to-end. Excluded
+from the default `test` task; run on demand:
+
+```bash
+./gradlew testRealFeed
+```
+
+Each test self-skips via JUnit Assumptions when the
+upstream is unreachable, so the suite stays green on
+flaky networks.
+
+### JMH benchmarks
+
+Pre-refactor confidence on hot paths. Two source sets,
+one `jmh` task:
+
+```bash
+# Run every benchmark (5–10 min)
+./gradlew jmh
+
+# Filter to a single class / method
+./gradlew jmh -Pjmh.includes='ServiceCalendarMatcher'
+./gradlew jmh -Pjmh.includes='DisplayStateCalculatorIntegrationBenchmark'
+```
+
+Micro-benchmarks live at
+`backend/src/jmh/java/com/transit/hub/bench/` —
+`ServiceCalendarMatcher`, `TranslationLookup`,
+`ColorContrast`. The full-stack benchmark sits under
+`bench/integration/` and boots a real Spring Boot context
+with H2 in-memory before measuring
+`DisplayStateCalculator.calculateForStop`.
+
+See ADR 0028 for the full rationale (no CI gating, single
+fork by default for dev iteration speed).
+
+---
+
+## Observability
+
+### Prometheus / Grafana
+
+`/actuator/prometheus` is exposed publicly (same trust
+posture as `/actuator/health`) and carries every default
+Spring Boot meter (HTTP, JVM, Caffeine, datasource) plus
+three custom meters around the GTFS import:
+
+- `gtfs.import.duration` (Timer + histogram)
+- `gtfs.import.completed{status=success|failed|skipped}`
+- `gtfs.import.entities{kind=lines|stops|schedules}`
+
+Every meter inherits the
+`application="transit-display-hub"` tag so multi-deployment
+Grafana instances can disambiguate without rewriting
+queries.
+
+A ready-to-import dashboard ships at
+`ops/grafana/transit-display-hub.json` (HTTP / GTFS import /
+Caffeine cache / JVM, four rows). Provisioning notes:
+`ops/grafana/README.md`. See ADR 0027 for the design
+trade-off (no in-house metrics layer, no JMX, no push).
+
 ---
 
 ## Debugging

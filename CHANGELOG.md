@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **Synthetic data loader** now evicts the
+  `networkMap` / `networkAlerts` Caffeine caches at the
+  end of its run. A warm-up request issued by the dev
+  frontend during boot could populate the cache with an
+  empty snapshot before the seed completed, leaving the
+  network map showing "No stops configured yet" until the
+  5-minute TTL expired. `GtfsDataLoader` was already OK
+  via `GtfsImportOrchestrator.evictNetworkCaches()`.
+
+### Security
+- **Bumped Angular to 21.2.12** (and the rest of the
+  frontend deps via `npm update`) to clear seven
+  high-severity vulnerabilities, notably the
+  `@angular/compiler` XSS in i18n attribute bindings
+  (GHSA-g93w-mfhg-p222, fixed in 21.2.4). `npm audit` now
+  reports zero vulnerabilities. The `npm update` also
+  cleared an `@angular-devkit/core` advisory and a couple
+  of transitives. ESLint's stricter
+  `no-unnecessary-type-assertion` rule (new in
+  angular-eslint 21.3.x) flagged ~30 type assertions and
+  unused imports left over from earlier Angular minors —
+  all fixed.
+- `tsconfig.spec.json` now explicitly includes
+  `src/test-setup.ts` so the new `@angular/build` doesn't
+  drop it from the spec compilation.
+
 ## [0.8.3] - 2026-05-09
 
 Closing pass on the post-0.8.2 backlog: the four items the previous

@@ -962,18 +962,43 @@ dedicated admin page in the UI.
 | `POST` | `/api/admin/realtime/alerts/refresh`      | force an immediate poll of the alerts URL            |
 | `GET`  | `/api/admin/realtime/vehicles`            | GTFS-RT VehiclePositions cache snapshot              |
 | `POST` | `/api/admin/realtime/vehicles/refresh`    | force an immediate poll of the vehicles URL          |
+| `GET`  | `/api/admin/locations`                    | GTFS-flex `locations.geojson` polygons (TAD zones)   |
+| `GET`  | `/api/admin/locations/contains?lat=X&lon=Y` | flex zones containing a point (bbox + ray-cast)    |
 
 ## Public GTFS read-only endpoints
 
-| Method | Endpoint                       | Purpose                                  |
-| ------ | ------------------------------ | ---------------------------------------- |
-| `GET`  | `/api/agencies`                | exploiting agencies                      |
-| `GET`  | `/api/attributions`            | public credit block (`attributions.txt`) |
-| `GET`  | `/api/itineraries/{id}/shape`  | GTFS polyline of an itinerary            |
-| `GET`  | `/api/stops/{id}/pathways`     | indoor topology for a station            |
-| `GET`  | `/api/network-map`             | full schematic + lines + transfers       |
-| `GET`  | `/api/network-map/alerts`      | active broadcast + GTFS-RT alerts        |
+| Method | Endpoint                                          | Purpose                                          |
+| ------ | ------------------------------------------------- | ------------------------------------------------ |
+| `GET`  | `/api/agencies`                                   | exploiting agencies                              |
+| `GET`  | `/api/attributions`                               | public credit block (`attributions.txt`)         |
+| `GET`  | `/api/itineraries/{id}/shape`                     | GTFS polyline of an itinerary                    |
+| `GET`  | `/api/stops/{id}/pathways`                        | indoor topology for a station                    |
+| `GET`  | `/api/network-map`                                | full schematic + lines + transfers               |
+| `GET`  | `/api/network-map/alerts`                         | active broadcast + GTFS-RT alerts                |
+| `GET`  | `/api/network-map/stops/{stopId}/tad-zone`        | flex zone polygon attached to an on-demand stop  |
 
 The full machine-readable spec is bundled at
 `/v3/api-docs` and a Swagger UI is exposed at
 `/swagger-ui.html`.
+
+## Operations endpoints (Spring Actuator)
+
+| Method | Endpoint                  | Auth        | Purpose                                                |
+| ------ | ------------------------- | ----------- | ------------------------------------------------------ |
+| `GET`  | `/actuator/health`        | public      | liveness / readiness probe (UP/DOWN)                   |
+| `GET`  | `/actuator/info`          | public      | build metadata                                         |
+| `GET`  | `/actuator/prometheus`    | public      | Prometheus scrape format (Micrometer)                  |
+| `GET`  | `/actuator/metrics`       | admin only  | JSON listing of meter names                            |
+
+**Custom GTFS import meters** exposed on `/actuator/prometheus`:
+
+| Meter                        | Type            | Tags                                  |
+| ---------------------------- | --------------- | ------------------------------------- |
+| `gtfs.import.duration`       | Timer + histogram | `application=transit-display-hub`   |
+| `gtfs.import.completed`      | Counter         | `status=success\|failed\|skipped`     |
+| `gtfs.import.entities`       | Distribution summary | `kind=lines\|stops\|schedules`   |
+
+Caffeine cache hit ratios, JVM memory and HTTP server timings are
+auto-bound by Spring Boot Actuator. See ADR 0027 and the
+ready-to-import Grafana dashboard at
+`ops/grafana/transit-display-hub.json`.

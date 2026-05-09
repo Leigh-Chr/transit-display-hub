@@ -1,6 +1,7 @@
 # ADR 0026 — Persist `locations.geojson` as TEXT, no JTS / Hibernate Spatial
 
-**Status:** Accepted
+**Status:** Accepted (extended by ADR 0029 — point-in-polygon support
+landed without invalidating the storage decision)
 
 ## Context
 
