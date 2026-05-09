@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-05-09
+
+Carte-blanche pass on top of 0.8.1: the three deferred items from the
+post-0.8.1 backlog now ship — admin visualisation of GTFS-flex zones,
+Prometheus metrology, JMH micro-benchmarks. Three new ADRs documenting
+the design trade-offs.
+
 ### Added
 - **Toggleable fare-zone color overlay** on the schematic stops. Adds
   a "Zones" toggle button next to the PMR filter that paints a
