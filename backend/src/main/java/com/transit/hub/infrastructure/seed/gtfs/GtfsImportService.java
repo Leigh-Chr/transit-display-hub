@@ -7,6 +7,7 @@ import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.FareAttribute;
 import com.transit.hub.domain.model.FareRule;
 import com.transit.hub.domain.model.FeedInfo;
+import com.transit.hub.domain.model.FlexStopTime;
 import com.transit.hub.domain.model.LocationGroup;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
@@ -45,6 +46,7 @@ import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareMediaRepository;
 import com.transit.hub.infrastructure.persistence.FareProductRepository;
 import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
+import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
 import com.transit.hub.infrastructure.persistence.NetworkRepository;
 import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
@@ -130,6 +132,7 @@ public class GtfsImportService {
     private final NetworkRepository networkRepository;
     private final FareMediaRepository fareMediaRepository;
     private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
+    private final FlexStopTimeRepository flexStopTimeRepository;
 
     /** Flushed at section boundaries so the persistence context stays
      *  bounded — without periodic flushes, each section's saveAll
@@ -189,6 +192,13 @@ public class GtfsImportService {
             // upfront has no measurable cost.
             Map<String, BookingRule> bookingRules = importBookingRules(workDir.resolve("booking_rules.txt"));
 
+            // Locations + location groups must land before schedules so the
+            // flex_stop_times rows materialised inside importSchedules can
+            // resolve their location_id / location_group_id FKs in a single
+            // pass.
+            importLocations(workDir.resolve("locations.geojson"));
+            importLocationGroups(workDir, stopImport);
+
             int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies, bookingRules);
 
             importTransfers(workDir.resolve("transfers.txt"), stopImport);
@@ -202,10 +212,6 @@ public class GtfsImportService {
             importFares(workDir, linesByGtfsId, agenciesByGtfsId);
 
             importFaresV2(workDir, stopImport, linesByGtfsId);
-
-            importLocationGroups(workDir, stopImport);
-
-            importLocations(workDir.resolve("locations.geojson"));
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -1002,7 +1008,28 @@ public class GtfsImportService {
                            LocalTime time, java.util.UUID calendarId) {}
         Set<ScheduleKey> seen = new HashSet<>();
         List<Schedule> batch = new ArrayList<>(MAX_SCHEDULE_BATCH);
+        List<FlexStopTime> flexBatch = new ArrayList<>(MAX_SCHEDULE_BATCH);
+        // Wipe flex_stop_times on every reimport for the same reason
+        // schedules get wiped: rows carry no external_id and any orphan
+        // would point at a now-stale itinerary FK.
+        flexStopTimeRepository.deleteAllInBatch();
+        flexStopTimeRepository.flush();
+        Map<String, com.transit.hub.domain.model.Location> locationsByExternalId =
+                locationRepository.findAll().stream()
+                        .filter(l -> l.getExternalId() != null)
+                        .collect(java.util.stream.Collectors.toMap(
+                                com.transit.hub.domain.model.Location::getExternalId,
+                                java.util.function.Function.identity(),
+                                (a, b) -> a));
+        Map<String, com.transit.hub.domain.model.LocationGroup> locationGroupsByExternalId =
+                locationGroupRepository.findAll().stream()
+                        .filter(l -> l.getExternalId() != null)
+                        .collect(java.util.stream.Collectors.toMap(
+                                com.transit.hub.domain.model.LocationGroup::getExternalId,
+                                java.util.function.Function.identity(),
+                                (a, b) -> a));
         int total = 0;
+        int flexTotal = 0;
         int skippedNoCalendar = 0;
 
         try (CSVParser parser = openCsv(stopTimesFile)) {
@@ -1022,6 +1049,32 @@ public class GtfsImportService {
 
                 Itinerary itinerary = itineraries.get(new RouteDirKey(trip.routeId, trip.directionId));
                 if (itinerary == null) {continue;}
+
+                // GTFS-flex: the row addresses a polygon (location_id) or a
+                // group of stops (location_group_id) instead of a fixed
+                // stop, with a pickup/drop-off time window in place of
+                // arrival_time. Route those rows to flex_stop_times rather
+                // than schedules — they describe on-demand availability,
+                // not a concrete arrival. See ADR 0030.
+                String flexLocationId = optional(record, "location_id");
+                String flexLocationGroupId = optional(record, "location_group_id");
+                LocalTime flexStartWindow = GtfsParse.parseGtfsTime(
+                        optional(record, "start_pickup_drop_off_window"));
+                LocalTime flexEndWindow = GtfsParse.parseGtfsTime(
+                        optional(record, "end_pickup_drop_off_window"));
+                boolean isFlexRow = flexStartWindow != null && flexEndWindow != null
+                        && (!isBlank(flexLocationId) || !isBlank(flexLocationGroupId));
+                if (isFlexRow) {
+                    flexBatch.add(buildFlexStopTime(record, itinerary, calendar,
+                            stopImport, locationsByExternalId, locationGroupsByExternalId,
+                            bookingRules, flexStartWindow, flexEndWindow));
+                    if (flexBatch.size() >= MAX_SCHEDULE_BATCH) {
+                        flexStopTimeRepository.saveAll(flexBatch);
+                        flexTotal += flexBatch.size();
+                        flexBatch.clear();
+                    }
+                    continue;
+                }
 
                 Stop stop = stopImport.stopsByGtfsId.get(record.get("stop_id"));
                 if (stop == null) {continue;}
@@ -1143,13 +1196,66 @@ public class GtfsImportService {
             scheduleRepository.saveAll(batch);
             total += batch.size();
         }
+        if (!flexBatch.isEmpty()) {
+            flexStopTimeRepository.saveAll(flexBatch);
+            flexTotal += flexBatch.size();
+        }
 
         if (skippedNoCalendar > 0) {
             log.warn("GTFS import: skipped {} stop_times rows whose trip references an unknown service_id",
                     skippedNoCalendar);
         }
-        log.info("GTFS import: {} schedules created across {} service calendars", total, services.size());
+        log.info("GTFS import: {} schedules + {} flex stop_times created across {} service calendars",
+                total, flexTotal, services.size());
         return total;
+    }
+
+    /** Builds a {@link FlexStopTime} from a stop_times.txt row whose
+     *  pickup/drop-off applies over a polygon (location_id) or a group
+     *  of stops (location_group_id). Spec dictates the three target
+     *  refs (stop_id, location_id, location_group_id) are mutually
+     *  exclusive — we honour location_id over location_group_id over
+     *  stop_id when more than one is set, but log nothing because
+     *  feeds in the wild occasionally tag both for redundancy. */
+    private FlexStopTime buildFlexStopTime(CSVRecord record, Itinerary itinerary,
+                                           ServiceCalendar calendar,
+                                           StopImport stopImport,
+                                           Map<String, com.transit.hub.domain.model.Location> locations,
+                                           Map<String, com.transit.hub.domain.model.LocationGroup> locationGroups,
+                                           Map<String, BookingRule> bookingRules,
+                                           LocalTime startWindow, LocalTime endWindow) {
+        String locationId = optional(record, "location_id");
+        String locationGroupId = optional(record, "location_group_id");
+        String stopId = optional(record, "stop_id");
+        com.transit.hub.domain.model.Location location =
+                isBlank(locationId) ? null : locations.get(locationId);
+        com.transit.hub.domain.model.LocationGroup locationGroup =
+                (location == null && !isBlank(locationGroupId))
+                        ? locationGroups.get(locationGroupId) : null;
+        Stop stop = (location == null && locationGroup == null && !isBlank(stopId))
+                ? stopImport.stopsByGtfsId.get(stopId) : null;
+
+        Short pickupType = parseShortOrNull(optional(record, "pickup_type"));
+        Short dropOffType = parseShortOrNull(optional(record, "drop_off_type"));
+        BookingRule pickupBooking = bookingRules.get(optional(record, "pickup_booking_rule_id"));
+        BookingRule dropOffBooking = bookingRules.get(optional(record, "drop_off_booking_rule_id"));
+        Integer sequence = parseIntOrNull(optional(record, "stop_sequence"));
+
+        return FlexStopTime.builder()
+                .itinerary(itinerary)
+                .stopSequence(sequence == null ? 0 : sequence)
+                .stop(stop)
+                .location(location)
+                .locationGroup(locationGroup)
+                .startPickupDropOffWindow(startWindow)
+                .endPickupDropOffWindow(endWindow)
+                .pickupType(pickupType)
+                .dropOffType(dropOffType)
+                .pickupBookingRule(pickupBooking)
+                .dropOffBookingRule(dropOffBooking)
+                .serviceCalendar(calendar)
+                .stopHeadsign(truncate(optional(record, "stop_headsign"), 100))
+                .build();
     }
 
     /**

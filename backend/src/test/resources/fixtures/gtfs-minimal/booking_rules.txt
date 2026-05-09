@@ -1,0 +1,2 @@
+booking_rule_id,booking_type,prior_notice_duration_min,phone_number,message
+BOOK_PHONE,1,60,+33476000000,Réservez par téléphone au moins 1h avant

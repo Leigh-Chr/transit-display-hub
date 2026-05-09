@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.seed.gtfs;
 import com.transit.hub.application.dto.response.DataOverviewResponse;
 import com.transit.hub.application.service.DataOverviewService;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
+import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.LocationRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
@@ -49,7 +50,8 @@ class GtfsImportServiceIntegrationTest {
     private static final String FIXTURE_DIR = "fixtures/gtfs-minimal/";
     private static final String[] FEED_FILES = {
             "agency.txt", "routes.txt", "stops.txt", "calendar.txt",
-            "trips.txt", "stop_times.txt", "locations.geojson"
+            "trips.txt", "stop_times.txt", "locations.geojson",
+            "location_groups.txt", "booking_rules.txt"
     };
 
     @Autowired private GtfsImportService importer;
@@ -60,6 +62,7 @@ class GtfsImportServiceIntegrationTest {
     @Autowired private ScheduleRepository scheduleRepository;
     @Autowired private ServiceCalendarRepository serviceCalendarRepository;
     @Autowired private LocationRepository locationRepository;
+    @Autowired private FlexStopTimeRepository flexStopTimeRepository;
 
     @TempDir Path tempDir;
 
@@ -137,6 +140,23 @@ class GtfsImportServiceIntegrationTest {
         assertThat(north.getMinLongitude()).isEqualTo(5.70);
         assertThat(north.getMaxLongitude()).isEqualTo(5.75);
         assertThat(north.getGeometryJson()).contains("Polygon").contains("coordinates");
+    }
+
+    @Test
+    @DisplayName("flex stop_times rows land in flex_stop_times instead of schedules")
+    void persistsFlexStopTimes() throws IOException {
+        Path zipPath = buildFixtureZip(tempDir.resolve("flex.zip"));
+        importer.importFromZip(zipPath);
+
+        var flexStopTimes = flexStopTimeRepository.findAll();
+        assertThat(flexStopTimes).hasSize(1);
+        var flex = flexStopTimes.get(0);
+        assertThat(flex.getLocation()).isNotNull();
+        assertThat(flex.getLocation().getExternalId()).isEqualTo("FLEX_ZONE_NORTH");
+        assertThat(flex.getStartPickupDropOffWindow().toString()).isEqualTo("11:00");
+        assertThat(flex.getEndPickupDropOffWindow().toString()).isEqualTo("13:00");
+        assertThat(flex.getPickupBookingRule()).isNotNull();
+        assertThat(flex.getPickupBookingRule().getExternalId()).isEqualTo("BOOK_PHONE");
     }
 
     @Test

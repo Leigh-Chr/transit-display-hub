@@ -1,0 +1,2 @@
+location_group_id,location_group_name
+NORTH_FLEX_GROUP,North flex pickup group
