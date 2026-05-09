@@ -11,7 +11,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { StopService } from '@core/api/stop.service';
-import { Pathway, PathwayMode, Stop } from '@shared/models';
+import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
+import { Pathway, PathwayMode, StationLevelInfo, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 
 /**
@@ -75,6 +76,17 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       @if (selectedStop(); as stop) {
         <div class="selected-stop">
           <h2>{{ stop.name }}</h2>
+          @if (stationLevels().length > 0) {
+            <div class="levels-row">
+              <mat-icon class="levels-icon" matTooltip="Niveaux déclarés pour la station — GTFS levels.txt">layers</mat-icon>
+              <span class="levels-label">{{ stationName() || 'Station' }} :</span>
+              @for (lvl of stationLevels(); track lvl.id) {
+                <span class="level-chip" [matTooltip]="'level_index = ' + lvl.index">
+                  {{ lvl.name || ('niveau ' + lvl.index) }}
+                </span>
+              }
+            </div>
+          }
           @if (pathways().length === 0) {
             <app-empty-state
               icon="alt_route"
@@ -229,13 +241,45 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       width: 13px;
       height: 13px;
     }
+    .levels-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 12px;
+      padding: 8px 12px;
+      background: rgba(99, 102, 241, 0.08);
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .levels-icon {
+      color: #4338ca;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .levels-label {
+      font-weight: 500;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .level-chip {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.18);
+      color: #4338ca;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
   `,
 })
 export class PathwaysComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly stopService = inject(StopService);
+  private readonly networkMapData = inject(NetworkMapDataService);
 
   readonly pathways = signal<Pathway[]>([]);
+  readonly stationLevels = signal<StationLevelInfo[]>([]);
+  readonly stationName = signal<string | null>(null);
   readonly selectedStop = signal<Stop | null>(null);
   readonly stops = signal<Stop[]>([]);
   readonly filteredStops = signal<Stop[]>([]);
@@ -274,6 +318,16 @@ export class PathwaysComponent implements OnInit {
     this.gtfsData.getPathwaysForStop(stop.id).subscribe({
       next: (data) => this.pathways.set(data),
       error: () => this.pathways.set([]),
+    });
+    this.networkMapData.getStopPathwayGraph(stop.id).subscribe({
+      next: (graph) => {
+        this.stationLevels.set(graph?.levels ?? []);
+        this.stationName.set(graph?.stationName ?? null);
+      },
+      error: () => {
+        this.stationLevels.set([]);
+        this.stationName.set(null);
+      },
     });
   }
 
