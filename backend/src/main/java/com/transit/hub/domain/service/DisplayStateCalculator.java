@@ -401,7 +401,20 @@ public class DisplayStateCalculator {
         // declares a stop-specific destination (loop services, terminus
         // short-running, branching). Falls through to the itinerary's
         // trip_headsign translation, then to the terminus name.
+        // The stop_times translation key is composite: record_id is
+        // stop_id (the kiosk stop), record_sub_id is trip_id (the
+        // representative trip carried by the itinerary).
         String destination = resolveStopHeadsign(itinerary, stopId);
+        if (destination != null && schedule.getStop() != null) {
+            String translated = translations.resolve(
+                    "stop_times",
+                    schedule.getStop().getExternalId(),
+                    itinerary.getExternalId(),
+                    "stop_headsign",
+                    null
+            ).orElse(null);
+            if (translated != null) {destination = translated;}
+        }
         if (destination == null) {
             destination = translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign",
                     resolveTranslatedTerminus(itinerary, translations));
