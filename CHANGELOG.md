@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-05-09
+
+Closing pass on the post-0.8.2 backlog: the four items the previous
+release left "on the table" all ship — TAD polygon in the public stop
+popup, Grafana dashboard, full-stack DisplayStateCalculator benchmark,
+spatial query on `locations`. Two new ADRs.
+
 ### Added
 - **GTFS-flex zone polygon in the stop popup** on the network map.
   When the clicked stop has `hasOnDemand=true`, the popup now lazy-loads
