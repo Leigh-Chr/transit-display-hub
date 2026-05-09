@@ -15,6 +15,7 @@ describe('StopPopupComponent', () => {
   let mockNetworkMapData: {
     getStopTadZone: ReturnType<typeof vi.fn>;
     getStopBookingRules: ReturnType<typeof vi.fn>;
+    getStopPathwayGraph: ReturnType<typeof vi.fn>;
   };
 
   const mockStop: LayoutStop = {
@@ -98,6 +99,7 @@ describe('StopPopupComponent', () => {
     mockNetworkMapData = {
       getStopTadZone: vi.fn().mockReturnValue(of(null)),
       getStopBookingRules: vi.fn().mockReturnValue(of([])),
+      getStopPathwayGraph: vi.fn().mockReturnValue(of(null)),
     };
   });
 

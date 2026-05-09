@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
-import { BookingRule, FlexLocation, NetworkMap, NetworkMapAlerts } from '@shared/models';
+import { BookingRule, FlexLocation, NetworkMap, NetworkMapAlerts, StationPathwayGraph } from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -36,5 +36,15 @@ export class NetworkMapDataService {
     return this.http
       .get<BookingRule[]>(`/api/network-map/stops/${stopId}/booking-rules`)
       .pipe(catchError(() => of([] as BookingRule[])));
+  }
+
+  /** Fetch the indoor pathway graph rooted at this stop's parent
+   *  station. Used by the popup to render "ascenseur jusqu'au quai 2".
+   *  Returns null when the stop is unknown; an empty graph (no
+   *  pathways) is returned for stations without indoor topology. */
+  getStopPathwayGraph(stopId: string): Observable<StationPathwayGraph | null> {
+    return this.http
+      .get<StationPathwayGraph>(`/api/network-map/stops/${stopId}/pathways`)
+      .pipe(catchError(() => of(null)));
   }
 }

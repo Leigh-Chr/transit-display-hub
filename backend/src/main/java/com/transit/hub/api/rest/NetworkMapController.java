@@ -4,9 +4,11 @@ import com.transit.hub.application.dto.response.BookingRuleResponse;
 import com.transit.hub.application.dto.response.LocationResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse.AlertsResponse;
+import com.transit.hub.application.dto.response.StationPathwayGraphResponse;
 import com.transit.hub.application.service.BookingRuleService;
 import com.transit.hub.application.service.LocationService;
 import com.transit.hub.application.service.NetworkMapService;
+import com.transit.hub.application.service.PathwayService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,7 @@ public class NetworkMapController {
     private final NetworkMapService networkMapService;
     private final LocationService locationService;
     private final BookingRuleService bookingRuleService;
+    private final PathwayService pathwayService;
 
     @GetMapping
     public ResponseEntity<NetworkMapResponse> getNetworkMap() {
@@ -63,5 +66,19 @@ public class NetworkMapController {
     @GetMapping("/stops/{stopId}/booking-rules")
     public ResponseEntity<List<BookingRuleResponse>> getStopBookingRules(@PathVariable UUID stopId) {
         return ResponseEntity.ok(bookingRuleService.findByStopId(stopId));
+    }
+
+    /**
+     * Public endpoint exposing the indoor pathway graph rooted at the
+     * station this stop belongs to. The popup uses it to render
+     * "Pour rejoindre le quai 2, suivre l'ascenseur jusqu'au niveau -1".
+     * Returns 404 when the stop itself is unknown; returns 200 with an
+     * empty pathway list when the station has no indoor topology.
+     */
+    @GetMapping("/stops/{stopId}/pathways")
+    public ResponseEntity<StationPathwayGraphResponse> getStopPathwayGraph(@PathVariable UUID stopId) {
+        return pathwayService.findStationGraphForStop(stopId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

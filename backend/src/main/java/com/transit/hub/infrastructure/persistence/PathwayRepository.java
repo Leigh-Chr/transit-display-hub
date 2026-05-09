@@ -17,4 +17,11 @@ public interface PathwayRepository extends JpaRepository<Pathway, UUID> {
     @Query("SELECT p FROM Pathway p JOIN FETCH p.fromStop JOIN FETCH p.toStop " +
            "WHERE p.fromStop.id = :stopId OR p.toStop.id = :stopId")
     List<Pathway> findTouchingStop(UUID stopId);
+
+    /** All pathways whose either endpoint sits in the given set — used
+     *  to walk the indoor graph of a station at once (the station id
+     *  plus all its children). */
+    @Query("SELECT DISTINCT p FROM Pathway p JOIN FETCH p.fromStop JOIN FETCH p.toStop " +
+           "WHERE p.fromStop.id IN :stopIds OR p.toStop.id IN :stopIds")
+    List<Pathway> findTouchingAny(java.util.Collection<UUID> stopIds);
 }

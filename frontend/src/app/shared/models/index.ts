@@ -745,6 +745,20 @@ export interface Pathway {
   reversedSignpostedAs: string | null;
 }
 
+export interface StationLevelInfo {
+  id: string;
+  externalId: string;
+  index: number;
+  name: string | null;
+}
+
+export interface StationPathwayGraph {
+  stationId: string;
+  stationName: string;
+  levels: StationLevelInfo[];
+  pathways: Pathway[];
+}
+
 // GTFS import audit (admin browse)
 export type ImportStatus = 'RUNNING' | 'SUCCESS' | 'SKIPPED_UNCHANGED' | 'FAILED';
 

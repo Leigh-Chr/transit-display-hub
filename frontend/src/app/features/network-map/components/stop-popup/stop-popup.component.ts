@@ -5,7 +5,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ScheduleService } from '@core/api/schedule.service';
-import { AlertMessage, BookingRule, FlexLocation, MessageInfo, MessageSeverity, Schedule } from '@shared/models';
+import {
+  AlertMessage, BookingRule, FlexLocation, MessageInfo, MessageSeverity, Schedule, StationPathwayGraph,
+} from '@shared/models';
+import { PathwayListComponent } from '../pathway-list/pathway-list.component';
 import {
   buildViewport,
   ringToSvgPath,
@@ -57,7 +60,10 @@ interface TimetableGroup {
 @Component({
   selector: 'app-stop-popup',
   standalone: true,
-  imports: [MatDialogModule, MatButtonModule, MatDividerModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [
+    MatDialogModule, MatButtonModule, MatDividerModule, MatIconModule, MatProgressSpinnerModule,
+    PathwayListComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dialog-header">
@@ -149,6 +155,13 @@ interface TimetableGroup {
           </svg>
         </div>
         <mat-divider />
+      }
+
+      @if (pathwayGraph(); as graph) {
+        @if (graph.pathways.length > 0) {
+          <app-pathway-list [graph]="graph" />
+          <mat-divider />
+        }
       }
 
       @if (bookingRules().length > 0) {
@@ -609,6 +622,11 @@ export class StopPopupComponent implements OnInit {
    *  passenger can see "phone +33… at least 1h before" inline. */
   readonly bookingRules = signal<BookingRule[]>([]);
 
+  /** Indoor pathway graph rooted at the parent station. Always
+   *  fetched when the popup opens — the section renders nothing when
+   *  the graph is empty (most stops on most networks). */
+  readonly pathwayGraph = signal<StationPathwayGraph | null>(null);
+
   /** SVG paths + viewBox for {@link tadZone}, reprojected once per
    *  zone change. Empty when no zone is loaded. */
   readonly tadZoneRings = computed<RenderedTadRing[]>(() => {
@@ -642,6 +660,9 @@ export class StopPopupComponent implements OnInit {
         this.bookingRules.set(rules);
       });
     }
+    this.networkMapData.getStopPathwayGraph(this.data.stop.id).subscribe(graph => {
+      this.pathwayGraph.set(graph);
+    });
   }
 
   /** Format a booking-rule prior_notice_duration_min into a human label
