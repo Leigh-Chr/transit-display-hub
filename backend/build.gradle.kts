@@ -3,6 +3,12 @@ plugins {
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.protobuf") version "0.9.4"
+    // Official JMH plugin — provides the `jmh` source set, the
+    // {@code jmh} verification task, annotation-processor wiring for
+    // the @Benchmark indexer, and a sensible default fork / warmup
+    // configuration. Out-of-band of the standard test task so a JMH
+    // run stays explicit (`./gradlew jmh`) and never blocks CI.
+    id("me.champeau.jmh") version "0.7.2"
 }
 
 group = "com.transit"
@@ -122,4 +128,20 @@ tasks.register<Test>("testRealFeed") {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Xlint:deprecation")
+}
+
+/**
+ * JMH defaults: short, deterministic enough that a developer can run
+ * them locally before a refactor without disappearing for the night.
+ * The fork count stays at 1 for speed; for a publishable measurement
+ * (numbers in CHANGELOG, ADR comparisons) bump to ≥ 2 manually.
+ */
+jmh {
+    warmupIterations.set(2)
+    iterations.set(3)
+    fork.set(1)
+    timeUnit.set("us")
+    benchmarkMode.set(listOf("avgt"))
+    resultFormat.set("JSON")
+    resultsFile.set(file("build/reports/jmh/results.json"))
 }

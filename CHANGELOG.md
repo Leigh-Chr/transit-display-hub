@@ -47,9 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   datasource and Caffeine cache meters out of the box. Every meter
   carries the `application=transit-display-hub` tag for portable
   Grafana dashboards. ADR 0027.
+- **JMH micro-benchmarks** for the three hot-path utilities:
+  `ServiceCalendarMatcher.isActive` (parameterised by exception count
+  0/5/50), `TranslationLookup.from` + `resolve` (parameterised by
+  collection size 100/1k/10k), `ColorContrast.readableTextColor`
+  (single-shot domain). Run via `./gradlew jmh`; the new task is
+  intentionally outside the default `check` lifecycle so a JMH run
+  never blocks CI. Source set lives at `backend/src/jmh/java/`.
+  ADR 0028.
 - **ADR 0026** — Persist `locations.geojson` as TEXT, no JTS.
 - **ADR 0027** — Prometheus scrape via Micrometer, no in-house metrics
   layer.
+- **ADR 0028** — JMH micro-benchmarks for hot-path utilities.
 
 ## [0.8.1] - 2026-05-09
 
