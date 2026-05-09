@@ -7,6 +7,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — full GTFS-spec coverage pass (V36 → V47)
+
+The May audit catalogued every field gap between
+`GtfsImportService` and the live gtfs.org reference. This
+pass closes them. **Pure additive**, no UI surface
+touched (the network map keeps its schematic rendering;
+shapes data is persisted but not drawn geographically).
+
+**`stop_times.txt` rounded out (P1):**
+- **GTFS-flex windows + targets**:
+  `start_pickup_drop_off_window`,
+  `end_pickup_drop_off_window`, `location_id`,
+  `location_group_id` now persist on a new
+  `flex_stop_times` table — kept separate from
+  `schedules` because flex rows describe *availability
+  over a window* rather than concrete arrivals at a stop.
+  The importer routes rows automatically and resolves
+  `pickup_booking_rule_id` / `drop_off_booking_rule_id`
+  FKs.
+- **`departure_time` distinct from arrival**: previously
+  collapsed into a single `time` column; now persisted
+  only when the feed actually distinguishes them.
+- **`continuous_pickup` / `continuous_drop_off`** at the
+  stop-time level (override of the route-level values
+  already persisted on `Line`).
+- **`shape_dist_traveled`** — distance along the shape
+  from trip start, useful for in-vehicle progress
+  indicators.
+
+**`stops.txt` (P1, P3):**
+- **`zone_id`** — the foreign-key target of `fare_rules`
+  (`origin_id` / `destination_id` / `contains_id`);
+  without it the V1 fare table was unusable.
+- **`stop_access`** (post-2023 spec field).
+
+**`trips.txt` (P1, P3):**
+- **`direction_id`** persisted on `Itinerary` (previously
+  used in-memory only to group trips).
+- **`cars_allowed`** (motorail / ferry policy) — new
+  `CarsAllowed` enum mirroring `BikesAllowed`.
+- **`safe_duration_factor`** / **`safe_duration_offset`**
+  for on-demand booking ETA estimation.
+
+**`transfers.txt` (P2):**
+- **`from_route_id`**, **`to_route_id`**,
+  **`from_trip_id`**, **`to_trip_id`** qualifiers —
+  without them, route-specific transfer rules collapsed
+  into generic stop-to-stop edges.
+
+**Fares V2 (P2, P3):**
+- **`fare_leg_join_rules.txt`** aligned with the
+  canonical spec layout (`leg_group_id`, `leg_sequence`,
+  `preceding_trip_transfer_limit`); legacy MobilityData
+  layout still accepted as fallback.
+- **`rider_categories.txt`** — new entity, FK from
+  `FareProduct.rider_category_id`.
+- **`fare_transfer_rules`** boarding-time fields:
+  `minutes_before_to_start_boarding_time`,
+  `minutes_after_to_start_boarding_time`.
+
+**`agency.txt` / `routes.txt` (P3):**
+- **`cemv_support`** at both levels (contactless EMV
+  acceptance, with route taking precedence over agency).
+
+**`translations.txt` (P3):**
+- **`record_sub_id`** (required when translating
+  `stop_times` rows where `record_id` alone is
+  ambiguous).
+- **`language_context`** for disambiguating long-form vs
+  short-form translations.
+- Unique constraint widened to include `record_sub_id`.
+
+**`locations.geojson` (P4):**
+- Now reads `properties.name` (current spec) with
+  `properties.stop_name` fallback (legacy / MobilityData
+  fixtures).
+
+**Validation (P4):**
+- The importer warns when a feed reuses an id across
+  `stops.stop_id`, `locations.geojson` Feature.id and
+  `location_groups.location_group_id` — the spec mandates
+  a single namespace and overlap makes `stop_times`
+  references ambiguous.
+
+Migrations: V36 (itinerary direction_id), V37 (stop
+zone_id), V38 (flex_stop_times), V39 (schedule
+departure_time), V40 (transfer qualifiers), V41
+(fare_leg_join_rules canonical), V42 (schedule continuous
++ shape_dist), V43 (itinerary cars + safe_duration), V44
+(stop_access + cemv_support), V45 (rider_categories), V46
+(fare_transfer_rules boarding times), V47 (translation
+sub_id + language_context).
+
 ### Fixed
 - **Synthetic data loader** now evicts the
   `networkMap` / `networkAlerts` Caffeine caches at the

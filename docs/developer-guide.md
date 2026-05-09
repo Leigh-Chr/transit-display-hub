@@ -181,7 +181,8 @@ itinerary. The itinerary determines the line and direction
 public class Schedule {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    private LocalTime time;
+    private LocalTime time;            // arrival
+    private LocalTime departureTime;   // distinct only when feed says so
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Stop stop;
@@ -190,6 +191,65 @@ public class Schedule {
     private Itinerary itinerary;
 }
 ```
+
+#### FlexStopTime (GTFS-flex)
+
+A `flex_stop_times` row stores the on-demand counterpart of
+`stop_times.txt`: a service window (`start_pickup_drop_off_window`
+to `end_pickup_drop_off_window`) over a polygon
+(`location_id`) or a group of stops (`location_group_id`),
+rather than a concrete arrival time at a fixed stop. The
+spec makes the three target FKs (stop / location /
+location_group) mutually exclusive; the importer enforces
+that exactly one is set.
+
+Kept separate from `schedules` because the consumers of the
+two row types diverge — display calculator and kiosks read
+`schedules`, while a TAD-aware booking surface reads
+`flex_stop_times`. See ADR 0030.
+
+```java
+@Entity
+@Table(name = "flex_stop_times")
+public class FlexStopTime {
+    @Id private UUID id;
+    @ManyToOne private Itinerary itinerary;
+    private Integer stopSequence;
+    @ManyToOne private Stop stop;                  // exclusive
+    @ManyToOne private Location location;          // exclusive
+    @ManyToOne private LocationGroup locationGroup;// exclusive
+    private LocalTime startPickupDropOffWindow;
+    private LocalTime endPickupDropOffWindow;
+    @ManyToOne private BookingRule pickupBookingRule;
+    @ManyToOne private BookingRule dropOffBookingRule;
+}
+```
+
+#### GTFS spec coverage matrix
+
+The May 2026 audit closed every field gap between the
+gtfs.org reference and the importer. The full coverage map
+is in `CHANGELOG.md` under the "full GTFS-spec coverage
+pass" section. Highlights of what's now persisted:
+
+| File | Notable additions |
+|---|---|
+| `stops.txt` | `zone_id`, `stop_access` |
+| `routes.txt` | `cemv_support` |
+| `agency.txt` | `cemv_support` |
+| `trips.txt` | `direction_id` (on Itinerary), `cars_allowed`, `safe_duration_factor`, `safe_duration_offset` |
+| `stop_times.txt` | `departure_time` (distinct), `continuous_pickup/drop_off`, `shape_dist_traveled`, full GTFS-flex side via `flex_stop_times` |
+| `transfers.txt` | `from_route_id` / `to_route_id` / `from_trip_id` / `to_trip_id` |
+| `translations.txt` | `record_sub_id`, `language_context` |
+| `fare_leg_join_rules.txt` | canonical `leg_group_id + leg_sequence + preceding_trip_transfer_limit` |
+| `fare_transfer_rules.txt` | `minutes_before/after_to_start_boarding_time` |
+| `fare_products.txt` | `rider_category_id` |
+| `rider_categories.txt` | now imported (new entity) |
+| `locations.geojson` | reads `properties.name` with `properties.stop_name` fallback |
+
+The importer also warns when a feed reuses an id across the
+`stops` / `locations` / `location_groups` namespace (the
+spec mandates a single namespace).
 
 ### Services
 
