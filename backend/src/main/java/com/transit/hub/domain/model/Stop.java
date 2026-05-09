@@ -133,6 +133,14 @@ public class Stop {
     @Column(name = "platform_code", length = 10)
     private String platformCode;
 
+    /** GTFS {@code stop_access}: 0 = generally accessible, 1 = staff
+     *  / employees only. Spec forbids the field on station /
+     *  entrance / node / boarding-area rows; we still let it through
+     *  if the feed ships a value, since some operators use it to
+     *  flag a closed-to-public station. */
+    @Column(name = "stop_access")
+    private Short stopAccess;
+
     /** GTFS {@code location_type}: 0 platform / regular stop (default),
      *  1 station / parent. Other values (entrance, generic node,
      *  boarding area) are skipped at import. The display calculator

@@ -84,4 +84,10 @@ public class Agency {
     @Size(max = 100)
     @Column(length = 100)
     private String email;
+
+    /** GTFS {@code agency.cemv_support}: contactless EMV (card-tap)
+     *  acceptance — 0 not supported, 1 supported, 2 ask the operator.
+     *  May be overridden per line via {@link Line#getCemvSupport()}. */
+    @Column(name = "cemv_support")
+    private Short cemvSupport;
 }

@@ -332,6 +332,7 @@ public class GtfsImportService {
                 agency.setPhone(truncate(optional(record, "agency_phone"), 30));
                 agency.setFareUrl(truncate(optional(record, "agency_fare_url"), 500));
                 agency.setEmail(truncate(optional(record, "agency_email"), 100));
+                agency.setCemvSupport(parseShortOrNull(optional(record, "cemv_support")));
 
                 Agency saved = agencyRepository.save(agency);
                 seenIds.add(saved.getId());
@@ -409,6 +410,7 @@ public class GtfsImportService {
                 line.setSortOrder(sortOrder);
                 line.setDescription(isBlank(routeDesc) ? null : routeDesc);
                 line.setUrl(isBlank(routeUrl) ? null : routeUrl);
+                line.setCemvSupport(parseShortOrNull(optional(record, "cemv_support")));
 
                 Line saved = lineRepository.save(line);
                 seenIds.add(saved.getId());
@@ -508,7 +510,8 @@ public class GtfsImportService {
     private StopImport importStops(Path stopsFile) throws IOException {
         record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
                        String shortCode, String ttsName, String timezone, String description, String url,
-                       int wheelchairBoarding, String platformCode, String zoneId) {}
+                       int wheelchairBoarding, String platformCode, String zoneId,
+                       Short stopAccess) {}
 
         List<RawStop> raw = new ArrayList<>();
         try (CSVParser parser = openCsv(stopsFile)) {
@@ -534,7 +537,8 @@ public class GtfsImportService {
                         optional(record, "stop_url"),
                         parseInt(optional(record, "wheelchair_boarding"), 0),
                         optional(record, "platform_code"),
-                        optional(record, "zone_id")));
+                        optional(record, "zone_id"),
+                        parseShortOrNull(optional(record, "stop_access"))));
             }
         }
 
@@ -571,6 +575,7 @@ public class GtfsImportService {
                     com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding));
             stop.setPlatformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10));
             stop.setZoneId(isBlank(r.zoneId) ? null : truncate(r.zoneId, 100));
+            stop.setStopAccess(r.stopAccess);
             stop.setLocationType((short) r.locationType);
             stop.setParentStop(parent);
             // Re-enable on every import: a stop that disappeared in a

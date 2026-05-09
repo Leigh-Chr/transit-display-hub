@@ -118,6 +118,12 @@ public class Line {
     @Column(length = 255)
     private String url;
 
+    /** GTFS {@code routes.cemv_support}: line-level contactless EMV
+     *  acceptance — 0 not supported, 1 supported, 2 ask the operator.
+     *  Takes precedence over the agency value. */
+    @Column(name = "cemv_support")
+    private Short cemvSupport;
+
     /** Operating agency. Nullable because lines created via the legacy
      *  admin form (or imported from feeds without {@code agency.txt})
      *  may not have one. The {@code DisplayStateCalculator} falls back
