@@ -58,6 +58,17 @@ import { FeedInfo } from '@shared/models';
                 <span>{{ info.sourceUrl }}</span>
               </div>
             }
+            @if (info.lang || info.defaultLang) {
+              <div class="feed-line">
+                <mat-icon class="feed-line-icon">translate</mat-icon>
+                <span>
+                  Source language: <strong>{{ info.lang || '?' }}</strong>
+                  @if (info.defaultLang && info.defaultLang !== info.lang) {
+                    · default <strong>{{ info.defaultLang }}</strong>
+                  }
+                </span>
+              </div>
+            }
           </div>
         </mat-card-content>
       </mat-card>
