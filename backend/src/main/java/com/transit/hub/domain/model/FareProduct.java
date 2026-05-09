@@ -47,6 +47,12 @@ public class FareProduct {
     @Column(name = "fare_media_id", length = 100)
     private String fareMediaId;
 
+    /** GTFS {@code rider_category_id} — the rider category this product
+     *  is priced for. Stored as the raw external_id; resolve via
+     *  {@code RiderCategoryRepository.findByExternalId}. */
+    @Column(name = "rider_category_id", length = 100)
+    private String riderCategoryId;
+
     @Column(name = "amount", nullable = false, precision = 12, scale = 4)
     private BigDecimal amount;
 

@@ -47,6 +47,7 @@ import com.transit.hub.infrastructure.persistence.FareMediaRepository;
 import com.transit.hub.infrastructure.persistence.FareProductRepository;
 import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
 import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
+import com.transit.hub.infrastructure.persistence.RiderCategoryRepository;
 import com.transit.hub.infrastructure.persistence.NetworkRepository;
 import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
@@ -133,6 +134,7 @@ public class GtfsImportService {
     private final FareMediaRepository fareMediaRepository;
     private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
     private final FlexStopTimeRepository flexStopTimeRepository;
+    private final RiderCategoryRepository riderCategoryRepository;
 
     /** Flushed at section boundaries so the persistence context stays
      *  bounded — without periodic flushes, each section's saveAll
@@ -1875,6 +1877,7 @@ public class GtfsImportService {
         fareTransferRuleRepository.deleteAllInBatch();
         fareLegRuleRepository.deleteAllInBatch();
         fareProductRepository.deleteAllInBatch();
+        riderCategoryRepository.deleteAllInBatch();
         fareMediaRepository.deleteAllInBatch();
         timeframeRepository.deleteAllInBatch();
         areaRepository.deleteAllInBatch();
@@ -1884,6 +1887,7 @@ public class GtfsImportService {
         importNetworks(workDir.resolve("networks.txt"),
                 workDir.resolve("route_networks.txt"), linesByGtfsId);
         importFareMedia(workDir.resolve("fare_media.txt"));
+        importRiderCategories(workDir.resolve("rider_categories.txt"));
         Map<String, Area> areasByExternalId = importAreas(workDir.resolve("areas.txt"),
                 workDir.resolve("stop_areas.txt"), stopImport);
         importTimeframes(workDir.resolve("timeframes.txt"));
@@ -2063,6 +2067,29 @@ public class GtfsImportService {
         log.info("GTFS import: {} timeframe windows persisted", batch.size());
     }
 
+    private void importRiderCategories(Path file) throws IOException {
+        if (!Files.exists(file)) {
+            log.info("GTFS import: rider_categories.txt missing, skipping");
+            return;
+        }
+        List<com.transit.hub.domain.model.RiderCategory> batch = new ArrayList<>();
+        try (CSVParser parser = openCsv(file)) {
+            for (CSVRecord record : parser) {
+                String externalId = optional(record, "rider_category_id");
+                if (isBlank(externalId)) {continue;}
+                batch.add(com.transit.hub.domain.model.RiderCategory.builder()
+                        .externalId(truncate(externalId, 100))
+                        .name(truncate(optional(record, "rider_category_name"), 200))
+                        .isDefaultFareCategory(parseShortOrNull(
+                                optional(record, "is_default_fare_category")))
+                        .eligibilityUrl(truncate(optional(record, "eligibility_url"), 500))
+                        .build());
+            }
+        }
+        riderCategoryRepository.saveAll(batch);
+        log.info("GTFS import: {} rider categories persisted", batch.size());
+    }
+
     private Map<String, FareProduct> importFareProducts(Path productsFile) throws IOException {
         Map<String, FareProduct> result = new HashMap<>();
         if (!Files.exists(productsFile)) {
@@ -2087,6 +2114,7 @@ public class GtfsImportService {
                         .externalId(truncate(externalId, 100))
                         .name(truncate(optional(record, "fare_product_name"), 200))
                         .fareMediaId(truncate(optional(record, "fare_media_id"), 100))
+                        .riderCategoryId(truncate(optional(record, "rider_category_id"), 100))
                         .amount(amount)
                         .currency(truncate(currency, 3))
                         .build();
