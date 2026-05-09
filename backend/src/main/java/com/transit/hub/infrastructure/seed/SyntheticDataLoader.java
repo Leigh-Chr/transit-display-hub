@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,7 @@ public class SyntheticDataLoader implements CommandLineRunner {
     private final DeviceRepository deviceRepository;
     private final BroadcastMessageRepository messageRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CacheManager cacheManager;
 
     private final Random random = new Random(42); // Fixed seed for reproducibility
 
@@ -68,6 +70,23 @@ public class SyntheticDataLoader implements CommandLineRunner {
 
             log.info("=== Data Seeding Complete ===");
             logSummary();
+        }
+        // Evict the network-map / network-alerts caches whether we
+        // just seeded or skipped (DB persisting from a previous run).
+        // A warm-up request issued by the dev frontend during boot can
+        // populate the cache with an empty snapshot before either the
+        // seed completes or DevTools finishes its restart — clearing
+        // here guarantees the first post-startup read returns fresh
+        // data.
+        evictNetworkCaches();
+    }
+
+    private void evictNetworkCaches() {
+        for (String name : new String[]{"networkMap", "networkAlerts"}) {
+            var cache = cacheManager.getCache(name);
+            if (cache != null) {
+                cache.clear();
+            }
         }
     }
 

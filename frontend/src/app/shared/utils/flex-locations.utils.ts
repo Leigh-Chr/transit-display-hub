@@ -20,7 +20,7 @@ export interface FlatRing {
 
 /** Read-only viewport built from a list of locations, ready to feed an
  *  SVG {@code viewBox} attribute and a coordinate-projection function. */
-export interface FlexLocationsViewport {
+interface FlexLocationsViewport {
   width: number;
   height: number;
   viewBox: string;
