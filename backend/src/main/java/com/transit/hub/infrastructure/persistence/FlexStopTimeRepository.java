@@ -2,6 +2,7 @@ package com.transit.hub.infrastructure.persistence;
 
 import com.transit.hub.domain.model.FlexStopTime;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,4 +16,39 @@ public interface FlexStopTimeRepository extends JpaRepository<FlexStopTime, UUID
     List<FlexStopTime> findByLocationId(UUID locationId);
 
     List<FlexStopTime> findByLocationGroupId(UUID locationGroupId);
+
+    /** Eagerly fetches everything the admin / popup needs to render a
+     *  flex window without N+1: itinerary + line, location, location
+     *  group, booking rules and the service calendar. Filtered by the
+     *  GTFS external id of the location for the public lookup
+     *  (passenger surface keys on the geojson feature id). */
+    @Query("""
+            SELECT f FROM FlexStopTime f
+              JOIN FETCH f.itinerary i
+              JOIN FETCH i.line
+              LEFT JOIN FETCH f.location l
+              LEFT JOIN FETCH f.locationGroup
+              LEFT JOIN FETCH f.pickupBookingRule
+              LEFT JOIN FETCH f.dropOffBookingRule
+              LEFT JOIN FETCH f.serviceCalendar
+              WHERE l.externalId = :externalId
+              ORDER BY f.startPickupDropOffWindow
+            """)
+    List<FlexStopTime> findByLocationExternalId(String externalId);
+
+    /** Eagerly fetches every flex stop time for an itinerary so the
+     *  admin browse page can list them with their target. */
+    @Query("""
+            SELECT f FROM FlexStopTime f
+              JOIN FETCH f.itinerary i
+              JOIN FETCH i.line
+              LEFT JOIN FETCH f.location
+              LEFT JOIN FETCH f.locationGroup
+              LEFT JOIN FETCH f.stop
+              LEFT JOIN FETCH f.pickupBookingRule
+              LEFT JOIN FETCH f.dropOffBookingRule
+              LEFT JOIN FETCH f.serviceCalendar
+              ORDER BY f.itinerary.id, f.stopSequence
+            """)
+    List<FlexStopTime> findAllWithRelations();
 }

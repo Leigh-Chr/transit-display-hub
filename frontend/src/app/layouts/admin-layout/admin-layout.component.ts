@@ -209,6 +209,16 @@ import {
               <span matListItemTitle>Zones TAD</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/flex-stop-times"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>phone_callback</mat-icon>
+              <span matListItemTitle>Stop_times TAD</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 

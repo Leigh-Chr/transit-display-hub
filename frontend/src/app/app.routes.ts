@@ -97,6 +97,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/tad-zones/tad-zones.component').then(m => m.TadZonesComponent)
       },
       {
+        path: 'flex-stop-times',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
+        loadComponent: () => import('./features/admin/flex-stop-times/flex-stop-times.component').then(m => m.FlexStopTimesComponent)
+      },
+      {
         path: 'users',
         canActivate: [roleGuard],
         data: { requiredRole: 'ADMIN' },

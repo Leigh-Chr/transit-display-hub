@@ -468,6 +468,34 @@ export interface NetworkMapAlertsUpdate {
 
 export type NetworkMapUpdate = NetworkMapFullUpdate | NetworkMapAlertsUpdate;
 
+// GTFS-flex stop_times (admin browse + public flex-windows lookup)
+export interface FlexStopTime {
+  id: string;
+  itineraryId: string | null;
+  itineraryName: string | null;
+  lineCode: string | null;
+  lineColor: string | null;
+  stopSequence: number | null;
+  stopId: string | null;
+  stopName: string | null;
+  locationExternalId: string | null;
+  locationName: string | null;
+  locationGroupExternalId: string | null;
+  locationGroupName: string | null;
+  /** ISO-8601 "HH:mm:ss". */
+  startPickupDropOffWindow: string;
+  endPickupDropOffWindow: string;
+  pickupType: number | null;
+  dropOffType: number | null;
+  pickupBookingRuleId: string | null;
+  pickupBookingRuleExternalId: string | null;
+  dropOffBookingRuleId: string | null;
+  dropOffBookingRuleExternalId: string | null;
+  serviceCalendarId: string | null;
+  serviceCalendarExternalId: string | null;
+  stopHeadsign: string | null;
+}
+
 // GTFS Attribution (public credit block)
 export interface Attribution {
   organizationName: string;
