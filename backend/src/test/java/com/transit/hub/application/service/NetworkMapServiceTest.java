@@ -467,6 +467,49 @@ class NetworkMapServiceTest {
         }
 
         @Test
+        @DisplayName("transfer qualifiers from_route_id / to_route_id resolve to line UUIDs")
+        void transferQualifiersResolveToLineIds() {
+            Line lineA = TestDataFactory.createLine("M1", "Metro 1", "#FF0000");
+            lineA.setExternalId("ROUTE_A");
+            Line lineB = TestDataFactory.createLine("M2", "Metro 2", "#00FF00");
+            lineB.setExternalId("ROUTE_B");
+            Stop parentA = parentStation("Alpha");
+            Stop platformA = platformOf(parentA, "1", lineA);
+            Stop parentB = parentStation("Beta");
+            Stop platformB = platformOf(parentB, "1", lineB);
+            Transfer generic = Transfer.builder()
+                    .id(UUID.randomUUID())
+                    .fromStop(platformA).toStop(platformB)
+                    .transferType((short) 2).minTransferTime(120)
+                    .build();
+            Transfer routeSpecific = Transfer.builder()
+                    .id(UUID.randomUUID())
+                    .fromStop(platformA).toStop(platformB)
+                    .transferType((short) 1).minTransferTime(60)
+                    .fromRouteId("ROUTE_A").toRouteId("ROUTE_B")
+                    .build();
+
+            when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(lineA, lineB));
+            when(stopRepository.findAllWithLines())
+                    .thenReturn(List.of(parentA, platformA, parentB, platformB));
+            when(transferRepository.findAllWithStops()).thenReturn(List.of(generic, routeSpecific));
+
+            NetworkMapResponse result = networkMapService.getNetworkMap();
+
+            assertThat(result.transfers()).hasSize(2);
+            NetworkTransfer specific = result.transfers().stream()
+                    .filter(t -> t.fromLineId() != null)
+                    .findFirst().orElseThrow();
+            assertThat(specific.fromLineId()).isEqualTo(lineA.getId());
+            assertThat(specific.toLineId()).isEqualTo(lineB.getId());
+            assertThat(specific.transferType()).isEqualTo((short) 1);
+            NetworkTransfer fallback = result.transfers().stream()
+                    .filter(t -> t.fromLineId() == null)
+                    .findFirst().orElseThrow();
+            assertThat(fallback.transferType()).isEqualTo((short) 2);
+        }
+
+        @Test
         @DisplayName("parent station hasOnDemand when any of its child platforms has on-request schedule")
         void parentInheritsHasOnDemandFromChild() {
             Line line = TestDataFactory.createLine("B1", "Bus 1", "#0000FF");

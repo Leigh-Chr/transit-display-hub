@@ -799,7 +799,10 @@ export class NetworkMapComponent implements OnInit {
         if (!matchesCurrent) {
           this.routeResult.set(this.routeFinder.findRoute(
               map, wantedDep.id, wantedArr.id,
-              { accessibleOnly: this.accessibleOnly() }));
+              {
+              accessibleOnly: this.accessibleOnly(),
+              pathwayPenaltySeconds: this.accessibleOnly() ? 120 : 0,
+            }));
         }
       } else if (this.routeResult() !== null) {
         this.routeResult.set(null);
@@ -947,7 +950,10 @@ export class NetworkMapComponent implements OnInit {
 
     const result = this.routeFinder.findRoute(
         map, event.from, event.to,
-        { accessibleOnly: this.accessibleOnly() });
+        {
+              accessibleOnly: this.accessibleOnly(),
+              pathwayPenaltySeconds: this.accessibleOnly() ? 120 : 0,
+            });
     this.routeResult.set(result);
     this.fromParam.set(event.from);
     this.toParam.set(event.to);
@@ -964,7 +970,10 @@ export class NetworkMapComponent implements OnInit {
       const to = route.allStopIds[route.allStopIds.length - 1];
       if (from && to) {
         this.routeResult.set(this.routeFinder.findRoute(map, from, to,
-            { accessibleOnly: this.accessibleOnly() }));
+            {
+              accessibleOnly: this.accessibleOnly(),
+              pathwayPenaltySeconds: this.accessibleOnly() ? 120 : 0,
+            }));
       }
     }
   }

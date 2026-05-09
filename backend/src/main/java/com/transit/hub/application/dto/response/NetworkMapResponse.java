@@ -64,12 +64,20 @@ public record NetworkMapResponse(
     /** Inline transfer between two stops. {@code transferType} mirrors
      *  GTFS (0 recommended, 1 timed, 2 minimum-time, 3 not possible).
      *  {@code minTransferTimeSeconds} is null when the feed didn't
-     *  publish one — consumers fall back to a reasonable default. */
+     *  publish one — consumers fall back to a reasonable default.
+     *  <p>{@code fromLineId} / {@code toLineId} carry the GTFS
+     *  {@code from_route_id} / {@code to_route_id} qualifiers resolved
+     *  against the network's lines: when set, the transfer applies only
+     *  when leaving the {@code from} line and boarding the {@code to}
+     *  line, allowing route-finders to pick a route-specific entry over
+     *  a generic one for the same stop pair. */
     public record NetworkTransfer(
             UUID fromStopId,
             UUID toStopId,
             short transferType,
-            Integer minTransferTimeSeconds
+            Integer minTransferTimeSeconds,
+            UUID fromLineId,
+            UUID toLineId
     ) {}
 
     public record Bounds(

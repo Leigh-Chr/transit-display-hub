@@ -104,6 +104,15 @@ export interface RouteFinderOptions {
    *  `NOT_ACCESSIBLE`. Stops with `UNKNOWN` or `null` are kept —
    *  the spec defines them as "not declared", not "not accessible". */
   accessibleOnly?: boolean;
+
+  /** Extra cost (seconds) added to every implicit transfer — i.e.
+   *  same-stop interchange not declared in {@code transfers.txt}.
+   *  Implicit transfers may traverse stairs / escalators that aren't
+   *  visible to the route-finder, so bumping their cost steers PMR
+   *  searches toward routes whose interchanges are explicitly modelled
+   *  (and therefore typically vetted for accessibility). Default 0,
+   *  recommended around 120s when {@link accessibleOnly} is true. */
+  pathwayPenaltySeconds?: number;
 }
 
 interface PathStep {
@@ -170,7 +179,8 @@ export class RouteFinderService {
     }
 
     const transferIndex = this.indexTransfers(networkMap.transfers ?? []);
-    this.addTransferEdges(stopToLines, adj, transferIndex);
+    this.addTransferEdges(stopToLines, adj, transferIndex,
+            options?.pathwayPenaltySeconds ?? 0);
 
     return { adj, stopToLines };
   }
@@ -189,25 +199,78 @@ export class RouteFinderService {
     return blocked;
   }
 
-  /** Builds a lookup from "fromStopId|toStopId" to the most-favourable
-   *  declared transfer. Both directions are indexed so transfers.txt's
-   *  one-way semantics still let the route-finder find the cheap path
-   *  in either travel direction. */
-  private indexTransfers(transfers: NetworkTransfer[]): Map<string, NetworkTransfer> {
-    const index = new Map<string, NetworkTransfer>();
+  /** Builds a lookup from "fromStopId|toStopId" to every declared
+   *  transfer. Both directions are indexed so transfers.txt's one-way
+   *  semantics still let the route-finder find the cheap path in either
+   *  travel direction. Multiple entries per pair coexist so a generic
+   *  rule and a route-specific rule don't squash each other; the
+   *  edge-builder picks the most-specific applicable entry per
+   *  (lineI, lineJ) combination. */
+  private indexTransfers(transfers: NetworkTransfer[]): Map<string, NetworkTransfer[]> {
+    const index = new Map<string, NetworkTransfer[]>();
     for (const t of transfers) {
       const fwdKey = `${t.fromStopId}|${t.toStopId}`;
       const revKey = `${t.toStopId}|${t.fromStopId}`;
-      // Prefer the cheaper transfer when multiple rows describe the
-      // same pair (rare but happens in feeds with both directional and
-      // generic entries).
-      const existing = index.get(fwdKey);
-      if (!existing || this.transferCostFor(t) < this.transferCostFor(existing)) {
-        index.set(fwdKey, t);
-        index.set(revKey, t);
+      this.appendTransferEntry(index, fwdKey, t);
+      // For the reverse key we keep the same record but the lineId
+      // qualifiers stay attached to their original direction — the
+      // edge-builder reverses them by looking at the (lineI, lineJ)
+      // pair against both fromLineId/toLineId orderings.
+      if (revKey !== fwdKey) {
+        this.appendTransferEntry(index, revKey, t);
       }
     }
     return index;
+  }
+
+  private appendTransferEntry(
+    index: Map<string, NetworkTransfer[]>, key: string, transfer: NetworkTransfer,
+  ): void {
+    const list = index.get(key);
+    if (list) {
+      list.push(transfer);
+    } else {
+      index.set(key, [transfer]);
+    }
+  }
+
+  /** Pick the best-applicable transfer for the (lineI, lineJ) pair at
+   *  a stop. Preference order:
+   *  1. Both qualifiers match (fromLineId === lineI && toLineId === lineJ
+   *     in either travel direction).
+   *  2. Generic transfer with no qualifiers (fromLineId/toLineId both null).
+   *  3. Cheapest entry overall (legacy behaviour for feeds that ship
+   *     route-specific entries we can't disambiguate).
+   *  Returns null when the candidate list is empty. */
+  private pickTransferForPair(
+    candidates: NetworkTransfer[], lineI: string, lineJ: string,
+  ): NetworkTransfer | null {
+    if (candidates.length === 0) {return null;}
+    let bestSpecific: NetworkTransfer | null = null;
+    let bestGeneric: NetworkTransfer | null = null;
+    let cheapest: NetworkTransfer | null = null;
+    for (const t of candidates) {
+      if (cheapest === null
+          || this.transferCostFor(t) < this.transferCostFor(cheapest)) {
+        cheapest = t;
+      }
+      const matchesForward = t.fromLineId === lineI && t.toLineId === lineJ;
+      const matchesReverse = t.fromLineId === lineJ && t.toLineId === lineI;
+      if (matchesForward || matchesReverse) {
+        if (bestSpecific === null
+            || this.transferCostFor(t) < this.transferCostFor(bestSpecific)) {
+          bestSpecific = t;
+        }
+        continue;
+      }
+      const isGeneric = (t.fromLineId === null || t.fromLineId === undefined)
+          && (t.toLineId === null || t.toLineId === undefined);
+      if (isGeneric && (bestGeneric === null
+          || this.transferCostFor(t) < this.transferCostFor(bestGeneric))) {
+        bestGeneric = t;
+      }
+    }
+    return bestSpecific ?? bestGeneric ?? cheapest;
   }
 
   /** Resolves the Dijkstra cost for a declared transfer. Type 3 = not
@@ -259,26 +322,33 @@ export class RouteFinderService {
 
   /** Add transfer edges between different lines at the same stop. The
    *  cost is the declared transfers.txt minimum-time when present, with
-   *  a sensible default otherwise. */
+   *  a sensible default otherwise. {@code pathwayPenalty} is added to
+   *  every implicit transfer (no transfers.txt entry) — handy for
+   *  PMR-aware searches that want to favour explicitly-modelled
+   *  interchanges. */
   private addTransferEdges(
     stopToLines: Map<string, Set<string>>,
     adj: Map<string, AdjacencyEdge[]>,
-    transferIndex: Map<string, NetworkTransfer>,
+    transferIndex: Map<string, NetworkTransfer[]>,
+    pathwayPenalty: number,
   ): void {
     for (const [stopId, lineIds] of stopToLines) {
       const lines = [...lineIds];
-      const selfTransfer = transferIndex.get(`${stopId}|${stopId}`);
-      const cost = selfTransfer
-        ? this.transferCostFor(selfTransfer)
-        : RouteFinderService.DEFAULT_TRANSFER_COST_SECONDS;
-      // Skip building edges for transfers explicitly marked impossible.
-      if (cost >= RouteFinderService.IMPOSSIBLE_TRANSFER_COST) {continue;}
+      const selfTransferList = transferIndex.get(`${stopId}|${stopId}`) ?? [];
 
       for (let i = 0; i < lines.length; i++) {
         for (let j = i + 1; j < lines.length; j++) {
           const lineI = lines[i];
           const lineJ = lines[j];
           if (lineI === undefined || lineJ === undefined) {continue;}
+
+          const declared = this.pickTransferForPair(selfTransferList, lineI, lineJ);
+          const baseCost = declared
+              ? this.transferCostFor(declared)
+              : RouteFinderService.DEFAULT_TRANSFER_COST_SECONDS;
+          // Skip building edges for transfers explicitly marked impossible.
+          if (baseCost >= RouteFinderService.IMPOSSIBLE_TRANSFER_COST) {continue;}
+          const cost = declared ? baseCost : baseCost + pathwayPenalty;
 
           const keyA = this.getKey(stopId, lineI);
           const keyB = this.getKey(stopId, lineJ);

@@ -145,14 +145,31 @@ public class NetworkMapService {
         // Transfers between platforms collapse to transfers between their
         // parents; intra-station transfers (same parent both ends) drop
         // off the map since they're walking inside a single node.
-        Set<List<UUID>> seenTransfers = new HashSet<>();
+        // Dedupe key adds the resolved route qualifiers so multiple
+        // {@code transfers.txt} entries for the same stop pair (one
+        // generic + one route-specific) coexist instead of squashing
+        // each other; the route-finder picks the most-specific applicable
+        // entry per (from-line, to-line) pair.
+        Map<String, UUID> lineIdByExternalId = new HashMap<>();
+        for (Line l : lines) {
+            if (l.getExternalId() != null) {
+                lineIdByExternalId.put(l.getExternalId(), l.getId());
+            }
+        }
+        Set<List<Object>> seenTransfers = new HashSet<>();
         List<NetworkTransfer> networkTransfers = new ArrayList<>();
         for (Transfer t : transfers) {
             UUID from = platformToParentId.getOrDefault(t.getFromStop().getId(), t.getFromStop().getId());
             UUID to = platformToParentId.getOrDefault(t.getToStop().getId(), t.getToStop().getId());
             if (from.equals(to)) {continue;}
-            if (!seenTransfers.add(List.of(from, to))) {continue;}
-            networkTransfers.add(new NetworkTransfer(from, to, t.getTransferType(), t.getMinTransferTime()));
+            UUID fromLineId = t.getFromRouteId() == null ? null : lineIdByExternalId.get(t.getFromRouteId());
+            UUID toLineId = t.getToRouteId() == null ? null : lineIdByExternalId.get(t.getToRouteId());
+            List<Object> key = Arrays.asList(from, to,
+                    fromLineId == null ? "" : fromLineId,
+                    toLineId == null ? "" : toLineId);
+            if (!seenTransfers.add(key)) {continue;}
+            networkTransfers.add(new NetworkTransfer(from, to, t.getTransferType(),
+                    t.getMinTransferTime(), fromLineId, toLineId));
         }
 
         Bounds bounds = calculateBounds(networkStops);

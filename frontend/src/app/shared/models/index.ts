@@ -395,6 +395,12 @@ export interface NetworkTransfer {
   /** GTFS transfer_type: 0 recommended, 1 timed, 2 minimum-time, 3 not possible. */
   transferType: number;
   minTransferTimeSeconds: number | null;
+  /** GTFS from_route_id / to_route_id resolved to a line UUID. When set,
+   *  the transfer applies only when alighting from {@code fromLineId}
+   *  and boarding {@code toLineId}; otherwise the transfer is generic
+   *  for the stop pair. */
+  fromLineId?: string | null;
+  toLineId?: string | null;
 }
 
 export interface NetworkLine {
