@@ -157,6 +157,16 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
                   @if (stop.platformCode) {
                     <span class="platform-badge" matTooltip="Quai">{{ stop.platformCode }}</span>
                   }
+                  @if (stop.zoneId) {
+                    <span class="zone-badge" matTooltip="GTFS fare zone (origin/destination/contains_id)">
+                      Zone {{ stop.zoneId }}
+                    </span>
+                  }
+                  @if (stop.stopAccess === 1) {
+                    <span class="access-restricted" matTooltip="GTFS stop_access = 1 (staff-only)">
+                      <mat-icon>lock</mat-icon> Personnel
+                    </span>
+                  }
                   @if (stop.parentStopName) {
                     <span class="parent-hint" matTooltip="Rattaché à">— {{ stop.parentStopName }}</span>
                   }
@@ -314,6 +324,35 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       background: var(--mat-sys-secondary-container);
       color: var(--mat-sys-on-secondary-container);
       font-variant-numeric: tabular-nums;
+    }
+
+    .zone-badge {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(99, 102, 241, 0.14);
+      color: #4338ca;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .access-restricted {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(244, 114, 182, 0.18);
+      color: #be185d;
+    }
+
+    .access-restricted mat-icon {
+      font-size: 13px;
+      width: 13px;
+      height: 13px;
     }
 
     .parent-hint {

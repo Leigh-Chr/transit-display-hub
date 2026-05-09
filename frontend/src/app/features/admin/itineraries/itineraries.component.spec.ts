@@ -203,13 +203,17 @@ describe('ItinerariesComponent', () => {
     it('should include actions column when user is admin', () => {
       mockAuthService.isAdmin.set(true);
 
-      expect(component.displayedColumns).toEqual(['line', 'name', 'terminusName', 'stops', 'actions']);
+      expect(component.displayedColumns).toEqual([
+        'line', 'name', 'terminusName', 'direction', 'stops', 'amenities', 'actions',
+      ]);
     });
 
     it('should exclude actions column when user is not admin', () => {
       mockAuthService.isAdmin.set(false);
 
-      expect(component.displayedColumns).toEqual(['line', 'name', 'terminusName', 'stops']);
+      expect(component.displayedColumns).toEqual([
+        'line', 'name', 'terminusName', 'direction', 'stops', 'amenities',
+      ]);
     });
   });
 

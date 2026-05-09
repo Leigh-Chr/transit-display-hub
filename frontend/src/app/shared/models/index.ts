@@ -151,6 +151,11 @@ export interface Stop {
   /** Denormalised parent name so the admin list can render
    *  "Quai 4 — Saint-Lazare" without a second request. */
   parentStopName?: string | null;
+  /** GTFS stops.zone_id — opaque label that fare_rules reference via
+   *  origin_id / destination_id / contains_id. */
+  zoneId?: string | null;
+  /** GTFS stops.stop_access — 0 generally accessible, 1 staff-only. */
+  stopAccess?: 0 | 1 | null;
   lines: LineInfo[];
   scheduleCount: number;
   hasDevice: boolean;

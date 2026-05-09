@@ -36,6 +36,14 @@ public record StopResponse(
         /** Denormalised parent name so the admin list can render
          *  "Quai 4 — Saint-Lazare" without a second request. */
         String parentStopName,
+        /** GTFS {@code stops.zone_id} — opaque label that V1 fare rules
+         *  reference via {@code origin_id} / {@code destination_id} /
+         *  {@code contains_id}. Null on feeds without zone-based fares. */
+        String zoneId,
+        /** GTFS {@code stops.stop_access}: 0 = generally accessible,
+         *  1 = restricted (staff-only). Null on feeds that don't ship
+         *  the field. */
+        Short stopAccess,
         List<LineInfo> lines,
         int scheduleCount,
         boolean hasDevice
@@ -67,6 +75,8 @@ public record StopResponse(
                 stop.getLocationType(),
                 parent != null ? parent.getId() : null,
                 parent != null ? parent.getName() : null,
+                stop.getZoneId(),
+                stop.getStopAccess(),
                 lineInfos,
                 scheduleCount,
                 stop.getDevices() != null && !stop.getDevices().isEmpty()
