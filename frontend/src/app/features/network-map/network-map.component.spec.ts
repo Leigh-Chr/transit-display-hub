@@ -273,7 +273,7 @@ describe('NetworkMapComponent', () => {
 
       component.onRouteSearch({ from: 's1', to: 's2' });
 
-      expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2');
+      expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2', { accessibleOnly: false });
       expect(component.routeResult()).toEqual(mockResult);
     });
 
@@ -486,7 +486,7 @@ describe('NetworkMapComponent', () => {
       component.onStopSelected(mockStops[1]!);
 
       expect(component.arrivalStop()).toEqual(mockStops[1]!);
-      expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2');
+      expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2', { accessibleOnly: false });
       expect(component.routeResult()).toEqual(mockResult);
     });
 

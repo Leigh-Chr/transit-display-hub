@@ -179,6 +179,14 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
               (departureChanged)="onDepartureChanged($event)"
               (arrivalChanged)="onArrivalChanged($event)"
             />
+            <button class="view-toggle-btn"
+                    [class.toggled]="accessibleOnly()"
+                    (click)="toggleAccessibleOnly()"
+                    [attr.aria-pressed]="accessibleOnly()"
+                    title="Calculer un itinéraire accessible PMR uniquement (filtre les arrêts wheelchair_boarding=2)">
+              <mat-icon>{{ accessibleOnly() ? 'accessible_forward' : 'accessibility' }}</mat-icon>
+              <span>{{ accessibleOnly() ? 'PMR uniquement' : 'Tous les arrêts' }}</span>
+            </button>
             @if (routeResult()) {
               <button class="view-toggle-btn" (click)="toggleNetworkView()">
                 <mat-icon>{{ showFullNetwork() ? 'filter_alt' : 'public' }}</mat-icon>
@@ -489,6 +497,12 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
       height: 14px;
     }
 
+    .view-toggle-btn.toggled {
+      background: rgba(99, 102, 241, 0.18);
+      color: #4338ca;
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
     .loading-state,
     .error-state,
     .empty-state {
@@ -554,6 +568,7 @@ export class NetworkMapComponent implements OnInit {
   departureStop = signal<LayoutStop | null>(null);
   arrivalStop = signal<LayoutStop | null>(null);
   showFullNetwork = signal(false);
+  accessibleOnly = signal(false);
 
   // Stop search
   stopSearchCtrl = new FormControl<LayoutStop | string>('');
@@ -782,7 +797,9 @@ export class NetworkMapComponent implements OnInit {
           && result.allStopIds[0] === wantedDep.id
           && result.allStopIds[result.allStopIds.length - 1] === wantedArr.id;
         if (!matchesCurrent) {
-          this.routeResult.set(this.routeFinder.findRoute(map, wantedDep.id, wantedArr.id));
+          this.routeResult.set(this.routeFinder.findRoute(
+              map, wantedDep.id, wantedArr.id,
+              { accessibleOnly: this.accessibleOnly() }));
         }
       } else if (this.routeResult() !== null) {
         this.routeResult.set(null);
@@ -928,10 +945,28 @@ export class NetworkMapComponent implements OnInit {
     const map = this.networkMap();
     if (!map) {return;}
 
-    const result = this.routeFinder.findRoute(map, event.from, event.to);
+    const result = this.routeFinder.findRoute(
+        map, event.from, event.to,
+        { accessibleOnly: this.accessibleOnly() });
     this.routeResult.set(result);
     this.fromParam.set(event.from);
     this.toParam.set(event.to);
+  }
+
+  toggleAccessibleOnly(): void {
+    this.accessibleOnly.update(v => !v);
+    // Re-run the search if a route is currently displayed so the toggle
+    // takes effect immediately.
+    const route = this.routeResult();
+    const map = this.networkMap();
+    if (route && map && route.allStopIds.length >= 2) {
+      const from = route.allStopIds[0];
+      const to = route.allStopIds[route.allStopIds.length - 1];
+      if (from && to) {
+        this.routeResult.set(this.routeFinder.findRoute(map, from, to,
+            { accessibleOnly: this.accessibleOnly() }));
+      }
+    }
   }
 
   onRouteClear(): void {

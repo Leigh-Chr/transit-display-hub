@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { NetworkMap, NetworkLine, NetworkTransfer } from '@shared/models';
+import { NetworkMap, NetworkLine, NetworkStop, NetworkTransfer } from '@shared/models';
 
 class MinHeap<T> {
   private heap: T[] = [];
@@ -99,6 +99,13 @@ interface GraphBuildResult {
   stopToLines: Map<string, Set<string>>;
 }
 
+export interface RouteFinderOptions {
+  /** When true, prune stops whose `wheelchairBoarding` is
+   *  `NOT_ACCESSIBLE`. Stops with `UNKNOWN` or `null` are kept —
+   *  the spec defines them as "not declared", not "not accessible". */
+  accessibleOnly?: boolean;
+}
+
 interface PathStep {
   stopId: string;
   lineId: string;
@@ -118,10 +125,15 @@ export class RouteFinderService {
    *  a near-infinite cost so any path containing it loses to alternatives. */
   private static readonly IMPOSSIBLE_TRANSFER_COST = 999_999;
 
-  findRoute(networkMap: NetworkMap, fromStopId: string, toStopId: string): RouteResult | null {
+  findRoute(
+    networkMap: NetworkMap,
+    fromStopId: string,
+    toStopId: string,
+    options?: RouteFinderOptions,
+  ): RouteResult | null {
     if (fromStopId === toStopId) {return null;}
 
-    const { adj, stopToLines } = this.buildGraph(networkMap);
+    const { adj, stopToLines } = this.buildGraph(networkMap, options);
 
     const startLines = stopToLines.get(fromStopId);
     if (!startLines || startLines.size === 0) {return null;}
@@ -136,16 +148,24 @@ export class RouteFinderService {
    *  every itinerary of every line so branches, terminus-partial variants
    *  and reverse directions all contribute their adjacencies — otherwise a
    *  stop served only by a non-primary itinerary would be unreachable. */
-  private buildGraph(networkMap: NetworkMap): GraphBuildResult {
+  private buildGraph(networkMap: NetworkMap, options?: RouteFinderOptions): GraphBuildResult {
     const adj = new Map<string, AdjacencyEdge[]>();
     const stopToLines = new Map<string, Set<string>>();
     const seenEdges = new Set<string>();
 
+    const blockedStopIds = options?.accessibleOnly
+      ? this.collectInaccessibleStopIds(networkMap.stops)
+      : new Set<string>();
+
     for (const line of networkMap.lines) {
       for (const itinerary of line.itineraries) {
         if (itinerary.length === 0) {continue;}
-        this.registerStopLineAssociations(itinerary, line.id, stopToLines);
-        this.addSameLineEdges(itinerary, line.id, adj, seenEdges);
+        const filtered = blockedStopIds.size > 0
+          ? itinerary.filter(stopId => !blockedStopIds.has(stopId))
+          : itinerary;
+        if (filtered.length === 0) {continue;}
+        this.registerStopLineAssociations(filtered, line.id, stopToLines);
+        this.addSameLineEdges(filtered, line.id, adj, seenEdges);
       }
     }
 
@@ -153,6 +173,20 @@ export class RouteFinderService {
     this.addTransferEdges(stopToLines, adj, transferIndex);
 
     return { adj, stopToLines };
+  }
+
+  /** Set of stop ids whose wheelchair_boarding is explicitly
+   *  NOT_ACCESSIBLE. UNKNOWN / null stops are kept — the spec defines
+   *  them as "not declared", not "not accessible", so excluding them
+   *  would over-prune feeds that don't ship the field. */
+  private collectInaccessibleStopIds(stops: NetworkStop[]): Set<string> {
+    const blocked = new Set<string>();
+    for (const stop of stops) {
+      if (stop.wheelchairBoarding === 'NOT_ACCESSIBLE') {
+        blocked.add(stop.id);
+      }
+    }
+    return blocked;
   }
 
   /** Builds a lookup from "fromStopId|toStopId" to the most-favourable
