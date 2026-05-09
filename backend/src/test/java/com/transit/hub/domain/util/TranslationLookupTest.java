@@ -88,12 +88,14 @@ class TranslationLookupTest {
     class Filtering {
 
         @Test
-        @DisplayName("rows missing record_id (field-value mode) are skipped")
-        void skipFieldValueMode() {
+        @DisplayName("rows in field-value mode are indexed for resolveByFieldValue")
+        void indexFieldValueMode() {
             Translation fieldValueRow = translation("stops", null, "stop_name", "fr", "Centre");
             fieldValueRow.setFieldValue("Center");
             TranslationLookup lookup = TranslationLookup.from(List.of(fieldValueRow));
-            assertThat(lookup.isEmpty()).isTrue();
+            assertThat(lookup.isEmpty()).isFalse();
+            assertThat(lookup.resolveByFieldValue("stops", "Center", "stop_name"))
+                    .contains("Centre");
         }
     }
 
