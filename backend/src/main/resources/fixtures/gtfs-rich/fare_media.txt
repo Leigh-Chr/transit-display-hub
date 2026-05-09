@@ -1,0 +1,4 @@
+fare_media_id,fare_media_name,fare_media_type
+FM_PAPER,Ticket papier,0
+FM_CARD,Carte sans contact,2
+FM_APP,Application mobile,4

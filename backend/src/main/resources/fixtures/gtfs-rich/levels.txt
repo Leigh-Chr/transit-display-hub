@@ -1,0 +1,5 @@
+level_id,level_index,level_name
+LVL_M1,-1,Quai M1
+LVL_M2,-2,Quai M2
+LVL_HALL,0,Hall billetterie
+LVL_EXIT,1,Sortie rue

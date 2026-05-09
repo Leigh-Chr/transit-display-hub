@@ -36,6 +36,19 @@ public interface FlexStopTimeRepository extends JpaRepository<FlexStopTime, UUID
             """)
     List<FlexStopTime> findByLocationExternalId(String externalId);
 
+    /** IDs of stops referenced by at least one flex_stop_times row. By
+     *  spec the row only exists when the trip has on-request access at
+     *  that stop (booking rules are required, the importer rejects
+     *  rows without any window), so a stop here is always on-demand
+     *  for the schematic-map TAD indicator. Mirrors the role of
+     *  {@code ScheduleRepository.findStopIdsWithOnDemandPickup()} for
+     *  feeds that publish flex windows instead of fixed timetables. */
+    @Query("""
+            SELECT DISTINCT f.stop.id FROM FlexStopTime f
+              WHERE f.stop IS NOT NULL
+            """)
+    java.util.Set<UUID> findStopIdsTouchedByFlex();
+
     /** Eagerly fetches every flex stop time for an itinerary so the
      *  admin browse page can list them with their target. */
     @Query("""

@@ -1,0 +1,4 @@
+fare_id,price,currency_type,payment_method,transfers,agency_id,transfer_duration
+TICKET_UNIT,1.70,EUR,1,0,RICH_AG,
+TICKET_HOUR,2.00,EUR,1,1,RICH_AG,3600
+TICKET_DAY,5.50,EUR,1,99,RICH_AG,86400

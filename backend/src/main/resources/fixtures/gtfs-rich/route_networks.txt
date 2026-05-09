@@ -1,0 +1,5 @@
+network_id,route_id
+NET_RICH,M1
+NET_RICH,M2
+NET_RICH,B1
+NET_RICH,T1

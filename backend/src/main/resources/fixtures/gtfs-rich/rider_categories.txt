@@ -1,0 +1,5 @@
+rider_category_id,rider_category_name,is_default_fare_category,min_age,max_age,eligibility_url
+ADULT,Plein tarif,1,26,64,
+STUDENT,Tarif étudiant,0,18,25,https://demo.example/eligibility/student
+SENIOR,Tarif senior,0,65,,https://demo.example/eligibility/senior
+CHILD,Tarif enfant,0,0,12,

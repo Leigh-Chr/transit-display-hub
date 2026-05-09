@@ -1,0 +1,3 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone,agency_fare_url,agency_email
+RICH_AG,Rich Demo Transit,https://demo.example/,Europe/Paris,fr,+33476000000,https://demo.example/fares,info@demo.example
+RICH_BUS_AG,Rich Demo Bus Network,https://demo-bus.example/,Europe/Paris,fr,+33476000001,,buses@demo.example

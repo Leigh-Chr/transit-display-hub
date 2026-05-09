@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "FLEX_ZONE_NORTH",
+      "properties": {
+        "stop_id": "STOP_TAD_LANDMARK",
+        "stop_name": "Zone Nord — desserte TAD"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [5.7250, 45.1950],
+            [5.7450, 45.1950],
+            [5.7450, 45.2050],
+            [5.7250, 45.2050],
+            [5.7250, 45.1950]
+          ]
+        ]
+      }
+    }
+  ]
+}

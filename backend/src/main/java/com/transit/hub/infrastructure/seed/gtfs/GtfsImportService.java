@@ -1080,12 +1080,25 @@ public class GtfsImportService {
                 // not a concrete arrival. See ADR 0030.
                 String flexLocationId = optional(record, "location_id");
                 String flexLocationGroupId = optional(record, "location_group_id");
+                String flexStopId = optional(record, "stop_id");
                 LocalTime flexStartWindow = GtfsParse.parseGtfsTime(
                         optional(record, "start_pickup_drop_off_window"));
                 LocalTime flexEndWindow = GtfsParse.parseGtfsTime(
                         optional(record, "end_pickup_drop_off_window"));
+                LocalTime flexArrival = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
+                // A row is a flex window when it carries a window AND
+                // either targets a polygon (location_id) / a group of
+                // stops (location_group_id), OR targets a fixed stop
+                // (stop_id) without any concrete arrival time. The
+                // last variant covers feeds that surface a "you can
+                // be picked up here on request between 17h and 18h30"
+                // entry on a regular stop — the spec allows it and
+                // {@code TAD_LANDMARK} in the bundled rich fixture
+                // exercises this code path.
                 boolean isFlexRow = flexStartWindow != null && flexEndWindow != null
-                        && (!isBlank(flexLocationId) || !isBlank(flexLocationGroupId));
+                        && (!isBlank(flexLocationId)
+                            || !isBlank(flexLocationGroupId)
+                            || (!isBlank(flexStopId) && flexArrival == null));
                 if (isFlexRow) {
                     flexBatch.add(buildFlexStopTime(record, itinerary, calendar,
                             stopImport, locationsByExternalId, locationGroupsByExternalId,

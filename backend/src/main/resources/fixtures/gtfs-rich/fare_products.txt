@@ -1,0 +1,6 @@
+fare_product_id,fare_product_name,amount,currency,fare_media_id,rider_category_id
+FP_TICKET_ADULT,Ticket plein tarif,1.70,EUR,FM_PAPER,ADULT
+FP_TICKET_STUDENT,Ticket étudiant,1.10,EUR,FM_PAPER,STUDENT
+FP_TICKET_CHILD,Ticket enfant,0.85,EUR,FM_PAPER,CHILD
+FP_DAY_ADULT,Pass journalier plein,5.50,EUR,FM_CARD,ADULT
+FP_DAY_STUDENT,Pass journalier étudiant,3.50,EUR,FM_CARD,STUDENT

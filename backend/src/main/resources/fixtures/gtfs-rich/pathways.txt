@@ -1,0 +1,9 @@
+pathway_id,from_stop_id,to_stop_id,pathway_mode,is_bidirectional,length,traversal_time,stair_count,max_slope,min_width,signposted_as,reversed_signposted_as
+PW_HALL_TO_M1A,STA_CENTRAL,QUAY_CENTRAL_M1A,5,1,30,40,,,1.5,Vers Quai M1 A,Vers Hall billetterie
+PW_HALL_TO_M1B,STA_CENTRAL,QUAY_CENTRAL_M1B,5,1,30,40,,,1.5,Vers Quai M1 B,Vers Hall billetterie
+PW_HALL_TO_M2A_STAIRS,STA_CENTRAL,QUAY_CENTRAL_M2A,2,1,18,60,24,,1.2,Vers Quai M2 A (escalier),Vers Hall billetterie
+PW_HALL_TO_M2A_LIFT,STA_CENTRAL,QUAY_CENTRAL_M2A,5,1,12,55,,,1.4,Ascenseur Quai M2 A,Hall billetterie
+PW_HALL_TO_M2B_ESC,STA_CENTRAL,QUAY_CENTRAL_M2B,4,1,15,30,,,1.0,Vers Quai M2 B (escalator),Vers Hall billetterie
+PW_HALL_TO_EXIT,STA_CENTRAL,ENT_CENTRAL,1,1,8,10,,,2.0,Vers la sortie,Vers Hall billetterie
+PW_M1A_TO_M1B,QUAY_CENTRAL_M1A,QUAY_CENTRAL_M1B,1,1,12,15,,,1.0,Vers Quai B,Vers Quai A
+PW_NORTH_HALL_TO_M1,STA_NORTH,QUAY_NORTH_M1,1,1,10,12,,,1.5,Vers Quai M1,Vers Sortie

@@ -1,0 +1,28 @@
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,stop_headsign,pickup_type,drop_off_type,continuous_pickup,continuous_drop_off,shape_dist_traveled,location_id,location_group_id,start_pickup_drop_off_window,end_pickup_drop_off_window,pickup_booking_rule_id,drop_off_booking_rule_id,timepoint
+M1_NB_1,08:00:00,08:00:00,QUAY_CENTRAL_M1A,0,Direction Nord,0,0,1,1,0,,,,,,,1
+M1_NB_1,08:04:00,08:05:00,QUAY_NORTH_M1,1,Terminus Nord,0,0,1,1,1500,,,,,,,1
+M1_NB_2,08:30:00,08:30:00,QUAY_CENTRAL_M1A,0,Direction Nord,0,0,1,1,0,,,,,,,1
+M1_NB_2,08:34:00,08:35:00,QUAY_NORTH_M1,1,Terminus Nord,0,0,1,1,1500,,,,,,,1
+M1_NB_3,09:00:00,09:00:00,QUAY_CENTRAL_M1A,0,Direction Nord,0,0,1,1,0,,,,,,,1
+M1_NB_3,09:04:00,09:05:00,QUAY_NORTH_M1,1,Terminus Nord,0,0,1,1,1500,,,,,,,1
+M1_SB_1,08:10:00,08:10:00,QUAY_NORTH_M1,0,Direction Centre,0,0,1,1,0,,,,,,,1
+M1_SB_1,08:14:00,08:15:00,QUAY_CENTRAL_M1B,1,Terminus Centre,0,0,1,1,1500,,,,,,,1
+M2_EW_1,08:05:00,08:05:00,STOP_EAST,0,Direction Ouest,0,0,1,1,0,,,,,,,1
+M2_EW_1,08:09:00,08:10:00,QUAY_CENTRAL_M2A,1,,0,0,1,1,1200,,,,,,,1
+M2_EW_1,08:14:00,08:15:00,STOP_WEST,2,Terminus Ouest,0,0,1,1,2500,,,,,,,1
+M2_WE_1,08:20:00,08:20:00,STOP_WEST,0,Direction Est,0,0,1,1,0,,,,,,,1
+M2_WE_1,08:24:00,08:25:00,QUAY_CENTRAL_M2B,1,,0,0,1,1,1200,,,,,,,1
+M2_WE_1,08:29:00,08:30:00,STOP_EAST,2,Terminus Est,0,0,1,1,2500,,,,,,,1
+B1_LOOP_1,09:00:00,09:00:00,STOP_SOUTH,0,Boucle Sud,0,0,1,1,0,,,,,,,1
+B1_LOOP_1,09:05:00,09:05:00,STOP_WEST,1,Boucle Sud,0,0,1,1,800,,,,,,,1
+B1_LOOP_1,09:10:00,09:10:00,STA_CENTRAL,2,Boucle Sud,0,0,1,1,1700,,,,,,,1
+B1_LOOP_1,09:15:00,09:15:00,STOP_EAST,3,Boucle Sud,0,0,1,1,2500,,,,,,,1
+B1_LOOP_1,09:20:00,09:20:00,STOP_SOUTH,4,Boucle Sud,0,0,1,1,3300,,,,,,,1
+B1_LOOP_2,10:00:00,10:00:00,STOP_SOUTH,0,Boucle Sud,0,0,1,1,0,,,,,,,1
+B1_LOOP_2,10:05:00,10:05:00,STOP_WEST,1,Boucle Sud,0,0,1,1,800,,,,,,,1
+B1_LOOP_2,10:10:00,10:10:00,STA_CENTRAL,2,Boucle Sud,0,0,1,1,1700,,,,,,,1
+B1_LOOP_2,10:15:00,10:15:00,STOP_EAST,3,Boucle Sud,0,0,1,1,2500,,,,,,,1
+B1_LOOP_2,10:20:00,10:20:00,STOP_SOUTH,4,Boucle Sud,0,0,1,1,3300,,,,,,,1
+T1_TAD_1,,,,0,,2,2,,,,FLEX_ZONE_NORTH,,11:00:00,13:00:00,BOOK_PHONE,BOOK_PHONE,
+T1_TAD_1,,,,1,,2,2,,,,,NORTH_FLEX_GROUP,14:00:00,16:00:00,BOOK_PHONE,BOOK_PHONE,
+T1_TAD_1,,,STOP_TAD_LANDMARK,2,Marché,2,2,,,,,,17:00:00,18:30:00,BOOK_PHONE,BOOK_PHONE,

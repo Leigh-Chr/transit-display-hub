@@ -1,0 +1,4 @@
+attribution_id,agency_id,organization_name,is_producer,is_operator,is_authority,attribution_url,attribution_email
+A1,,Rich Demo Authority,0,0,1,https://authority.example/,authority@demo.example
+A2,RICH_AG,Rich Demo Operator,0,1,0,https://demo.example/,info@demo.example
+A3,,Rich Demo Producer,1,0,0,https://demo.example/data,data@demo.example

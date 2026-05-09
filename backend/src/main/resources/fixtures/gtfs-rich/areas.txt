@@ -1,0 +1,4 @@
+area_id,area_name
+AREA_CENTER,Tarif urbain — Centre
+AREA_NORTH,Tarif urbain — Nord
+AREA_ALL,Tarif réseau complet

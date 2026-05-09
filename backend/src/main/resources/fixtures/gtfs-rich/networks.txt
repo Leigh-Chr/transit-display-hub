@@ -1,0 +1,2 @@
+network_id,network_name
+NET_RICH,Réseau Rich Demo

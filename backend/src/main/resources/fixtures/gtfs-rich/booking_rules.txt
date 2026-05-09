@@ -1,0 +1,3 @@
+booking_rule_id,booking_type,prior_notice_duration_min,prior_notice_duration_max,prior_notice_last_day,prior_notice_last_time,prior_notice_start_day,prior_notice_start_time,prior_notice_service_id,message,phone_number,info_url,booking_url
+BOOK_PHONE,1,60,1440,,,,,,Réservez par téléphone au moins 1h avant le départ.,+33476555000,https://demo.example/tad/info,
+BOOK_REALTIME,0,5,,,,,,,Réservation immédiate via l'application Rich Demo.,+33476555001,https://demo.example/tad/realtime,https://demo.example/tad/book

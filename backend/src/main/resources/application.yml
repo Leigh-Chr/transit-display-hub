@@ -85,6 +85,12 @@ app:
     #   Bordeaux (TBM)       https://bdx.mecatran.com/utw/ws/gtfsfeed/static/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt
     #   Nantes (Naolib)      https://data.nantesmetropole.fr/explore/dataset/244400404_tan-arrets-horaires-circuits/files/16a1a0af5946619af621baa4ad9ee662/download/
     #   Tours (Fil Bleu)     https://data.tours-metropole.fr/api/v2/catalog/datasets/horaires-temps-reel-gtfsrt-reseau-filbleu-tmvl/alternative_exports/filbleu_gtfs_zip
+    #
+    # In-classpath fixture (no network required, exercises every spec
+    # surface — pathways, fares V1+V2, translations, TAD, transfer
+    # qualifiers, attributions, …):
+    #   DATA_LOADER_GTFS_URL=classpath:fixtures/gtfs-rich/
+    #   DATA_LOADER_GTFS_NETWORK_NAME=Rich Demo
     gtfs:
       url: ${DATA_LOADER_GTFS_URL:https://data.mobilites-m.fr/api/gtfs/SEM}
       network-name: ${DATA_LOADER_GTFS_NETWORK_NAME:M Réso (Grenoble)}

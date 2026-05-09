@@ -63,6 +63,9 @@ class NetworkMapServiceTest {
     private com.transit.hub.infrastructure.persistence.ScheduleRepository scheduleRepository;
 
     @Mock
+    private com.transit.hub.infrastructure.persistence.FlexStopTimeRepository flexStopTimeRepository;
+
+    @Mock
     private com.transit.hub.infrastructure.persistence.AreaRepository areaRepository;
 
     @Mock

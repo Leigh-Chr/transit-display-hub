@@ -19,6 +19,7 @@ import com.transit.hub.domain.model.Area;
 import com.transit.hub.domain.model.enums.WheelchairAccess;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
+import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -48,6 +49,7 @@ public class NetworkMapService {
     private final BroadcastMessageRepository broadcastMessageRepository;
     private final TransferRepository transferRepository;
     private final ScheduleRepository scheduleRepository;
+    private final FlexStopTimeRepository flexStopTimeRepository;
     private final AreaRepository areaRepository;
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
@@ -102,14 +104,18 @@ public class NetworkMapService {
                 childrenByParentId.computeIfAbsent(s.getParentStop().getId(), k -> new ArrayList<>()).add(s);
             }
         }
-        // Set of stops with at least one on-request schedule. The
-        // single query happens once per cache miss; the set lookup is
-        // O(1) per stop. For parent stations we OR the parent's own
+        // Set of stops with at least one on-request schedule, joined
+        // with stops referenced by a flex_stop_times row (GTFS-flex).
+        // Both queries run once per cache miss; the merged set lookup
+        // is O(1) per stop. For parent stations we OR the parent's own
         // value with each child's so a TAD platform "lights up" its
         // parent on the map. Guard against the null fallback Mockito's
         // default for Set returns gives in tests that don't stub it.
-        Set<UUID> onDemandStopIds = scheduleRepository.findStopIdsWithOnDemandPickup();
-        if (onDemandStopIds == null) {onDemandStopIds = Set.of();}
+        Set<UUID> scheduledOnDemand = scheduleRepository.findStopIdsWithOnDemandPickup();
+        Set<UUID> flexOnDemand = flexStopTimeRepository.findStopIdsTouchedByFlex();
+        Set<UUID> onDemandStopIds = new HashSet<>();
+        if (scheduledOnDemand != null) {onDemandStopIds.addAll(scheduledOnDemand);}
+        if (flexOnDemand != null) {onDemandStopIds.addAll(flexOnDemand);}
 
         // Reverse map: stop UUID → sorted list of Fares v2 area names.
         // Built once per cache miss from a single fetch-with-stops query

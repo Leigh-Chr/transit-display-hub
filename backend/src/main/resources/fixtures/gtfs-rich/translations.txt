@@ -1,0 +1,13 @@
+table_name,field_name,language,translation,record_id,record_sub_id,field_value
+stops,stop_name,en,Central Station,STA_CENTRAL,,
+stops,stop_name,en,North Station,STA_NORTH,,
+stops,stop_name,en,East Town Hall,STOP_EAST,,
+stops,stop_name,en,West Hub,STOP_WEST,,
+stops,stop_name,en,South University,STOP_SOUTH,,
+routes,route_long_name,en,Metro 1 — Centre / North,M1,,
+routes,route_long_name,en,Metro 2 — East / West,M2,,
+routes,route_long_name,en,Bus 1 — South Loop,B1,,
+routes,route_long_name,en,Demand 1 — North Zone,T1,,
+agency,agency_name,en,Rich Demo Transit,RICH_AG,,
+stop_times,stop_headsign,en,Northbound,,M1_NB_1,
+stop_times,stop_headsign,en,Centre-bound,,M1_SB_1,

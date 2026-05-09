@@ -1,9 +1,12 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -18,6 +21,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Downloads a GTFS feed and caches it locally with a configurable TTL.
@@ -41,6 +46,14 @@ public class GtfsDownloader {
     public Path downloadOrCached(String feedUrl) throws IOException, InterruptedException {
         Path cacheDir = Path.of(System.getProperty("java.io.tmpdir"), CACHE_SUBDIR);
         Files.createDirectories(cacheDir);
+
+        // classpath:fixtures/some-name → zip the fixture directory and
+        // hand the path back. The fixture lives in src/main/resources so
+        // it travels with the jar; the zip is regenerated each call (cheap
+        // — the directory is small and the orchestrator hashes it once).
+        if (feedUrl.startsWith("classpath:")) {
+            return zipClasspathFixture(feedUrl, cacheDir);
+        }
 
         Path target = cacheDir.resolve(hash(feedUrl) + ".zip");
         Path meta = cacheDir.resolve(hash(feedUrl) + ".meta");
@@ -165,5 +178,44 @@ public class GtfsDownloader {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
+    }
+
+    /** Resolve a {@code classpath:...} URL to a freshly-zipped fixture in
+     *  the cache directory. The whole fixture sub-directory is bundled
+     *  with the jar at build time, so the loader works the same on a
+     *  developer machine and inside the Docker image. The zip is
+     *  rebuilt on every call — fixtures are tiny (kBs) and rebuilding
+     *  guarantees the importer sees any in-place edit a developer made
+     *  to {@code src/main/resources/fixtures/...} between two boots. */
+    private Path zipClasspathFixture(String feedUrl, Path cacheDir) throws IOException {
+        // classpath:fixtures/foo[/] → look up every file under fixtures/foo/
+        String pattern = feedUrl.substring("classpath:".length());
+        if (!pattern.endsWith("/")) {
+            pattern = pattern + "/";
+        }
+        String resourcePattern = "classpath:" + pattern + "**";
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Resource[] resources = resolver.getResources(resourcePattern);
+        if (resources.length == 0) {
+            throw new IOException("No GTFS fixture files found under " + resourcePattern);
+        }
+
+        Path target = cacheDir.resolve(hash(feedUrl) + ".zip");
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(target))) {
+            for (Resource res : resources) {
+                if (!res.isReadable()) { continue; }
+                String fileName = res.getFilename();
+                if (fileName == null || fileName.isEmpty()) { continue; }
+                ZipEntry entry = new ZipEntry(fileName);
+                zip.putNextEntry(entry);
+                try (InputStream in = res.getInputStream()) {
+                    in.transferTo(zip);
+                }
+                zip.closeEntry();
+            }
+        }
+        log.info("GTFS fixture zipped from classpath: {} → {} ({} bytes)",
+                pattern, target, Files.size(target));
+        return target;
     }
 }
