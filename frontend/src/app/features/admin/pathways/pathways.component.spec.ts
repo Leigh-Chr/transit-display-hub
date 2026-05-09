@@ -104,4 +104,94 @@ describe('PathwaysComponent', () => {
     expect(component.filteredStops().length).toBe(1);
     expect(component.filteredStops()[0]?.name).toBe('Châtelet');
   });
+
+  describe('graphLayout', () => {
+    function pathway(overrides: Partial<Pathway> = {}): Pathway {
+      return {
+        id: 'p',
+        externalId: null,
+        fromStopId: 'a',
+        fromStopName: 'A',
+        toStopId: 'b',
+        toStopName: 'B',
+        pathwayMode: 'WALKWAY',
+        bidirectional: true,
+        lengthMetres: null,
+        traversalTimeSeconds: null,
+        stairCount: null,
+        maxSlope: null,
+        minWidthMetres: null,
+        signpostedAs: null,
+        reversedSignpostedAs: null,
+        ...overrides,
+      };
+    }
+
+    it('returns null when no pathways are loaded', () => {
+      fixture.detectChanges();
+      // No selected stop yet, no pathways: layout is null.
+      expect(component.graphLayout()).toBeNull();
+    });
+
+    it('lays out a small chain rooted at the selected stop', () => {
+      // a -> b -> c, BFS depths 0/1/2.
+      const layout = PathwaysComponent.buildLayout([
+        pathway({ id: 'p1', fromStopId: 'a', fromStopName: 'A',
+                  toStopId: 'b', toStopName: 'B' }),
+        pathway({ id: 'p2', fromStopId: 'b', fromStopName: 'B',
+                  toStopId: 'c', toStopName: 'C', pathwayMode: 'STAIRS' }),
+      ], 'a');
+
+      expect(layout.nodes).toHaveLength(3);
+      expect(layout.edges).toHaveLength(2);
+
+      const a = layout.nodes.find(n => n.id === 'a');
+      const b = layout.nodes.find(n => n.id === 'b');
+      const c = layout.nodes.find(n => n.id === 'c');
+      expect(a?.isCurrent).toBe(true);
+      expect(b?.isCurrent).toBe(false);
+      // BFS columns increment by colWidth=140 — so c.x > b.x > a.x.
+      expect(b!.x).toBeGreaterThan(a!.x);
+      expect(c!.x).toBeGreaterThan(b!.x);
+    });
+
+    it('marks STAIRS edges with a dash pattern', () => {
+      const layout = PathwaysComponent.buildLayout([
+        pathway({ pathwayMode: 'STAIRS' }),
+      ], 'a');
+      expect(layout.edges).toHaveLength(1);
+      expect(layout.edges[0]!.dash).toBe('4 4');
+    });
+
+    it('uses no dash for non-STAIRS modes', () => {
+      const layout = PathwaysComponent.buildLayout([
+        pathway({ pathwayMode: 'ELEVATOR' }),
+      ], 'a');
+      expect(layout.edges[0]!.dash).toBeNull();
+    });
+
+    it('emits an arrowPoints triangle for one-way pathways and empty for bidirectional', () => {
+      const directed = PathwaysComponent.buildLayout([
+        pathway({ pathwayMode: 'EXIT_GATE', bidirectional: false }),
+      ], 'a');
+      expect(directed.edges[0]!.arrowPoints).not.toBe('');
+
+      const both = PathwaysComponent.buildLayout([
+        pathway({ pathwayMode: 'WALKWAY', bidirectional: true }),
+      ], 'a');
+      expect(both.edges[0]!.arrowPoints).toBe('');
+    });
+
+    it('builds a legend with one entry per pathway mode used', () => {
+      const layout = PathwaysComponent.buildLayout([
+        pathway({ id: 'p1', pathwayMode: 'WALKWAY' }),
+        pathway({ id: 'p2', pathwayMode: 'STAIRS', toStopId: 'c', toStopName: 'C' }),
+        pathway({ id: 'p3', pathwayMode: 'WALKWAY', toStopId: 'd', toStopName: 'D' }),
+      ], 'a');
+      const modes = layout.legend.map(l => l.mode).sort();
+      expect(modes).toEqual(['STAIRS', 'WALKWAY']);
+      const stairs = layout.legend.find(l => l.mode === 'STAIRS');
+      expect(stairs?.dashed).toBe(true);
+    });
+  });
 });
