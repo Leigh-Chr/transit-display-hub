@@ -2178,6 +2178,10 @@ public class GtfsImportService {
                         .durationLimitType(parseShortOrNull(optional(record, "duration_limit_type")))
                         .fareTransferType(transferType)
                         .fareProduct(productsByExternalId.get(optional(record, "fare_product_id")))
+                        .minutesBeforeToStartBoardingTime(
+                                parseIntOrNull(optional(record, "minutes_before_to_start_boarding_time")))
+                        .minutesAfterToStartBoardingTime(
+                                parseIntOrNull(optional(record, "minutes_after_to_start_boarding_time")))
                         .build();
                 batch.add(rule);
             }

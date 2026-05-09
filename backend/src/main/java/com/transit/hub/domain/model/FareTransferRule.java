@@ -63,4 +63,17 @@ public class FareTransferRule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fare_product_id")
     private FareProduct fareProduct;
+
+    /** GTFS {@code minutes_before_to_start_boarding_time}: minimum
+     *  minutes the next leg must start before the previous leg's
+     *  boarding time for the transfer rule to apply. Null = no
+     *  pre-boarding constraint. */
+    @Column(name = "minutes_before_to_start_boarding_time")
+    private Integer minutesBeforeToStartBoardingTime;
+
+    /** GTFS {@code minutes_after_to_start_boarding_time}: maximum
+     *  minutes after the previous leg's boarding time within which the
+     *  next leg must start. Null = no post-boarding constraint. */
+    @Column(name = "minutes_after_to_start_boarding_time")
+    private Integer minutesAfterToStartBoardingTime;
 }
