@@ -15,13 +15,15 @@ import com.transit.hub.infrastructure.persistence.RiderCategoryRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import java.util.function.Supplier;
 
 /**
  * Exposes a per-entity coverage gauge {@code gtfs.entity.count{kind=…}}
@@ -77,8 +79,16 @@ public class GtfsCoverageMetrics {
         bind("rider_categories", riderCategoryRepository::count);
     }
 
-    private void bind(String kind, java.util.function.Supplier<Long> counter) {
-        registry.gauge("gtfs.entity.count", Tags.of("kind", kind),
-                counter, s -> s.get().doubleValue());
+    /** Register a {@link Gauge} backed by the supplied counter. Uses
+     *  {@link Gauge#builder(String, Supplier)} (not the
+     *  {@code MeterRegistry.gauge} convenience overload) because the
+     *  builder keeps a strong reference to the supplier — the latter
+     *  retains only a weak reference to the state object, which lets
+     *  the JVM GC the lambda and the gauge starts returning {@code NaN}
+     *  on the next scrape. */
+    private void bind(String kind, Supplier<Long> counter) {
+        Gauge.builder("gtfs.entity.count", counter)
+                .tag("kind", kind)
+                .register(registry);
     }
 }
