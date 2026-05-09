@@ -87,6 +87,26 @@ public class Itinerary {
     @Column(name = "bikes_allowed_default", length = 20)
     private com.transit.hub.domain.model.enums.BikesAllowed bikesAllowedDefault;
 
+    /** Default cars-allowed policy for this itinerary, derived at import
+     *  time from the majority value of {@code trips.cars_allowed}.
+     *  Mostly relevant on motorail / ferry trips. */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "cars_allowed_default", length = 20)
+    private com.transit.hub.domain.model.enums.CarsAllowed carsAllowedDefault;
+
+    /** GTFS {@code trips.safe_duration_factor} on the representative
+     *  trip — multiplier applied to the timetabled duration when
+     *  estimating an on-demand booking ETA. Null when the feed
+     *  doesn't declare it. */
+    @Column(name = "safe_duration_factor")
+    private Double safeDurationFactor;
+
+    /** GTFS {@code trips.safe_duration_offset} on the representative
+     *  trip — additive constant (seconds) layered on top of the
+     *  factor. */
+    @Column(name = "safe_duration_offset")
+    private Double safeDurationOffset;
+
 
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")

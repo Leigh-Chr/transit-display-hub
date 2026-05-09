@@ -630,7 +630,9 @@ public class GtfsImportService {
             Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
 
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
-                            int wheelchairAccessible, int bikesAllowed, String blockId, String shapeId) {}
+                            int wheelchairAccessible, int bikesAllowed, int carsAllowed,
+                            Double safeDurationFactor, Double safeDurationOffset,
+                            String blockId, String shapeId) {}
 
     /** A single frequency window from frequencies.txt, opening from
      *  {@code start} (inclusive) to {@code end} (exclusive) with a
@@ -665,6 +667,9 @@ public class GtfsImportService {
                         optional(record, "trip_headsign"),
                         parseInt(optional(record, "wheelchair_accessible"), 0),
                         parseInt(optional(record, "bikes_allowed"), 0),
+                        parseInt(optional(record, "cars_allowed"), 0),
+                        parseDoubleOrNull(optional(record, "safe_duration_factor")),
+                        parseDoubleOrNull(optional(record, "safe_duration_offset")),
                         isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40),
                         isBlank(rawShapeId) ? null : rawShapeId.trim()));
             }
@@ -765,6 +770,8 @@ public class GtfsImportService {
                     majorityWheelchair(tripInfos, key);
             com.transit.hub.domain.model.enums.BikesAllowed bikesDefault =
                     majorityBikes(tripInfos, key);
+            com.transit.hub.domain.model.enums.CarsAllowed carsDefault =
+                    majorityCars(tripInfos, key);
 
             // Resolve the geographic shape from the representative
             // trip's shape_id. Null = the feed didn't ship a shape for
@@ -783,6 +790,9 @@ public class GtfsImportService {
                         .directionId(directionId)
                         .wheelchairDefault(wheelchairDefault)
                         .bikesAllowedDefault(bikesDefault)
+                        .carsAllowedDefault(carsDefault)
+                        .safeDurationFactor(info.safeDurationFactor)
+                        .safeDurationOffset(info.safeDurationOffset)
                         .shape(shape)
                         .itineraryStops(new ArrayList<>())
                         .build();
@@ -792,6 +802,9 @@ public class GtfsImportService {
                 itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
                 itinerary.setDirectionId(directionId);
                 itinerary.setWheelchairDefault(wheelchairDefault);
+                itinerary.setCarsAllowedDefault(carsDefault);
+                itinerary.setSafeDurationFactor(info.safeDurationFactor);
+                itinerary.setSafeDurationOffset(info.safeDurationOffset);
                 itinerary.setBikesAllowedDefault(bikesDefault);
                 itinerary.setShape(shape);
                 // orphanRemoval=true on the OneToMany picks up the
@@ -2560,6 +2573,32 @@ public class GtfsImportService {
             return com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED;
         }
         return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
+    }
+
+    /**
+     * Majority vote on {@code cars_allowed} (post-2023 trips.txt
+     * extension), mirroring {@link #majorityBikes}.
+     */
+    private static com.transit.hub.domain.model.enums.CarsAllowed majorityCars(
+            Map<String, TripInfo> tripInfos, RouteDirKey key) {
+        int yes = 0;
+        int no = 0;
+        for (TripInfo info : tripInfos.values()) {
+            if (!info.routeId.equals(key.routeId)) {continue;}
+            if (!info.directionId.equals(key.directionId)) {continue;}
+            if (info.carsAllowed == 1) { yes++; }
+            else if (info.carsAllowed == 2) { no++; }
+        }
+        if (yes == 0 && no == 0) {
+            return com.transit.hub.domain.model.enums.CarsAllowed.UNKNOWN;
+        }
+        if (yes > no) {
+            return com.transit.hub.domain.model.enums.CarsAllowed.ALLOWED;
+        }
+        if (no > yes) {
+            return com.transit.hub.domain.model.enums.CarsAllowed.NOT_ALLOWED;
+        }
+        return com.transit.hub.domain.model.enums.CarsAllowed.UNKNOWN;
     }
 
     /**
