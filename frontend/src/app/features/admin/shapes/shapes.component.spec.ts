@@ -22,6 +22,7 @@ describe('ShapesComponent', () => {
     id: 'i1',
     name: 'North',
     terminusName: 'Terminus N',
+      directionId: null,
     line: mockLine,
     stops: [],
   };

@@ -12,6 +12,7 @@ public record ItineraryResponse(
         UUID id,
         String name,
         String terminusName,
+        Short directionId,
         LineInfo line,
         List<ItineraryStopInfo> stops
 ) {
@@ -32,6 +33,7 @@ public record ItineraryResponse(
                 itinerary.getId(),
                 itinerary.getName(),
                 itinerary.getTerminusName(),
+                itinerary.getDirectionId(),
                 lineInfo,
                 stopInfos
         );

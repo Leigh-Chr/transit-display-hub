@@ -20,6 +20,7 @@ describe('ScheduleService', () => {
     id: 'itinerary-123',
     name: 'Direction Eastern Terminal',
     terminusName: 'Eastern Terminal',
+      directionId: null,
     line: mockLine
   };
 

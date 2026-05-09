@@ -21,6 +21,7 @@ describe('ScheduleDialogComponent', () => {
       id: 'it1',
       name: 'Direction East',
       terminusName: 'East Terminal',
+      directionId: null,
       line: { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000' },
       stops: [],
     },
@@ -28,6 +29,7 @@ describe('ScheduleDialogComponent', () => {
       id: 'it2',
       name: 'Direction West',
       terminusName: 'West Terminal',
+      directionId: null,
       line: { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000' },
       stops: [],
     },
@@ -150,6 +152,7 @@ describe('ScheduleDialogComponent', () => {
         id: 'it1',
         name: 'Direction East',
         terminusName: 'East Terminal',
+      directionId: null,
         line: { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000' },
       },
     };

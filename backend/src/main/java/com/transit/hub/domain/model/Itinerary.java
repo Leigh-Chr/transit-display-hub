@@ -67,6 +67,13 @@ public class Itinerary {
     @Column(nullable = false)
     private String name;
 
+    /** GTFS {@code trips.direction_id} — 0 for outbound, 1 for inbound.
+     *  Null when the feed doesn't declare it; on most networks each
+     *  (route_id, direction_id) materialises one itinerary so the
+     *  pair is unique within a line. */
+    @Column(name = "direction_id")
+    private Short directionId;
+
     /** Default wheelchair accessibility for this itinerary, derived at
      *  import time from the majority value of {@code trips.wheelchair_accessible}.
      *  Per-schedule overrides live on the schedule itself. */

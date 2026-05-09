@@ -12,7 +12,8 @@ public record ScheduleResponse(
         UUID stopId,
         ItineraryInfo itinerary
 ) {
-    public record ItineraryInfo(UUID id, String name, String terminusName, LineInfo line) {}
+    public record ItineraryInfo(UUID id, String name, String terminusName,
+                                Short directionId, LineInfo line) {}
 
     public static ScheduleResponse from(Schedule schedule) {
         Itinerary itinerary = schedule.getItinerary();
@@ -21,6 +22,7 @@ public record ScheduleResponse(
                 itinerary.getId(),
                 itinerary.getName(),
                 itinerary.getTerminusName(),
+                itinerary.getDirectionId(),
                 lineInfo
         );
         return new ScheduleResponse(

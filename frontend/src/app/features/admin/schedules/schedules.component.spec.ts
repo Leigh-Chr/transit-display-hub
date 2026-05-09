@@ -15,7 +15,7 @@ const mockLine: Line = { id: 'l1', code: 'L1', name: 'Line 1', color: '#F00', ty
 const mockStop: Stop = { id: 's1', name: 'Central', latitude: 48.8, longitude: 2.3, lines: [{ id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' }], scheduleCount: 3, hasDevice: false };
 const mockSchedule: Schedule = {
   id: 'sc1', time: '08:30:00', stopId: 's1',
-  itinerary: { id: 'i1', name: 'North', terminusName: 'Terminal', line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' } },
+  itinerary: { id: 'i1', name: 'North', terminusName: 'Terminal', directionId: null, line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' } },
 };
 
 describe('SchedulesComponent', () => {
@@ -108,11 +108,11 @@ describe('SchedulesComponent', () => {
       component.selectedStopId = 's1';
       const laterSchedule: Schedule = {
         id: 'sc2', time: '14:00:00', stopId: 's1',
-        itinerary: { id: 'i2', name: 'South', terminusName: 'South End', line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' } },
+        itinerary: { id: 'i2', name: 'South', terminusName: 'South End', directionId: null, line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' } },
       };
       const earlySchedule: Schedule = {
         id: 'sc3', time: '06:00:00', stopId: 's1',
-        itinerary: { id: 'i3', name: 'East', terminusName: 'East End', line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' } },
+        itinerary: { id: 'i3', name: 'East', terminusName: 'East End', directionId: null, line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' } },
       };
       mockScheduleService.getForStop.mockReturnValue(of([laterSchedule, earlySchedule, mockSchedule]));
 

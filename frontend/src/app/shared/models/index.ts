@@ -88,6 +88,7 @@ export interface Itinerary {
   id: string;
   name: string;
   terminusName: string | null;
+  directionId: 0 | 1 | null;
   line: LineInfo;
   stops: ItineraryStopInfo[];
 }
@@ -151,6 +152,7 @@ export interface ItineraryInfo {
   id: string;
   name: string;
   terminusName: string | null;
+  directionId: 0 | 1 | null;
   line: LineInfo;
 }
 

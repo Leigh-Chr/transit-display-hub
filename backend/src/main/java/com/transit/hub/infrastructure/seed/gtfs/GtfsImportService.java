@@ -764,6 +764,7 @@ public class GtfsImportService {
             // case the future map view falls back to stop-to-stop lines.
             Shape shape = (info.shapeId == null) ? null : shapesByGtfsId.get(info.shapeId);
 
+            Short directionId = parseDirectionId(key.directionId);
             String externalId = truncate(tripId, 100);
             Itinerary itinerary = existingItinerariesByExternalId.get(externalId);
             if (itinerary == null) {
@@ -771,6 +772,7 @@ public class GtfsImportService {
                         .externalId(externalId)
                         .line(line)
                         .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
+                        .directionId(directionId)
                         .wheelchairDefault(wheelchairDefault)
                         .bikesAllowedDefault(bikesDefault)
                         .shape(shape)
@@ -780,6 +782,7 @@ public class GtfsImportService {
                 itinerary.setExternalId(externalId);
                 itinerary.setLine(line);
                 itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
+                itinerary.setDirectionId(directionId);
                 itinerary.setWheelchairDefault(wheelchairDefault);
                 itinerary.setBikesAllowedDefault(bikesDefault);
                 itinerary.setShape(shape);
@@ -2560,6 +2563,22 @@ public class GtfsImportService {
         }
         try {
             return Double.parseDouble(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** GTFS {@code trips.direction_id} is "0" / "1" / blank. We materialise
+     *  itineraries by (route, direction) so the in-memory key already
+     *  carries the value as a String — this just narrows it to the
+     *  short the column expects, leaving null for feeds that don't
+     *  declare a direction. */
+    private static Short parseDirectionId(String raw) {
+        if (isBlank(raw)) {
+            return null;
+        }
+        try {
+            return Short.parseShort(raw.trim());
         } catch (NumberFormatException e) {
             return null;
         }

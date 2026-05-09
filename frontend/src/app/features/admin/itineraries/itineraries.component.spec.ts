@@ -25,6 +25,7 @@ const mockItinerary: Itinerary = {
   id: 'i1',
   name: 'North',
   terminusName: 'Terminal N',
+      directionId: null,
   line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#FF0000' },
   stops: [{ id: 's1', name: 'Stop 1', position: 0 }],
 };
