@@ -2306,8 +2306,18 @@ public class GtfsImportService {
             }
             String stopExternalId = props != null && props.has("stop_id")
                     ? props.get("stop_id").asText() : null;
-            String name = props != null && props.has("stop_name")
-                    ? props.get("stop_name").asText() : null;
+            // The current GTFS-flex spec stores the human-readable name
+            // under `properties.name`. Older feeds (and the original
+            // Mobility-Data fixture set) used `stop_name`. Try both so
+            // we work with feeds that haven't yet migrated.
+            String name = null;
+            if (props != null) {
+                if (props.has("name") && !props.get("name").isNull()) {
+                    name = props.get("name").asText();
+                } else if (props.has("stop_name") && !props.get("stop_name").isNull()) {
+                    name = props.get("stop_name").asText();
+                }
+            }
             String geomType = geom.get("type").asText();
 
             double[] bbox = computeBoundingBox(geom.get("coordinates"));
