@@ -35,6 +35,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
+    // Prometheus scrape format on /actuator/prometheus. Spring Boot
+    // wires the registry into Micrometer automatically when this
+    // dependency is on the classpath (no additional Java config).
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
+
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")

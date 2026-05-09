@@ -2,9 +2,11 @@ package com.transit.hub.application.service;
 
 import com.transit.hub.domain.model.ImportAudit;
 import com.transit.hub.domain.model.enums.ImportStatus;
+import com.transit.hub.infrastructure.metrics.GtfsImportMetrics;
 import com.transit.hub.infrastructure.persistence.ImportAuditRepository;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsDownloader;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsImportService;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -45,6 +47,7 @@ public class GtfsImportOrchestrator {
     private final GtfsImportService importer;
     private final ImportAuditRepository auditRepository;
     private final CacheManager cacheManager;
+    private final GtfsImportMetrics metrics;
 
     private final ReentrantLock importLock = new ReentrantLock();
 
@@ -66,9 +69,11 @@ public class GtfsImportOrchestrator {
     public ImportOutcome runImport(String feedUrl, String triggeredBy) {
         if (!importLock.tryLock()) {
             log.warn("GTFS import already running, skipping trigger from {}", triggeredBy);
+            metrics.recordSkipped();
             return new ImportOutcome(ImportStatus.SKIPPED_UNCHANGED, null,
                     "Another import is already running");
         }
+        Timer.Sample sample = metrics.startSample();
         ImportAudit audit = ImportAudit.builder()
                 .sourceUrl(feedUrl)
                 .startedAt(Instant.now())
@@ -85,16 +90,19 @@ public class GtfsImportOrchestrator {
 
             evictNetworkCaches();
             finalizeAudit(audit, ImportStatus.SUCCESS, result, null);
+            metrics.recordSuccess(sample, result.lines(), result.stops(), result.schedules());
             log.info("GTFS import completed by {}: {} lines, {} stops, {} schedules",
                     triggeredBy, result.lines(), result.stops(), result.schedules());
             return new ImportOutcome(ImportStatus.SUCCESS, result, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             finalizeAudit(audit, ImportStatus.FAILED, null, "Interrupted: " + e.getMessage());
+            metrics.recordFailure(sample);
             return new ImportOutcome(ImportStatus.FAILED, null, "Import was interrupted");
         } catch (Exception e) {
             log.error("GTFS import failed for {}: {}", feedUrl, e.getMessage(), e);
             finalizeAudit(audit, ImportStatus.FAILED, null, truncate(e.getMessage(), 1000));
+            metrics.recordFailure(sample);
             return new ImportOutcome(ImportStatus.FAILED, null, e.getMessage());
         } finally {
             importLock.unlock();

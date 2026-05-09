@@ -53,6 +53,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
                         .requestMatchers(HttpMethod.GET, "/api/attributions").permitAll()  // Public credit block
                         .requestMatchers("/actuator/health").permitAll()
+                        // Prometheus scrape endpoint — left open so the
+                        // local Prometheus instance can pull metrics
+                        // without provisioning service-account creds.
+                        // Production deployments should fence this off
+                        // at the reverse-proxy / network layer.
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         // OpenAPI / Swagger UI — Springdoc serves the spec

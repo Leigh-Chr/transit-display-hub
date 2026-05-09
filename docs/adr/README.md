@@ -32,6 +32,7 @@ should think twice before reverting.
 | [0024](0024-clock-injection-in-domain-services.md) | Inject `Clock` into domain services that read "now" |
 | [0025](0025-section-boundary-flushes-during-gtfs-import.md) | Section-boundary flushes during the GTFS import |
 | [0026](0026-locations-geojson-without-jts.md) | Persist `locations.geojson` as TEXT, no JTS / Hibernate Spatial |
+| [0027](0027-prometheus-metrology.md) | Prometheus scrape via Micrometer, no in-house metrics layer |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

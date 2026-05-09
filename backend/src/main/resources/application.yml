@@ -25,7 +25,26 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # /actuator/prometheus exposes the scrape format wired by the
+        # micrometer-registry-prometheus dependency. Health and info
+        # stay public for compatibility with existing load-balancer
+        # probes; everything else stays gated behind the security rules
+        # in {@code SecurityConfig}.
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      # Stable application tag every metric inherits — keeps Grafana
+      # dashboards portable across environments without per-deployment
+      # rewriting of the queries.
+      application: transit-display-hub
+    distribution:
+      percentiles-histogram:
+        # Distribution buckets for HTTP server timings — Spring Boot
+        # records http.server.requests via Micrometer's WebMvc
+        # auto-config; flipping the histogram on lets Grafana compute
+        # quantiles server-side instead of approximating from counts.
+        http.server.requests: true
+        gtfs.import.duration: true
 
 ---
 spring:

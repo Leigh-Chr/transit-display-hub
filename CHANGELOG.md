@@ -31,7 +31,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   stops, ≥ 1 k schedules). Tagged `@real-feed`; the default test task
   excludes that tag so CI stays Internet-free. Each test self-skips
   via JUnit Assumptions when the upstream is unreachable.
+- **TAD zones admin map** at `/admin/tad-zones`. SVG canvas rendering
+  every imported `locations.geojson` polygon (Polygon + MultiPolygon),
+  side panel with the zone list, click-to-highlight. Equirectangular
+  projection with cosine-latitude correction, 8 % margin, deterministic
+  golden-angle hue palette. No new map dependency — same trade-off as
+  the existing shapes preview.
+- **Prometheus scrape endpoint** at `/actuator/prometheus`, public
+  alongside `/actuator/health`. New runtime dependency
+  `micrometer-registry-prometheus` + custom `GtfsImportMetrics` that
+  exposes `gtfs.import.duration` (histogram, p50/p95/p99),
+  `gtfs.import.completed{status=success|failed|skipped}`, and
+  `gtfs.import.entities{kind=lines|stops|schedules}`. Spring Boot
+  Actuator's auto-binding picks up the existing JVM, HTTP server,
+  datasource and Caffeine cache meters out of the box. Every meter
+  carries the `application=transit-display-hub` tag for portable
+  Grafana dashboards. ADR 0027.
 - **ADR 0026** — Persist `locations.geojson` as TEXT, no JTS.
+- **ADR 0027** — Prometheus scrape via Micrometer, no in-house metrics
+  layer.
 
 ## [0.8.1] - 2026-05-09
 
