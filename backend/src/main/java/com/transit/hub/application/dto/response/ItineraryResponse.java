@@ -3,6 +3,7 @@ package com.transit.hub.application.dto.response;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.enums.CarsAllowed;
 
 import java.util.Comparator;
 import java.util.List;
@@ -13,6 +14,17 @@ public record ItineraryResponse(
         String name,
         String terminusName,
         Short directionId,
+        /** GTFS {@code trips.cars_allowed} default for the itinerary —
+         *  derived from the majority value across this (route, direction)'s
+         *  trips. Mostly relevant on motorail / ferry services. */
+        CarsAllowed carsAllowedDefault,
+        /** GTFS {@code trips.safe_duration_factor} on the representative
+         *  trip — multiplier applied to timetabled duration when
+         *  estimating an on-demand ETA. Null when undeclared. */
+        Double safeDurationFactor,
+        /** GTFS {@code trips.safe_duration_offset} on the representative
+         *  trip — additive seconds layered on top of the factor. */
+        Double safeDurationOffset,
         LineInfo line,
         List<ItineraryStopInfo> stops
 ) {
@@ -34,6 +46,9 @@ public record ItineraryResponse(
                 itinerary.getName(),
                 itinerary.getTerminusName(),
                 itinerary.getDirectionId(),
+                itinerary.getCarsAllowedDefault(),
+                itinerary.getSafeDurationFactor(),
+                itinerary.getSafeDurationOffset(),
                 lineInfo,
                 stopInfos
         );

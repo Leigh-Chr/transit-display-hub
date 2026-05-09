@@ -99,6 +99,12 @@ export interface Itinerary {
   name: string;
   terminusName: string | null;
   directionId: 0 | 1 | null;
+  /** GTFS trips.cars_allowed default — UNKNOWN/ALLOWED/NOT_ALLOWED. */
+  carsAllowedDefault?: 'UNKNOWN' | 'ALLOWED' | 'NOT_ALLOWED' | null;
+  /** GTFS trips.safe_duration_factor on the representative trip. */
+  safeDurationFactor?: number | null;
+  /** GTFS trips.safe_duration_offset (seconds). */
+  safeDurationOffset?: number | null;
   line: LineInfo;
   stops: ItineraryStopInfo[];
 }

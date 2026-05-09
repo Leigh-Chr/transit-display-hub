@@ -142,10 +142,32 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="direction">
+              <th mat-header-cell *matHeaderCellDef>Direction</th>
+              <td mat-cell *matCellDef="let itinerary">
+                @if (itinerary.directionId === 0) {
+                  <span class="dir-badge dir-out" matTooltip="GTFS direction_id = 0 (outbound)">→ Aller</span>
+                } @else if (itinerary.directionId === 1) {
+                  <span class="dir-badge dir-back" matTooltip="GTFS direction_id = 1 (inbound)">← Retour</span>
+                }
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="stops">
               <th mat-header-cell *matHeaderCellDef>Stops</th>
               <td mat-cell *matCellDef="let itinerary">
                 <span class="stop-count">{{ itinerary.stops?.length || 0 }} stops</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amenities">
+              <th mat-header-cell *matHeaderCellDef>Amenities</th>
+              <td mat-cell *matCellDef="let itinerary">
+                @if (itinerary.carsAllowedDefault === 'ALLOWED') {
+                  <span class="dir-badge amenity-cars" matTooltip="Cars allowed on this trip (motorail / car-ferry)">
+                    🚗 Voitures
+                  </span>
+                }
               </td>
             </ng-container>
 
@@ -237,6 +259,30 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       font-size: 13px;
     }
 
+    .dir-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .dir-out {
+      background: rgba(99, 102, 241, 0.14);
+      color: #4338ca;
+    }
+
+    .dir-back {
+      background: rgba(244, 114, 182, 0.16);
+      color: #be185d;
+    }
+
+    .amenity-cars {
+      background: rgba(16, 185, 129, 0.14);
+      color: #047857;
+    }
+
     .actions-column {
       text-align: right;
       width: var(--app-actions-column-width);
@@ -282,7 +328,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
   totalElements = 0;
 
   get displayedColumns(): string[] {
-    const columns = ['line', 'name', 'terminusName', 'stops'];
+    const columns = ['line', 'name', 'terminusName', 'direction', 'stops', 'amenities'];
     if (this.isAdmin()) {
       columns.push('actions');
     }
