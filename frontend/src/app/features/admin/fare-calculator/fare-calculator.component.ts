@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -23,6 +24,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
   selector: 'app-fare-calculator',
   standalone: true,
   imports: [
+    DecimalPipe,
     FormsModule,
     MatAutocompleteModule,
     MatButtonModule,

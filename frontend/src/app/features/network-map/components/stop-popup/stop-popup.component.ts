@@ -4,9 +4,12 @@ import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FareCalculatorService } from '@core/api/fare-calculator.service';
+import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { ScheduleService } from '@core/api/schedule.service';
 import {
-  AlertMessage, BookingRule, FlexLocation, MessageInfo, MessageSeverity, Schedule, StationPathwayGraph,
+  AlertMessage, BookingRule, FareCalculationResult, FlexLocation, FlexStopTime, MessageInfo,
+  MessageSeverity, Schedule, StationPathwayGraph,
 } from '@shared/models';
 import { PathwayListComponent } from '../pathway-list/pathway-list.component';
 import {
@@ -35,6 +38,11 @@ export interface StopPopupData {
   networkAlerts: AlertMessage[];
   stopAlerts: AlertMessage[];
   lineAlerts: LineAlertInfo[];
+  /** Active departure stop, when the user has picked one. Triggers the
+   *  "Trajet depuis [origine]" panel with a computed fare. Null when
+   *  the popup is opened without a departure context (e.g. via the
+   *  search field) or when the same stop is both origin and target. */
+  originStop?: LayoutStop | null;
 }
 
 interface PopupMessage extends MessageInfo {
@@ -162,6 +170,38 @@ interface TimetableGroup {
           <app-pathway-list [graph]="graph" />
           <mat-divider />
         }
+      }
+
+      @if (fareLabel(); as label) {
+        <div class="fare-section">
+          <h3 class="section-title">
+            <mat-icon>local_atm</mat-icon>
+            Trajet depuis {{ data.originStop?.name }}
+          </h3>
+          <div class="fare-card">
+            <div class="fare-amount">{{ label }}</div>
+            @if (fareDetail(); as detail) {
+              <div class="fare-detail">{{ detail }}</div>
+            }
+          </div>
+        </div>
+        <mat-divider />
+      }
+
+      @if (nextFlexLabel(); as label) {
+        <div class="flex-window-section">
+          <h3 class="section-title">
+            <mat-icon>schedule</mat-icon>
+            Réservation TAD aujourd'hui
+          </h3>
+          <div class="flex-window-card">
+            <span class="flex-window-time">{{ label }}</span>
+            @if (nextFlexHeadsign(); as headsign) {
+              <span class="flex-window-headsign">{{ headsign }}</span>
+            }
+          </div>
+        </div>
+        <mat-divider />
       }
 
       @if (bookingRules().length > 0) {
@@ -364,6 +404,65 @@ interface TimetableGroup {
       height: 220px;
       background: var(--mat-sys-surface-container-low);
       border-radius: 6px;
+    }
+
+    .fare-section,
+    .flex-window-section {
+      padding: 14px 20px 16px;
+    }
+    .fare-section .section-title,
+    .flex-window-section .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .fare-section .section-title mat-icon,
+    .flex-window-section .section-title mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .fare-card {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      padding: 10px 14px;
+      background: var(--mat-sys-surface-container-low);
+      border-left: 3px solid #16a34a;
+      border-radius: 4px;
+    }
+    .fare-amount {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #166534;
+      letter-spacing: 0.01em;
+    }
+    .fare-detail {
+      font-size: 0.78rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .flex-window-card {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 10px 14px;
+      background: var(--mat-sys-surface-container-low);
+      border-left: 3px solid rgb(56, 142, 235);
+      border-radius: 4px;
+    }
+    .flex-window-time {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: rgb(34, 105, 192);
+      font-variant-numeric: tabular-nums;
+    }
+    .flex-window-headsign {
+      font-size: 0.8rem;
+      color: var(--mat-sys-on-surface-variant);
     }
 
     .booking-rules-section {
@@ -604,12 +703,24 @@ interface TimetableGroup {
 export class StopPopupComponent implements OnInit {
   private readonly scheduleService = inject(ScheduleService);
   private readonly networkMapData = inject(NetworkMapDataService);
+  private readonly fareCalculator = inject(FareCalculatorService);
+  private readonly flexStopTimes = inject(FlexStopTimeService);
   readonly data = inject<StopPopupData>(MAT_DIALOG_DATA);
 
   loading = signal(true);
   error = signal<string | null>(null);
   timetableGroups = signal<TimetableGroup[]>([]);
   messages = signal<PopupMessage[]>([]);
+
+  /** Fare quote between {@code data.originStop} and {@code data.stop},
+   *  fetched once on init when both are set and distinct. Null while
+   *  fetching, on error, or when no rule matched the pair. */
+  readonly fareResult = signal<FareCalculationResult | null>(null);
+
+  /** Next flex window starting after "now" today, picked from the list
+   *  returned by /flex-windows for the stop's TAD location. Null when
+   *  the stop has no flex location or when every window is past. */
+  readonly nextFlexWindow = signal<FlexStopTime | null>(null);
 
   /** GTFS-flex zone polygon attached to this stop, lazily fetched
    *  when {@code hasOnDemand} is true. Stays null on stops without
@@ -643,6 +754,55 @@ export class StopPopupComponent implements OnInit {
     return buildViewport([zone]).viewBox;
   });
 
+  /** Human label for the fare panel — picks the V2 result first
+   *  (modern Areas pipeline), falls back to V1 (zone-based). Returns
+   *  null when no priced option matched, which keeps the panel hidden. */
+  readonly fareLabel = computed<string | null>(() => {
+    const result = this.fareResult();
+    if (!result) {return null;}
+    const v2 = result.v2[0];
+    if (v2 && v2.amount !== null && v2.currency) {
+      return this.formatCurrency(v2.amount, v2.currency);
+    }
+    const v1 = result.v1[0];
+    if (v1 && v1.price !== null) {
+      return this.formatCurrency(v1.price, v1.currency);
+    }
+    return null;
+  });
+
+  /** Secondary label below the price, surfaced only when the matched
+   *  rule carries useful context (product name for V2, agency / zone
+   *  match for V1). */
+  readonly fareDetail = computed<string | null>(() => {
+    const result = this.fareResult();
+    if (!result) {return null;}
+    const v2 = result.v2[0];
+    if (v2 && v2.amount !== null) {
+      return v2.fareProductName ?? null;
+    }
+    const v1 = result.v1[0];
+    if (v1) {
+      return v1.agencyName ?? v1.matchedRoute ?? null;
+    }
+    return null;
+  });
+
+  /** Human label for the flex window panel, formatted as
+   *  "HH:mm → HH:mm". Null when no upcoming window. */
+  readonly nextFlexLabel = computed<string | null>(() => {
+    const window = this.nextFlexWindow();
+    if (!window) {return null;}
+    return `${this.shortTime(window.startPickupDropOffWindow)} → ${this.shortTime(window.endPickupDropOffWindow)}`;
+  });
+
+  /** Trip headsign / line code for the next flex window, when set. */
+  readonly nextFlexHeadsign = computed<string | null>(() => {
+    const window = this.nextFlexWindow();
+    if (!window) {return null;}
+    return window.stopHeadsign ?? window.lineCode ?? window.itineraryName ?? null;
+  });
+
   private static readonly SEVERITY_ORDER: Record<string, number> = {
     CRITICAL: 0,
     WARNING: 1,
@@ -655,6 +815,9 @@ export class StopPopupComponent implements OnInit {
     if (this.data.stop.hasOnDemand) {
       this.networkMapData.getStopTadZone(this.data.stop.id).subscribe(zone => {
         this.tadZone.set(zone);
+        if (zone) {
+          this.loadNextFlexWindow(zone);
+        }
       });
       this.networkMapData.getStopBookingRules(this.data.stop.id).subscribe(rules => {
         this.bookingRules.set(rules);
@@ -663,6 +826,63 @@ export class StopPopupComponent implements OnInit {
     this.networkMapData.getStopPathwayGraph(this.data.stop.id).subscribe(graph => {
       this.pathwayGraph.set(graph);
     });
+    const origin = this.data.originStop;
+    if (origin && origin.id !== this.data.stop.id) {
+      this.fareCalculator.calculate(origin.id, this.data.stop.id).subscribe(result => {
+        this.fareResult.set(result);
+      });
+    }
+  }
+
+  /** Pull today's flex windows for the stop's TAD location, then keep
+   *  the first one starting after the current local time. Silently
+   *  drops the section when nothing is upcoming. */
+  private loadNextFlexWindow(zone: FlexLocation): void {
+    this.flexStopTimes.getWindowsForLocation(zone.externalId).subscribe(windows => {
+      if (windows.length === 0) {
+        this.nextFlexWindow.set(null);
+        return;
+      }
+      const now = new Date();
+      const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const upcoming = windows
+          .filter(w => this.timeToSeconds(w.startPickupDropOffWindow) >= nowSecs)
+          .sort((a, b) =>
+              this.timeToSeconds(a.startPickupDropOffWindow)
+              - this.timeToSeconds(b.startPickupDropOffWindow));
+      this.nextFlexWindow.set(upcoming[0] ?? null);
+    });
+  }
+
+  private timeToSeconds(time: string): number {
+    const parts = time.split(':');
+    const h = parseInt(parts[0] ?? '0', 10);
+    const m = parseInt(parts[1] ?? '0', 10);
+    const s = parseInt(parts[2] ?? '0', 10);
+    return h * 3600 + m * 60 + s;
+  }
+
+  private shortTime(time: string): string {
+    const parts = time.split(':');
+    return `${parts[0] ?? '00'}:${parts[1] ?? '00'}`;
+  }
+
+  /** Format an amount using {@code Intl.NumberFormat} when an ISO 4217
+   *  currency code is provided, falls back to a plain number + suffix
+   *  when the currency is unknown. */
+  private formatCurrency(amount: number, currency: string | null): string {
+    if (currency) {
+      try {
+        return new Intl.NumberFormat('fr-FR', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+        }).format(amount);
+      } catch {
+        return `${amount.toFixed(2)} ${currency}`;
+      }
+    }
+    return amount.toFixed(2);
   }
 
   /** Format a booking-rule prior_notice_duration_min into a human label

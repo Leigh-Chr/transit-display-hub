@@ -1043,6 +1043,7 @@ export class NetworkMapComponent implements OnInit {
     this.openedStopPopupId = stop.id;
     this.stopParam.set(stop.id);
 
+    const origin = this.departureStop();
     this.stopDialogRef = this.dialog.open(StopPopupComponent, {
       data: {
         stop,
@@ -1050,6 +1051,7 @@ export class NetworkMapComponent implements OnInit {
         networkAlerts: this.alerts().networkAlerts,
         stopAlerts: this.alerts().stopAlerts[stop.id] ?? [],
         lineAlerts: this.getLineAlertsForStop(stop),
+        originStop: origin && origin.id !== stop.id ? origin : null,
       },
       panelClass: 'dark-theme',
       width: '460px',
