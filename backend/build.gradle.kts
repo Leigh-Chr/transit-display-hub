@@ -87,7 +87,32 @@ protobuf {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Real-network smoke tests against published GTFS feeds (Bordeaux,
+        // Strasbourg, Tours…) are tagged "real-feed" and skipped here so
+        // the default ./gradlew test stays Internet-free. Run them with
+        // ./gradlew testRealFeed (see below) when validating layout-engine
+        // generality against new feed shapes.
+        excludeTags("real-feed")
+    }
+}
+
+/**
+ * Opt-in test task for the @Tag("real-feed") suite. Hits the public
+ * GTFS endpoints so it requires Internet and is naturally skipped in CI.
+ * Each individual test still gates on a system property so it self-skips
+ * when the upstream is down — see RealGtfsFeedIntegrationTest.
+ */
+tasks.register<Test>("testRealFeed") {
+    useJUnitPlatform {
+        includeTags("real-feed")
+    }
+    description = "Runs the GTFS importer against real public feeds. " +
+            "Requires Internet; skipped from the default test task."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    shouldRunAfter("test")
 }
 
 tasks.withType<JavaCompile> {
