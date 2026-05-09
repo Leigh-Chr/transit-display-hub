@@ -99,10 +99,13 @@ class DisplayControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns error for invalid UUID")
-        void withInvalidUuid_ReturnsError() throws Exception {
+        @DisplayName("returns 400 for an invalid UUID path variable")
+        void withInvalidUuid_Returns400() throws Exception {
+            // The GlobalExceptionHandler maps Spring's
+            // MethodArgumentTypeMismatchException to 400 — a malformed
+            // UUID is a client mistake, not a server bug.
             mockMvc.perform(get("/api/display/not-a-valid-uuid"))
-                    .andExpect(status().is5xxServerError());
+                    .andExpect(status().isBadRequest());
         }
 
         @Test

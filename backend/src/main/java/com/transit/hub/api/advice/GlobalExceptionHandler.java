@@ -11,9 +11,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -56,6 +59,35 @@ public class GlobalExceptionHandler {
             log.warn("Illegal argument: {}", ex.getMessage());
         }
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,
+                                                       WebRequest request) {
+        if (log.isWarnEnabled()) {
+            log.warn("Missing required request parameter: {}", ex.getParameterName());
+        }
+        String message = "Required request parameter '" + ex.getParameterName() + "' is missing";
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+                                                       WebRequest request) {
+        if (log.isWarnEnabled()) {
+            log.warn("Type mismatch on request parameter '{}': {}", ex.getName(), ex.getMessage());
+        }
+        String message = "Invalid value for parameter '" + ex.getName() + "'";
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResource(NoResourceFoundException ex, WebRequest request) {
+        // Spring routes unknown URLs through the static-resource handler,
+        // which raises NoResourceFoundException. The catch-all below
+        // would render 500 for those — return 404 instead so a typo'd
+        // path looks like a real not-found rather than a server bug.
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", null, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
