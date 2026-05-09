@@ -197,7 +197,36 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 
                   <ng-container matColumnDef="occupancy">
                     <th mat-header-cell *matHeaderCellDef>Occupation</th>
-                    <td mat-cell *matCellDef="let v">{{ occupancyLabel(v) }}</td>
+                    <td mat-cell *matCellDef="let v">
+                      @if (v.occupancyStatus || v.occupancyPercentage !== null) {
+                        <span class="occupancy-badge" [class]="occupancyClass(v)" [matTooltip]="occupancyTooltip(v)">
+                          <mat-icon>{{ occupancyIcon(v) }}</mat-icon>
+                          {{ occupancyShort(v) }}
+                        </span>
+                      } @else {
+                        —
+                      }
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="bearing">
+                    <th mat-header-cell *matHeaderCellDef>Cap</th>
+                    <td mat-cell *matCellDef="let v">
+                      @if (v.bearing !== null) {
+                        <span class="bearing-arrow" [style.transform]="'rotate(' + v.bearing + 'deg)'" [matTooltip]="v.bearing + '°'">
+                          <mat-icon>navigation</mat-icon>
+                        </span>
+                      } @else { — }
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="congestion">
+                    <th mat-header-cell *matHeaderCellDef>Congestion</th>
+                    <td mat-cell *matCellDef="let v">
+                      @if (v.congestionLevel) {
+                        <span class="congestion-pill">{{ v.congestionLevel }}</span>
+                      } @else { — }
+                    </td>
                   </ng-container>
 
                   <ng-container matColumnDef="timestamp">
@@ -223,6 +252,29 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
   `,
   styles: `
     .realtime-page { max-width: 1200px; }
+    .occupancy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .occupancy-badge mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .occ-low { background: rgba(16, 185, 129, 0.16); color: #047857; }
+    .occ-mid { background: rgba(234, 179, 8, 0.18); color: #92400e; }
+    .occ-high { background: rgba(239, 68, 68, 0.18); color: #b91c1c; }
+    .occ-unknown { background: var(--mat-sys-surface-container); color: var(--mat-sys-on-surface-variant); }
+    .bearing-arrow { display: inline-block; transform-origin: center; }
+    .bearing-arrow mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .congestion-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
     .page-header { margin-bottom: 24px; }
     .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
@@ -324,7 +376,7 @@ export class RealtimeComponent implements OnInit {
   readonly refreshingAlerts = signal(false);
   readonly refreshingVehicles = signal(false);
 
-  readonly vehicleColumns = ['vehicle', 'route', 'trip', 'position', 'speed', 'status', 'occupancy', 'timestamp'];
+  readonly vehicleColumns = ['vehicle', 'route', 'trip', 'position', 'speed', 'status', 'occupancy', 'bearing', 'congestion', 'timestamp'];
 
   ngOnInit(): void {
     this.loadAlerts();
@@ -367,6 +419,43 @@ export class RealtimeComponent implements OnInit {
       return pct !== null ? `${v.occupancyStatus} (${pct}%)` : v.occupancyStatus;
     }
     return v.occupancyPercentage !== null ? `${v.occupancyPercentage}%` : '—';
+  }
+
+  /** Map GTFS-RT OccupancyStatus enum to a tone class used by the
+   *  occupancy badge. EMPTY / MANY_SEATS_AVAILABLE → green, mid →
+   *  amber, FULL / CRUSHED → red. */
+  occupancyClass(v: VehiclePosition): string {
+    const s = v.occupancyStatus ?? '';
+    if (s === 'EMPTY' || s === 'MANY_SEATS_AVAILABLE') {return 'occ-low';}
+    if (s === 'FEW_SEATS_AVAILABLE' || s === 'STANDING_ROOM_ONLY') {return 'occ-mid';}
+    if (s === 'CRUSHED_STANDING_ROOM_ONLY' || s === 'FULL'
+        || s === 'NOT_ACCEPTING_PASSENGERS') {return 'occ-high';}
+    if (v.occupancyPercentage !== null) {
+      if (v.occupancyPercentage >= 80) {return 'occ-high';}
+      if (v.occupancyPercentage >= 40) {return 'occ-mid';}
+      return 'occ-low';
+    }
+    return 'occ-unknown';
+  }
+
+  occupancyIcon(v: VehiclePosition): string {
+    const cls = this.occupancyClass(v);
+    if (cls === 'occ-low') {return 'sentiment_very_satisfied';}
+    if (cls === 'occ-mid') {return 'sentiment_neutral';}
+    if (cls === 'occ-high') {return 'sentiment_very_dissatisfied';}
+    return 'help_outline';
+  }
+
+  occupancyShort(v: VehiclePosition): string {
+    const cls = this.occupancyClass(v);
+    if (cls === 'occ-low') {return 'Disponible';}
+    if (cls === 'occ-mid') {return 'Bondé';}
+    if (cls === 'occ-high') {return 'Plein';}
+    return v.occupancyPercentage !== null ? `${v.occupancyPercentage}%` : '?';
+  }
+
+  occupancyTooltip(v: VehiclePosition): string {
+    return this.occupancyLabel(v);
   }
 
   kmh(metresPerSecond: number): number {
