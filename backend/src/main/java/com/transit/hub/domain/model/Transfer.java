@@ -67,4 +67,22 @@ public class Transfer {
      *  whatever the feed provides. */
     @Column(name = "min_transfer_time")
     private Integer minTransferTime;
+
+    /** Optional GTFS route qualifier: when set, the rule only applies
+     *  to transfers leaving services on this route. Stored as the raw
+     *  external_id so callers can join through Line.external_id when
+     *  needed. */
+    @Column(name = "from_route_id", length = 100)
+    private String fromRouteId;
+
+    @Column(name = "to_route_id", length = 100)
+    private String toRouteId;
+
+    /** Optional GTFS trip qualifier: scope the rule to a specific trip
+     *  pair (used by feeds that synchronise particular runs). */
+    @Column(name = "from_trip_id", length = 100)
+    private String fromTripId;
+
+    @Column(name = "to_trip_id", length = 100)
+    private String toTripId;
 }

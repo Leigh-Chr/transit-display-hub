@@ -1464,6 +1464,10 @@ public class GtfsImportService {
                         .toStop(toStop)
                         .transferType(transferType)
                         .minTransferTime(minTransferTime)
+                        .fromRouteId(truncate(optional(record, "from_route_id"), 100))
+                        .toRouteId(truncate(optional(record, "to_route_id"), 100))
+                        .fromTripId(truncate(optional(record, "from_trip_id"), 100))
+                        .toTripId(truncate(optional(record, "to_trip_id"), 100))
                         .build());
             }
         }
