@@ -5,6 +5,13 @@ spring:
     active: dev
   jackson:
     time-zone: ${APP_TIMEZONE:Europe/Paris}
+  jpa:
+    # Disable Open-Session-In-View. Every controller path either reads
+    # eagerly (JOIN FETCH on the repo query) or is wrapped by a service
+    # method that holds its own @Transactional(readOnly=true) — keeping
+    # the session open for the view layer would mask a missing fetch
+    # by quietly issuing N+1 lazy loads at JSON-serialization time.
+    open-in-view: false
 
 server:
   port: 8080
