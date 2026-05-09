@@ -109,6 +109,14 @@ public class Stop {
     @Column(length = 255)
     private String url;
 
+    /** GTFS {@code zone_id}. Opaque label that fare rules
+     *  ({@code origin_id}, {@code destination_id}, {@code contains_id})
+     *  reference to scope a price to a region of the network. Null on
+     *  feeds that don't ship V1 fare data. */
+    @Size(max = 100)
+    @Column(name = "zone_id", length = 100)
+    private String zoneId;
+
     /** GTFS {@code wheelchair_boarding} (0/1/2). Drives the PMR pictogram
      *  on the stop popup and shapes the route-finder when a passenger
      *  opts into the "accessible-only" filter. */

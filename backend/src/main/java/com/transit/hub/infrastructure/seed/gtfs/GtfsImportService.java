@@ -502,7 +502,7 @@ public class GtfsImportService {
     private StopImport importStops(Path stopsFile) throws IOException {
         record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
                        String shortCode, String ttsName, String timezone, String description, String url,
-                       int wheelchairBoarding, String platformCode) {}
+                       int wheelchairBoarding, String platformCode, String zoneId) {}
 
         List<RawStop> raw = new ArrayList<>();
         try (CSVParser parser = openCsv(stopsFile)) {
@@ -527,7 +527,8 @@ public class GtfsImportService {
                         optional(record, "stop_desc"),
                         optional(record, "stop_url"),
                         parseInt(optional(record, "wheelchair_boarding"), 0),
-                        optional(record, "platform_code")));
+                        optional(record, "platform_code"),
+                        optional(record, "zone_id")));
             }
         }
 
@@ -563,6 +564,7 @@ public class GtfsImportService {
             stop.setWheelchairBoarding(
                     com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding));
             stop.setPlatformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10));
+            stop.setZoneId(isBlank(r.zoneId) ? null : truncate(r.zoneId, 100));
             stop.setLocationType((short) r.locationType);
             stop.setParentStop(parent);
             // Re-enable on every import: a stop that disappeared in a
