@@ -1873,18 +1873,30 @@ public class GtfsImportService {
         List<FareLegJoinRule> batch = new ArrayList<>();
         try (CSVParser parser = openCsv(joinRulesFile)) {
             for (CSVRecord record : parser) {
+                // Canonical (post-2024) layout: leg_group_id + leg_sequence
+                // + preceding_trip_transfer_limit. Legacy MobilityData
+                // layout: from/to_network/stop pairs. We accept both.
+                String legGroupId = optional(record, "leg_group_id");
+                Integer legSequence = parseIntOrNull(optional(record, "leg_sequence"));
+                Integer precedingLimit = parseIntOrNull(
+                        optional(record, "preceding_trip_transfer_limit"));
+
                 String fromStopId = optional(record, "from_stop_id");
                 String toStopId = optional(record, "to_stop_id");
                 String fromNet = optional(record, "from_network_id");
                 String toNet = optional(record, "to_network_id");
-                // Spec requires either a network pair or a stop pair —
-                // skip rows missing both, they're feed errors.
                 Stop fromStop = isBlank(fromStopId) ? null : stopImport.stopsByGtfsId.get(fromStopId);
                 Stop toStop = isBlank(toStopId) ? null : stopImport.stopsByGtfsId.get(toStopId);
-                if (isBlank(fromNet) && isBlank(toNet) && fromStop == null && toStop == null) {
+                boolean canonical = !isBlank(legGroupId) || legSequence != null;
+                boolean legacy = !isBlank(fromNet) || !isBlank(toNet)
+                        || fromStop != null || toStop != null;
+                if (!canonical && !legacy) {
                     continue;
                 }
                 batch.add(FareLegJoinRule.builder()
+                        .legGroupId(truncate(legGroupId, 100))
+                        .legSequence(legSequence)
+                        .precedingTripTransferLimit(precedingLimit)
                         .fromNetworkId(truncate(fromNet, 100))
                         .toNetworkId(truncate(toNet, 100))
                         .fromStop(fromStop)

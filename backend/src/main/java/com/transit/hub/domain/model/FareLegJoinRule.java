@@ -18,13 +18,12 @@ import lombok.Setter;
 import java.util.UUID;
 
 /**
- * GTFS Fares v2 {@code fare_leg_join_rules.txt} — declares that two
- * consecutive legs matching on (from network/stop → to network/stop)
- * collapse into a single fare leg. Used by trip-planner fare logic
- * to model free transfers within a multi-operator network.
- *
- * Rare; persisted for completeness so a fare-aware future surface
- * doesn't have to re-parse the GTFS feed.
+ * GTFS Fares v2 {@code fare_leg_join_rules.txt}. The canonical spec
+ * keys a rule by ({@code leg_group_id}, {@code leg_sequence}) — two
+ * consecutive legs join into one fare leg when their group and
+ * sequence match. The legacy MobilityData layout
+ * (from_network/to_network/from_stop/to_stop) is still produced by
+ * a few feeds; we keep both and prefer canonical when present.
  */
 @Entity
 @Table(name = "fare_leg_join_rules")
@@ -39,16 +38,35 @@ public class FareLegJoinRule {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /** Canonical spec key: references {@code fare_leg_rules.leg_group_id}. */
+    @Column(name = "leg_group_id", length = 100)
+    private String legGroupId;
+
+    /** Canonical spec key: 1-based incremental position of this leg
+     *  within its leg-group. */
+    @Column(name = "leg_sequence")
+    private Integer legSequence;
+
+    /** Canonical spec field: max minutes since the preceding trip's
+     *  alighting after which the join no longer applies. Required by
+     *  the spec when {@code legSequence > 1}. */
+    @Column(name = "preceding_trip_transfer_limit")
+    private Integer precedingTripTransferLimit;
+
+    /** Legacy column (pre-2024 layout). */
     @Column(name = "from_network_id", length = 100)
     private String fromNetworkId;
 
+    /** Legacy column (pre-2024 layout). */
     @Column(name = "to_network_id", length = 100)
     private String toNetworkId;
 
+    /** Legacy column (pre-2024 layout). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_stop_id")
     private Stop fromStop;
 
+    /** Legacy column (pre-2024 layout). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_stop_id")
     private Stop toStop;
