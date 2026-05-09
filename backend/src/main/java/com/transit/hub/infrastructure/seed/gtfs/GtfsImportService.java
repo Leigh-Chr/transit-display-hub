@@ -129,6 +129,15 @@ public class GtfsImportService {
     private final FareMediaRepository fareMediaRepository;
     private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
 
+    /** Flushed at section boundaries so the persistence context stays
+     *  bounded — without periodic flushes, each section's saveAll
+     *  accumulates the prior sections' dirty entities and Hibernate's
+     *  BatchSorter can't topologically order the combined batch
+     *  (HHH90032022). order_inserts itself stays on so individual
+     *  section flushes keep their FK ordering guarantees. */
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public record ImportResult(int lines, int stops, int itineraries, int itineraryStops, int schedules) {}
 
     @Transactional
@@ -154,7 +163,13 @@ public class GtfsImportService {
             Map<String, Line> linesByGtfsId = importRoutes(workDir.resolve("routes.txt"), agenciesByGtfsId);
             StopImport stopImport = importStops(workDir.resolve("stops.txt"));
 
+            // Flush each upstream section so the next one's saveAll
+            // doesn't bundle their pending statements into a single
+            // unsortable batch. Each flush still respects order_inserts.
+            entityManager.flush();
+
             Map<String, Shape> shapesByGtfsId = importShapes(workDir.resolve("shapes.txt"));
+            entityManager.flush();
 
             ItineraryImport itineraryImport = importItineraries(
                     workDir.resolve("trips.txt"),
@@ -162,6 +177,7 @@ public class GtfsImportService {
                     linesByGtfsId,
                     stopImport,
                     shapesByGtfsId);
+            entityManager.flush();
 
             Map<String, List<FrequencyWindow>> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
 
@@ -560,6 +576,12 @@ public class GtfsImportService {
         for (RawStop r : raw) {
             if (r.locationType == 1) {persist.accept(r, null);}
         }
+        // Flush parents before pass 2 so the platform inserts in pass 2
+        // see their FK already in the DB. Without this flush the two
+        // passes' inserts mingle in one action queue and Hibernate's
+        // BatchSorter can't topologically order the self-referential
+        // Stop → Stop FKs (HHH90032022).
+        entityManager.flush();
         // Pass 2: platforms (location_type=0). The parent FK resolves
         // against the pass-1 map; missing parents fall through to null.
         for (RawStop r : raw) {
@@ -568,6 +590,7 @@ public class GtfsImportService {
                 persist.accept(r, parent);
             }
         }
+        entityManager.flush();
         // Stops the new feed no longer declares: flag disabled rather
         // than delete so Devices keep their stop_id FK valid. The kiosk
         // still gets a clean "stop removed" payload via existing event
