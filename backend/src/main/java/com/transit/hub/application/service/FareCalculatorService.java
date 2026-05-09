@@ -12,6 +12,8 @@ import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
 import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,25 +52,34 @@ public class FareCalculatorService {
     private final FareAttributeRepository fareAttributeRepository;
     private final FareLegRuleRepository fareLegRuleRepository;
     private final AreaRepository areaRepository;
+    private final MeterRegistry meterRegistry;
 
     @Transactional(readOnly = true)
     public Optional<FareCalculationResponse> calculate(UUID fromStopId, UUID toStopId) {
-        Optional<Stop> fromOpt = stopRepository.findById(fromStopId);
-        Optional<Stop> toOpt = stopRepository.findById(toStopId);
-        if (fromOpt.isEmpty() || toOpt.isEmpty()) {
-            return Optional.empty();
+        Timer.Sample sample = Timer.start(meterRegistry);
+        try {
+            Optional<Stop> fromOpt = stopRepository.findById(fromStopId);
+            Optional<Stop> toOpt = stopRepository.findById(toStopId);
+            if (fromOpt.isEmpty() || toOpt.isEmpty()) {
+                return Optional.empty();
+            }
+            Stop from = fromOpt.get();
+            Stop to = toOpt.get();
+
+            List<V1Option> v1 = calculateV1(from, to);
+            List<V2Option> v2 = calculateV2(from, to);
+
+            return Optional.of(new FareCalculationResponse(
+                    from.getId().toString(), from.getName(), from.getZoneId(),
+                    to.getId().toString(), to.getName(), to.getZoneId(),
+                    v1, v2
+            ));
+        } finally {
+            sample.stop(Timer.builder("fare.calculation.duration")
+                    .description("Wall-clock duration of a /api/fares/calculate request")
+                    .publishPercentiles(0.5, 0.95, 0.99)
+                    .register(meterRegistry));
         }
-        Stop from = fromOpt.get();
-        Stop to = toOpt.get();
-
-        List<V1Option> v1 = calculateV1(from, to);
-        List<V2Option> v2 = calculateV2(from, to);
-
-        return Optional.of(new FareCalculationResponse(
-                from.getId().toString(), from.getName(), from.getZoneId(),
-                to.getId().toString(), to.getName(), to.getZoneId(),
-                v1, v2
-        ));
     }
 
     /** GTFS Fares V1 — match {@code FareRule.origin_id/destination_id/contains_id}
