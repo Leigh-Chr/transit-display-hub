@@ -5,6 +5,67 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Quality pass on top of 0.8.0: the after-Phase-1.3 / Fares-v2 work is now
+backed by regression tests, the dev boot logs zero warnings, and the
+admin pagination paths no longer drag the entire result set into memory.
+
+### Added
+- **Regression tests on the post-Phase-1.3 surface.**
+  `NetworkMapServiceTest` gets eleven new tests pinning parent /
+  platform collapse, itinerary-stop UUID remap, intra-station transfer
+  drop, parent-area / parent-line / hasOnDemand / wheelchair
+  aggregation. `schematic-map.component.spec` adds thirteen tests on
+  the accessibility filter, the zone chip filter, and the
+  frequency-scaled stroke width. All previously shipped without
+  coverage.
+
+### Changed
+- **Two-step pagination** across `LineRepository`,
+  `ItineraryRepository` and `StopRepository`. Pages over ids first
+  (no JOIN FETCH so SQL paginates), then hydrates the page's entities
+  with their collections via `WHERE id IN (:ids)`. Replaces the
+  paginated `WithStopsAndRoutes` / `WithLineAndStops` /
+  `WithLinesAndDevices` queries that emitted HHH90003004
+  ("firstResult/maxResults specified with collection fetch; applying
+  in memory") on every paginated admin call. Pagination now scales
+  with page size, not with table size.
+- **`DisplayStateCalculator` takes a `Clock` dependency** instead of
+  reading `LocalTime.now()` / `Instant.now()` directly. Production
+  wires `Clock.systemDefaultZone()` via a new `ClockConfig` bean;
+  tests pin `Clock.fixed(2026-01-15T10:00:00Z, Europe/Paris)` so the
+  30-minute upcoming-departure window never crosses midnight at
+  test-time. Fixes a pre-existing flake where running the suite past
+  23:30 local rerouted the calculator to its cross-midnight branch
+  and tripped Mockito's strict-stubbing audit on every DSC test.
+- **Bounded persistence context during the GTFS seed.**
+  `GtfsImportService` now flushes at section boundaries (between
+  parent / platform stop passes, after `importStops`, after
+  `importShapes`, after `importItineraries`). Eliminates the
+  HHH90032022 "batch could not be sorted (might indicate a circular
+  entity relationship)" warning that fired on every dev boot, without
+  disabling `order_inserts` (which would have broken the scheduled
+  re-import with FK violations).
+- **Caffeine caches enable `recordStats()`** so Micrometer's
+  `CaffeineCacheMetrics` binder gets the hit / miss / load counters
+  it expected at startup.
+- **`spring.jpa.open-in-view: false`** in the dev profile. Every
+  controller path either reads through a JOIN-FETCH query or sits
+  behind a service `@Transactional`, so OSIV was masking missing
+  fetches with silent N+1 lazy loads at JSON-serialization time.
+  Verified against the seeded Grenoble feed: every API endpoint
+  exercising lazy collections still returns 200 with no
+  `LazyInitializationException`.
+
+### Fixed
+- **Kiosk `formatRelativeTime` / `getMinutesUntil` flake.** Tests
+  that captured `now` at file-load time and asserted on the relative
+  minute count could straddle a minute boundary if execution started
+  late. Pinned via `vi.useFakeTimers({ toFake: ['Date'] })` plus
+  `vi.setSystemTime` in the affected describes; assertions now use
+  hard-coded times against the frozen clock.
+
 ## [0.8.0] - 2026-05-07
 
 GTFS Fares v2 lands alongside v1, the admin UI gains read-only
