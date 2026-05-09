@@ -47,6 +47,9 @@ class MockRouteSearchBarComponent {
   arrivalChanged = output<LayoutStop | null>();
 }
 
+@Component({ selector: 'app-feed-credits', standalone: true, template: '', changeDetection: ChangeDetectionStrategy.OnPush })
+class MockFeedCreditsComponent {}
+
 describe('NetworkMapComponent', () => {
   let component: NetworkMapComponent;
   let fixture: ComponentFixture<NetworkMapComponent>;
@@ -125,6 +128,7 @@ describe('NetworkMapComponent', () => {
           MatProgressSpinnerModule,
           MockSchematicMapComponent,
           MockRouteSearchBarComponent,
+          MockFeedCreditsComponent,
         ],
       },
     });

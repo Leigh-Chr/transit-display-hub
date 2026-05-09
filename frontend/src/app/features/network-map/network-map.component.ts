@@ -22,6 +22,7 @@ import { StopPopupComponent, LineAlertInfo } from './components/stop-popup/stop-
 import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
+import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 
 @Component({
   selector: 'app-network-map',
@@ -37,6 +38,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
     SchematicMapComponent,
     RouteSearchBarComponent,
     LineIndexComponent,
+    FeedCreditsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -186,6 +188,7 @@ import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocke
           </div>
         }
       </main>
+      <app-feed-credits />
     </div>
   `,
   styles: `

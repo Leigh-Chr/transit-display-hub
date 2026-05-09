@@ -18,6 +18,7 @@ import { MessageService } from '@core/api/message.service';
 import { DashboardService } from '@core/api/dashboard.service';
 import { Line, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
+import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { lineTextColor, readableTextColor } from '@shared/utils/color.utils';
 import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
 import { DataOverviewCardComponent } from './data-overview-card.component';
@@ -37,6 +38,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
     StatsSkeletonComponent,
     FeedInfoCardComponent,
     DataOverviewCardComponent,
+    FeedCreditsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -359,6 +361,8 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
           </mat-card-content>
         </mat-card>
       }
+
+      <app-feed-credits />
     </div>
   `,
   styles: `
