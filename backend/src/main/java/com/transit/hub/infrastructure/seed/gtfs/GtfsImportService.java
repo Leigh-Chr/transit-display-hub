@@ -1097,6 +1097,10 @@ public class GtfsImportService {
                 // Filter so the row never shows up on a kiosk as a phantom arrival.
                 if (pickupType == 1 && dropOffType == 1) {continue;}
 
+                Short continuousPickup = parseShortOrNull(optional(record, "continuous_pickup"));
+                Short continuousDropOff = parseShortOrNull(optional(record, "continuous_drop_off"));
+                Double shapeDistTraveled = parseDoubleOrNull(optional(record, "shape_dist_traveled"));
+
                 // Wheelchair / bikes overrides: only stored when the trip's
                 // value diverges from the itinerary's majority default. Saves
                 // ~2 bytes × millions of rows on most feeds.
@@ -1138,6 +1142,9 @@ public class GtfsImportService {
                             .serviceCalendar(calendar)
                             .pickupBookingRule(pickupBooking)
                             .dropOffBookingRule(dropOffBooking)
+                            .continuousPickup(continuousPickup)
+                            .continuousDropOff(continuousDropOff)
+                            .shapeDistTraveled(shapeDistTraveled)
                             .build());
                     if (batch.size() >= MAX_SCHEDULE_BATCH) {
                         scheduleRepository.saveAll(batch);
@@ -1186,6 +1193,9 @@ public class GtfsImportService {
                                 .serviceCalendar(calendar)
                                 .pickupBookingRule(pickupBooking)
                                 .dropOffBookingRule(dropOffBooking)
+                                .continuousPickup(continuousPickup)
+                                .continuousDropOff(continuousDropOff)
+                                .shapeDistTraveled(shapeDistTraveled)
                                 .build());
                         if (batch.size() >= MAX_SCHEDULE_BATCH) {
                             scheduleRepository.saveAll(batch);

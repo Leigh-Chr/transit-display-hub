@@ -149,4 +149,21 @@ public class Schedule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "drop_off_booking_rule_id")
     private BookingRule dropOffBookingRule;
+
+    /** GTFS {@code stop_times.continuous_pickup} — overrides the route-
+     *  level setting on {@link Line#getContinuousPickup()} for this
+     *  specific stop_time. Null = inherit from the route. */
+    @Column(name = "continuous_pickup")
+    private Short continuousPickup;
+
+    /** GTFS {@code stop_times.continuous_drop_off}. Same override
+     *  semantics as {@link #continuousPickup}. */
+    @Column(name = "continuous_drop_off")
+    private Short continuousDropOff;
+
+    /** GTFS {@code stop_times.shape_dist_traveled}: distance in the
+     *  shape's units from the trip start. Lets the kiosk compute a
+     *  "vehicle is X% of the way to your stop" indicator. */
+    @Column(name = "shape_dist_traveled")
+    private Double shapeDistTraveled;
 }
