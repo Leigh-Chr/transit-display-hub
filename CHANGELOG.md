@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   ADR 0028, the integration source set is kept separate from the
   micro-benchmarks so a Spring cold start doesn't pollute the
   pure-compute numbers.
+- **Spatial query on `locations`** without JTS. New endpoint
+  `GET /api/admin/locations/contains?lat=X&lon=Y` returns every flex
+  zone whose polygon contains the input point. Two-step pipeline: SQL
+  bounding-box pre-filter on the indexed min/max columns, then Java
+  ray-casting on the GeoJSON via the new `PolygonContains` utility.
+  Handles `Polygon`, `MultiPolygon`, holes (interior rings) and
+  malformed input. ADR 0029 documents the trade-off (keeps ADR 0026
+  intact — no JTS, no PostGIS, no schema change).
+- **ADR 0029** — In-memory point-in-polygon for `locations.geojson`.
 
 ## [0.8.2] - 2026-05-09
 

@@ -34,6 +34,7 @@ should think twice before reverting.
 | [0026](0026-locations-geojson-without-jts.md) | Persist `locations.geojson` as TEXT, no JTS / Hibernate Spatial |
 | [0027](0027-prometheus-metrology.md) | Prometheus scrape via Micrometer, no in-house metrics layer |
 | [0028](0028-jmh-microbenchmarks.md) | JMH micro-benchmarks for hot-path utilities |
+| [0029](0029-in-memory-point-in-polygon.md) | In-memory point-in-polygon for locations.geojson |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

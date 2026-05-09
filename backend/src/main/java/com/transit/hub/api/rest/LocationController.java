@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -28,5 +29,20 @@ public class LocationController {
     @GetMapping
     public ResponseEntity<List<LocationResponse>> browse() {
         return ResponseEntity.ok(locationService.browse());
+    }
+
+    /**
+     * Returns the flex locations whose polygon contains the input
+     * (latitude, longitude). Useful for admin diagnostics
+     * ("does any zone cover this address?") and as a building block
+     * for a future passenger-facing trip planner. Two-step internally:
+     * SQL bounding-box pre-filter, then Java ray-casting on the
+     * GeoJSON. No PostGIS dependency; see ADR 0026.
+     */
+    @GetMapping("/contains")
+    public ResponseEntity<List<LocationResponse>> contains(
+            @RequestParam("lat") double lat,
+            @RequestParam("lon") double lon) {
+        return ResponseEntity.ok(locationService.findContainingPoint(lat, lon));
     }
 }
