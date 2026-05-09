@@ -219,6 +219,16 @@ import {
               <span matListItemTitle>Stop_times TAD</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/fare-calculator"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>calculate</mat-icon>
+              <span matListItemTitle>Calculateur tarifaire</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 
