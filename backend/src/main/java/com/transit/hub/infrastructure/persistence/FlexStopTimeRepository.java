@@ -11,12 +11,6 @@ import java.util.UUID;
 @Repository
 public interface FlexStopTimeRepository extends JpaRepository<FlexStopTime, UUID> {
 
-    List<FlexStopTime> findByItineraryId(UUID itineraryId);
-
-    List<FlexStopTime> findByLocationId(UUID locationId);
-
-    List<FlexStopTime> findByLocationGroupId(UUID locationGroupId);
-
     /** Eagerly fetches everything the admin / popup needs to render a
      *  flex window without N+1: itinerary + line, location, location
      *  group, booking rules and the service calendar. Filtered by the

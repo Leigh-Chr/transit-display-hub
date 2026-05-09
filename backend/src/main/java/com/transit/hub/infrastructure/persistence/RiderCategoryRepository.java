@@ -4,11 +4,8 @@ import com.transit.hub.domain.model.RiderCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface RiderCategoryRepository extends JpaRepository<RiderCategory, UUID> {
-
-    Optional<RiderCategory> findByExternalId(String externalId);
 }

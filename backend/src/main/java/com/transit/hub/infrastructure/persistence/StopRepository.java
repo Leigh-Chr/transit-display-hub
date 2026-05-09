@@ -48,10 +48,6 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
            "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)")
     List<Stop> findByLineIdWithLinesAndDevices(UUID lineId);
 
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s IN " +
-           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)")
-    List<Stop> findByLineIdWithLines(UUID lineId);
-
     @Query("SELECT s.id FROM Stop s")
     Set<UUID> findAllIds();
 
@@ -87,9 +83,4 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices " +
            "WHERE s.id IN :ids")
     List<Stop> findAllByIdInWithLinesAndDevices(List<UUID> ids);
-
-    /** Two-step pagination, step 2 — slim variant for callers that only
-     *  need lines (no devices). */
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s.id IN :ids")
-    List<Stop> findAllByIdInWithLines(List<UUID> ids);
 }

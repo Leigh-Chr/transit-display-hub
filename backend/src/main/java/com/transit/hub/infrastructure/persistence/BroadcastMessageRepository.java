@@ -22,8 +22,6 @@ public interface BroadcastMessageRepository extends JpaRepository<BroadcastMessa
             "ORDER BY CASE m.severity WHEN 'CRITICAL' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END, m.startTime DESC")
     List<BroadcastMessage> findActiveMessages(Instant now);
 
-    List<BroadcastMessage> findByScopeTypeAndScopeId(MessageScope scopeType, UUID scopeId);
-
     @Query("SELECT DISTINCT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now AND " +
             "(m.scopeType = 'NETWORK' OR " +
             "(m.scopeType = 'LINE' AND m.scopeId IN :lineIds) OR " +

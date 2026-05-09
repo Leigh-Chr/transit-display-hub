@@ -265,26 +265,6 @@ class StopRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByLineIdWithLines")
-    class FindByLineIdWithLines {
-
-        @Test
-        @DisplayName("returns stops for line with all lines eagerly loaded")
-        void returnsStopsWithLines() {
-            List<Stop> result = repository.findByLineIdWithLines(lineB2.getId());
-
-            assertThat(result).hasSize(2);
-            Set<String> names = result.stream().map(Stop::getName).collect(Collectors.toSet());
-            assertThat(names).containsExactlyInAnyOrder("Central Station", "South Station");
-            // Central has both lines loaded
-            Stop central = result.stream()
-                    .filter(s -> s.getName().equals("Central Station"))
-                    .findFirst().orElseThrow();
-            assertThat(central.getLines()).hasSize(2);
-        }
-    }
-
-    @Nested
     @DisplayName("findAllIds")
     class FindAllIds {
 
@@ -356,16 +336,6 @@ class StopRepositoryTest {
             assertThat(page1.getContent()).hasSize(1);
         }
 
-        @Test
-        @DisplayName("findAllByIdInWithLines slim variant returns lines without devices")
-        void slimHydrate() {
-            Page<UUID> idsPage = repository.findIdsBySearch("NORTH", PageRequest.of(0, 10));
-            List<Stop> hydrated = repository.findAllByIdInWithLines(idsPage.getContent());
-
-            assertThat(hydrated).hasSize(1);
-            assertThat(hydrated.getFirst().getName()).isEqualTo("North Station");
-            assertThat(hydrated.getFirst().getLines()).hasSize(1);
-        }
     }
 
     @Nested
@@ -463,16 +433,5 @@ class StopRepositoryTest {
             assertThat(idsPage.getContent()).isEmpty();
         }
 
-        @Test
-        @DisplayName("hydrate keeps lines bound to each stop")
-        void slimHydrateKeepsLines() {
-            Page<UUID> idsPage = repository.findIdsByLineIdAndSearch(
-                    lineB2.getId(), "south", PageRequest.of(0, 10));
-            List<Stop> hydrated = repository.findAllByIdInWithLines(idsPage.getContent());
-
-            assertThat(hydrated).hasSize(1);
-            assertThat(hydrated.getFirst().getName()).isEqualTo("South Station");
-            assertThat(hydrated.getFirst().getLines()).hasSize(1);
-        }
     }
 }

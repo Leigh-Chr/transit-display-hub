@@ -6,13 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface LocationRepository extends JpaRepository<Location, UUID> {
-
-    Optional<Location> findByExternalId(String externalId);
 
     /** All locations referencing the given GTFS stop_id (a TAD trip's
      *  flex pickup zone may be one of many for the same stop, e.g.

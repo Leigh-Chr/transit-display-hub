@@ -48,8 +48,8 @@ public class FareProduct {
     private String fareMediaId;
 
     /** GTFS {@code rider_category_id} — the rider category this product
-     *  is priced for. Stored as the raw external_id; resolve via
-     *  {@code RiderCategoryRepository.findByExternalId}. */
+     *  is priced for. Stored as the raw external_id; resolve against the
+     *  {@code rider_categories} table when a typed reference is needed. */
     @Column(name = "rider_category_id", length = 100)
     private String riderCategoryId;
 
