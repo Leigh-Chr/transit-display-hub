@@ -2,11 +2,13 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
+import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.LocationRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,11 +44,13 @@ class NetworkMapControllerIntegrationTest {
     @Autowired private StopRepository stopRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private BroadcastMessageRepository broadcastMessageRepository;
+    @Autowired private LocationRepository locationRepository;
     @Autowired private CacheManager cacheManager;
 
     @BeforeEach
     void setUp() {
         broadcastMessageRepository.deleteAll();
+        locationRepository.deleteAll();
         stopRepository.deleteAll();
         lineRepository.deleteAll();
         userRepository.deleteAll();
@@ -355,6 +359,69 @@ class NetworkMapControllerIntegrationTest {
             mockMvc.perform(get("/api/network-map"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.lines", hasSize(2)));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/network-map/stops/{stopId}/tad-zone")
+    class GetStopTadZone {
+
+        @Test
+        @DisplayName("returns 200 with the polygon when the stop has a flex location bound to it")
+        void withBoundFlexLocation_Returns200() throws Exception {
+            Stop stop = Stop.builder()
+                    .name("Flex stop")
+                    .externalId("EXT_FLEX_1")
+                    .lines(new HashSet<>())
+                    .latitude(45.19).longitude(5.72)
+                    .build();
+            stop = stopRepository.save(stop);
+
+            Location loc = Location.builder()
+                    .externalId("FLEX_NORTH")
+                    .stopExternalId("EXT_FLEX_1")
+                    .name("Zone Nord")
+                    .geometryType("Polygon")
+                    .geometryJson("{\"type\":\"Polygon\",\"coordinates\":[]}")
+                    .minLatitude(45.18).maxLatitude(45.20)
+                    .minLongitude(5.70).maxLongitude(5.75)
+                    .build();
+            locationRepository.save(loc);
+
+            mockMvc.perform(get("/api/network-map/stops/" + stop.getId() + "/tad-zone"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.externalId", is("FLEX_NORTH")))
+                    .andExpect(jsonPath("$.geometryType", is("Polygon")))
+                    .andExpect(jsonPath("$.minLatitude", is(45.18)));
+        }
+
+        @Test
+        @DisplayName("returns 404 when the stop has no flex location bound to it")
+        void withoutFlexLocation_Returns404() throws Exception {
+            Stop bareStop = Stop.builder()
+                    .name("Plain stop")
+                    .externalId("EXT_PLAIN")
+                    .lines(new HashSet<>())
+                    .latitude(45.0).longitude(5.0)
+                    .build();
+            bareStop = stopRepository.save(bareStop);
+
+            mockMvc.perform(get("/api/network-map/stops/" + bareStop.getId() + "/tad-zone"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("returns 404 for an unknown stop id")
+        void unknownStop_Returns404() throws Exception {
+            mockMvc.perform(get("/api/network-map/stops/00000000-0000-0000-0000-000000000000/tad-zone"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("public endpoint — no JWT required")
+        void publicEndpoint() throws Exception {
+            mockMvc.perform(get("/api/network-map/stops/00000000-0000-0000-0000-000000000000/tad-zone"))
+                    .andExpect(status().isNotFound());  // not 401
         }
     }
 }

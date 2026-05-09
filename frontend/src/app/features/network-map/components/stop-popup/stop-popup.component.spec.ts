@@ -4,13 +4,15 @@ import { of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { StopPopupComponent, StopPopupData } from './stop-popup.component';
 import { ScheduleService } from '@core/api/schedule.service';
-import { Schedule } from '@shared/models';
+import { FlexLocation, Schedule } from '@shared/models';
+import { NetworkMapDataService } from '../../services/network-map-data.service';
 import { LayoutStop } from '../../services/schematic-layout.service';
 
 describe('StopPopupComponent', () => {
   let component: StopPopupComponent;
   let fixture: ComponentFixture<StopPopupComponent>;
   let mockScheduleService: { getForStop: ReturnType<typeof vi.fn> };
+  let mockNetworkMapData: { getStopTadZone: ReturnType<typeof vi.fn> };
 
   const mockStop: LayoutStop = {
     id: 'stop-1',
@@ -76,6 +78,7 @@ describe('StopPopupComponent', () => {
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },
         { provide: ScheduleService, useValue: mockScheduleService },
+        { provide: NetworkMapDataService, useValue: mockNetworkMapData },
       ],
     });
 
@@ -86,6 +89,9 @@ describe('StopPopupComponent', () => {
   beforeEach(() => {
     mockScheduleService = {
       getForStop: vi.fn().mockReturnValue(of(mockSchedules)),
+    };
+    mockNetworkMapData = {
+      getStopTadZone: vi.fn().mockReturnValue(of(null)),
     };
   });
 
@@ -181,6 +187,64 @@ describe('StopPopupComponent', () => {
     expect(component.getMessageIcon('WARNING')).toBe('warning');
     expect(component.getMessageIcon('INFO')).toBe('info');
     expect(component.getMessageIcon('OTHER')).toBe('info');
+  });
+
+  describe('TAD zone', () => {
+    const mockZone: FlexLocation = {
+      id: 'loc-1',
+      externalId: 'FLEX_NORTH',
+      stopExternalId: 'EXT_STOP_1',
+      name: 'Zone Nord',
+      geometryType: 'Polygon',
+      geometryJson: JSON.stringify({
+        type: 'Polygon',
+        coordinates: [[[5.70, 45.18], [5.75, 45.18], [5.75, 45.20], [5.70, 45.20], [5.70, 45.18]]],
+      }),
+      minLongitude: 5.70, maxLongitude: 5.75,
+      minLatitude: 45.18, maxLatitude: 45.20,
+    };
+
+    it('skips the fetch when the stop has no on-demand pickup', () => {
+      createComponent({ stop: { ...mockStop, hasOnDemand: false } });
+      fixture.detectChanges();
+
+      expect(mockNetworkMapData.getStopTadZone).not.toHaveBeenCalled();
+      expect(component.tadZone()).toBeNull();
+    });
+
+    it('fetches the polygon when hasOnDemand is true and renders one path per ring', async () => {
+      mockNetworkMapData.getStopTadZone = vi.fn().mockReturnValue(of(mockZone));
+      createComponent({ stop: { ...mockStop, hasOnDemand: true } });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(mockNetworkMapData.getStopTadZone).toHaveBeenCalledWith('stop-1');
+      expect(component.tadZone()).toEqual(mockZone);
+      expect(component.tadZoneRings().length).toBe(1);
+      expect(component.tadZoneRings()[0]!.path.startsWith('M ')).toBe(true);
+    });
+
+    it('keeps tadZone null when the API returns no zone', async () => {
+      mockNetworkMapData.getStopTadZone = vi.fn().mockReturnValue(of(null));
+      createComponent({ stop: { ...mockStop, hasOnDemand: true } });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(component.tadZone()).toBeNull();
+      expect(component.tadZoneRings()).toEqual([]);
+      expect(fixture.nativeElement.querySelector('.tad-zone-section')).toBeFalsy();
+    });
+
+    it('renders the section header when a zone is present', async () => {
+      mockNetworkMapData.getStopTadZone = vi.fn().mockReturnValue(of(mockZone));
+      createComponent({ stop: { ...mockStop, hasOnDemand: true } });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const section = fixture.nativeElement.querySelector('.tad-zone-section');
+      expect(section).toBeTruthy();
+      expect(section.textContent).toContain('Zone Nord');
+    });
   });
 
   describe('messages', () => {

@@ -1,12 +1,22 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, signal, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ScheduleService } from '@core/api/schedule.service';
-import { AlertMessage, MessageInfo, MessageSeverity, Schedule } from '@shared/models';
+import { AlertMessage, FlexLocation, MessageInfo, MessageSeverity, Schedule } from '@shared/models';
+import {
+  buildViewport,
+  ringToSvgPath,
+  ringsFromLocation,
+} from '@shared/utils/flex-locations.utils';
+import { NetworkMapDataService } from '../../services/network-map-data.service';
 import { LayoutStop } from '../../services/schematic-layout.service';
+
+interface RenderedTadRing {
+  path: string;
+}
 
 export interface LineAlertInfo {
   lineCode: string;
@@ -113,6 +123,32 @@ interface TimetableGroup {
             </div>
           }
         </div>
+      }
+
+      @if (tadZone(); as zone) {
+        <div class="tad-zone-section">
+          <h3 class="section-title">
+            <mat-icon>layers</mat-icon>
+            Zone de prise en charge — {{ zone.name || zone.externalId }}
+          </h3>
+          <svg
+            class="tad-zone-canvas"
+            [attr.viewBox]="tadZoneViewBox()"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            [attr.aria-label]="'Polygone de la zone TAD ' + (zone.name || zone.externalId)">
+            @for (ring of tadZoneRings(); track $index) {
+              <path
+                [attr.d]="ring.path"
+                fill="rgba(99, 102, 241, 0.32)"
+                stroke="rgb(67, 56, 202)"
+                stroke-width="1.5"
+                fill-rule="evenodd"
+                vector-effect="non-scaling-stroke" />
+            }
+          </svg>
+        </div>
+        <mat-divider />
       }
 
       @if (messages().length > 0 && !loading()) {
@@ -248,6 +284,31 @@ interface TimetableGroup {
     }
 
     /* --- Messages --- */
+
+    .tad-zone-section {
+      padding: 16px 20px 12px;
+    }
+    .tad-zone-section .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .tad-zone-section .section-title mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .tad-zone-canvas {
+      display: block;
+      width: 100%;
+      height: 220px;
+      background: var(--mat-sys-surface-container-low);
+      border-radius: 6px;
+    }
 
     .messages-section {
       display: flex;
@@ -409,12 +470,35 @@ interface TimetableGroup {
 })
 export class StopPopupComponent implements OnInit {
   private readonly scheduleService = inject(ScheduleService);
+  private readonly networkMapData = inject(NetworkMapDataService);
   readonly data = inject<StopPopupData>(MAT_DIALOG_DATA);
 
   loading = signal(true);
   error = signal<string | null>(null);
   timetableGroups = signal<TimetableGroup[]>([]);
   messages = signal<PopupMessage[]>([]);
+
+  /** GTFS-flex zone polygon attached to this stop, lazily fetched
+   *  when {@code hasOnDemand} is true. Stays null on stops without
+   *  a flex location bound to them — most stops, even on TAD-heavy
+   *  feeds, fall in this category. */
+  readonly tadZone = signal<FlexLocation | null>(null);
+
+  /** SVG paths + viewBox for {@link tadZone}, reprojected once per
+   *  zone change. Empty when no zone is loaded. */
+  readonly tadZoneRings = computed<RenderedTadRing[]>(() => {
+    const zone = this.tadZone();
+    if (!zone) {return [];}
+    const viewport = buildViewport([zone]);
+    const rings = ringsFromLocation(zone, 0);
+    return rings.map(r => ({ path: ringToSvgPath(r, viewport.project) }));
+  });
+
+  readonly tadZoneViewBox = computed<string>(() => {
+    const zone = this.tadZone();
+    if (!zone) {return '0 0 800 480';}
+    return buildViewport([zone]).viewBox;
+  });
 
   private static readonly SEVERITY_ORDER: Record<string, number> = {
     CRITICAL: 0,
@@ -425,6 +509,11 @@ export class StopPopupComponent implements OnInit {
   ngOnInit(): void {
     this.buildMessages();
     this.loadSchedules();
+    if (this.data.stop.hasOnDemand) {
+      this.networkMapData.getStopTadZone(this.data.stop.id).subscribe(zone => {
+        this.tadZone.set(zone);
+      });
+    }
   }
 
   private buildMessages(): void {

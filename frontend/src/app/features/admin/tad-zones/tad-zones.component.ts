@@ -13,7 +13,7 @@ import {
   colorForFeature,
   ringToSvgPath,
   ringsFromLocation,
-} from './tad-zones.utils';
+} from '@shared/utils/flex-locations.utils';
 
 interface RenderedRing {
   ring: FlatRing;

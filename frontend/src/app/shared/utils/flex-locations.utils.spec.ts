@@ -5,7 +5,7 @@ import {
   colorForFeature,
   ringToSvgPath,
   ringsFromLocation,
-} from './tad-zones.utils';
+} from './flex-locations.utils';
 
 function makeLocation(over: Partial<FlexLocation> = {}): FlexLocation {
   return {
