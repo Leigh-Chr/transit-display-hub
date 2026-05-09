@@ -219,6 +219,8 @@ public class GtfsImportService {
 
             assignSchematicCoordinates(stopImport.stopsByGtfsId.values());
 
+            validateGlobalIdUniqueness();
+
             return new ImportResult(
                     linesByGtfsId.size(),
                     stopImport.stopsByGtfsId.size(),
@@ -2789,6 +2791,44 @@ public class GtfsImportService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /** GTFS spec invariant: a single id namespace covers stops.stop_id,
+     *  location_groups.location_group_id and locations.geojson Feature.id.
+     *  A feed that reuses the same id across these three buckets makes
+     *  every stop_times.txt reference ambiguous. We don't drop the
+     *  conflicts (some feeds rely on the overlap as a poor man's "this
+     *  flex zone covers exactly that stop") but we log them loudly so
+     *  an operator can reach out to the publisher. */
+    private void validateGlobalIdUniqueness() {
+        Set<String> stopIds = stopRepository.findAll().stream()
+                .map(Stop::getExternalId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<String> locationIds = locationRepository.findAll().stream()
+                .map(Location::getExternalId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<String> groupIds = locationGroupRepository.findAll().stream()
+                .map(LocationGroup::getExternalId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        Set<String> stopVsLocation = new HashSet<>(stopIds);
+        stopVsLocation.retainAll(locationIds);
+        Set<String> stopVsGroup = new HashSet<>(stopIds);
+        stopVsGroup.retainAll(groupIds);
+        Set<String> locationVsGroup = new HashSet<>(locationIds);
+        locationVsGroup.retainAll(groupIds);
+
+        int total = stopVsLocation.size() + stopVsGroup.size() + locationVsGroup.size();
+        if (total == 0) {
+            return;
+        }
+        log.warn("GTFS import: {} id collisions across the stop / location / location_group "
+                        + "namespace (stop∩location={}, stop∩group={}, location∩group={}). "
+                        + "stop_times references may be ambiguous.",
+                total, stopVsLocation.size(), stopVsGroup.size(), locationVsGroup.size());
     }
 
     /** GTFS {@code trips.direction_id} is "0" / "1" / blank. We materialise
