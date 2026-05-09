@@ -1,0 +1,6 @@
+stop_id,stop_name,stop_lat,stop_lon,location_type,parent_station,platform_code,wheelchair_boarding
+STA_CENTRAL,Central Station,45.1885,5.7245,1,,,1
+QUAY_CENTRAL_A,Central Station — Quai A,45.1885,5.7246,0,STA_CENTRAL,A,1
+QUAY_CENTRAL_B,Central Station — Quai B,45.1886,5.7245,0,STA_CENTRAL,B,2
+STOP_NORTH,North Stop,45.2000,5.7300,0,,,1
+STOP_SOUTH,South Stop,45.1700,5.7200,0,,,2

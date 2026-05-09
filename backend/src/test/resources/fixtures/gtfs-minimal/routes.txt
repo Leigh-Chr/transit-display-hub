@@ -1,0 +1,3 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
+M1,TEST_AG,M1,Metro 1,1,FF0000,FFFFFF
+B1,TEST_AG,B1,Bus 1,3,0066CC,FFFFFF
