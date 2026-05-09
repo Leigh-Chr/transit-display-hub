@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/display/**").permitAll()  // Public for kiosk displays
                         .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
                         .requestMatchers(HttpMethod.GET, "/api/attributions").permitAll()  // Public credit block
+                        .requestMatchers(HttpMethod.GET, "/api/fares/**").permitAll()  // Public fare calculator
                         .requestMatchers("/actuator/health").permitAll()
                         // Prometheus scrape endpoint — left open so the
                         // local Prometheus instance can pull metrics
