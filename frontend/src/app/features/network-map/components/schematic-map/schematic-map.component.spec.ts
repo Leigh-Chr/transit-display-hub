@@ -853,6 +853,48 @@ describe('SchematicMapComponent', () => {
     });
   });
 
+  describe('fare-zone color overlay', () => {
+    it('zoneOverlayVisible defaults to false', () => {
+      fixture.detectChanges();
+      expect(component.zoneOverlayVisible()).toBe(false);
+    });
+
+    it('zoneColorFor returns the same hsl color for the same zone name', () => {
+      fixture.detectChanges();
+      expect(component.zoneColorFor('Zone 1')).toBe(component.zoneColorFor('Zone 1'));
+      expect(component.zoneColorFor('Zone 1')).toMatch(/^hsl\(\d+, 60%, 55%\)$/);
+    });
+
+    it('zoneColorFor produces different colors for different zone names', () => {
+      fixture.detectChanges();
+      const a = component.zoneColorFor('Zone 1');
+      const b = component.zoneColorFor('Zone 2');
+      const c = component.zoneColorFor('Suburban');
+      expect(new Set([a, b, c]).size).toBeGreaterThanOrEqual(2);
+    });
+
+    it('stopZoneColor returns null when the stop has no fare zones', () => {
+      fixture.detectChanges();
+      const stop: LayoutStop = { ...mockStops[0]! };
+      expect(component.stopZoneColor(stop)).toBeNull();
+    });
+
+    it('stopZoneColor picks the alphabetically-first zone for stable coloring', () => {
+      fixture.detectChanges();
+      const stop1: LayoutStop = { ...mockStops[0]!, fareAreaNames: ['Zone B', 'Zone A', 'Zone C'] };
+      const stop2: LayoutStop = { ...mockStops[0]!, fareAreaNames: ['Zone A'] };
+      // Both stops should map to the same colour because both pick "Zone A".
+      expect(component.stopZoneColor(stop1)).toBe(component.stopZoneColor(stop2));
+    });
+
+    it('toggling zoneOverlayVisible flips the signal', () => {
+      fixture.detectChanges();
+      expect(component.zoneOverlayVisible()).toBe(false);
+      component.zoneOverlayVisible.set(true);
+      expect(component.zoneOverlayVisible()).toBe(true);
+    });
+  });
+
   describe('frequency-scaled stroke width', () => {
     function lineWith(scheduleCount: number, code = 'LX'): NetworkLine {
       return {

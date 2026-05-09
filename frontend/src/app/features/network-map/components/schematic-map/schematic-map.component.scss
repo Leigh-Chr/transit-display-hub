@@ -218,14 +218,52 @@
   font-size: 11px;
 }
 
+.zone-overlay-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 2px solid var(--app-map-chip-inactive);
+  border-radius: var(--app-radius-pill);
+  background: var(--app-map-surface);
+  color: var(--app-map-chip-inactive);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  user-select: none;
+  letter-spacing: 0.04em;
+}
+.zone-overlay-toggle:hover {
+  opacity: 0.85;
+}
+.zone-overlay-toggle.active {
+  background: rgb(99, 102, 241);
+  border-color: rgb(99, 102, 241);
+  color: white;
+}
+.zone-overlay-label {
+  font-size: 11px;
+}
+
+/* Halo behind a stop coloured by its primary fare zone. Pointer
+ * events disabled so the click target stays the stop circle, not
+ * the bigger halo. */
+.zone-halo {
+  pointer-events: none;
+}
+
 @media (max-width: 600px) {
   .filter-row {
     padding-right: 8px;
   }
-  .accessibility-toggle {
+  .accessibility-toggle,
+  .zone-overlay-toggle {
     padding: 5px 10px;
   }
-  .accessibility-label {
+  .accessibility-label,
+  .zone-overlay-label {
     display: none;
   }
 }

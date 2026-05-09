@@ -90,6 +90,24 @@ interface NetworkStopLabel {
           </svg>
           <span class="accessibility-label">PMR</span>
         </button>
+        @if (availableZones().length > 0) {
+          <button
+            type="button"
+            class="zone-overlay-toggle"
+            [class.active]="zoneOverlayVisible()"
+            [attr.aria-pressed]="zoneOverlayVisible()"
+            [attr.title]="zoneOverlayVisible()
+              ? 'Masquer les couleurs de zone tarifaire'
+              : 'Afficher les couleurs de zone tarifaire en halo autour des arrêts'"
+            (click)="zoneOverlayVisible.set(!zoneOverlayVisible())"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="5" fill="currentColor" stroke="none" opacity="0.4"/>
+            </svg>
+            <span class="zone-overlay-label">Zones</span>
+          </button>
+        }
       </div>
 
       @if (availableZones().length > 0) {
@@ -255,6 +273,16 @@ interface NetworkStopLabel {
                 (click)="onStopClick(s.stop, $event)"
               >
                 <title>{{ s.stop.name }}</title>
+                @if (zoneOverlayVisible() && stopZoneColor(s.stop) !== null) {
+                  <!-- Fare-zone halo, sits behind the stop circle so the
+                       stop's identity colour stays the foreground signal. -->
+                  <circle
+                    [attr.r]="getStopRadius(s.stop.id, row) + 6"
+                    [attr.fill]="stopZoneColor(s.stop)"
+                    [attr.fill-opacity]="0.35"
+                    class="zone-halo"
+                  />
+                }
                 <circle
                   [attr.r]="getStopRadius(s.stop.id, row)"
                   [attr.fill]="isInterchange(s.stop) ? 'white' : row.line.color"
@@ -425,6 +453,13 @@ export class SchematicMapComponent {
    *  Fares v2 areas, so passenger-bus-only feeds don't see a dead
    *  control. */
   selectedZone = signal<string | null>(null);
+
+  /** Toggle a coloured halo behind every stop coloured by its
+   *  primary fare zone. Orthogonal to {@link selectedZone}: the chip
+   *  filter dims out-of-zone stops, the overlay paints in-zone stops.
+   *  Off by default — adding a halo to every dot is visual noise on
+   *  busy networks, so it stays opt-in. */
+  zoneOverlayVisible = signal(false);
 
   isPanning = signal(false);
   /** Shown once per browser the first time the user scrolls the wheel
@@ -1154,6 +1189,35 @@ export class SchematicMapComponent {
     const target = this.selectedZone();
     if (!target) {return true;}
     return (stop.fareAreaNames ?? []).includes(target);
+  }
+
+  /** Halo colour for the zone-overlay layer. Returns null when the
+   *  stop has no fare zones (e.g. a free-standing bus pole on a feed
+   *  that ships areas only for the metro), so the template can skip
+   *  the SVG circle entirely. Picks the alphabetically-first zone
+   *  when a stop belongs to several — keeps the colour stable across
+   *  re-renders without showing a striped artefact. */
+  stopZoneColor(stop: LayoutStop): string | null {
+    const zones = stop.fareAreaNames ?? [];
+    if (zones.length === 0) {return null;}
+    const sorted = [...zones].sort();
+    const primary = sorted[0];
+    if (primary === undefined) {return null;}
+    return this.zoneColorFor(primary);
+  }
+
+  /** Deterministic HSL hue from a zone name. The hue spreads zones
+   *  uniformly across the wheel; saturation 60 % + lightness 55 %
+   *  keeps the halo visible against the schematic's white background
+   *  without overpowering the line colours sitting on top.
+   *  Exported so tests can pin the mapping. */
+  zoneColorFor(zone: string): string {
+    let hash = 0;
+    for (let i = 0; i < zone.length; i++) {
+      hash = (hash * 31 + zone.charCodeAt(i)) | 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 60%, 55%)`;
   }
 
   /** Level-of-detail filter (zoom-driven) for stop labels in multi-line mode.
