@@ -747,6 +747,30 @@ Each test self-skips via JUnit Assumptions when the
 upstream is unreachable, so the suite stays green on
 flaky networks.
 
+### Offline rich fixture (every spec surface)
+
+Public feeds vary in what they ship — Grenoble for
+example doesn't expose pathways, fares-v2 or
+translations. To exercise every importer code path
+without depending on a network, point the data-loader at
+the in-classpath fixture:
+
+```bash
+DATA_LOADER_GTFS_URL=classpath:fixtures/gtfs-rich/ \
+DATA_LOADER_GTFS_NETWORK_NAME="Rich Demo" \
+./gradlew bootRun
+```
+
+`GtfsDownloader` recognises `classpath:` URLs and zips
+the sub-directory at runtime, so the fixture travels with
+the jar. The bundled `gtfs-rich/` covers pathways +
+levels, fares V1 + V2, GTFS-flex (location + group +
+stop targets), translations, transfer route qualifiers,
+attributions, networks, timeframes, rider categories
+and fare media. Used by the deferred-backlog wrap-up
+validation pass to confirm every popup section, every
+admin page and every metric end-to-end.
+
 ### JMH benchmarks
 
 Pre-refactor confidence on hot paths. Two source sets,
@@ -764,7 +788,13 @@ one `jmh` task:
 Micro-benchmarks live at
 `backend/src/jmh/java/com/transit/hub/bench/` —
 `ServiceCalendarMatcher`, `TranslationLookup`,
-`ColorContrast`. The full-stack benchmark sits under
+`ColorContrast`, plus the three
+service-layer benches added during the deferred-backlog
+wrap-up: `FareCalculatorServiceBenchmark`,
+`FlexAvailabilityServiceBenchmark`,
+`PathwayServiceBenchmark` (Mockito-stubbed repositories
+to isolate service-side cost from the JPA round-trip).
+The full-stack benchmark sits under
 `bench/integration/` and boots a real Spring Boot context
 with H2 in-memory before measuring
 `DisplayStateCalculator.calculateForStop`.

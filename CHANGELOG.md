@@ -120,7 +120,52 @@ GTFS exploitation sprint all landed in a follow-up pass:
   `src/jmh/java/com/transit/hub/bench/`. Repositories stubbed with
   Mockito (added to `jmhImplementation`) so the measurement isolates
   service-side filtering / sorting from JPA round-trips. Run with
-  `./gradlew jmh -Pjmh.include=".*ServiceBenchmark.*"`.
+  `./gradlew jmh -Pjmh.include=".*ServiceBenchmark.*"`. Live numbers
+  on a developer laptop (default `warmup=2`/`iter=3`/`fork=1`):
+  `calculate` 44/53/148 µs (catalogSize=10/100/1000),
+  `findToday` 10/20/64 µs (windowCount=10/100/500),
+  `findStationGraph` 25/31/64 µs (pathwayCount=5/30/200) —
+  every result well under the 50 ms target documented in
+  `project_deferred_backlog`.
+
+### Added — offline rich-fixture seed (May 2026)
+
+`src/main/resources/fixtures/gtfs-rich/` ships an in-classpath GTFS
+feed that exercises every spec surface the importer supports
+(pathways, fares V1+V2, translations, GTFS-flex, transfer qualifiers,
+attributions, levels, networks, timeframes, rider categories,
+fare media, location groups). Activate with:
+
+```
+DATA_LOADER_GTFS_URL=classpath:fixtures/gtfs-rich/
+DATA_LOADER_GTFS_NETWORK_NAME="Rich Demo"
+```
+
+`GtfsDownloader` resolves `classpath:` URLs by zipping the
+sub-directory at runtime — works the same on a developer machine and
+inside the Docker image. Used during the deferred-backlog wrap-up
+validation pass to manually walk every popup section, every admin
+page and every metric without depending on a public feed.
+
+### Fixed
+
+- `gtfs_entity_count{kind=…}` was returning `NaN` on every Prometheus
+  scrape because `MeterRegistry.gauge` keeps a weak reference to the
+  state object — once the bound supplier lambda went out of scope the
+  JVM GC'd it. Switched to `Gauge.builder(name, Supplier<Number>)`
+  which retains a strong reference. Confirmed post-fix that every
+  `kind` publishes a real value (commit `c8dd663`).
+- The TAD on-demand badge missed stops referenced only by GTFS-flex
+  rows: `findStopIdsWithOnDemandPickup()` only scanned
+  `Schedule.pickupType`. Added a parallel
+  `flexStopTimeRepository.findStopIdsTouchedByFlex()` and merged the
+  two sets in `NetworkMapService.getNetworkMap` so a stop reachable
+  via a `flex_stop_times` row also lights up on the schematic.
+- `GtfsImportService` dropped `stop_times.txt` rows that combined
+  `stop_id` with a pickup window but no concrete `arrival_time` — a
+  legitimate GTFS-flex shape. Extended the {@code isFlexRow} check
+  so the row lands in `flex_stop_times` and the stop gets the
+  on-demand badge.
 
 ### Added — full GTFS-spec coverage pass (V36 → V47)
 
