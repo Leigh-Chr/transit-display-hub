@@ -1079,10 +1079,17 @@ public class GtfsImportService {
                 Stop stop = stopImport.stopsByGtfsId.get(record.get("stop_id"));
                 if (stop == null) {continue;}
 
-                LocalTime time = GtfsParse.parseGtfsTime(firstNonBlank(
-                        optional(record, "departure_time"),
-                        optional(record, "arrival_time")));
+                LocalTime arrivalTime = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
+                LocalTime departureTime = GtfsParse.parseGtfsTime(optional(record, "departure_time"));
+                // The spec lets a feed declare only one of the two: the
+                // missing field implicitly equals the present one. Pick
+                // arrival as the display "time" and persist departure
+                // separately only when the feed actually distinguishes
+                // them.
+                LocalTime time = arrivalTime != null ? arrivalTime : departureTime;
                 if (time == null) {continue;}
+                LocalTime distinctDeparture =
+                        (departureTime != null && !departureTime.equals(time)) ? departureTime : null;
 
                 short pickupType = (short) parseInt(optional(record, "pickup_type"), 0);
                 short dropOffType = (short) parseInt(optional(record, "drop_off_type"), 0);
@@ -1117,6 +1124,7 @@ public class GtfsImportService {
                     if (!seen.add(key)) {continue;}
                     batch.add(Schedule.builder()
                             .time(time)
+                            .departureTime(distinctDeparture)
                             .stop(stop)
                             .itinerary(itinerary)
                             .pickupType(pickupType)

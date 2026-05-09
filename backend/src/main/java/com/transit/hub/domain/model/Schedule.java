@@ -46,9 +46,22 @@ public class Schedule {
     @Version
     private Long version;
 
+    /** Arrival time at the stop, sourced from GTFS
+     *  {@code stop_times.arrival_time}. The column is named simply
+     *  {@code time} for backwards compatibility with the schedule API
+     *  shipped before GTFS support landed. Required because a kiosk
+     *  with no arrival time has nothing to display. */
     @NotNull(message = "Time is required")
     @Column(nullable = false)
     private LocalTime time;
+
+    /** Departure time at the stop, sourced from GTFS
+     *  {@code stop_times.departure_time}. Persisted only when the feed
+     *  declares a value distinct from {@link #time} — terminus stops
+     *  and long-dwell intermediates are the typical cases. Null
+     *  otherwise; readers should fall back to {@link #time}. */
+    @Column(name = "departure_time")
+    private LocalTime departureTime;
 
     @NotNull(message = "Stop is required")
     @ManyToOne(fetch = FetchType.LAZY)
