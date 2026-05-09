@@ -5,6 +5,34 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Toggleable fare-zone color overlay** on the schematic stops. Adds
+  a "Zones" toggle button next to the PMR filter that paints a
+  translucent halo behind every stop coloured by its primary fare
+  zone (deterministic HSL hash of the alphabetically-first
+  `fareAreaName`). Orthogonal to the existing zone chip filter — the
+  chip dims out-of-zone stops, the overlay paints in-zone stops. Off
+  by default.
+- **GTFS-flex `locations.geojson` import** (V35, ADR 0026). The
+  importer now reads the FeatureCollection if present and persists
+  each Feature as one `Location` row carrying the raw GeoJSON
+  geometry as TEXT plus a pre-computed bounding box. Browse via the
+  new admin endpoint `GET /api/admin/locations`. Deliberately avoids
+  JTS / Hibernate Spatial — today's consumers (admin browser, future
+  kiosk popup) only need the geometry round-tripped, not spatial
+  queries.
+- **Real-feed integration test suite** behind an opt-in Gradle task
+  `./gradlew testRealFeed`. Parameterised over M Réso Grenoble, CTS
+  Strasbourg and TBM Bordeaux: each test downloads the public feed
+  via the existing `GtfsDownloader` cache and runs `importFromZip`
+  end-to-end, asserting non-trivial domain shape (≥ 1 line, ≥ 50
+  stops, ≥ 1 k schedules). Tagged `@real-feed`; the default test task
+  excludes that tag so CI stays Internet-free. Each test self-skips
+  via JUnit Assumptions when the upstream is unreachable.
+- **ADR 0026** — Persist `locations.geojson` as TEXT, no JTS.
+
 ## [0.8.1] - 2026-05-09
 
 Quality pass on top of 0.8.0: the after-Phase-1.3 / Fares-v2 work is now
