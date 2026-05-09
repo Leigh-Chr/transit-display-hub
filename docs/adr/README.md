@@ -28,6 +28,9 @@ should think twice before reverting.
 | [0020](0020-frequencies-fanout.md) | Frequency fan-out at import — per-departure schedule rows |
 | [0021](0021-fares-v2.md) | GTFS Fares v2 (areas, timeframes, products, leg / transfer rules) |
 | [0022](0022-per-platform-stops.md) | Per-platform Stops with parent station aggregation |
+| [0023](0023-two-step-pagination.md) | Two-step pagination on collection-fetched repositories |
+| [0024](0024-clock-injection-in-domain-services.md) | Inject `Clock` into domain services that read "now" |
+| [0025](0025-section-boundary-flushes-during-gtfs-import.md) | Section-boundary flushes during the GTFS import |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

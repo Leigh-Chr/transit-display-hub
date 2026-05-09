@@ -5,11 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.1] - 2026-05-09
 
 Quality pass on top of 0.8.0: the after-Phase-1.3 / Fares-v2 work is now
-backed by regression tests, the dev boot logs zero warnings, and the
-admin pagination paths no longer drag the entire result set into memory.
+backed by regression tests, every REST controller has integration
+coverage, the dev boot logs zero warnings, and the admin pagination
+paths no longer drag the entire result set into memory.
 
 ### Added
 - **Regression tests on the post-Phase-1.3 surface.**
@@ -20,6 +21,22 @@ admin pagination paths no longer drag the entire result set into memory.
   the accessibility filter, the zone chip filter, and the
   frequency-scaled stroke width. All previously shipped without
   coverage.
+- **Integration coverage for the fifteen previously-untested REST
+  controllers.** One `*ControllerIntegrationTest` per controller —
+  AgencyController, AttributionController, BookingRuleController,
+  DashboardController, DataOverviewController, FareController,
+  FaresV2Controller, FeedInfoController, GtfsAdminController,
+  ImportAuditController, PathwayController, RealtimeAlertController,
+  RealtimeVehicleController, ShapeController, TranslationController.
+  Every test asserts the auth tier (anon / agent / admin), the happy
+  path shape, and the error edges (missing query param, unknown id,
+  disabled feed). GtfsAdminController's reimport endpoint uses
+  `@MockitoBean` on the orchestrator to pin the SUCCESS / FAILED /
+  SKIPPED_UNCHANGED branches deterministically.
+- **ADR 0023, 0024, 0025** documenting the two-step pagination
+  pattern, the `Clock` injection rule for time-sensitive domain
+  services, and the section-boundary flush strategy in the GTFS
+  importer.
 
 ### Changed
 - **Two-step pagination** across `LineRepository`,
@@ -65,6 +82,15 @@ admin pagination paths no longer drag the entire result set into memory.
   late. Pinned via `vi.useFakeTimers({ toFake: ['Date'] })` plus
   `vi.setSystemTime` in the affected describes; assertions now use
   hard-coded times against the frozen clock.
+- **`GlobalExceptionHandler` no longer dumps 500 on client mistakes.**
+  Three new handlers map predictable client-side errors to the
+  appropriate 4xx code: `MissingServletRequestParameterException` →
+  400 with the missing parameter name in the body,
+  `MethodArgumentTypeMismatchException` → 400 (a malformed UUID in a
+  path variable used to bubble up as 500), and
+  `NoResourceFoundException` → 404 (typo'd path now looks like
+  not-found instead of server bug). Surfaced while writing the
+  TranslationController + DisplayController integration tests.
 
 ## [0.8.0] - 2026-05-07
 
