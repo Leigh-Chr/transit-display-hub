@@ -62,15 +62,35 @@ commits, four new ADRs.
 - `VehiclePositionResponse` already exposes `occupancyStatus`,
   `occupancyPercentage`, `bearing`, `congestionLevel` —
   surfaced unchanged for downstream consumers.
+- Admin temps-réel: occupancy badge (Disponible / Bondé / Plein),
+  bearing arrow rotated by the GTFS-RT angle, congestion column.
 
 **Phase 7 — Translations élargies**
 - `TranslationLookup` now keys on
   `(table_name, record_id, record_sub_id, field_name, language_context)`
   and supports the spec's `field_value` matching mode via
   `resolveByFieldValue`.
+- `DisplayStateCalculator` now passes the trip_id as `record_sub_id`
+  when looking up `stop_times.stop_headsign` translations, so loop
+  services with per-trip headsigns get the right localised label.
 
-**Phase 8 — observabilité + benchmarks**
-- ADR 0031, 0032, 0033 documented.
+**Phase 8 — observabilité**
+- New `GtfsCoverageMetrics` exposes a Prometheus gauge
+  `gtfs_entity_count{kind=…}` per entity family
+  (translations, attributions, pathways, levels, flex_stop_times,
+  locations, location_groups, booking_rules, areas, networks,
+  timeframes, fare_*_rules, rider_categories).
+- New `fare_calculation_duration` Timer with p50/p95/p99 percentiles.
+- Grafana README documents the suggested additional panel queries.
+- ADR 0031 (indoor pathway), 0032 (accessibility-aware routing),
+  0033 (FareCalculator V1+V2).
+
+### Known follow-ups (deferred)
+- Pathway-mode pénalité (escalator/stairs/elevator) and `Transfer.from_route_id` filtering inside the Dijkstra route-finder.
+- Stop popup: "trajet vers ici" affichant le prix calculé vs l'origine sélectionnée + "prochaine fenêtre TAD aujourd'hui" sur les stops on-demand.
+- Visualisation graph SVG par niveau dans `/admin/pathways` (au-delà des chips de niveaux déjà livrés).
+- JMH benchmarks pour `FareCalculatorService`, `FlexAvailabilityService`, `PathwayService`.
+- Inscription des nouveaux meters dans le JSON Grafana (queries documentées dans `ops/grafana/README.md`).
 
 ### Added — full GTFS-spec coverage pass (V36 → V47)
 
