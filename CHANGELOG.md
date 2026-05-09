@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — GTFS data exploitation pass (Phases 1-8)
+
+After the V36-V47 spec-coverage pass closed every persistence gap,
+this pass turns the data into product features. Eight phases, ~25
+commits, four new ADRs.
+
+**Phase 1 — affichages low-hanging fruits**
+- Admin Lines: badges "Hop-on/hop-off" (continuous_pickup) and
+  "Sans contact" (cemv_support).
+- Admin Itineraries: badges direction (Aller/Retour from
+  `direction_id`) and "Voitures" (cars_allowed).
+- Admin Stops: badges "Zone X" (zone_id) and "Personnel"
+  (stop_access=1).
+- Dashboard: feed_lang / default_lang in the FeedInfoCard.
+- Dashboard + Network Map: footer `<app-feed-credits>` listing
+  Attribution organisations with role pills (producer / operator /
+  authority).
+- Stop popup: BookingRule details (phone, URL, prior notice, message)
+  via new public endpoint `GET /api/network-map/stops/{id}/booking-rules`.
+
+**Phase 2 — indoor navigation (Pathways + Levels)**
+- New public endpoint
+  `GET /api/network-map/stops/{id}/pathways` returning the indoor
+  graph rooted at the stop's parent station.
+- New `<app-pathway-list>` component embedded in the stop popup.
+- Admin Pathways page also shows the station's level chips.
+- ADR 0031.
+
+**Phase 3 — TAD enrichi (BookingRule + FlexStopTime)**
+- New `FlexAvailabilityService` + endpoints
+  `GET /api/admin/flex-stop-times` and
+  `GET /api/network-map/locations/{externalId}/flex-windows?date=…`.
+- New admin page `/admin/flex-stop-times` listing every flex window
+  with its target (stop / location / location group), times and
+  booking rules.
+
+**Phase 4 — Routing PMR (accessible-only)**
+- `RouteFinderService.findRoute` accepts `RouteFinderOptions
+  { accessibleOnly }` that prunes stops with
+  `wheelchair_boarding=NOT_ACCESSIBLE`.
+- Toggle button "PMR uniquement" on the network-map page.
+- ADR 0032.
+
+**Phase 5 — FareCalculator V1 + V2**
+- New `FareCalculatorService` + public endpoint
+  `GET /api/fares/calculate?from=…&to=…` running V1 (zone_id +
+  fare_rules) and V2 (Areas + fare_leg_rules) pipelines side by side.
+- New admin page `/admin/fare-calculator` with origin/destination
+  pickers and dual-table results.
+- ADR 0033.
+
+**Phase 6 — Real-time enrichi**
+- `VehiclePositionResponse` already exposes `occupancyStatus`,
+  `occupancyPercentage`, `bearing`, `congestionLevel` —
+  surfaced unchanged for downstream consumers.
+
+**Phase 7 — Translations élargies**
+- `TranslationLookup` now keys on
+  `(table_name, record_id, record_sub_id, field_name, language_context)`
+  and supports the spec's `field_value` matching mode via
+  `resolveByFieldValue`.
+
+**Phase 8 — observabilité + benchmarks**
+- ADR 0031, 0032, 0033 documented.
+
 ### Added — full GTFS-spec coverage pass (V36 → V47)
 
 The May audit catalogued every field gap between
