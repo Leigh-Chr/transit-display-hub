@@ -769,3 +769,20 @@ export interface FeedInfo {
   /** ISO-8601 instant. */
   importedAt: string | null;
 }
+
+// GTFS-flex location (admin browse — locations.geojson polygons)
+export interface FlexLocation {
+  id: string;
+  externalId: string;
+  stopExternalId: string | null;
+  name: string | null;
+  /** GeoJSON geometry type: "Polygon" or "MultiPolygon". */
+  geometryType: string;
+  /** Raw GeoJSON {@code geometry} object as a JSON string — the
+   *  consumer parses it client-side to render the polygon. */
+  geometryJson: string;
+  minLatitude: number | null;
+  minLongitude: number | null;
+  maxLatitude: number | null;
+  maxLongitude: number | null;
+}

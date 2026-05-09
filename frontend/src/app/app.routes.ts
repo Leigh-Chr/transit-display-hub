@@ -91,6 +91,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/shapes/shapes.component').then(m => m.ShapesComponent)
       },
       {
+        path: 'tad-zones',
+        canActivate: [roleGuard],
+        data: { requiredRole: 'ADMIN' },
+        loadComponent: () => import('./features/admin/tad-zones/tad-zones.component').then(m => m.TadZonesComponent)
+      },
+      {
         path: 'users',
         canActivate: [roleGuard],
         data: { requiredRole: 'ADMIN' },

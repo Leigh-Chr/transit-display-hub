@@ -200,6 +200,16 @@ import {
               <span matListItemTitle>Shapes</span>
             </a>
 
+            <a
+              mat-list-item
+              routerLink="/admin/tad-zones"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>layers</mat-icon>
+              <span matListItemTitle>Zones TAD</span>
+            </a>
+
             <mat-divider></mat-divider>
             <div class="nav-section-title">Administration</div>
 
