@@ -1714,7 +1714,10 @@ public class GtfsImportService {
                 if (isBlank(recordId) && isBlank(fieldValue)) {
                     continue;
                 }
+                String recordSubId = optional(record, "record_sub_id");
+                String languageContext = optional(record, "language_context");
                 String dedupeKey = tableName + "|" + (isBlank(recordId) ? fieldValue : recordId)
+                        + "|" + (recordSubId == null ? "" : recordSubId)
                         + "|" + fieldName + "|" + language;
                 if (!seen.add(dedupeKey)) {
                     skippedDuplicates++;
@@ -1724,6 +1727,8 @@ public class GtfsImportService {
                         .tableName(truncate(tableName, 60))
                         .recordId(isBlank(recordId) ? null : truncate(recordId.trim(), 100))
                         .fieldValue(isBlank(fieldValue) ? null : truncate(fieldValue.trim(), 200))
+                        .recordSubId(isBlank(recordSubId) ? null : truncate(recordSubId.trim(), 100))
+                        .languageContext(isBlank(languageContext) ? null : truncate(languageContext.trim(), 100))
                         .fieldName(truncate(fieldName, 60))
                         .language(truncate(language.trim(), 20))
                         .translation(translationValue)

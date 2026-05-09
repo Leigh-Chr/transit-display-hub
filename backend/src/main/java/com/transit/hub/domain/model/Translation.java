@@ -33,7 +33,7 @@ import java.util.UUID;
 @Table(name = "translations",
        uniqueConstraints = @UniqueConstraint(
            name = "uk_translation_target",
-           columnNames = {"table_name", "record_id", "field_name", "language"}),
+           columnNames = {"table_name", "record_id", "record_sub_id", "field_name", "language"}),
        indexes = {
            @Index(name = "idx_translation_lang_table",
                   columnList = "language, table_name"),
@@ -72,6 +72,23 @@ public class Translation {
     @Size(max = 200)
     @Column(name = "field_value", length = 200)
     private String fieldValue;
+
+    /** GTFS {@code record_sub_id}. Required when translating
+     *  {@code stop_times} rows, where the primary key is
+     *  ({@code trip_id}, {@code stop_sequence}) and {@code recordId}
+     *  alone (a {@code stop_id}) is ambiguous. The trip_id is
+     *  supplied here. Null for every other table. */
+    @Size(max = 100)
+    @Column(name = "record_sub_id", length = 100)
+    private String recordSubId;
+
+    /** GTFS {@code language_context}. Disambiguates two translations of
+     *  the same record/field/language for distinct display contexts
+     *  (e.g. {@code "long-form"} vs {@code "short-form"}). Null for
+     *  the default rendering. */
+    @Size(max = 100)
+    @Column(name = "language_context", length = 100)
+    private String languageContext;
 
     @NotBlank
     @Size(max = 60)
