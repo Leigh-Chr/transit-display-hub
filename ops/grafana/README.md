@@ -14,18 +14,8 @@ at `/actuator/prometheus` (see [ADR 0027][adr-0027]).
 | GTFS import | Outcome counts (success / failed / skipped) per hour • Duration p50/p95 • Latest entity counts |
 | Caffeine cache | Hit ratio (5 min, gauge) • Eviction rate |
 | JVM | Heap usage by area • GC pause time by cause |
-
-## Suggested additions
-
-The metrics below ship in the backend (Phase 8 of the GTFS data
-exploitation pass) but the bundled JSON does not yet pin them to a
-panel. Queries for a manual additional row:
-
-| Series | PromQL |
-|---|---|
-| GTFS coverage by entity | `gtfs_entity_count{application="transit-display-hub"}` (use a table panel with the `kind` label) |
-| Fare calculator p95 | `histogram_quantile(0.95, sum(rate(fare_calculation_duration_seconds_bucket{application="transit-display-hub"}[5m])) by (le))` |
-| Fare calculator request rate | `rate(fare_calculation_duration_seconds_count{application="transit-display-hub"}[1m])` |
+| GTFS coverage | Live entity-count table grouped by `kind` (translations, pathways, flex_stop_times, fare_*, …) |
+| Fare calculator | Request rate per second • Latency p50/p95/p99 of `/api/fares/calculate` |
 
 Every query filters on `application="transit-display-hub"`, the
 constant tag injected by the Micrometer registry. Drop it in
