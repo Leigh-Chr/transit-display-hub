@@ -85,12 +85,42 @@ commits, four new ADRs.
 - ADR 0031 (indoor pathway), 0032 (accessibility-aware routing),
   0033 (FareCalculator V1+V2).
 
-### Known follow-ups (deferred)
-- Pathway-mode pénalité (escalator/stairs/elevator) and `Transfer.from_route_id` filtering inside the Dijkstra route-finder.
-- Stop popup: "trajet vers ici" affichant le prix calculé vs l'origine sélectionnée + "prochaine fenêtre TAD aujourd'hui" sur les stops on-demand.
-- Visualisation graph SVG par niveau dans `/admin/pathways` (au-delà des chips de niveaux déjà livrés).
-- JMH benchmarks pour `FareCalculatorService`, `FlexAvailabilityService`, `PathwayService`.
-- Inscription des nouveaux meters dans le JSON Grafana (queries documentées dans `ops/grafana/README.md`).
+### Wrapping the deferred backlog
+
+The five sub-tasks left under "Known follow-ups (deferred)" after the
+GTFS exploitation sprint all landed in a follow-up pass:
+
+- **Stop popup — fare price + next flex window**: `originStop` propagates
+  from `network-map.component` into `StopPopupData`. The popup queries
+  `/api/fares/calculate` for the (origin, target) pair and renders the
+  V2 amount with V1 fallback. When the stop has a TAD zone,
+  `/flex-windows` is queried for today and the earliest upcoming window
+  is surfaced with its headsign.
+- **Routing PMR — pathway penalty + transfer route qualifiers**:
+  `NetworkMapResponse.NetworkTransfer` now exposes
+  `fromLineId` / `toLineId` (resolved from
+  `Transfer.from_route_id` / `to_route_id`) and the dedupe key keeps a
+  generic + a route-specific entry side by side. The Dijkstra
+  route-finder picks the most-specific applicable transfer per
+  (lineI, lineJ) pair. A new `pathwayPenaltySeconds` option adds extra
+  cost to implicit interchanges (no `transfers.txt` entry); the PMR
+  toggle wires it to 120s so accessibility-aware searches favour
+  explicitly-modelled interchanges.
+- **Admin pathways — SVG graph**: `PathwaysComponent` now renders a
+  BFS topological graph above the segment table — column = depth,
+  row = arrival order, edges colored by mode (`STAIRS` dashed,
+  one-way pathways carry an arrowhead). Stroke width scales with
+  `traversal_time`. Legend lists every mode used in the current graph.
+- **Grafana JSON pinning**: dashboard JSON now ships two extra rows —
+  GTFS coverage (table panel grouped by `kind`) and Fare calculator
+  (request rate + p50/p95/p99 latency). README updated.
+- **JMH benches for the new services**:
+  `FareCalculatorServiceBenchmark`, `FlexAvailabilityServiceBenchmark`,
+  `PathwayServiceBenchmark` join the existing micro-bench suite under
+  `src/jmh/java/com/transit/hub/bench/`. Repositories stubbed with
+  Mockito (added to `jmhImplementation`) so the measurement isolates
+  service-side filtering / sorting from JPA round-trips. Run with
+  `./gradlew jmh -Pjmh.include=".*ServiceBenchmark.*"`.
 
 ### Added — full GTFS-spec coverage pass (V36 → V47)
 
