@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.response.DataOverviewResponse;
 import com.transit.hub.application.service.DataOverviewService;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.LocationRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -48,7 +49,7 @@ class GtfsImportServiceIntegrationTest {
     private static final String FIXTURE_DIR = "fixtures/gtfs-minimal/";
     private static final String[] FEED_FILES = {
             "agency.txt", "routes.txt", "stops.txt", "calendar.txt",
-            "trips.txt", "stop_times.txt"
+            "trips.txt", "stop_times.txt", "locations.geojson"
     };
 
     @Autowired private GtfsImportService importer;
@@ -58,6 +59,7 @@ class GtfsImportServiceIntegrationTest {
     @Autowired private StopRepository stopRepository;
     @Autowired private ScheduleRepository scheduleRepository;
     @Autowired private ServiceCalendarRepository serviceCalendarRepository;
+    @Autowired private LocationRepository locationRepository;
 
     @TempDir Path tempDir;
 
@@ -113,6 +115,28 @@ class GtfsImportServiceIntegrationTest {
         assertThat(platforms).allSatisfy(p ->
                 assertThat(p.getParentStop().getId())
                         .isEqualTo(parents.get(0).getId()));
+    }
+
+    @Test
+    @DisplayName("locations.geojson polygons land with their bounding box computed")
+    void persistsLocationsGeoJson() throws IOException {
+        Path zipPath = buildFixtureZip(tempDir.resolve("locations.zip"));
+        importer.importFromZip(zipPath);
+
+        var locations = locationRepository.findAll();
+        assertThat(locations).hasSize(2);
+        assertThat(locations).extracting("externalId")
+                .containsExactlyInAnyOrder("FLEX_ZONE_NORTH", "FLEX_ZONE_SOUTH");
+
+        var north = locations.stream()
+                .filter(l -> "FLEX_ZONE_NORTH".equals(l.getExternalId())).findFirst().orElseThrow();
+        assertThat(north.getName()).isEqualTo("Flexible service zone — North");
+        assertThat(north.getGeometryType()).isEqualTo("Polygon");
+        assertThat(north.getMinLatitude()).isEqualTo(45.18);
+        assertThat(north.getMaxLatitude()).isEqualTo(45.20);
+        assertThat(north.getMinLongitude()).isEqualTo(5.70);
+        assertThat(north.getMaxLongitude()).isEqualTo(5.75);
+        assertThat(north.getGeometryJson()).contains("Polygon").contains("coordinates");
     }
 
     @Test

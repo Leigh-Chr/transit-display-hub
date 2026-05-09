@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.seed.gtfs;
 import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.Attribution;
 import com.transit.hub.domain.model.BookingRule;
+import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.FareAttribute;
 import com.transit.hub.domain.model.FareRule;
 import com.transit.hub.domain.model.FeedInfo;
@@ -119,6 +120,7 @@ public class GtfsImportService {
     private final FareAttributeRepository fareAttributeRepository;
     private final ShapeRepository shapeRepository;
     private final LocationGroupRepository locationGroupRepository;
+    private final com.transit.hub.infrastructure.persistence.LocationRepository locationRepository;
     private final BookingRuleRepository bookingRuleRepository;
     private final AreaRepository areaRepository;
     private final TimeframeRepository timeframeRepository;
@@ -202,6 +204,8 @@ public class GtfsImportService {
             importFaresV2(workDir, stopImport, linesByGtfsId);
 
             importLocationGroups(workDir, stopImport);
+
+            importLocations(workDir.resolve("locations.geojson"));
 
             importAttributions(workDir.resolve("attributions.txt"));
 
@@ -2056,6 +2060,105 @@ public class GtfsImportService {
                     skipped);
         }
         log.info("GTFS import: {} location group / stop memberships created", memberships);
+    }
+
+    /**
+     * Reads GTFS-flex {@code locations.geojson}. Each top-level Feature
+     * is one polygonal pickup/dropoff zone; we store the raw geometry
+     * as TEXT alongside a pre-computed bounding box for fast browsing.
+     * Replaces the table on every import (no downstream FK).
+     *
+     * <p>JTS / Hibernate Spatial intentionally avoided — see ADR 0026.
+     */
+    private void importLocations(Path locationsFile) throws IOException {
+        locationRepository.deleteAllInBatch();
+        locationRepository.flush();
+
+        if (!Files.exists(locationsFile)) {
+            log.info("GTFS import: locations.geojson missing, skipping");
+            return;
+        }
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(locationsFile.toFile());
+        com.fasterxml.jackson.databind.JsonNode features = root.get("features");
+        if (features == null || !features.isArray() || features.isEmpty()) {
+            log.info("GTFS import: locations.geojson has no features, skipping");
+            return;
+        }
+
+        int persisted = 0;
+        int skipped = 0;
+        for (com.fasterxml.jackson.databind.JsonNode feature : features) {
+            com.fasterxml.jackson.databind.JsonNode geom = feature.get("geometry");
+            com.fasterxml.jackson.databind.JsonNode props = feature.get("properties");
+            if (geom == null || !geom.has("type") || !geom.has("coordinates")) {
+                skipped++;
+                continue;
+            }
+            String externalId = feature.has("id") ? feature.get("id").asText() :
+                    (props != null && props.has("id") ? props.get("id").asText() : null);
+            if (isBlank(externalId)) {
+                skipped++;
+                continue;
+            }
+            String stopExternalId = props != null && props.has("stop_id")
+                    ? props.get("stop_id").asText() : null;
+            String name = props != null && props.has("stop_name")
+                    ? props.get("stop_name").asText() : null;
+            String geomType = geom.get("type").asText();
+
+            double[] bbox = computeBoundingBox(geom.get("coordinates"));
+            Location loc = Location.builder()
+                    .externalId(truncate(externalId, 100))
+                    .stopExternalId(truncate(stopExternalId, 100))
+                    .name(truncate(name, 200))
+                    .geometryType(truncate(geomType, 30))
+                    .geometryJson(mapper.writeValueAsString(geom))
+                    .minLatitude(Double.isNaN(bbox[0]) ? null : bbox[0])
+                    .minLongitude(Double.isNaN(bbox[1]) ? null : bbox[1])
+                    .maxLatitude(Double.isNaN(bbox[2]) ? null : bbox[2])
+                    .maxLongitude(Double.isNaN(bbox[3]) ? null : bbox[3])
+                    .build();
+            locationRepository.save(loc);
+            persisted++;
+        }
+        if (skipped > 0) {
+            log.warn("GTFS import: skipped {} locations.geojson features (missing id or geometry)", skipped);
+        }
+        log.info("GTFS import: {} locations.geojson features persisted", persisted);
+    }
+
+    /** Walks any GeoJSON coordinates array (Polygon, MultiPolygon, …)
+     *  recursively and returns {@code [minLat, minLon, maxLat, maxLon]}.
+     *  GeoJSON convention is {@code [longitude, latitude]} per coordinate
+     *  pair. Returns nulls (encoded as four NaN slots collapsed to null
+     *  by the entity setters) if the structure is malformed. */
+    private double[] computeBoundingBox(com.fasterxml.jackson.databind.JsonNode coordinates) {
+        double[] box = {Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE};
+        walkCoordinates(coordinates, box);
+        if (box[0] == Double.MAX_VALUE) {
+            return new double[]{Double.NaN, Double.NaN, Double.NaN, Double.NaN};
+        }
+        return box;
+    }
+
+    private void walkCoordinates(com.fasterxml.jackson.databind.JsonNode node, double[] box) {
+        if (node == null || !node.isArray() || node.isEmpty()) {return;}
+        com.fasterxml.jackson.databind.JsonNode head = node.get(0);
+        if (head != null && head.isNumber() && node.size() >= 2) {
+            // Leaf coordinate pair: [lon, lat] (GeoJSON convention).
+            double lon = node.get(0).asDouble();
+            double lat = node.get(1).asDouble();
+            box[0] = Math.min(box[0], lat);
+            box[1] = Math.min(box[1], lon);
+            box[2] = Math.max(box[2], lat);
+            box[3] = Math.max(box[3], lon);
+            return;
+        }
+        for (com.fasterxml.jackson.databind.JsonNode child : node) {
+            walkCoordinates(child, box);
+        }
     }
 
     /**

@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "FLEX_ZONE_NORTH",
+      "properties": {
+        "stop_id": "FLEX_ZONE_NORTH",
+        "stop_name": "Flexible service zone — North"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [5.70, 45.18],
+            [5.75, 45.18],
+            [5.75, 45.20],
+            [5.70, 45.20],
+            [5.70, 45.18]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "FLEX_ZONE_SOUTH",
+      "properties": {
+        "stop_id": "FLEX_ZONE_SOUTH"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [5.71, 45.16],
+            [5.74, 45.16],
+            [5.74, 45.17],
+            [5.71, 45.17],
+            [5.71, 45.16]
+          ]
+        ]
+      }
+    }
+  ]
+}

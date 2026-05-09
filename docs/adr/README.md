@@ -31,6 +31,7 @@ should think twice before reverting.
 | [0023](0023-two-step-pagination.md) | Two-step pagination on collection-fetched repositories |
 | [0024](0024-clock-injection-in-domain-services.md) | Inject `Clock` into domain services that read "now" |
 | [0025](0025-section-boundary-flushes-during-gtfs-import.md) | Section-boundary flushes during the GTFS import |
+| [0026](0026-locations-geojson-without-jts.md) | Persist `locations.geojson` as TEXT, no JTS / Hibernate Spatial |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
