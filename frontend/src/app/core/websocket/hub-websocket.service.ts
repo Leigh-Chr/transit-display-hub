@@ -1,87 +1,43 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
+import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { DisplayState } from '@shared/models';
-import { AuthService } from '@core/auth/auth.service';
-import { STOMP_CLIENT_FACTORY } from './stomp-client.factory';
+import { BaseStompService } from './base-stomp.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class HubWebSocketService {
-  private readonly authService = inject(AuthService);
-  private readonly stompClientFactory = inject(STOMP_CLIENT_FACTORY);
-  private client: Client | null = null;
-  private subscriptions: StompSubscription[] = [];
+export class HubWebSocketService extends BaseStompService {
   private updateSubject = new Subject<DisplayState>();
-  private readonly connectedSignal = signal(false);
-  private hasConnectedOnce = false;
-  private readonly reconnectedSubject = new Subject<void>();
-  readonly reconnected$ = this.reconnectedSubject.asObservable();
-
-  isConnected = this.connectedSignal.asReadonly();
+  private stopIds: string[] = [];
 
   constructor() {
+    super();
     this.authService.logout$.subscribe(() => this.disconnect());
   }
 
-  connect(stopIds: string[]): Observable<DisplayState> {
-    if (this.client) {
-      return this.updateSubject.asObservable();
+  protected override buildBrokerUrl(): string {
+    return BaseStompService.buildWsUrl();
+  }
+
+  protected override onConnect(): void {
+    for (const stopId of this.stopIds) {
+      this.subscribeToTopic<DisplayState>(
+        `/topic/display/${stopId}`,
+        (body) => JSON.parse(body) as DisplayState,
+        (state) => this.updateSubject.next(state),
+        `hub display state (${stopId})`,
+      );
     }
+  }
 
-    const token = this.authService.getToken();
-    const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-
-    this.client = this.stompClientFactory({
-      brokerURL: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
-      connectHeaders,
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-      onConnect: () => {
-        this.connectedSignal.set(true);
-        if (this.hasConnectedOnce) {
-          this.reconnectedSubject.next();
-        }
-        this.hasConnectedOnce = true;
-        if (!this.client) { return; }
-        for (const stopId of stopIds) {
-          const sub = this.client.subscribe(`/topic/display/${stopId}`, (message: IMessage) => {
-            try {
-              const state = JSON.parse(message.body) as DisplayState;
-              this.updateSubject.next(state);
-            } catch (e) {
-              console.error('Failed to parse hub display state:', e);
-            }
-          });
-          this.subscriptions.push(sub);
-        }
-      },
-      onDisconnect: () => {
-        this.connectedSignal.set(false);
-      },
-      onStompError: (frame) => {
-        console.error('Hub STOMP error:', frame);
-        this.connectedSignal.set(false);
-      }
-    });
-
-    this.client.activate();
+  connect(stopIds: string[]): Observable<DisplayState> {
+    this.stopIds = stopIds;
+    this.activateClient();
     return this.updateSubject.asObservable();
   }
 
-  disconnect(): void {
-    for (const sub of this.subscriptions) {
-      sub.unsubscribe();
-    }
-    this.subscriptions = [];
-    if (this.client) {
-      void this.client.deactivate();
-      this.client = null;
-    }
-    this.connectedSignal.set(false);
-    this.hasConnectedOnce = false;
+  override disconnect(): void {
+    super.disconnect();
     this.updateSubject.complete();
     this.updateSubject = new Subject<DisplayState>();
   }

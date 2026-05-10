@@ -1,100 +1,56 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { Client, IMessage } from '@stomp/stompjs';
+import { Injectable } from '@angular/core';
 import { Observable, Subject, timer } from 'rxjs';
 import { takeUntil, tap } from 'rxjs/operators';
 import { DisplayState } from '@shared/models';
-import { AuthService } from '@core/auth/auth.service';
-import { STOMP_CLIENT_FACTORY } from './stomp-client.factory';
+import { BaseStompService } from './base-stomp.service';
 
-export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
+// Re-exported for consumers that typed it from this module.
+export type { ConnectionState } from './base-stomp.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class WebSocketService {
-  private readonly authService = inject(AuthService);
-  private readonly stompClientFactory = inject(STOMP_CLIENT_FACTORY);
-  private client: Client | null = null;
+export class WebSocketService extends BaseStompService {
   private readonly displayStateSubject = new Subject<DisplayState>();
-  private readonly connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
   private deviceId: string | null = null;
-  private destroy$ = new Subject<void>();
-  private hasConnectedOnce = false;
-  /** Emits each time the STOMP session re-opens after an interruption. Useful
-   *  for downstream consumers (kiosk) that need to re-fetch a fresh snapshot
-   *  via REST since pushes during the drop are lost. */
-  private readonly reconnectedSubject = new Subject<void>();
-  readonly reconnected$ = this.reconnectedSubject.asObservable();
-
-  connectionState = this.connectionStateSignal.asReadonly();
+  private stopId: string | null = null;
 
   constructor() {
-    // Drop the live STOMP session as soon as the user logs out, otherwise
-    // the broker keeps pushing display state to a tab that no longer has a
-    // token to authenticate further requests with.
+    super();
     this.authService.logout$.subscribe(() => this.disconnect());
   }
 
+  protected override buildBrokerUrl(): string {
+    return BaseStompService.buildWsUrl();
+  }
+
+  protected override onConnect(): void {
+    this.subscribeToStop();
+    this.startHeartbeat();
+  }
+
   connect(stopId: string, deviceId: string | null = null): Observable<DisplayState> {
+    this.stopId = stopId;
     this.deviceId = deviceId;
-    this.connectionStateSignal.set('CONNECTING');
-
-    const token = this.authService.getToken();
-    const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-
-    this.client = this.stompClientFactory({
-      brokerURL: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
-      connectHeaders,
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-      onConnect: () => {
-        this.connectionStateSignal.set('CONNECTED');
-        this.subscribeToStop(stopId);
-        this.startHeartbeat();
-        if (this.hasConnectedOnce) {
-          this.reconnectedSubject.next();
-        }
-        this.hasConnectedOnce = true;
-      },
-      onDisconnect: () => {
-        this.connectionStateSignal.set('DISCONNECTED');
-      },
-      onStompError: (frame) => {
-        console.error('STOMP error:', frame);
-        this.connectionStateSignal.set('RECONNECTING');
-      }
-    });
-
-    this.client.activate();
-
+    this.activateClient();
     return this.displayStateSubject.asObservable();
   }
 
-  disconnect(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.destroy$ = new Subject<void>();
-    if (this.client) {
-      void this.client.deactivate();
-      this.client = null;
-    }
+  override disconnect(): void {
+    super.disconnect();
     this.deviceId = null;
-    this.hasConnectedOnce = false;
-    this.connectionStateSignal.set('DISCONNECTED');
+    this.stopId = null;
   }
 
-  private subscribeToStop(stopId: string): void {
-    if (!this.client) {return;}
-
-    this.client.subscribe(`/topic/display/${stopId}`, (message: IMessage) => {
-      try {
-        const displayState = JSON.parse(message.body) as DisplayState;
-        this.displayStateSubject.next(displayState);
-      } catch (e) {
-        console.error('Failed to parse display state:', e);
-      }
-    });
+  private subscribeToStop(): void {
+    if (!this.stopId) { return; }
+    const stopId = this.stopId;
+    this.subscribeToTopic<DisplayState>(
+      `/topic/display/${stopId}`,
+      (body) => JSON.parse(body) as DisplayState,
+      (state) => this.displayStateSubject.next(state),
+      'display state',
+    );
   }
 
   private startHeartbeat(): void {
