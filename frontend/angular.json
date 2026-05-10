@@ -33,7 +33,7 @@
               "node_modules/material-icons/iconfont/material-icons.css"
             ],
             "scripts": [],
-            "allowedCommonJsDependencies": ["@stomp/stompjs", "sockjs-client"]
+            "allowedCommonJsDependencies": ["@stomp/stompjs"]
           },
           "configurations": {
             "production": {

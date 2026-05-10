@@ -23,11 +23,6 @@ interface ServicePrivateFields {
   client: MockStompClient;
 }
 
-// Mock SockJS
-vi.mock('sockjs-client', () => ({
-  default: vi.fn()
-}));
-
 // Mock STOMP Client as a proper class
 vi.mock('@stomp/stompjs', () => {
   class MockClient {

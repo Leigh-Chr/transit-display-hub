@@ -1,6 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { Observable, Subject, timer } from 'rxjs';
 import { takeUntil, tap } from 'rxjs/operators';
 import { DisplayState } from '@shared/models';
@@ -42,7 +41,7 @@ export class WebSocketService {
     const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
     this.client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
+      brokerURL: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
       connectHeaders,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,

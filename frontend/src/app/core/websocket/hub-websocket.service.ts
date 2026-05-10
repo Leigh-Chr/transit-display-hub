@@ -1,6 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { Observable, Subject } from 'rxjs';
 import { DisplayState } from '@shared/models';
 import { AuthService } from '@core/auth/auth.service';
@@ -33,7 +32,7 @@ export class HubWebSocketService {
     const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
     this.client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
+      brokerURL: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
       connectHeaders,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,

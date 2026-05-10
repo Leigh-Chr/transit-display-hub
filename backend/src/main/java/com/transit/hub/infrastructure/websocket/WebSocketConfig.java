@@ -44,8 +44,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(origins)
-                .withSockJS();
+                .setAllowedOrigins(origins);
     }
 
     @Override
