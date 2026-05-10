@@ -177,9 +177,4 @@ public class Stop {
         lines.add(line);
         line.getStops().add(this);
     }
-
-    public void removeLine(Line line) {
-        lines.remove(line);
-        line.getStops().remove(this);
-    }
 }

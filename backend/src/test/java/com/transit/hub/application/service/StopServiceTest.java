@@ -394,29 +394,4 @@ class StopServiceTest {
             verify(stopRepository, never()).findAllByIdInWithLinesAndDevices(any());
         }
     }
-
-    @Nested
-    @DisplayName("getStopEntity")
-    class GetStopEntity {
-
-        @Test
-        @DisplayName("returns stop entity when found")
-        void returnsEntityWhenFound() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-
-            Stop result = stopService.getStopEntity(testStopId);
-
-            assertThat(result).isEqualTo(testStop);
-        }
-
-        @Test
-        @DisplayName("throws EntityNotFoundException when not found")
-        void throwsWhenNotFound() {
-            UUID unknownId = UUID.randomUUID();
-            when(stopRepository.findByIdWithLines(unknownId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> stopService.getStopEntity(unknownId))
-                    .isInstanceOf(EntityNotFoundException.class);
-        }
-    }
 }

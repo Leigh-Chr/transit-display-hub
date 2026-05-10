@@ -246,12 +246,6 @@ public class ItineraryService {
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(itineraryId).orElseThrow());
     }
 
-    @Transactional(readOnly = true)
-    public Itinerary getItineraryEntity(UUID id) {
-        return itineraryRepository.findByIdWithLineAndStops(id)
-                .orElseThrow(() -> new EntityNotFoundException("Itinerary", id));
-    }
-
     private void publishNetworkChanged(Itinerary itinerary) {
         Set<UUID> affectedStopIds = getStopIds(itinerary);
         eventPublisher.publishEvent(new NetworkChangedEvent(this, affectedStopIds));

@@ -63,10 +63,6 @@ public class GtfsValidatorService {
         public static NoticeSummary empty() {
             return new NoticeSummary(0, 0, 0);
         }
-
-        public int totalNotices() {
-            return errorCount + warningCount + infoCount;
-        }
     }
 
     public ValidationResult validate(Path feedZip, Path outputDirectory) throws IOException {

@@ -138,12 +138,6 @@ public class LineService {
         publishNetworkChanged(affectedStopIds);
     }
 
-    @Transactional(readOnly = true)
-    public Line getLineEntity(UUID id) {
-        return lineRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Line", id));
-    }
-
     private void publishNetworkChangedForLine(UUID lineId) {
         Set<UUID> affectedStopIds = getStopIdsForLine(lineId);
         publishNetworkChanged(affectedStopIds);

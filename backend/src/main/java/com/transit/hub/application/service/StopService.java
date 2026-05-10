@@ -172,12 +172,6 @@ public class StopService {
         eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(id)));
     }
 
-    @Transactional(readOnly = true)
-    public Stop getStopEntity(UUID id) {
-        return stopRepository.findByIdWithLines(id)
-                .orElseThrow(() -> new EntityNotFoundException("Stop", id));
-    }
-
     private Set<Line> findAndValidateLines(Set<UUID> lineIds) {
         Set<Line> lines = new HashSet<>();
         for (UUID lineId : lineIds) {

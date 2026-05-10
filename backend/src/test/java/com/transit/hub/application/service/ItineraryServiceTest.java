@@ -612,31 +612,4 @@ class ItineraryServiceTest {
             verify(itineraryRepository, never()).findAllByIdInWithLine(any());
         }
     }
-
-    @Nested
-    @DisplayName("getItineraryEntity")
-    class GetItineraryEntity {
-
-        @Test
-        @DisplayName("returns itinerary entity when found")
-        void returnsEntityWhenFound() {
-            when(itineraryRepository.findByIdWithLineAndStops(testItineraryId))
-                    .thenReturn(Optional.of(testItinerary));
-
-            Itinerary result = itineraryService.getItineraryEntity(testItineraryId);
-
-            assertThat(result).isEqualTo(testItinerary);
-        }
-
-        @Test
-        @DisplayName("throws EntityNotFoundException when not found")
-        void throwsWhenNotFound() {
-            UUID unknownId = UUID.randomUUID();
-            when(itineraryRepository.findByIdWithLineAndStops(unknownId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> itineraryService.getItineraryEntity(unknownId))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("Itinerary");
-        }
-    }
 }

@@ -351,29 +351,4 @@ class LineServiceTest {
             verify(lineRepository, never()).findAllByIdInWithStopsAndRoutes(any());
         }
     }
-
-    @Nested
-    @DisplayName("getLineEntity")
-    class GetLineEntity {
-
-        @Test
-        @DisplayName("returns line entity when found")
-        void returnsEntityWhenFound() {
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
-
-            Line result = lineService.getLineEntity(testLineId);
-
-            assertThat(result).isEqualTo(testLine);
-        }
-
-        @Test
-        @DisplayName("throws EntityNotFoundException when not found")
-        void throwsWhenNotFound() {
-            UUID unknownId = UUID.randomUUID();
-            when(lineRepository.findById(unknownId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> lineService.getLineEntity(unknownId))
-                    .isInstanceOf(EntityNotFoundException.class);
-        }
-    }
 }
