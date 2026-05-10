@@ -76,6 +76,21 @@ dependencies {
     // kiosks and hubs.
     implementation("com.google.protobuf:protobuf-java:3.25.5")
 
+    // Canonical MobilityData GTFS Schedule validator (Apache 2.0). The
+    // import-audit page invokes it after each GTFS import so an
+    // operator can see the same warnings/errors the global validator
+    // would surface — without having to upload the feed elsewhere.
+    // The {@code -main} artefact ships the runner; {@code -core} the
+    // shared types ({@code CountryCode}, notice model). Their pom
+    // declares the transitive link as {@code runtime} so we have to
+    // restate {@code -core} on the implementation classpath for the
+    // service code to compile against {@code CountryCode}.
+    // Pulls Guava 31 + Gson 2.8 + Apache HttpClient 5 transitively;
+    // we accept the runtime overlap with Spring Boot's Jackson stack
+    // because the validator owns its own JSON output format.
+    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.0")
+    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.0")
+
     // Database
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")
