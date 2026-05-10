@@ -15,17 +15,16 @@ import { HttpTranslocoLoader } from './transloco.loader';
  */
 export const TRANSLOCO_AVAILABLE_LANGS = ['fr', 'en'] as const;
 
-export const translocoConfig: Partial<TranslocoConfig> = {
-  availableLangs: [...TRANSLOCO_AVAILABLE_LANGS],
-  defaultLang: 'fr',
-  fallbackLang: 'fr',
-  reRenderOnLangChange: true,
-  prodMode: !isDevMode(),
-};
-
 export function provideAppTransloco(): EnvironmentProviders[] {
+  const config: Partial<TranslocoConfig> = {
+    availableLangs: [...TRANSLOCO_AVAILABLE_LANGS],
+    defaultLang: 'fr',
+    fallbackLang: 'fr',
+    reRenderOnLangChange: true,
+    prodMode: !isDevMode(),
+  };
   return provideTransloco({
-    config: translocoConfig,
+    config,
     loader: HttpTranslocoLoader,
   });
 }
