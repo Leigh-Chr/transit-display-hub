@@ -37,9 +37,9 @@ jobs:
         working-directory: backend
         run: ./gradlew compileJava
 
-      - name: Test and coverage
+      - name: Verify (test + coverage + spotbugs + pmd + jacocoTestCoverageVerification)
         working-directory: backend
-        run: ./gradlew test jacocoTestReport
+        run: ./gradlew check
 
       - name: Upload JaCoCo HTML report
         if: always()
