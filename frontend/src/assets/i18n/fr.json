@@ -57,29 +57,7 @@
   },
   "admin": {
     "navigation": {
-      "dashboard": "Tableau de bord",
-      "lines": "Lignes",
-      "stops": "Arrêts",
-      "schedules": "Horaires",
-      "itineraries": "Itinéraires",
-      "messages": "Messages",
-      "devices": "Appareils",
-      "users": "Utilisateurs",
-      "import": "Import GTFS",
-      "audit": "Audit d'import",
-      "realtime": "Temps réel",
-      "fares": "Tarifs",
-      "tadZones": "Zones TAD",
-      "translations": "Traductions",
-      "pathways": "Cheminements",
-      "shapes": "Tracés",
-      "logout": "Déconnexion"
-    },
-    "auth": {
-      "login": "Connexion",
-      "username": "Nom d'utilisateur",
-      "password": "Mot de passe",
-      "submit": "Se connecter"
+      "dashboard": "Tableau de bord"
     }
   }
 }

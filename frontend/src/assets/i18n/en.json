@@ -57,29 +57,7 @@
   },
   "admin": {
     "navigation": {
-      "dashboard": "Dashboard",
-      "lines": "Lines",
-      "stops": "Stops",
-      "schedules": "Schedules",
-      "itineraries": "Itineraries",
-      "messages": "Messages",
-      "devices": "Devices",
-      "users": "Users",
-      "import": "GTFS import",
-      "audit": "Import audit",
-      "realtime": "Realtime",
-      "fares": "Fares",
-      "tadZones": "DRT zones",
-      "translations": "Translations",
-      "pathways": "Pathways",
-      "shapes": "Shapes",
-      "logout": "Sign out"
-    },
-    "auth": {
-      "login": "Sign in",
-      "username": "Username",
-      "password": "Password",
-      "submit": "Sign in"
+      "dashboard": "Dashboard"
     }
   }
 }
