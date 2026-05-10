@@ -1,0 +1,83 @@
+name: Dependency vulnerability scan
+
+on:
+  schedule:
+    # Weekly Monday 04:00 UTC — keeps the NVD cache warm without
+    # blocking PR throughput. Manual dispatch is also available.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  backend-owasp:
+    name: OWASP dependency-check (Java)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Cache OWASP NVD database
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/dependency-check-data
+          key: dependency-check-data-v1
+
+      - name: Make Gradle wrapper executable
+        working-directory: backend
+        run: chmod +x ./gradlew
+
+      - name: Run dependencyCheckAnalyze
+        working-directory: backend
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: ./gradlew dependencyCheckAnalyze --no-daemon
+
+      - name: Upload HTML/JSON reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: dependency-check-report
+          path: backend/build/reports/dependency-check
+          retention-days: 30
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: backend/build/reports/dependency-check/dependency-check-report.sarif
+
+  frontend-audit:
+    name: npm audit (Frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Audit production deps (high severity)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
