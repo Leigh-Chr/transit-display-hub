@@ -2,22 +2,29 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-not-found',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule],
+  imports: [RouterLink, MatButtonModule, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="not-found">
-      <img src="assets/logo.png" alt="Transit Display Hub" class="not-found-logo">
-      <h1>Page not found</h1>
-      <p>The page you are looking for does not exist.</p>
-      <a mat-flat-button color="primary" routerLink="/admin/dashboard">
-        <mat-icon>home</mat-icon>
-        Go to Dashboard
-      </a>
-    </div>
+    <main class="not-found" role="main">
+      <img src="assets/logo.png" alt="" class="not-found-logo" aria-hidden="true">
+      <h1>{{ 'notFound.title' | transloco }}</h1>
+      <p>{{ 'notFound.description' | transloco }}</p>
+      <div class="actions">
+        <a mat-flat-button color="primary" routerLink="/map">
+          <mat-icon>map</mat-icon>
+          {{ 'map.title' | transloco }}
+        </a>
+        <a mat-stroked-button routerLink="/admin/dashboard">
+          <mat-icon>dashboard</mat-icon>
+          {{ 'admin.navigation.dashboard' | transloco }}
+        </a>
+      </div>
+    </main>
   `,
   styles: `
     .not-found {
@@ -47,6 +54,13 @@ import { MatIconModule } from '@angular/material/icon';
     p {
       color: var(--app-on-surface-variant, #666);
       margin: 0 0 24px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
   `,
 })
