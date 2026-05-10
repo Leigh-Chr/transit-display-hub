@@ -91,7 +91,7 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
                 }
                 @if (line.scheduleCount && line.scheduleCount > 0) {
                   <span class="line-count">
-                    {{ formatCount(line.scheduleCount) }}
+                    {{ formatCount(line.scheduleCount) }} {{ 'map.schedulesCount' | transloco }}
                   </span>
                 }
               </li>
@@ -108,11 +108,11 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
           } @else {
             <table mat-table [dataSource]="filteredStops()" class="stops-table">
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'kiosk.headerLine' | transloco }}</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.columnName' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">{{ stop.name }}</td>
               </ng-container>
               <ng-container matColumnDef="lines">
-                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.linesCount' | transloco }}</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.columnLines' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   @for (code of stop.lineCodes; track code) {
                     <span class="line-tag">{{ code }}</span>
@@ -120,19 +120,19 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
                 </td>
               </ng-container>
               <ng-container matColumnDef="accessibility">
-                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'kiosk.highContrast' | transloco }}</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.columnAccessibility' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   {{ accessibilityLabel(stop.wheelchairBoarding) }}
                 </td>
               </ng-container>
               <ng-container matColumnDef="ondemand">
-                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.filterOnDemand' | transloco }}</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.columnOnDemand' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   {{ stop.hasOnDemand ? t('common.yes') : t('common.no') }}
                 </td>
               </ng-container>
               <ng-container matColumnDef="zones">
-                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'admin.navigation.fares' | transloco }}</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.columnFareZones' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   {{ stop.fareAreaNames?.join(', ') || '—' }}
                 </td>
