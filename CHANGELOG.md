@@ -16,6 +16,34 @@ MobilityData runner, WCAG 2.2 AA accessibility on every persona
 gates (JaCoCo, Vitest coverage, Playwright smoke E2E, GitHub
 Actions CI) and a turnkey Raspberry-Pi kiosk deployment recipe.
 
+### Phase B — Recognition surface (May 2026)
+
+Lighter than the original plan because the owner declined both
+heavy chantiers (online demo, standalone marketing site). What
+ships under `docs/` instead:
+
+- **`.github/ISSUE_TEMPLATE/`** structured forms (bug + feature)
+  plus a config disabling blank issues; **PR template**
+  mirroring the ADR style.
+- **`SECURITY.md`** spelling out the private-disclosure path,
+  supported versions and 60-day public timeline.
+- **`docs/screenshots/`** scaffolding with capture conventions
+  documented; the README references six expected captures
+  (admin dashboard, network map, stop popup, kiosk, import
+  audit, tabular alternative).
+- **`docs/announcements/`** seven ready-to-paste channel-
+  specific drafts (Show HN, Reddit ×4, Mastodon EN+FR,
+  LinkedIn, MobilityData/awesome-transit PR,
+  transport.data.gouv.fr forum + Slack, Devoxx FR / Mix-IT /
+  Touraine Tech CFP). Owner picks the day and edits the body.
+- **README** restructured around a tagline, a "Why this
+  exists" section, badges (backend CI, frontend CI, license,
+  ADR count) and a six-row screenshots table linking back to
+  `docs/screenshots/`.
+- **ADR 0038** records the strategy: GitHub README is the
+  canonical landing surface, no separate site, no online demo,
+  community surface in place via templates and SECURITY.md.
+
 The entries below summarise what landed across milestones 0.9.0
 through 0.15.0. Detailed release notes for each milestone are
 preserved verbatim in the sections that follow.
