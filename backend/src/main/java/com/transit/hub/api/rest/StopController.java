@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +29,8 @@ import java.util.UUID;
 @Tag(name = "Administration — arrêts",
      description = "CRUD des arrêts physiques et association aux lignes.")
 public class StopController {
+
+    private static final Set<String> ALLOWED_STOP_SORTS = Set.of("name", "latitude", "longitude");
 
     private final StopService stopService;
 
@@ -41,7 +44,8 @@ public class StopController {
             @RequestParam(required = false) String search
     ) {
         if (page != null) {
-            Pageable pageable = Pageables.from(page, size, sortBy, sortDir);
+            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                    ALLOWED_STOP_SORTS, "name");
             return ResponseEntity.ok(stopService.getAllStops(lineId, search, pageable));
         }
         if (lineId != null) {

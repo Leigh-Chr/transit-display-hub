@@ -5,7 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Pageables")
 class PageablesTest {
@@ -56,5 +59,35 @@ class PageablesTest {
         Pageable p = Pageables.from(0, 10, "name", null);
 
         assertThat(p.getSort().getOrderFor("name").isAscending()).isTrue();
+    }
+
+    @Test
+    @DisplayName("fromWhitelisted() rejects a sortBy field not in the whitelist")
+    void rejectsSortByOutsideWhitelist() {
+        Set<String> allowed = Set.of("name", "createdAt");
+        assertThatThrownBy(() ->
+            Pageables.fromWhitelisted(0, 10, "password", "asc", allowed, "name")
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessageContaining("password");
+    }
+
+    @Test
+    @DisplayName("fromWhitelisted() accepts a sortBy field present in the whitelist")
+    void allowsSortByInWhitelist() {
+        Set<String> allowed = Set.of("name", "createdAt");
+        Pageable p = Pageables.fromWhitelisted(0, 10, "name", "desc", allowed, "createdAt");
+        assertThat(p.getSort().getOrderFor("name")).isNotNull();
+        assertThat(p.getSort().getOrderFor("name").isDescending()).isTrue();
+    }
+
+    @Test
+    @DisplayName("fromWhitelisted() falls back to the default field when sortBy is null or blank")
+    void usesDefaultWhenSortByIsNullOrBlank() {
+        Set<String> allowed = Set.of("name", "createdAt");
+        Pageable p = Pageables.fromWhitelisted(0, 10, null, "asc", allowed, "createdAt");
+        assertThat(p.getSort().getOrderFor("createdAt")).isNotNull();
+
+        Pageable p2 = Pageables.fromWhitelisted(0, 10, "  ", "asc", allowed, "createdAt");
+        assertThat(p2.getSort().getOrderFor("createdAt")).isNotNull();
     }
 }

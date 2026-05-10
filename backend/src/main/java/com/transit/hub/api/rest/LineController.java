@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +29,8 @@ import java.util.UUID;
 @Tag(name = "Administration — lignes",
      description = "CRUD des lignes du réseau (routes GTFS).")
 public class LineController {
+
+    private static final Set<String> ALLOWED_LINE_SORTS = Set.of("code", "name", "category");
 
     private final LineService lineService;
 
@@ -40,7 +43,8 @@ public class LineController {
             @RequestParam(required = false) String search
     ) {
         if (page != null) {
-            Pageable pageable = Pageables.from(page, size, sortBy, sortDir);
+            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                    ALLOWED_LINE_SORTS, "code");
             return ResponseEntity.ok(lineService.getAllLines(search, pageable));
         }
         return ResponseEntity.ok(lineService.getAllLines());

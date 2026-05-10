@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +31,8 @@ import java.util.UUID;
 @Tag(name = "Administration — itinéraires",
      description = "CRUD des itinéraires (séquences ordonnées d'arrêts pour une ligne et une direction).")
 public class ItineraryController {
+
+    private static final Set<String> ALLOWED_ITINERARY_SORTS = Set.of("name");
 
     private final ItineraryService itineraryService;
 
@@ -43,7 +46,8 @@ public class ItineraryController {
             @RequestParam(required = false) String search
     ) {
         if (page != null) {
-            Pageable pageable = Pageables.from(page, size, sortBy, sortDir);
+            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                    ALLOWED_ITINERARY_SORTS, "name");
             return ResponseEntity.ok(itineraryService.getAllItineraries(lineId, search, pageable));
         }
         if (lineId != null) {

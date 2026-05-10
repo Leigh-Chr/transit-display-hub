@@ -349,6 +349,22 @@ class UserControllerIntegrationTest {
     }
 
     @Nested
+    @DisplayName("GET /api/users (sortBy validation)")
+    class GetAllUsersSortByValidation {
+
+        @Test
+        @DisplayName("returns 400 when sortBy is not whitelisted")
+        void rejectsInvalidSortBy() throws Exception {
+            mockMvc.perform(get("/api/users")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .param("sortBy", "password")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/users (sorting)")
     class GetAllUsersSorted {
 

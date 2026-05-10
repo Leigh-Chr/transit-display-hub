@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +30,8 @@ import java.util.UUID;
 @Tag(name = "Administration — messages",
      description = "Messages d'information diffusés sur les écrans publics (réseau, ligne, ou arrêt).")
 public class MessageController {
+
+    private static final Set<String> ALLOWED_MESSAGE_SORTS = Set.of("severity", "startTime", "endTime");
 
     private final MessageService messageService;
 
@@ -43,7 +46,8 @@ public class MessageController {
             @RequestParam(required = false) String search
     ) {
         if (page != null) {
-            Pageable pageable = Pageables.from(page, size, sortBy, sortDir);
+            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                    ALLOWED_MESSAGE_SORTS, "startTime");
             return ResponseEntity.ok(messageService.getAllMessages(active, severity, search, pageable));
         }
         if (active != null && active) {

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +30,8 @@ import java.util.UUID;
 @Tag(name = "Administration — utilisateurs",
      description = "CRUD des comptes admin/agent et de leurs droits.")
 public class UserController {
+
+    private static final Set<String> ALLOWED_USER_SORTS = Set.of("username", "role");
 
     private final UserService userService;
 
@@ -41,7 +44,8 @@ public class UserController {
             @RequestParam(required = false) String search
     ) {
         if (page != null) {
-            Pageable pageable = Pageables.from(page, size, sortBy, sortDir);
+            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                    ALLOWED_USER_SORTS, "username");
             return ResponseEntity.ok(userService.getAll(search, pageable));
         }
         return ResponseEntity.ok(userService.getAll());
