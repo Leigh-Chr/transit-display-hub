@@ -3,6 +3,31 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineDialogComponent, LineDialogData } from './line-dialog.component';
 import { Line } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const en = {
+  common: { cancel: 'Cancel', delete: 'Delete' },
+  admin: {
+    lines: {
+      dialog: {
+        titleCreate: 'New Line',
+        titleEdit: 'Edit Line',
+        fieldCode: 'Code',
+        fieldCodePlaceholder: 'e.g., L1, M2, T3',
+        fieldCodeRequired: 'Code is required',
+        fieldName: 'Name',
+        fieldNamePlaceholder: 'e.g., Line 1 - Downtown Express',
+        fieldNameRequired: 'Name is required',
+        fieldType: 'Type',
+        fieldTypeRequired: 'Type is required',
+        fieldColor: 'Color',
+        fieldColorRequired: 'Color is required',
+        actionCreate: 'Create Line',
+        actionSave: 'Save Changes',
+      },
+    },
+  },
+};
 
 describe('LineDialogComponent', () => {
   let component: LineDialogComponent;
@@ -14,7 +39,13 @@ describe('LineDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [LineDialogComponent],
+      imports: [
+        LineDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },

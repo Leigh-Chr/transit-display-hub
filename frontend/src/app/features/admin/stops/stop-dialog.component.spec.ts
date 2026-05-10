@@ -3,6 +3,29 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StopDialogComponent, StopDialogData } from './stop-dialog.component';
 import { Line, Stop } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const en = {
+  common: { cancel: 'Cancel', delete: 'Delete' },
+  admin: {
+    stops: {
+      dialog: {
+        titleCreate: 'New Stop',
+        titleEdit: 'Edit Stop',
+        fieldLines: 'Lines',
+        fieldLinesHint: 'Select one or more lines this stop serves',
+        fieldLinesRequired: 'At least one line is required',
+        fieldName: 'Name',
+        fieldNamePlaceholder: 'e.g., Central Station',
+        fieldNameRequired: 'Name is required',
+        fieldLatitude: 'Latitude',
+        fieldLongitude: 'Longitude',
+        actionCreate: 'Create Stop',
+        actionSave: 'Save Changes',
+      },
+    },
+  },
+};
 
 describe('StopDialogComponent', () => {
   let component: StopDialogComponent;
@@ -19,7 +42,13 @@ describe('StopDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [StopDialogComponent],
+      imports: [
+        StopDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },

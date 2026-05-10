@@ -18,6 +18,7 @@ import {
   MessageScope,
 } from '@shared/models';
 import { StopService } from '@core/api/stop.service';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 export interface MessageDialogData {
   message?: BroadcastMessage;
@@ -45,67 +46,69 @@ interface MessageForm {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <h2 mat-dialog-title>
-      {{ data.message ? 'Edit Message' : 'New Broadcast Message' }}
+      {{ data.message ? t('admin.messages.dialog.titleEdit') : t('admin.messages.dialog.titleCreate') }}
     </h2>
     <mat-dialog-content>
       <form #messageForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Title</mat-label>
+          <mat-label>{{ t('admin.messages.dialog.fieldTitle') }}</mat-label>
           <input
             matInput
             [(ngModel)]="form.title"
             name="title"
-            placeholder="e.g., Service Disruption"
+            [placeholder]="t('admin.messages.dialog.fieldTitlePlaceholder')"
             required
           />
-          <mat-error>Title is required</mat-error>
+          <mat-error>{{ t('admin.messages.dialog.fieldTitleRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Content</mat-label>
+          <mat-label>{{ t('admin.messages.dialog.fieldContent') }}</mat-label>
           <textarea
             matInput
             [(ngModel)]="form.content"
             name="content"
             rows="3"
-            placeholder="Detailed message content..."
+            [placeholder]="t('admin.messages.dialog.fieldContentPlaceholder')"
             required
           ></textarea>
-          <mat-error>Content is required</mat-error>
+          <mat-error>{{ t('admin.messages.dialog.fieldContentRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Severity</mat-label>
+          <mat-label>{{ t('admin.messages.dialog.fieldSeverity') }}</mat-label>
           <mat-select [(ngModel)]="form.severity" name="severity" required>
-            <mat-option value="INFO">Info</mat-option>
-            <mat-option value="WARNING">Warning</mat-option>
-            <mat-option value="CRITICAL">Critical</mat-option>
+            <mat-option value="INFO">{{ t('admin.messages.severityInfo') }}</mat-option>
+            <mat-option value="WARNING">{{ t('admin.messages.severityWarning') }}</mat-option>
+            <mat-option value="CRITICAL">{{ t('admin.messages.severityCritical') }}</mat-option>
           </mat-select>
-          <mat-error>Severity is required</mat-error>
+          <mat-error>{{ t('admin.messages.dialog.fieldSeverityRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Scope</mat-label>
+          <mat-label>{{ t('admin.messages.dialog.fieldScope') }}</mat-label>
           <mat-select
             [(ngModel)]="form.scopeType"
             name="scopeType"
             required
             (selectionChange)="onScopeChange()"
           >
-            <mat-option value="NETWORK">Entire Network</mat-option>
-            <mat-option value="LINE">Specific Line</mat-option>
-            <mat-option value="STOP">Specific Stop</mat-option>
+            <mat-option value="NETWORK">{{ t('admin.messages.dialog.scopeNetwork') }}</mat-option>
+            <mat-option value="LINE">{{ t('admin.messages.dialog.scopeLine') }}</mat-option>
+            <mat-option value="STOP">{{ t('admin.messages.dialog.scopeStop') }}</mat-option>
           </mat-select>
-          <mat-error>Scope is required</mat-error>
+          <mat-error>{{ t('admin.messages.dialog.fieldScopeRequired') }}</mat-error>
         </mat-form-field>
 
         @if (form.scopeType === 'LINE' || form.scopeType === 'STOP') {
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Line</mat-label>
+            <mat-label>{{ t('admin.messages.dialog.fieldLine') }}</mat-label>
             <mat-select
               [(ngModel)]="form.lineId"
               name="lineId"
@@ -118,13 +121,13 @@ interface MessageForm {
                 </mat-option>
               }
             </mat-select>
-            <mat-error>Line is required for this scope</mat-error>
+            <mat-error>{{ t('admin.messages.dialog.fieldLineRequired') }}</mat-error>
           </mat-form-field>
         }
 
         @if (form.scopeType === 'STOP') {
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Stop</mat-label>
+            <mat-label>{{ t('admin.messages.dialog.fieldStop') }}</mat-label>
             <mat-select
               [(ngModel)]="form.stopId"
               name="stopId"
@@ -136,15 +139,15 @@ interface MessageForm {
               }
             </mat-select>
             @if (!form.lineId) {
-              <mat-hint>Pick a line first</mat-hint>
+              <mat-hint>{{ t('admin.messages.dialog.fieldStopHint') }}</mat-hint>
             }
-            <mat-error>Stop is required for this scope</mat-error>
+            <mat-error>{{ t('admin.messages.dialog.fieldStopRequired') }}</mat-error>
           </mat-form-field>
         }
 
         <div class="datetime-row">
           <mat-form-field appearance="outline">
-            <mat-label>Start Time</mat-label>
+            <mat-label>{{ t('admin.messages.dialog.fieldStartTime') }}</mat-label>
             <input
               matInput
               type="datetime-local"
@@ -152,11 +155,11 @@ interface MessageForm {
               name="startTime"
               required
             />
-            <mat-error>Start time is required</mat-error>
+            <mat-error>{{ t('admin.messages.dialog.fieldStartTimeRequired') }}</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>End Time</mat-label>
+            <mat-label>{{ t('admin.messages.dialog.fieldEndTime') }}</mat-label>
             <input
               matInput
               type="datetime-local"
@@ -165,25 +168,26 @@ interface MessageForm {
               required
             />
             @if (form.startTime && form.endTime && !isDateRangeValid()) {
-              <mat-error>End time must be after start time</mat-error>
+              <mat-error>{{ t('admin.messages.dialog.fieldEndTimeInvalid') }}</mat-error>
             } @else {
-              <mat-error>End time is required</mat-error>
+              <mat-error>{{ t('admin.messages.dialog.fieldEndTimeRequired') }}</mat-error>
             }
           </mat-form-field>
         </div>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         [disabled]="!messageForm.valid || !isDateRangeValid()"
         (click)="save()"
       >
-        {{ data.message ? 'Save Changes' : 'Create Message' }}
+        {{ data.message ? t('admin.messages.dialog.actionSave') : t('admin.messages.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

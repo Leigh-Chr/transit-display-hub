@@ -8,6 +8,25 @@ import { MessagesComponent } from './messages.component';
 import { MessageService } from '@core/api/message.service';
 import { LineService } from '@core/api/line.service';
 import { BroadcastMessage, Line, PageResponse } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const en = {
+  common: { delete: 'Delete' },
+  admin: {
+    messages: {
+      loadFailed: 'Failed to load messages',
+      loadLinesFailed: 'Failed to load lines',
+      createSuccess: 'Message created',
+      updateSuccess: 'Message updated',
+      deleteSuccess: 'Message deleted',
+      createFailed: 'Failed to create message',
+      updateFailed: 'Failed to update message',
+      deleteFailed: 'Failed to delete message',
+      dialog: { titleCreate: 'New Broadcast Message', titleEdit: 'Edit Message' },
+      confirm: { deleteTitle: 'Delete Message', deleteMessage: 'Delete message "{{ title }}"?' },
+    },
+  },
+};
 
 describe('MessagesComponent', () => {
   let component: MessagesComponent;
@@ -86,7 +105,14 @@ describe('MessagesComponent', () => {
     mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
-      imports: [MessagesComponent],
+      imports: [
+        MessagesComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: MessageService, useValue: mockMessageService },

@@ -5,6 +5,47 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
 import { StopService } from '@core/api/stop.service';
 import { Line, BroadcastMessage } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const en = {
+  common: { cancel: 'Cancel', delete: 'Delete' },
+  admin: {
+    messages: {
+      severityInfo: 'Info',
+      severityWarning: 'Warning',
+      severityCritical: 'Critical',
+      dialog: {
+        titleCreate: 'New Broadcast Message',
+        titleEdit: 'Edit Message',
+        fieldTitle: 'Title',
+        fieldTitlePlaceholder: 'e.g., Service Disruption',
+        fieldTitleRequired: 'Title is required',
+        fieldContent: 'Content',
+        fieldContentPlaceholder: 'Detailed message content…',
+        fieldContentRequired: 'Content is required',
+        fieldSeverity: 'Severity',
+        fieldSeverityRequired: 'Severity is required',
+        fieldScope: 'Scope',
+        fieldScopeRequired: 'Scope is required',
+        scopeNetwork: 'Entire Network',
+        scopeLine: 'Specific Line',
+        scopeStop: 'Specific Stop',
+        fieldLine: 'Line',
+        fieldLineRequired: 'Line is required for this scope',
+        fieldStop: 'Stop',
+        fieldStopRequired: 'Stop is required for this scope',
+        fieldStopHint: 'Pick a line first',
+        fieldStartTime: 'Start Time',
+        fieldStartTimeRequired: 'Start time is required',
+        fieldEndTime: 'End Time',
+        fieldEndTimeRequired: 'End time is required',
+        fieldEndTimeInvalid: 'End time must be after start time',
+        actionCreate: 'Create Message',
+        actionSave: 'Save Changes',
+      },
+    },
+  },
+};
 
 describe('MessageDialogComponent', () => {
   let component: MessageDialogComponent;
@@ -22,7 +63,13 @@ describe('MessageDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [MessageDialogComponent],
+      imports: [
+        MessageDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },

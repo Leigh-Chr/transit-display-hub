@@ -29,6 +29,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-stops',
@@ -47,13 +48,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminTableState],
   template: `
+    <ng-container *transloco="let t">
     <div class="stops-page">
       <div class="page-header">
-        <h1 class="page-title">Stops</h1>
+        <h1 class="page-title">{{ t('admin.stops.title') }}</h1>
         <button
           mat-flat-button
           color="primary"
@@ -61,15 +64,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           [disabled]="lines().length === 0"
         >
           <mat-icon>add</mat-icon>
-          New Stop
+          {{ t('admin.stops.newStop') }}
         </button>
       </div>
 
       <div class="toolbar">
         <mat-form-field appearance="outline" class="line-filter">
-          <mat-label>Filter by Line</mat-label>
+          <mat-label>{{ t('admin.stops.filterByLine') }}</mat-label>
           <mat-select [value]="lineId" (selectionChange)="onLineChange($event.value)">
-            <mat-option value="">All Lines</mat-option>
+            <mat-option value="">{{ t('admin.stops.allLines') }}</mat-option>
             @for (line of lines(); track line.id) {
               <mat-option [value]="line.id">
                 {{ line.code }} - {{ line.name }}
@@ -79,7 +82,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         </mat-form-field>
 
         <app-search-input
-          placeholder="Search stops..."
+          [placeholder]="t('admin.stops.searchPlaceholder')"
           [initialValue]="tableState.search"
           (searchChange)="tableState.onSearchChange($event)"
         />
@@ -87,10 +90,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <button
           mat-stroked-button
           (click)="openHubDisplay()"
-          matTooltip="Open multi-stop hub display"
+          [matTooltip]="t('admin.stops.hubDisplayTooltip')"
         >
           <mat-icon>hub</mat-icon>
-          Hub Display
+          {{ t('admin.stops.hubDisplay') }}
         </button>
       </div>
 
@@ -110,16 +113,16 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           @if (lines().length === 0) {
             <app-empty-state
               icon="subway"
-              title="Create a line first"
-              description="You need to create at least one line before adding stops."
+              [title]="t('admin.stops.emptyNoLines')"
+              [description]="t('admin.stops.emptyNoLinesDesc')"
             />
           } @else {
             <app-empty-state
               icon="place"
               iconColor="primary"
-              title="No stops found"
-              description="Create stops to define passenger boarding points on your lines."
-              actionLabel="Create Stop"
+              [title]="t('admin.stops.emptyTitle')"
+              [description]="t('admin.stops.emptyDescription')"
+              [actionLabel]="t('admin.stops.emptyAction')"
               actionIcon="add"
               (action)="openCreateDialog()"
             />
@@ -129,15 +132,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
-            title="No results found"
-            description="Try adjusting your search terms or filter."
+            [title]="t('admin.stops.emptySearchTitle')"
+            [description]="t('admin.stops.emptySearchDescription')"
           />
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
           <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
-              <th mat-header-cell *matHeaderCellDef>Lines</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.stops.colLines') }}</th>
               <td mat-cell *matCellDef="let stop">
                 <div class="line-badges">
                   @for (line of stop.lines; track line.id) {
@@ -150,7 +153,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </ng-container>
 
             <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.stops.colName') }}</th>
               <td mat-cell *matCellDef="let stop">
                 <span class="stop-name-cell">
                   @if (stop.locationType === 1) {
@@ -179,32 +182,32 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
 
             <ng-container matColumnDef="schedules">
               <th mat-header-cell *matHeaderCellDef mat-sort-header="scheduleCount" class="hide-mobile">
-                Schedules
+                {{ t('admin.stops.colSchedules') }}
               </th>
-              <td mat-cell *matCellDef="let stop" class="hide-mobile">{{ stop.scheduleCount }} entries</td>
+              <td mat-cell *matCellDef="let stop" class="hide-mobile">{{ t('admin.stops.colSchedulesEntries', { count: stop.scheduleCount }) }}</td>
             </ng-container>
 
             <ng-container matColumnDef="device">
-              <th mat-header-cell *matHeaderCellDef class="device-column">Display</th>
+              <th mat-header-cell *matHeaderCellDef class="device-column">{{ t('admin.stops.colDisplay') }}</th>
               <td mat-cell *matCellDef="let stop" class="device-column">
                 @if (stop.hasDevice) {
-                  <mat-icon class="device-active" matTooltip="Display configured">tv</mat-icon>
+                  <mat-icon class="device-active" [matTooltip]="t('admin.stops.displayConfigured')">tv</mat-icon>
                 } @else {
-                  <mat-icon class="device-inactive" matTooltip="No display">tv_off</mat-icon>
+                  <mat-icon class="device-inactive" [matTooltip]="t('admin.stops.noDisplay')">tv_off</mat-icon>
                 }
               </td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+              <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.common.actions') }}</th>
               <td mat-cell *matCellDef="let stop" class="actions-column">
-                <button mat-icon-button (click)="openKioskPreview(stop.id)" matTooltip="Preview kiosk display">
+                <button mat-icon-button (click)="openKioskPreview(stop.id)" [matTooltip]="t('admin.stops.previewTooltip')">
                   <mat-icon>visibility</mat-icon>
                 </button>
-                <button mat-icon-button color="primary" (click)="openEditDialog(stop)" matTooltip="Edit stop">
+                <button mat-icon-button color="primary" (click)="openEditDialog(stop)" [matTooltip]="t('admin.stops.editTooltip')">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteStop(stop)" matTooltip="Delete stop">
+                <button mat-icon-button color="warn" (click)="deleteStop(stop)" [matTooltip]="t('admin.stops.deleteTooltip')">
                   <mat-icon>delete</mat-icon>
                 </button>
               </td>
@@ -225,6 +228,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         </mat-card>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -383,6 +387,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
   private readonly stopService = inject(StopService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -423,7 +428,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
   loadLines(): void {
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error('Failed to load lines'),
+      error: () => this.notify.error(this.transloco.translate('admin.stops.loadLinesFailed')),
     });
   }
 
@@ -454,7 +459,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, 'Failed to load stops'));
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.loadFailed')));
         },
       });
   }
@@ -471,7 +476,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
         selectedLineId: this.lineId,
       },
       width: '450px',
-      ariaLabel: 'Create new stop',
+      ariaLabel: this.transloco.translate('admin.stops.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -480,10 +485,10 @@ export class StopsComponent implements OnInit, AfterViewInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadStops();
-            this.notify.success('Stop created');
+            this.notify.success(this.transloco.translate('admin.stops.createSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to create stop'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.createFailed')));
           },
         });
       }
@@ -497,7 +502,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
         lines: this.lines(),
       },
       width: '450px',
-      ariaLabel: `Edit stop ${stop.name}`,
+      ariaLabel: this.transloco.translate('admin.stops.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -505,10 +510,10 @@ export class StopsComponent implements OnInit, AfterViewInit {
         this.stopService.update(stop.id, result as CreateStopRequest).subscribe({
           next: () => {
             this.loadStops();
-            this.notify.success('Stop updated');
+            this.notify.success(this.transloco.translate('admin.stops.updateSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update stop'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.updateFailed')));
           },
         });
       }
@@ -518,12 +523,12 @@ export class StopsComponent implements OnInit, AfterViewInit {
   deleteStop(stop: Stop): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete Stop',
-        message: `Delete stop "${stop.name}"? This will also delete all associated schedules.`,
-        confirmText: 'Delete',
+        title: this.transloco.translate('admin.stops.confirm.deleteTitle'),
+        message: this.transloco.translate('admin.stops.confirm.deleteMessage', { name: stop.name }),
+        confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm deletion of stop ${stop.name}`,
+      ariaLabel: this.transloco.translate('admin.stops.confirm.deleteTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
@@ -531,10 +536,10 @@ export class StopsComponent implements OnInit, AfterViewInit {
         this.stopService.delete(stop.id).subscribe({
           next: () => {
             this.loadStops();
-            this.notify.success('Stop deleted');
+            this.notify.success(this.transloco.translate('admin.stops.deleteSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to delete stop'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.deleteFailed')));
           },
         });
       }

@@ -17,6 +17,7 @@ import { LineDialogComponent } from './line-dialog.component';
 import {
   ConfirmDialogComponent,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
@@ -38,36 +39,39 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     CardSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminTableState],
   template: `
+    <ng-container *transloco="let t">
     <div class="lines-page">
       <div class="page-header">
-        <h1 class="page-title">Lines</h1>
+        <h1 class="page-title">{{ t('admin.lines.title') }}</h1>
         <button mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>add</mat-icon>
-          New Line
+          {{ t('admin.lines.newLine') }}
         </button>
       </div>
 
       <div class="toolbar">
         <app-search-input
-          placeholder="Search lines..."
+          [placeholder]="t('admin.lines.searchPlaceholder')"
           [initialValue]="tableState.search"
           (searchChange)="tableState.onSearchChange($event)"
         />
         <mat-form-field appearance="outline" class="sort-field">
-          <mat-label>Sort by</mat-label>
+          <mat-label>{{ t('admin.common.sortBy') }}</mat-label>
           <mat-select [(ngModel)]="tableState.sortBy" (selectionChange)="onSortChange()">
-            <mat-option value="code">Code (A-Z)</mat-option>
-            <mat-option value="code:desc">Code (Z-A)</mat-option>
-            <mat-option value="name">Name (A-Z)</mat-option>
-            <mat-option value="name:desc">Name (Z-A)</mat-option>
-            <mat-option value="stopCount:desc">Most Stops</mat-option>
-            <mat-option value="stopCount">Fewest Stops</mat-option>
-            <mat-option value="itineraryCount:desc">Most Itineraries</mat-option>
-            <mat-option value="itineraryCount">Fewest Itineraries</mat-option>
+            <mat-option value="code">{{ t('admin.lines.sortCodeAsc') }}</mat-option>
+            <mat-option value="code:desc">{{ t('admin.lines.sortCodeDesc') }}</mat-option>
+            <mat-option value="name">{{ t('admin.lines.sortNameAsc') }}</mat-option>
+            <mat-option value="name:desc">{{ t('admin.lines.sortNameDesc') }}</mat-option>
+            <mat-option value="stopCount:desc">{{ t('admin.lines.sortMostStops') }}</mat-option>
+            <mat-option value="stopCount">{{ t('admin.lines.sortFewestStops') }}</mat-option>
+            <mat-option value="itineraryCount:desc">{{ t('admin.lines.sortMostItineraries') }}</mat-option>
+            <mat-option value="itineraryCount">{{ t('admin.lines.sortFewestItineraries') }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -83,9 +87,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           <app-empty-state
             icon="subway"
             iconColor="primary"
-            title="No lines configured"
-            description="Create your first line to start building your transit network."
-            actionLabel="Create Line"
+            [title]="t('admin.lines.emptyTitle')"
+            [description]="t('admin.lines.emptyDescription')"
+            [actionLabel]="t('admin.lines.emptyAction')"
             actionIcon="add"
             (action)="openCreateDialog()"
           />
@@ -94,8 +98,8 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card>
           <app-empty-state
             icon="search_off"
-            title="No results found"
-            description="Try adjusting your search terms."
+            [title]="t('admin.lines.emptySearchTitle')"
+            [description]="t('admin.lines.emptySearchDescription')"
           />
         </mat-card>
       } @else {
@@ -108,10 +112,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
                     {{ line.code }}
                   </span>
                   <div class="line-actions">
-                    <button mat-icon-button (click)="openEditDialog(line)" matTooltip="Edit">
+                    <button mat-icon-button (click)="openEditDialog(line)" [matTooltip]="t('admin.lines.editTooltip')">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button color="warn" (click)="deleteLine(line)" matTooltip="Delete">
+                    <button mat-icon-button color="warn" (click)="deleteLine(line)" [matTooltip]="t('admin.lines.deleteTooltip')">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>
@@ -120,29 +124,29 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
                 <div class="line-stats">
                   <div class="stat">
                     <mat-icon>place</mat-icon>
-                    <span>{{ line.stopCount }} stops</span>
+                    <span>{{ line.stopCount }} {{ 'admin.dashboard.stopsSuffix' | transloco }}</span>
                   </div>
                   <div class="stat">
                     <mat-icon>directions</mat-icon>
-                    <span>{{ line.itineraryCount }} itineraries</span>
+                    <span>{{ line.itineraryCount }} {{ 'admin.navigation.itineraries' | transloco }}</span>
                   </div>
                 </div>
                 <div class="line-tags">
                   @if (line.continuousPickup === 0 || line.continuousDropOff === 0) {
-                    <span class="line-tag tag-hop" matTooltip="Continuous pickup/drop-off — passengers can board/alight anywhere along the route">
+                    <span class="line-tag tag-hop" [matTooltip]="t('admin.lines.tagHopOnTooltip')">
                       <mat-icon>swap_horiz</mat-icon>
-                      Hop-on/hop-off
+                      {{ t('admin.lines.tagHopOn') }}
                     </span>
                   }
                   @if (line.cemvSupport === 1) {
-                    <span class="line-tag tag-cemv" matTooltip="Contactless EMV (card-tap) accepted on this line">
+                    <span class="line-tag tag-cemv" [matTooltip]="t('admin.lines.tagCemvTooltip')">
                       <mat-icon>contactless</mat-icon>
-                      Sans contact
+                      {{ t('admin.lines.tagCemv') }}
                     </span>
                   } @else if (line.cemvSupport === 2) {
-                    <span class="line-tag tag-cemv-ask" matTooltip="cEMV availability varies — ask the operator">
+                    <span class="line-tag tag-cemv-ask" [matTooltip]="t('admin.lines.tagCemvAskTooltip')">
                       <mat-icon>contactless</mat-icon>
-                      cEMV variable
+                      {{ t('admin.lines.tagCemvAsk') }}
                     </span>
                   }
                 </div>
@@ -161,6 +165,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         />
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -309,6 +314,7 @@ export class LinesComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -356,7 +362,7 @@ export class LinesComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, 'Failed to load lines'));
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.loadFailed')));
         },
       });
   }
@@ -370,7 +376,7 @@ export class LinesComponent implements OnInit {
     const dialogRef = this.dialog.open(LineDialogComponent, {
       data: {},
       width: '450px',
-      ariaLabel: 'Create new line',
+      ariaLabel: this.transloco.translate('admin.lines.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -381,10 +387,10 @@ export class LinesComponent implements OnInit {
             // (which sorts wherever the active sort dictates).
             this.tableState.resetToFirstPage();
             this.loadLines();
-            this.notify.success('Line created');
+            this.notify.success(this.transloco.translate('admin.lines.createSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to create line'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.createFailed')));
           },
         });
       }
@@ -395,7 +401,7 @@ export class LinesComponent implements OnInit {
     const dialogRef = this.dialog.open(LineDialogComponent, {
       data: { line },
       width: '450px',
-      ariaLabel: `Edit line ${line.name}`,
+      ariaLabel: this.transloco.translate('admin.lines.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -403,10 +409,10 @@ export class LinesComponent implements OnInit {
         this.lineService.update(line.id, result as CreateLineRequest).subscribe({
           next: () => {
             this.loadLines();
-            this.notify.success('Line updated');
+            this.notify.success(this.transloco.translate('admin.lines.updateSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update line'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.updateFailed')));
           },
         });
       }
@@ -416,12 +422,12 @@ export class LinesComponent implements OnInit {
   deleteLine(line: Line): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete Line',
-        message: `Delete line "${line.name}"? Itineraries, schedules and line-scoped messages will be removed; stops served by this line are kept.`,
-        confirmText: 'Delete',
+        title: this.transloco.translate('admin.lines.confirm.deleteTitle'),
+        message: this.transloco.translate('admin.lines.confirm.deleteMessage', { name: line.name }),
+        confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm deletion of line ${line.name}`,
+      ariaLabel: this.transloco.translate('admin.lines.confirm.deleteTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
@@ -429,10 +435,10 @@ export class LinesComponent implements OnInit {
         this.lineService.delete(line.id).subscribe({
           next: () => {
             this.loadLines();
-            this.notify.success('Line deleted');
+            this.notify.success(this.transloco.translate('admin.lines.deleteSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to delete line'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.deleteFailed')));
           },
         });
       }

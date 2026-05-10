@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Stop, Line, CreateStopRequest } from '@shared/models';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 export interface StopDialogData {
   stop?: Stop;
@@ -34,14 +35,16 @@ interface StopForm {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data.stop ? 'Edit Stop' : 'New Stop' }}</h2>
+    <ng-container *transloco="let t">
+    <h2 mat-dialog-title>{{ data.stop ? t('admin.stops.dialog.titleEdit') : t('admin.stops.dialog.titleCreate') }}</h2>
     <mat-dialog-content>
       <form #stopForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Lines</mat-label>
+          <mat-label>{{ t('admin.stops.dialog.fieldLines') }}</mat-label>
           <mat-select
             [(ngModel)]="form.lineIds"
             name="lineIds"
@@ -54,25 +57,25 @@ interface StopForm {
               </mat-option>
             }
           </mat-select>
-          <mat-hint>Select one or more lines this stop serves</mat-hint>
-          <mat-error>At least one line is required</mat-error>
+          <mat-hint>{{ t('admin.stops.dialog.fieldLinesHint') }}</mat-hint>
+          <mat-error>{{ t('admin.stops.dialog.fieldLinesRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Name</mat-label>
+          <mat-label>{{ t('admin.stops.dialog.fieldName') }}</mat-label>
           <input
             matInput
             [(ngModel)]="form.name"
             name="name"
-            placeholder="e.g., Central Station"
+            [placeholder]="t('admin.stops.dialog.fieldNamePlaceholder')"
             required
           />
-          <mat-error>Name is required</mat-error>
+          <mat-error>{{ t('admin.stops.dialog.fieldNameRequired') }}</mat-error>
         </mat-form-field>
 
         <div class="coordinates-row">
           <mat-form-field appearance="outline" class="coordinate-field">
-            <mat-label>Latitude</mat-label>
+            <mat-label>{{ t('admin.stops.dialog.fieldLatitude') }}</mat-label>
             <input
               matInput
               type="number"
@@ -84,7 +87,7 @@ interface StopForm {
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="coordinate-field">
-            <mat-label>Longitude</mat-label>
+            <mat-label>{{ t('admin.stops.dialog.fieldLongitude') }}</mat-label>
             <input
               matInput
               type="number"
@@ -98,16 +101,17 @@ interface StopForm {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         [disabled]="!stopForm.valid || form.lineIds.length === 0"
         (click)="save()"
       >
-        {{ data.stop ? 'Save Changes' : 'Create Stop' }}
+        {{ data.stop ? t('admin.stops.dialog.actionSave') : t('admin.stops.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

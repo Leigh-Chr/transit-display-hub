@@ -8,6 +8,25 @@ import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop, PageResponse } from '@shared/models';
 import { StopsComponent } from './stops.component';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const en = {
+  common: { delete: 'Delete' },
+  admin: {
+    stops: {
+      loadFailed: 'Failed to load stops',
+      loadLinesFailed: 'Failed to load lines',
+      createSuccess: 'Stop created',
+      updateSuccess: 'Stop updated',
+      deleteSuccess: 'Stop deleted',
+      createFailed: 'Failed to create stop',
+      updateFailed: 'Failed to update stop',
+      deleteFailed: 'Failed to delete stop',
+      dialog: { titleCreate: 'New Stop', titleEdit: 'Edit Stop' },
+      confirm: { deleteTitle: 'Delete Stop', deleteMessage: 'Delete stop "{{ name }}"?' },
+    },
+  },
+};
 
 const mockLine: Line = {
   id: 'l1',
@@ -92,7 +111,14 @@ describe('StopsComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [StopsComponent],
+      imports: [
+        StopsComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: LineService, useValue: mockLineService },
@@ -246,7 +272,7 @@ describe('StopsComponent', () => {
             selectedLineId: 'l1',
           },
           width: '450px',
-          ariaLabel: 'Create new stop',
+          ariaLabel: 'New Stop',
         })
       );
     });
@@ -293,7 +319,7 @@ describe('StopsComponent', () => {
             lines: [mockLine],
           },
           width: '450px',
-          ariaLabel: 'Edit stop Central',
+          ariaLabel: 'Edit Stop',
         })
       );
 

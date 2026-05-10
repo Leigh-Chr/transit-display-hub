@@ -7,6 +7,26 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineService } from '@core/api/line.service';
 import { Line, PageResponse } from '@shared/models';
 import { LinesComponent } from './lines.component';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const en = {
+  common: { delete: 'Delete' },
+  admin: {
+    lines: {
+      loadFailed: 'Failed to load lines',
+      createSuccess: 'Line created',
+      updateSuccess: 'Line updated',
+      deleteSuccess: 'Line deleted',
+      createFailed: 'Failed to create line',
+      updateFailed: 'Failed to update line',
+      deleteFailed: 'Failed to delete line',
+      dialog: { titleCreate: 'New Line', titleEdit: 'Edit Line' },
+      confirm: { deleteTitle: 'Delete Line', deleteMessage: 'Delete line "{{ name }}"?' },
+    },
+    dashboard: { stopsSuffix: 'stops' },
+    navigation: { itineraries: 'Itineraries' },
+  },
+};
 
 const mockPageResponse: PageResponse<Line> = {
   content: [
@@ -48,7 +68,14 @@ describe('LinesComponent', () => {
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
 
     TestBed.configureTestingModule({
-      imports: [LinesComponent],
+      imports: [
+        LinesComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: LineService, useValue: mockLineService },

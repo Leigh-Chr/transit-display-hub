@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Line, CreateLineRequest, LineType } from '@shared/models';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 export interface LineDialogData {
   line?: Line;
@@ -32,49 +33,51 @@ interface LineForm {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data.line ? 'Edit Line' : 'New Line' }}</h2>
+    <ng-container *transloco="let t">
+    <h2 mat-dialog-title>{{ data.line ? t('admin.lines.dialog.titleEdit') : t('admin.lines.dialog.titleCreate') }}</h2>
     <mat-dialog-content>
       <form #lineForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Code</mat-label>
+          <mat-label>{{ t('admin.lines.dialog.fieldCode') }}</mat-label>
           <input
             matInput
             [(ngModel)]="form.code"
             name="code"
-            placeholder="e.g., L1, M2, T3"
+            [placeholder]="t('admin.lines.dialog.fieldCodePlaceholder')"
             required
           />
-          <mat-error>Code is required</mat-error>
+          <mat-error>{{ t('admin.lines.dialog.fieldCodeRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Name</mat-label>
+          <mat-label>{{ t('admin.lines.dialog.fieldName') }}</mat-label>
           <input
             matInput
             [(ngModel)]="form.name"
             name="name"
-            placeholder="e.g., Line 1 - Downtown Express"
+            [placeholder]="t('admin.lines.dialog.fieldNamePlaceholder')"
             required
           />
-          <mat-error>Name is required</mat-error>
+          <mat-error>{{ t('admin.lines.dialog.fieldNameRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Type</mat-label>
+          <mat-label>{{ t('admin.lines.dialog.fieldType') }}</mat-label>
           <mat-select [(ngModel)]="form.type" name="type" required>
             @for (type of lineTypes; track type) {
               <mat-option [value]="type">{{ type }}</mat-option>
             }
           </mat-select>
-          <mat-error>Type is required</mat-error>
+          <mat-error>{{ t('admin.lines.dialog.fieldTypeRequired') }}</mat-error>
         </mat-form-field>
 
         <div class="color-field">
           <mat-form-field appearance="outline" class="color-text-field">
-            <mat-label>Color</mat-label>
+            <mat-label>{{ t('admin.lines.dialog.fieldColor') }}</mat-label>
             <input
               matInput
               [(ngModel)]="form.color"
@@ -82,7 +85,7 @@ interface LineForm {
               placeholder="#0078D4"
               required
             />
-            <mat-error>Color is required</mat-error>
+            <mat-error>{{ t('admin.lines.dialog.fieldColorRequired') }}</mat-error>
           </mat-form-field>
           <input
             type="color"
@@ -94,16 +97,17 @@ interface LineForm {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         [disabled]="!lineForm.valid"
         (click)="save()"
       >
-        {{ data.line ? 'Save Changes' : 'Create Line' }}
+        {{ data.line ? t('admin.lines.dialog.actionSave') : t('admin.lines.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

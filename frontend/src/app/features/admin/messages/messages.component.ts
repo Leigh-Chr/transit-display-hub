@@ -24,6 +24,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-messages',
@@ -41,33 +42,35 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     CardSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminTableState],
   template: `
+    <ng-container *transloco="let t">
     <div class="messages-page">
       <div class="page-header">
-        <h1 class="page-title">Broadcast Messages</h1>
+        <h1 class="page-title">{{ t('admin.messages.title') }}</h1>
         <button mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>add</mat-icon>
-          New Message
+          {{ t('admin.messages.newMessage') }}
         </button>
       </div>
 
       <div class="toolbar">
         <app-search-input
-          placeholder="Search messages..."
+          [placeholder]="t('admin.messages.searchPlaceholder')"
           [initialValue]="tableState.search"
           (searchChange)="tableState.onSearchChange($event)"
         />
 
         <mat-form-field appearance="outline" class="severity-filter">
-          <mat-label>Severity</mat-label>
+          <mat-label>{{ t('admin.messages.filterSeverity') }}</mat-label>
           <mat-select [value]="severity" (selectionChange)="onSeverityChange($event.value)">
-            <mat-option value="">All severities</mat-option>
-            <mat-option value="CRITICAL">Critical</mat-option>
-            <mat-option value="WARNING">Warning</mat-option>
-            <mat-option value="INFO">Info</mat-option>
+            <mat-option value="">{{ t('admin.messages.allSeverities') }}</mat-option>
+            <mat-option value="CRITICAL">{{ t('admin.messages.severityCritical') }}</mat-option>
+            <mat-option value="WARNING">{{ t('admin.messages.severityWarning') }}</mat-option>
+            <mat-option value="INFO">{{ t('admin.messages.severityInfo') }}</mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -76,7 +79,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           (change)="onActiveChange($event.checked)"
           class="active-checkbox"
         >
-          Active only
+          {{ t('admin.messages.activeOnly') }}
         </mat-checkbox>
       </div>
 
@@ -91,9 +94,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           <app-empty-state
             icon="campaign"
             iconColor="primary"
-            title="No messages found"
-            description="Create broadcast messages to notify passengers across your transit network."
-            actionLabel="Create Message"
+            [title]="t('admin.messages.emptyTitle')"
+            [description]="t('admin.messages.emptyDescription')"
+            [actionLabel]="t('admin.messages.emptyAction')"
             actionIcon="add"
             (action)="openCreateDialog()"
           />
@@ -102,8 +105,8 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card>
           <app-empty-state
             icon="search_off"
-            title="No results found"
-            description="Try adjusting your search terms or filters."
+            [title]="t('admin.messages.emptySearchTitle')"
+            [description]="t('admin.messages.emptySearchDescription')"
           />
         </mat-card>
       } @else {
@@ -143,24 +146,24 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
                         {{ message.severity }}
                       </span>
                       @if (isActive(message)) {
-                        <span class="badge badge-active">ACTIVE</span>
+                        <span class="badge badge-active">{{ t('admin.messages.badgeActive') }}</span>
                       } @else {
-                        <span class="badge badge-inactive">INACTIVE</span>
+                        <span class="badge badge-inactive">{{ t('admin.messages.badgeInactive') }}</span>
                       }
                     </div>
                   </div>
                   <p class="message-text">{{ message.content }}</p>
                   <div class="message-meta">
-                    <span class="meta-label">Scope:</span>
+                    <span class="meta-label">{{ t('admin.messages.scopeLabel') }}</span>
                     @switch (message.scopeType) {
                       @case ('NETWORK') {
-                        <span>Entire Network</span>
+                        <span>{{ t('admin.messages.scopeNetwork') }}</span>
                       }
                       @case ('LINE') {
-                        <span>Line: {{ message.scopeInfo?.name }}</span>
+                        <span>{{ t('admin.messages.scopeLine', { name: message.scopeInfo?.name }) }}</span>
                       }
                       @case ('STOP') {
-                        <span>Stop: {{ message.scopeInfo?.name }}</span>
+                        <span>{{ t('admin.messages.scopeStop', { name: message.scopeInfo?.name }) }}</span>
                       }
                     }
                     <span class="meta-separator hide-mobile">|</span>
@@ -194,6 +197,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         />
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -401,6 +405,7 @@ export class MessagesComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -426,7 +431,7 @@ export class MessagesComponent implements OnInit {
 
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error('Failed to load lines'),
+      error: () => this.notify.error(this.transloco.translate('admin.messages.loadLinesFailed')),
     });
 
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -463,7 +468,7 @@ export class MessagesComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, 'Failed to load messages'));
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.loadFailed')));
         },
       });
   }
@@ -489,7 +494,7 @@ export class MessagesComponent implements OnInit {
     const dialogRef = this.dialog.open(MessageDialogComponent, {
       data: { lines: this.lines() },
       width: '500px',
-      ariaLabel: 'Create new broadcast message',
+      ariaLabel: this.transloco.translate('admin.messages.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -498,10 +503,10 @@ export class MessagesComponent implements OnInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadMessages();
-            this.notify.success('Message created');
+            this.notify.success(this.transloco.translate('admin.messages.createSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to create message'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.createFailed')));
           },
         });
       }
@@ -512,7 +517,7 @@ export class MessagesComponent implements OnInit {
     const dialogRef = this.dialog.open(MessageDialogComponent, {
       data: { message, lines: this.lines() },
       width: '500px',
-      ariaLabel: `Edit message ${message.title}`,
+      ariaLabel: this.transloco.translate('admin.messages.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -520,10 +525,10 @@ export class MessagesComponent implements OnInit {
         this.messageService.update(message.id, result as CreateMessageRequest).subscribe({
           next: () => {
             this.loadMessages();
-            this.notify.success('Message updated');
+            this.notify.success(this.transloco.translate('admin.messages.updateSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update message'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.updateFailed')));
           },
         });
       }
@@ -533,12 +538,12 @@ export class MessagesComponent implements OnInit {
   deleteMessage(message: BroadcastMessage): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete Message',
-        message: `Delete message "${message.title}"?`,
-        confirmText: 'Delete',
+        title: this.transloco.translate('admin.messages.confirm.deleteTitle'),
+        message: this.transloco.translate('admin.messages.confirm.deleteMessage', { title: message.title }),
+        confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm deletion of message ${message.title}`,
+      ariaLabel: this.transloco.translate('admin.messages.confirm.deleteTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
@@ -546,10 +551,10 @@ export class MessagesComponent implements OnInit {
         this.messageService.delete(message.id).subscribe({
           next: () => {
             this.loadMessages();
-            this.notify.success('Message deleted');
+            this.notify.success(this.transloco.translate('admin.messages.deleteSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to delete message'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.deleteFailed')));
           },
         });
       }
