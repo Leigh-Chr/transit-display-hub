@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — 0.10.0 milestone : Accessibility foundations (May 2026)
+
+Brings the project to WCAG 2.2 AA on every persona (kiosk
+passenger, admin operator, map visitor). All commits keep the
+existing test suites green.
+
+**Kiosk**
+- `ThemeService` grows three orthogonal signals: `isDarkMode`
+  (existing), `isHighContrast` (new, defaults to
+  `prefers-contrast: more`) and `isLargeText` (new). Each is
+  persisted to localStorage independently — a low-vision user
+  can stack high-contrast + large-text + dark mode.
+- The kiosk header gains a three-button a11y toolbar:
+  high-contrast toggle, large-text toggle and a vocal-
+  announcement button reading the head of the arrivals board
+  through `window.speechSynthesis` ("ligne X, direction Y, à
+  HH:MM, retardé de N minutes" when realtime data is present).
+- Style overrides land in the global `styles.scss` under
+  `.high-contrast-theme` / `.large-text-theme` so any other
+  route hosting the same toggles inherits the look.
+
+**Network map**
+- New `/map/list` route with a `NetworkListComponent` ships every
+  line and every stop the SVG schematic exposes in a tabular
+  structure screen readers and keyboard-only users can consume
+  directly. Three filters mirror the visual controls: stop name
+  search, wheelchair-accessible only, on-demand-only. Filters
+  combine with AND semantics.
+- The schematic page gains a "Vue liste" link in its header
+  (aria-label: "Vue tabulaire accessible — clavier / lecteur
+  d'écran").
+
+**Architectural decision**
+- ADR 0035 records the three-signal design (vs. a single mode
+  enum), the high-contrast variable overrides (vs. a separate
+  Material theme), the Web Speech API choice (vs. server-side
+  TTS) and the parallel-route table (vs. SVG keyboard
+  retrofitting).
+
 ### Added — 0.9.0 milestone : 100 % GTFS spec coverage + MobilityData validator (May 2026)
 
 Closes the last documented field gaps and wires the canonical
