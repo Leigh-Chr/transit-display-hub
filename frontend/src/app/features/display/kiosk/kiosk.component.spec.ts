@@ -40,6 +40,24 @@ describe('KioskComponent', () => {
     paramsSubject = new Subject();
     queryParamsSubject = new Subject();
 
+    // ThemeService probes matchMedia eagerly when injected; happy-dom
+    // doesn't ship the API natively. Angular CDK's BreakpointObserver
+    // additionally calls addListener / addEventListener on the
+    // returned MediaQueryList, so the stub returns a fully-shaped
+    // object — a bare {matches:false} would let the boot proceed but
+    // unhandled errors would still flood vitest's run log.
+    (window as unknown as { matchMedia: (q: string) => MediaQueryList }).matchMedia =
+      vi.fn().mockReturnValue({
+        matches: false,
+        media: '',
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn().mockReturnValue(false),
+      });
+
     mockDisplayService = {
       getState: vi.fn().mockReturnValue(of(mockDisplayState)),
       getStateByToken: vi.fn().mockReturnValue(of({ deviceId: 'device-1', state: mockDisplayState }))

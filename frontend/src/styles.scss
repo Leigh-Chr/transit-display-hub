@@ -325,6 +325,72 @@ body {
 }
 
 // ----------------------------------------------------------------------------
+// 3.5. ACCESSIBILITY THEMES (set on <html> by ThemeService)
+// ----------------------------------------------------------------------------
+//
+// .high-contrast-theme — WCAG-AAA palette. Overrides Material M3 surface
+//                         tokens with pure black/white plus a saturated
+//                         yellow accent so the kiosk stays readable in
+//                         direct sunlight or for low-vision users.
+// .large-text-theme    — boosts every Material font-size by 1.4× via
+//                         the M3 typescale variables. Layout adjusts on
+//                         flex containers; fixed-pixel components may
+//                         truncate slightly which is preferred over
+//                         broken layouts.
+
+html.high-contrast-theme,
+html.high-contrast-theme.dark-theme {
+  --mat-sys-surface: #000000;
+  --mat-sys-surface-container: #0a0a0a;
+  --mat-sys-surface-container-high: #1a1a1a;
+  --mat-sys-surface-container-low: #050505;
+  --mat-sys-surface-container-lowest: #000000;
+  --mat-sys-surface-container-highest: #2a2a2a;
+  --mat-sys-on-surface: #ffffff;
+  --mat-sys-on-surface-variant: #f0f0f0;
+  --mat-sys-outline: #ffffff;
+  --mat-sys-outline-variant: #cccccc;
+  --mat-sys-primary: #ffd400;
+  --mat-sys-on-primary: #000000;
+  --mat-sys-primary-container: #ffd400;
+  --mat-sys-on-primary-container: #000000;
+  --mat-sys-error: #ff5555;
+  --mat-sys-on-error: #000000;
+
+  --app-surface: #000000;
+  --app-surface-tinted: #000000;
+  --app-on-surface: #ffffff;
+  --app-primary: #ffd400;
+
+  // High-contrast focus indicator: thick yellow outline on every
+  // focusable element, never relying on subtle M3 shadows.
+  *:focus-visible {
+    outline: 3px solid #ffd400 !important;
+    outline-offset: 2px !important;
+  }
+}
+
+html.large-text-theme {
+  --mat-sys-display-large-size: 4.5rem;
+  --mat-sys-display-medium-size: 3.6rem;
+  --mat-sys-display-small-size: 3rem;
+  --mat-sys-headline-large-size: 2.8rem;
+  --mat-sys-headline-medium-size: 2.4rem;
+  --mat-sys-headline-small-size: 2rem;
+  --mat-sys-title-large-size: 1.8rem;
+  --mat-sys-title-medium-size: 1.4rem;
+  --mat-sys-title-small-size: 1.2rem;
+  --mat-sys-body-large-size: 1.4rem;
+  --mat-sys-body-medium-size: 1.25rem;
+  --mat-sys-body-small-size: 1.1rem;
+  --mat-sys-label-large-size: 1.2rem;
+  --mat-sys-label-medium-size: 1.1rem;
+  --mat-sys-label-small-size: 1rem;
+
+  font-size: 1.25rem;
+}
+
+// ----------------------------------------------------------------------------
 // 4. LAYOUT UTILITIES
 // ----------------------------------------------------------------------------
 

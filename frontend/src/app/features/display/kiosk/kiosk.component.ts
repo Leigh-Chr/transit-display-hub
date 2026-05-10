@@ -8,9 +8,12 @@ import {
   inject,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DisplayService } from '@core/api/display.service';
+import { ThemeService } from '@core/services/theme.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
@@ -18,7 +21,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [MatIconModule, MatProgressSpinnerModule],
+  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="kiosk">
@@ -46,6 +49,41 @@ import { lineTextColor } from '@shared/utils/color.utils';
           <div class="clock-container">
             <div class="date">{{ currentDate() }}</div>
             <div class="clock">{{ currentTime() }}</div>
+          </div>
+          <!-- Accessibility controls: high-contrast palette, large
+               text, vocal announcement of the next departure. The
+               buttons stay in the top-right corner so a passenger
+               can reach them whatever the layout. aria-pressed is
+               the canonical WAI-ARIA way to expose toggle state to
+               assistive tech. -->
+          <div class="a11y-controls" role="group" aria-label="Accessibilité">
+            <button
+              mat-icon-button
+              type="button"
+              [attr.aria-pressed]="themeService.isHighContrast()"
+              [attr.aria-label]="themeService.isHighContrast() ? 'Désactiver le mode contrasté' : 'Activer le mode contrasté'"
+              [matTooltip]="themeService.isHighContrast() ? 'Mode contrasté actif' : 'Activer le mode contrasté'"
+              (click)="themeService.toggleHighContrast()">
+              <mat-icon>{{ themeService.isHighContrast() ? 'contrast' : 'contrast' }}</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              [attr.aria-pressed]="themeService.isLargeText()"
+              [attr.aria-label]="themeService.isLargeText() ? 'Désactiver le texte agrandi' : 'Activer le texte agrandi'"
+              [matTooltip]="themeService.isLargeText() ? 'Texte agrandi actif' : 'Agrandir le texte'"
+              (click)="themeService.toggleLargeText()">
+              <mat-icon>format_size</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              aria-label="Annoncer vocalement le prochain passage"
+              matTooltip="Écouter le prochain passage"
+              [disabled]="!speechAvailable"
+              (click)="speakNextDeparture()">
+              <mat-icon>volume_up</mat-icon>
+            </button>
           </div>
         </header>
 
@@ -349,6 +387,33 @@ import { lineTextColor } from '@shared/utils/color.utils';
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
+    }
+
+    /* --- Accessibility toolbar --- */
+    .a11y-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5vh;
+      margin-left: 1.5vh;
+      padding: 0.4vh 0.6vh;
+      background: var(--app-kiosk-surface-variant, rgba(255, 255, 255, 0.06));
+      border-radius: 0.6vh;
+    }
+    .a11y-controls button {
+      width: 5vh;
+      height: 5vh;
+      min-width: 44px;
+      min-height: 44px;
+      color: var(--app-kiosk-on-surface);
+    }
+    .a11y-controls button[aria-pressed='true'] {
+      background: var(--app-kiosk-on-surface);
+      color: var(--app-kiosk-surface);
+    }
+    .a11y-controls mat-icon {
+      font-size: 3vh;
+      width: 3vh;
+      height: 3vh;
     }
 
     /* --- Alert Banner (scrolling) --- */
@@ -843,6 +908,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly displayService = inject(DisplayService);
   private readonly wsService = inject(WebSocketService);
+  /** Exposed to the template so the a11y toolbar can bind to its
+   *  three signals (dark / contrast / large text) directly. */
+  readonly themeService = inject(ThemeService);
+
+  /** Cached on construction so the template's `[disabled]` binding
+   *  doesn't probe the platform on every change-detection run. */
+  readonly speechAvailable = typeof window !== 'undefined'
+      && 'speechSynthesis' in window;
 
   displayState = signal<DisplayState | null>(null);
   error = signal<string | null>(null);
@@ -896,6 +969,55 @@ export class KioskComponent implements OnInit, OnDestroy {
     const abs = Math.round(Math.abs(delaySeconds) / 60);
     if (abs === 0) {return 'à l\'heure';}
     return `${sign}${abs} min`;
+  }
+
+  /** Announces the very first arrival on the board through the
+   *  browser's Web Speech API. Used by the assistive button on the
+   *  kiosk header. Falls through silently when no arrivals are
+   *  available or the platform doesn't ship a synthesiser — the
+   *  template gates the button on {@link speechAvailable} but a
+   *  defensive check stays cheap. */
+  speakNextDeparture(): void {
+    const next = this.allArrivals()[0];
+    if (!next) {
+      this.speak('Aucun passage à annoncer pour le moment.');
+      return;
+    }
+    const time = this.formatScheduledTime(next.scheduledTime);
+    const delay = next.realtimeDelaySeconds ?? null;
+    const delayPart = delay === null
+      ? ''
+      : delay === 0
+        ? ', à l\'heure'
+        : delay > 0
+          ? `, retardé de ${Math.round(delay / 60)} minutes`
+          : `, en avance de ${Math.round(Math.abs(delay) / 60)} minutes`;
+    const text = `Prochain passage : ligne ${next.line.code}, `
+      + `direction ${next.destinationName}, à ${time}${delayPart}.`;
+    this.speak(text);
+  }
+
+  /** Wraps {@code window.speechSynthesis} so the speak handlers stay
+   *  one-liners. Cancels any in-flight utterance first so a rapid
+   *  double-press never queues two spoken announcements on top of
+   *  each other. */
+  private speak(text: string): void {
+    if (!this.speechAvailable) {return;}
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }
+
+  /** Pretty-prints a GTFS time string (HH:mm:ss or HH:mm) for vocal
+   *  output. The synthesiser handles bare digits poorly ("zero
+   *  eight forty-two"), but reading "08:42" via French locale yields
+   *  the natural "huit heures quarante-deux" without the seconds. */
+  private formatScheduledTime(raw: string): string {
+    const trimmed = raw.length >= 5 ? raw.substring(0, 5) : raw;
+    const [hh = '0', mm = '00'] = trimmed.split(':');
+    return `${parseInt(hh, 10)} heures ${mm}`;
   }
 
   /** True when the per-arrival platform_code adds information vs.

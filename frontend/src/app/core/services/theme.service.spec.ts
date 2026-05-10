@@ -7,7 +7,9 @@ describe('ThemeService', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    document.documentElement.classList.remove('dark-theme');
+    document.documentElement.classList.remove(
+      'dark-theme', 'high-contrast-theme', 'large-text-theme',
+    );
 
     // Mock matchMedia (happy-dom may not define it natively)
     (window as unknown as { matchMedia: (query: string) => Partial<MediaQueryList> }).matchMedia =
@@ -70,6 +72,43 @@ describe('ThemeService', () => {
       TestBed.tick();
 
       expect(document.documentElement.classList.contains('dark-theme')).toBe(false);
+    });
+  });
+
+  describe('isHighContrast signal', () => {
+    it('should default to false when no stored preference and prefers-contrast: more is not set', () => {
+      expect(service.isHighContrast()).toBe(false);
+    });
+
+    it('should toggle and apply the high-contrast-theme class on the document', () => {
+      service.toggleHighContrast();
+      TestBed.tick();
+
+      expect(service.isHighContrast()).toBe(true);
+      expect(document.documentElement.classList.contains('high-contrast-theme')).toBe(true);
+      expect(localStorage.getItem('contrast')).toBe('high');
+
+      service.toggleHighContrast();
+      TestBed.tick();
+
+      expect(service.isHighContrast()).toBe(false);
+      expect(document.documentElement.classList.contains('high-contrast-theme')).toBe(false);
+      expect(localStorage.getItem('contrast')).toBe('normal');
+    });
+  });
+
+  describe('isLargeText signal', () => {
+    it('should default to false when no stored preference', () => {
+      expect(service.isLargeText()).toBe(false);
+    });
+
+    it('should toggle and apply the large-text-theme class', () => {
+      service.toggleLargeText();
+      TestBed.tick();
+
+      expect(service.isLargeText()).toBe(true);
+      expect(document.documentElement.classList.contains('large-text-theme')).toBe(true);
+      expect(localStorage.getItem('largeText')).toBe('on');
     });
   });
 });
