@@ -25,13 +25,11 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
-    // The integration JMH benchmarks need every Spring Boot starter and
-    // every test-time helper (in-memory H2, JWT setup) on the runtime
-    // path. Inheriting from runtimeClasspath gives us the production
-    // surface without copy-pasting dependency lines into the jmh block.
+    // JMH micros use Spring Data repositories (stubbed via Mockito) and
+    // domain types from main, so we extend the regular implementation
+    // classpath rather than copy-pasting dependency lines.
     named("jmhImplementation") {
         extendsFrom(configurations.implementation.get())
-        extendsFrom(configurations.runtimeOnly.get())
     }
     named("jmhAnnotationProcessor") {
         extendsFrom(configurations.annotationProcessor.get())

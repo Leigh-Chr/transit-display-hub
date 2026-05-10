@@ -89,11 +89,11 @@ Each utility tests a different cost shape:
   pre-merge step. Benchmarks are run on demand; reproducibility on
   busy CI machines is too unreliable to alert on regressions
   automatically.
-- **Loss: no full-stack number today.** When a future ADR documents a
-  refactor of `DisplayStateCalculator`, that ADR's "before / after"
-  table can either accept the noise of a Spring-context run or build
-  a second benchmark surface (probably under `src/jmh/java/...integration/`).
-  Keeping both is healthy; trying to merge them into one is not.
+- **Loss: no full-stack number.** Micros measure isolated services
+  with Mockito-stubbed repositories. Composite hot-paths (controller →
+  service → repository → DB) are not benchmarked here; if a future
+  refactor needs end-to-end numbers, run the existing actuator
+  metrics under load rather than a bespoke Spring-context bench.
 - **Loss: no committed numbers as a baseline.** This ADR doesn't
   publish "isActive should run in < 1 µs". Pinning numerical
   acceptance criteria here would create a flaky correctness guarantee
