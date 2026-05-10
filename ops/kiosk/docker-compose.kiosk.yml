@@ -1,0 +1,59 @@
+# Single-host stack for a kiosk deployment (Raspberry Pi 4+,
+# x86 mini-PC, or any Linux box with Docker). Brings up:
+#
+#   - postgres   : persistent feed storage
+#   - backend    : Spring Boot API on :8080
+#   - frontend   : Nginx serving the Angular bundle on :80
+#
+# Usage:
+#   GTFS_FEED_URL=https://… docker compose -f docker-compose.kiosk.yml up -d
+#
+# A Chromium instance pointed at http://localhost/display/<stopId>
+# turns the host into a kiosk. See docs/kiosk-raspberry-pi.md.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: transit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: transit
+      POSTGRES_USER: transit
+      POSTGRES_PASSWORD: transit
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transit -d transit"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    image: ghcr.io/leigh-chr/transit-display-hub-backend:latest
+    container_name: transit-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: kiosk
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transit
+      SPRING_DATASOURCE_USERNAME: transit
+      SPRING_DATASOURCE_PASSWORD: transit
+      DATA_LOADER_GTFS_URL: ${GTFS_FEED_URL:-}
+      APP_GTFS_VALIDATION_ENABLED: 'true'
+    ports:
+      - "8080:8080"
+
+  frontend:
+    image: ghcr.io/leigh-chr/transit-display-hub-frontend:latest
+    container_name: transit-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres-data:
+    driver: local
