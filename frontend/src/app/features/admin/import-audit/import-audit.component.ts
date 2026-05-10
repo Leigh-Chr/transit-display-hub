@@ -10,6 +10,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * Timeline of GTFS import attempts. Each row exposes status,
@@ -31,48 +32,46 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     MatTooltipModule,
     MatExpansionModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="audit-page">
       <div class="page-header">
-        <h1 class="page-title">Historique des imports</h1>
-        <p class="page-subtitle">
-          Tentatives d'import GTFS — succès, skip pour feed inchangé,
-          échecs avec leur message. Le scheduler boot-time et les
-          import-now manuels écrivent ici.
-        </p>
+        <h1 class="page-title">{{ t('admin.importAudit.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.importAudit.subtitle') }}</p>
       </div>
 
       <div class="toolbar">
         <button mat-stroked-button (click)="reload()" [disabled]="loading()">
           <mat-icon>refresh</mat-icon>
-          Rafraîchir
+          {{ t('admin.importAudit.refresh') }}
         </button>
         @if (audits().length > 0) {
-          <span class="muted">{{ audits().length }} tentative(s)</span>
+          <span class="muted">{{ audits().length }} {{ t('admin.importAudit.attempts') }}</span>
         }
       </div>
 
       @if (audits().length === 0) {
         <app-empty-state
           icon="history"
-          title="Pas encore d'import enregistré"
-          description="Configure app.gtfs.feed-url et déclenche un import depuis l'écran admin." />
+          [title]="t('admin.importAudit.noAudits')"
+          [description]="t('admin.importAudit.noAuditsDesc')" />
       } @else {
         <div class="audit-table-wrapper">
           <table mat-table [dataSource]="audits()" class="audit-table">
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colStatus') }}</th>
               <td mat-cell *matCellDef="let a">
-                <mat-icon [class]="'status-icon ' + statusClass(a.status)" [matTooltip]="statusLabel(a.status)">
+                <mat-icon [class]="'status-icon ' + statusClass(a.status)" [matTooltip]="statusLabel(a.status, t)">
                   {{ statusIcon(a.status) }}
                 </mat-icon>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="startedAt">
-              <th mat-header-cell *matHeaderCellDef>Démarré</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colStarted') }}</th>
               <td mat-cell *matCellDef="let a">
                 <div>{{ a.startedAt | date:'dd/MM HH:mm:ss' }}</div>
                 @if (a.triggeredBy) {
@@ -82,34 +81,34 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="duration">
-              <th mat-header-cell *matHeaderCellDef>Durée</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colDuration') }}</th>
               <td mat-cell *matCellDef="let a">
                 @if (a.durationMs !== null) {
                   {{ formatDuration(a.durationMs) }}
                 } @else {
-                  <span class="muted">en cours…</span>
+                  <span class="muted">{{ t('admin.importAudit.running') }}</span>
                 }
               </td>
             </ng-container>
 
             <ng-container matColumnDef="counts">
-              <th mat-header-cell *matHeaderCellDef>Volumétrie</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colVolume') }}</th>
               <td mat-cell *matCellDef="let a">
                 @if (a.status === 'SUCCESS') {
                   <span class="counts">
-                    <span [matTooltip]="'lignes'">
+                    <span [matTooltip]="t('admin.navigation.lines')">
                       <mat-icon class="inline-icon">subway</mat-icon>
                       {{ a.linesCount ?? 0 }}
                     </span>
-                    <span [matTooltip]="'arrêts'">
+                    <span [matTooltip]="t('admin.navigation.stops')">
                       <mat-icon class="inline-icon">place</mat-icon>
                       {{ a.stopsCount ?? 0 }}
                     </span>
-                    <span [matTooltip]="'itinéraires'">
+                    <span [matTooltip]="t('admin.navigation.itineraries')">
                       <mat-icon class="inline-icon">route</mat-icon>
                       {{ a.itinerariesCount ?? 0 }}
                     </span>
-                    <span [matTooltip]="'horaires'">
+                    <span [matTooltip]="t('admin.navigation.schedules')">
                       <mat-icon class="inline-icon">schedule</mat-icon>
                       {{ formatLarge(a.schedulesCount ?? 0) }}
                     </span>
@@ -121,18 +120,18 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="validation">
-              <th mat-header-cell *matHeaderCellDef>Validation</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colValidation') }}</th>
               <td mat-cell *matCellDef="let a">
                 @if (!a.validationStatus || a.validationStatus === 'SKIPPED') {
-                  <span class="muted" matTooltip="Validation MobilityData désactivée ou non exécutée">—</span>
+                  <span class="muted" [matTooltip]="t('admin.importAudit.validationNotRun')">—</span>
                 } @else if (a.validationStatus === 'FAILED') {
-                  <span class="validation-badge failed" matTooltip="Le validateur n'a pas pu s'exécuter">
+                  <span class="validation-badge failed" [matTooltip]="t('admin.importAudit.validationFailed')">
                     <mat-icon class="inline-icon">error_outline</mat-icon>
-                    Échec
+                    {{ t('admin.importAudit.validationFailedLabel') }}
                   </span>
                 } @else {
                   <div class="validation-row">
-                    <span class="validation-counts" [matTooltip]="validationCountsTooltip(a)">
+                    <span class="validation-counts" [matTooltip]="validationCountsTooltip(a, t)">
                       @if ((a.validationNoticeErrors ?? 0) > 0) {
                         <span class="badge errors">
                           <mat-icon class="inline-icon">error</mat-icon>
@@ -148,14 +147,14 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                       @if ((a.validationNoticeErrors ?? 0) === 0 && (a.validationNoticeWarnings ?? 0) === 0) {
                         <span class="badge clean">
                           <mat-icon class="inline-icon">verified</mat-icon>
-                          Aucun avis
+                          {{ t('admin.importAudit.noValidationNotices') }}
                         </span>
                       }
                     </span>
                     <a mat-icon-button class="report-link"
                        [href]="reportHtmlUrl(a.id)"
                        target="_blank" rel="noopener noreferrer"
-                       matTooltip="Ouvrir le rapport MobilityData (HTML)">
+                       [matTooltip]="t('admin.importAudit.openReport')">
                       <mat-icon>open_in_new</mat-icon>
                     </a>
                   </div>
@@ -164,7 +163,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="hash">
-              <th mat-header-cell *matHeaderCellDef>Hash</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colHash') }}</th>
               <td mat-cell *matCellDef="let a">
                 @if (a.sourceHash) {
                   <code class="hash" [matTooltip]="a.sourceHash">{{ a.sourceHash.slice(0, 8) }}</code>
@@ -173,7 +172,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="error">
-              <th mat-header-cell *matHeaderCellDef>Erreur</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colError') }}</th>
               <td mat-cell *matCellDef="let a" class="ellipsis">
                 @if (a.errorMessage) {
                   <span class="error" [matTooltip]="a.errorMessage">{{ a.errorMessage }}</span>
@@ -187,6 +186,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         </div>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .audit-page { max-width: 1300px; }
@@ -343,12 +343,12 @@ export class ImportAuditComponent implements OnInit {
     }
   }
 
-  statusLabel(status: ImportStatus): string {
+  statusLabel(status: ImportStatus, t: (key: string) => string): string {
     switch (status) {
-      case 'SUCCESS': return 'Succès';
-      case 'SKIPPED_UNCHANGED': return 'Sauté (feed inchangé)';
-      case 'FAILED': return 'Échec';
-      case 'RUNNING': return 'En cours';
+      case 'SUCCESS': return t('admin.importAudit.status.success');
+      case 'SKIPPED_UNCHANGED': return t('admin.importAudit.status.skipped');
+      case 'FAILED': return t('admin.importAudit.status.failed');
+      case 'RUNNING': return t('admin.importAudit.status.running');
     }
   }
 
@@ -375,12 +375,12 @@ export class ImportAuditComponent implements OnInit {
     return `/api/admin/import-audit/${auditId}/validation-report.html`;
   }
 
-  validationCountsTooltip(audit: ImportAudit): string {
+  validationCountsTooltip(audit: ImportAudit, t: (key: string, params?: Record<string, unknown>) => string): string {
     const errors = audit.validationNoticeErrors ?? 0;
     const warnings = audit.validationNoticeWarnings ?? 0;
     if (errors === 0 && warnings === 0) {
-      return 'Le validateur MobilityData n\'a remonté aucun avis sur ce feed.';
+      return t('admin.importAudit.validationClean');
     }
-    return `${errors} erreur(s) et ${warnings} avertissement(s) — cliquez sur le rapport pour le détail.`;
+    return t('admin.importAudit.validationSummary', { errors, warnings });
   }
 }

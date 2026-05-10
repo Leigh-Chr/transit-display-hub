@@ -21,6 +21,7 @@ import {
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-schedules',
@@ -36,12 +37,14 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     MatSortModule,
     TableSkeletonComponent,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="schedules-page">
       <div class="page-header">
-        <h1 class="page-title">Schedules</h1>
+        <h1 class="page-title">{{ t('admin.schedules.title') }}</h1>
         <button
           mat-flat-button
           color="primary"
@@ -49,7 +52,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           [disabled]="!selectedStop()"
         >
           <mat-icon>add</mat-icon>
-          New Schedule Entry
+          {{ t('admin.schedules.newEntry') }}
         </button>
       </div>
 
@@ -57,9 +60,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card-content>
           <div class="selector-row">
             <mat-form-field appearance="outline">
-              <mat-label>Line</mat-label>
+              <mat-label>{{ t('admin.schedules.selectLine') }}</mat-label>
               <mat-select [(ngModel)]="selectedLineId" (selectionChange)="onLineChange()">
-                <mat-option value="">Select a line</mat-option>
+                <mat-option value="">{{ t('admin.schedules.selectLineOption') }}</mat-option>
                 @for (line of lines(); track line.id) {
                   <mat-option [value]="line.id">
                     {{ line.code }} - {{ line.name }}
@@ -69,13 +72,13 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Stop</mat-label>
+              <mat-label>{{ t('admin.schedules.selectStop') }}</mat-label>
               <mat-select
                 [(ngModel)]="selectedStopId"
                 (selectionChange)="loadSchedules()"
                 [disabled]="!selectedLineId"
               >
-                <mat-option value="">Select a stop</mat-option>
+                <mat-option value="">{{ t('admin.schedules.selectStopOption') }}</mat-option>
                 @for (stop of stops(); track stop.id) {
                   <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
                 }
@@ -94,14 +97,14 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         } @else if (dataSource.data.length === 0) {
           <mat-card animate.enter="fade-in">
             <mat-card-header>
-              <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
+              <mat-card-title>{{ t('admin.schedules.scheduleFor', { name: selectedStop()!.name }) }}</mat-card-title>
             </mat-card-header>
             <app-empty-state
               icon="schedule"
               iconColor="primary"
-              title="No schedule entries"
-              description="Add departure times for this stop."
-              actionLabel="Add Entry"
+              [title]="t('admin.schedules.emptyTitle')"
+              [description]="t('admin.schedules.emptyDescription')"
+              [actionLabel]="t('admin.schedules.emptyAction')"
               actionIcon="add"
               (action)="openCreateDialog()"
             />
@@ -109,11 +112,11 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         } @else {
           <mat-card animate.enter="fade-in">
             <mat-card-header>
-              <mat-card-title>Schedule for {{ selectedStop()!.name }}</mat-card-title>
+              <mat-card-title>{{ t('admin.schedules.scheduleFor', { name: selectedStop()!.name }) }}</mat-card-title>
             </mat-card-header>
             <table mat-table [dataSource]="dataSource" matSort class="full-width">
               <ng-container matColumnDef="line">
-                <th mat-header-cell *matHeaderCellDef>Line</th>
+                <th mat-header-cell *matHeaderCellDef>{{ t('admin.schedules.colLine') }}</th>
                 <td mat-cell *matCellDef="let entry">
                   <span class="line-badge" [style.backgroundColor]="entry.itinerary.line.color">
                     {{ entry.itinerary.line.code }}
@@ -122,21 +125,21 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
               </ng-container>
 
               <ng-container matColumnDef="destination">
-                <th mat-header-cell *matHeaderCellDef>Destination</th>
+                <th mat-header-cell *matHeaderCellDef>{{ t('admin.schedules.colDestination') }}</th>
                 <td mat-cell *matCellDef="let entry" class="destination-cell">
-                  {{ entry.itinerary.terminusName || '(no terminus)' }}
+                  {{ entry.itinerary.terminusName || t('admin.schedules.noTerminus') }}
                 </td>
               </ng-container>
 
               <ng-container matColumnDef="time">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.schedules.colTime') }}</th>
                 <td mat-cell *matCellDef="let entry" class="time-cell">
                   {{ formatTime(entry.time) }}
                 </td>
               </ng-container>
 
               <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.common.actions') }}</th>
                 <td mat-cell *matCellDef="let entry" class="actions-column">
                   <button mat-icon-button color="primary" (click)="openEditDialog(entry)">
                     <mat-icon>edit</mat-icon>
@@ -156,12 +159,13 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card>
           <app-empty-state
             icon="touch_app"
-            title="Select a stop"
-            description="Choose a line and stop from the selectors above to view and manage schedules."
+            [title]="t('admin.schedules.selectStopPrompt')"
+            [description]="t('admin.schedules.selectStopPromptDesc')"
           />
         </mat-card>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -245,6 +249,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   readonly sort = viewChild(MatSort);
   loading = signal(false);
@@ -260,7 +265,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error('Failed to load lines'),
+      error: () => this.notify.error(this.transloco.translate('admin.schedules.loadLinesFailed')),
     });
   }
 
@@ -281,7 +286,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (stops) => this.stops.set(stops),
-          error: () => this.notify.error('Failed to load stops'),
+          error: () => this.notify.error(this.transloco.translate('admin.schedules.loadStopsFailed')),
         });
     } else {
       this.stops.set([]);
@@ -300,7 +305,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, 'Failed to load schedules'));
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.loadFailed')));
         },
       });
     } else {
@@ -324,10 +329,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         this.scheduleService.create(this.selectedStopId, result as CreateScheduleRequest).subscribe({
           next: () => {
             this.loadSchedules();
-            this.notify.success('Schedule entry created');
+            this.notify.success(this.transloco.translate('admin.schedules.createSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to create schedule entry'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.createFailed')));
           },
         });
       }
@@ -349,10 +354,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         this.scheduleService.update(entry.id, result as CreateScheduleRequest).subscribe({
           next: () => {
             this.loadSchedules();
-            this.notify.success('Schedule entry updated');
+            this.notify.success(this.transloco.translate('admin.schedules.updateSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update schedule entry'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.updateFailed')));
           },
         });
       }
@@ -363,9 +368,9 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     const terminusName = entry.itinerary.terminusName ?? 'unknown';
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete Schedule Entry',
-        message: `Delete schedule entry at ${this.formatTime(entry.time)} to ${terminusName}?`,
-        confirmText: 'Delete',
+        title: this.transloco.translate('admin.schedules.confirm.deleteTitle'),
+        message: this.transloco.translate('admin.schedules.confirm.deleteMessage', { time: this.formatTime(entry.time), terminus: terminusName }),
+        confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
       ariaLabel: `Confirm deletion of schedule entry at ${this.formatTime(entry.time)}`,
@@ -376,10 +381,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         this.scheduleService.delete(entry.id).subscribe({
           next: () => {
             this.loadSchedules();
-            this.notify.success('Schedule entry deleted');
+            this.notify.success(this.transloco.translate('admin.schedules.deleteSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to delete schedule entry'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.deleteFailed')));
           },
         });
       }

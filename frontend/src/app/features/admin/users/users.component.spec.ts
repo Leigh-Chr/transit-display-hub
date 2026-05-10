@@ -9,6 +9,25 @@ import { UsersComponent } from './users.component';
 import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
 import { User, PageResponse } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLang = {
+  admin: {
+    users: {
+      loadFailed: 'Failed to load users',
+      createSuccess: 'User created',
+      updateSuccess: 'User updated',
+      deleteSuccess: 'User deleted',
+      createFailed: 'Failed to create user',
+      updateFailed: 'Failed to update user',
+      deleteFailed: 'Failed to delete user',
+      confirm: { deleteTitle: 'Delete User', deleteMessage: 'Delete user?' },
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Delete' },
+};
 
 const mockUser: User = { id: '1', username: 'admin', role: 'ADMIN', enabled: true };
 const mockOtherUser: User = { id: '2', username: 'agent', role: 'AGENT', enabled: true };
@@ -84,7 +103,14 @@ describe('UsersComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [UsersComponent],
+      imports: [
+        UsersComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLang, fr: translocoLang },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: UserService, useValue: mockUserService },

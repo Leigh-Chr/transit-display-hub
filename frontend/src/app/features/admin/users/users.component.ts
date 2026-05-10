@@ -23,6 +23,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-users',
@@ -39,22 +40,24 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminTableState],
   template: `
+    <ng-container *transloco="let t">
     <div class="users-page">
       <div class="page-header">
-        <h1 class="page-title">Users</h1>
+        <h1 class="page-title">{{ t('admin.users.title') }}</h1>
         <button mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>person_add</mat-icon>
-          New User
+          {{ t('admin.users.newUser') }}
         </button>
       </div>
 
       <div class="toolbar">
         <app-search-input
-          placeholder="Search users..."
+          [placeholder]="t('admin.users.searchPlaceholder')"
           [initialValue]="tableState.search"
           (searchChange)="tableState.onSearchChange($event)"
         />
@@ -70,9 +73,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           <app-empty-state
             icon="people"
             iconColor="primary"
-            title="No users configured"
-            description="Create users to manage access to the admin panel."
-            actionLabel="Create User"
+            [title]="t('admin.users.emptyTitle')"
+            [description]="t('admin.users.emptyDescription')"
+            [actionLabel]="t('admin.users.emptyAction')"
             actionIcon="person_add"
             (action)="openCreateDialog()"
           />
@@ -81,15 +84,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
-            title="No results found"
-            description="Try adjusting your search terms."
+            [title]="t('admin.users.emptySearchTitle')"
+            [description]="t('admin.users.emptySearchDescription')"
           />
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
           <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="username">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Username</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.users.colUsername') }}</th>
               <td mat-cell *matCellDef="let user">
                 <div class="username-cell">
                   <mat-icon class="user-icon">person</mat-icon>
@@ -99,7 +102,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </ng-container>
 
             <ng-container matColumnDef="role">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.users.colRole') }}</th>
               <td mat-cell *matCellDef="let user">
                 <span class="role-badge" [class.admin]="user.role === 'ADMIN'">
                   {{ user.role }}
@@ -108,18 +111,18 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </ng-container>
 
             <ng-container matColumnDef="enabled">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.users.colStatus') }}</th>
               <td mat-cell *matCellDef="let user">
                 <span class="status-badge" [class.active]="user.enabled">
-                  {{ user.enabled ? 'Active' : 'Disabled' }}
+                  {{ user.enabled ? t('admin.users.statusActive') : t('admin.users.statusDisabled') }}
                 </span>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+              <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.users.colActions') }}</th>
               <td mat-cell *matCellDef="let user" class="actions-column">
-                <button mat-icon-button color="primary" (click)="openEditDialog(user)" aria-label="Edit user">
+                <button mat-icon-button color="primary" (click)="openEditDialog(user)" [attr.aria-label]="t('admin.users.editTooltip')">
                   <mat-icon aria-hidden="true">edit</mat-icon>
                 </button>
                 <button
@@ -128,10 +131,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
                   (click)="deleteUser(user)"
                   [disabled]="isCurrentUser(user) || isLastEnabledAdmin(user)"
                   [matTooltip]="
-                    isCurrentUser(user) ? 'You cannot delete your own account' :
-                    isLastEnabledAdmin(user) ? 'Cannot delete the last enabled admin' : 'Delete user'
+                    isCurrentUser(user) ? t('admin.users.deleteSelfTooltip') :
+                    isLastEnabledAdmin(user) ? t('admin.users.deleteLastAdminTooltip') : t('admin.users.deleteTooltip')
                   "
-                  aria-label="Delete user"
+                  [attr.aria-label]="t('admin.users.deleteTooltip')"
                 >
                   <mat-icon aria-hidden="true">delete</mat-icon>
                 </button>
@@ -153,6 +156,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         </mat-card>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -245,6 +249,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   readonly tableState = inject(AdminTableState);
   readonly sort = viewChild(MatSort);
@@ -295,7 +300,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, 'Failed to load users'));
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.loadFailed')));
         },
       });
   }
@@ -329,10 +334,10 @@ export class UsersComponent implements OnInit, AfterViewInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadUsers();
-            this.notify.success('User created');
+            this.notify.success(this.transloco.translate('admin.users.createSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to create user'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.createFailed')));
           },
         });
       }
@@ -351,10 +356,10 @@ export class UsersComponent implements OnInit, AfterViewInit {
         this.userService.update(user.id, result as UpdateUserRequest).subscribe({
           next: () => {
             this.loadUsers();
-            this.notify.success('User updated');
+            this.notify.success(this.transloco.translate('admin.users.updateSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update user'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.updateFailed')));
           },
         });
       }
@@ -364,9 +369,9 @@ export class UsersComponent implements OnInit, AfterViewInit {
   deleteUser(user: User): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete User',
-        message: `Delete user "${user.username}"? This action cannot be undone.`,
-        confirmText: 'Delete',
+        title: this.transloco.translate('admin.users.confirm.deleteTitle'),
+        message: this.transloco.translate('admin.users.confirm.deleteMessage', { username: user.username }),
+        confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
       ariaLabel: `Confirm deletion of user ${user.username}`,
@@ -377,10 +382,10 @@ export class UsersComponent implements OnInit, AfterViewInit {
         this.userService.delete(user.id).subscribe({
           next: () => {
             this.loadUsers();
-            this.notify.success('User deleted');
+            this.notify.success(this.transloco.translate('admin.users.deleteSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to delete user'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.deleteFailed')));
           },
         });
       }

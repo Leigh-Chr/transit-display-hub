@@ -11,6 +11,7 @@ import { NotifyService } from '@core/services/notify.service';
 import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 /**
  * Admin browser for the GTFS-Realtime caches. Two tabs (alerts and
@@ -37,23 +38,22 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     MatChipsModule,
     MatTooltipModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="realtime-page">
       <div class="page-header">
-        <h1 class="page-title">Temps réel</h1>
-        <p class="page-subtitle">
-          Caches GTFS-Realtime alimentés par le scheduler.
-          Le bouton "Rafraîchir" force un poll immédiat de l'URL configurée.
-        </p>
+        <h1 class="page-title">{{ t('admin.realtime.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.realtime.subtitle') }}</p>
       </div>
 
       <mat-tab-group animationDuration="0ms">
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">campaign</mat-icon>
-            Alertes
+            {{ t('admin.realtime.tabAlerts') }}
             <span class="tab-count">{{ alerts().length }}</span>
           </ng-template>
 
@@ -61,18 +61,18 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             <div class="tab-toolbar">
               <button mat-stroked-button (click)="refreshAlerts()" [disabled]="refreshingAlerts()">
                 <mat-icon>refresh</mat-icon>
-                Rafraîchir
+                {{ t('admin.realtime.refresh') }}
               </button>
-              @if (alertsLoadedAt(); as t) {
-                <span class="muted">Dernière lecture {{ t | date:'HH:mm:ss' }}</span>
+              @if (alertsLoadedAt(); as ts) {
+                <span class="muted">{{ t('admin.realtime.lastRead', { time: (ts | date:'HH:mm:ss') }) }}</span>
               }
             </div>
 
             @if (alerts().length === 0) {
               <app-empty-state
                 icon="cloud_off"
-                title="Aucune alerte active"
-                description="Le cache GTFS-RT alerts est vide. Soit aucune alerte n'est en vigueur, soit l'URL n'est pas configurée." />
+                [title]="t('admin.realtime.noAlerts')"
+                [description]="t('admin.realtime.noAlertsDesc')" />
             } @else {
               <div class="alert-grid">
                 @for (alert of alerts(); track alert.id) {
@@ -113,7 +113,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                       </div>
                       @if (alert.url) {
                         <a [href]="alert.url" target="_blank" rel="noopener" class="alert-link">
-                          Plus d'info
+                          {{ t('admin.realtime.moreInfo') }}
                           <mat-icon>open_in_new</mat-icon>
                         </a>
                       }
@@ -128,7 +128,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">directions_bus</mat-icon>
-            Véhicules
+            {{ t('admin.realtime.tabVehicles') }}
             <span class="tab-count">{{ vehicles().length }}</span>
           </ng-template>
 
@@ -136,40 +136,40 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             <div class="tab-toolbar">
               <button mat-stroked-button (click)="refreshVehicles()" [disabled]="refreshingVehicles()">
                 <mat-icon>refresh</mat-icon>
-                Rafraîchir
+                {{ t('admin.realtime.refresh') }}
               </button>
-              @if (vehiclesLoadedAt(); as t) {
-                <span class="muted">Dernière lecture {{ t | date:'HH:mm:ss' }}</span>
+              @if (vehiclesLoadedAt(); as ts) {
+                <span class="muted">{{ t('admin.realtime.lastRead', { time: (ts | date:'HH:mm:ss') }) }}</span>
               }
             </div>
 
             @if (vehicles().length === 0) {
               <app-empty-state
                 icon="cloud_off"
-                title="Aucun véhicule rapporté"
-                description="Le cache GTFS-RT vehicles est vide. Le poll suivant rafraîchira la liste." />
+                [title]="t('admin.realtime.noVehicles')"
+                [description]="t('admin.realtime.noVehiclesDesc')" />
             } @else {
               <div class="vehicle-table-wrapper">
                 <table mat-table [dataSource]="vehicles()" class="vehicle-table">
                   <ng-container matColumnDef="vehicle">
-                    <th mat-header-cell *matHeaderCellDef>Véhicule</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colVehicle') }}</th>
                     <td mat-cell *matCellDef="let v">
                       <strong>{{ v.vehicleLabel || v.vehicleId || v.entityId }}</strong>
                     </td>
                   </ng-container>
 
                   <ng-container matColumnDef="route">
-                    <th mat-header-cell *matHeaderCellDef>Ligne</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colRoute') }}</th>
                     <td mat-cell *matCellDef="let v">{{ v.routeId || '—' }}</td>
                   </ng-container>
 
                   <ng-container matColumnDef="trip">
-                    <th mat-header-cell *matHeaderCellDef>Trip</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colTrip') }}</th>
                     <td mat-cell *matCellDef="let v">{{ v.tripId || '—' }}</td>
                   </ng-container>
 
                   <ng-container matColumnDef="position">
-                    <th mat-header-cell *matHeaderCellDef>Position</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colPosition') }}</th>
                     <td mat-cell *matCellDef="let v">
                       @if (v.latitude !== null && v.longitude !== null) {
                         {{ v.latitude | number:'1.4-4' }}, {{ v.longitude | number:'1.4-4' }}
@@ -180,7 +180,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   </ng-container>
 
                   <ng-container matColumnDef="speed">
-                    <th mat-header-cell *matHeaderCellDef>Vitesse</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colSpeed') }}</th>
                     <td mat-cell *matCellDef="let v">
                       @if (v.speedMetresPerSecond !== null) {
                         {{ kmh(v.speedMetresPerSecond) | number:'1.0-0' }} km/h
@@ -191,17 +191,17 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   </ng-container>
 
                   <ng-container matColumnDef="status">
-                    <th mat-header-cell *matHeaderCellDef>Statut</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colStatus') }}</th>
                     <td mat-cell *matCellDef="let v">{{ v.currentStatus || '—' }}</td>
                   </ng-container>
 
                   <ng-container matColumnDef="occupancy">
-                    <th mat-header-cell *matHeaderCellDef>Occupation</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colOccupancy') }}</th>
                     <td mat-cell *matCellDef="let v">
                       @if (v.occupancyStatus || v.occupancyPercentage !== null) {
                         <span class="occupancy-badge" [class]="occupancyClass(v)" [matTooltip]="occupancyTooltip(v)">
                           <mat-icon>{{ occupancyIcon(v) }}</mat-icon>
-                          {{ occupancyShort(v) }}
+                          {{ occupancyShort(v, t) }}
                         </span>
                       } @else {
                         —
@@ -210,7 +210,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   </ng-container>
 
                   <ng-container matColumnDef="bearing">
-                    <th mat-header-cell *matHeaderCellDef>Cap</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colBearing') }}</th>
                     <td mat-cell *matCellDef="let v">
                       @if (v.bearing !== null) {
                         <span class="bearing-arrow" [style.transform]="'rotate(' + v.bearing + 'deg)'" [matTooltip]="v.bearing + '°'">
@@ -221,7 +221,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   </ng-container>
 
                   <ng-container matColumnDef="congestion">
-                    <th mat-header-cell *matHeaderCellDef>Congestion</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colCongestion') }}</th>
                     <td mat-cell *matCellDef="let v">
                       @if (v.congestionLevel) {
                         <span class="congestion-pill">{{ v.congestionLevel }}</span>
@@ -230,7 +230,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                   </ng-container>
 
                   <ng-container matColumnDef="timestamp">
-                    <th mat-header-cell *matHeaderCellDef>Émis</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.realtime.colTimestamp') }}</th>
                     <td mat-cell *matCellDef="let v">
                       @if (v.timestampEpochSeconds !== null) {
                         {{ (v.timestampEpochSeconds * 1000) | date:'HH:mm:ss' }}
@@ -249,6 +249,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         </mat-tab>
       </mat-tab-group>
     </div>
+    </ng-container>
   `,
   styles: `
     .realtime-page { max-width: 1200px; }
@@ -368,6 +369,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 export class RealtimeComponent implements OnInit {
   private readonly realtime = inject(RealtimeService);
   private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly alerts = signal<RealtimeAlert[]>([]);
   readonly vehicles = signal<VehiclePosition[]>([]);
@@ -393,7 +395,7 @@ export class RealtimeComponent implements OnInit {
       },
       error: () => {
         this.refreshingAlerts.set(false);
-        this.notify.info('Flux alertes non configuré (app.gtfs-rt.alerts-url vide)');
+        this.notify.info(this.transloco.translate('admin.realtime.alertsNotConfigured'));
       },
     });
   }
@@ -408,7 +410,7 @@ export class RealtimeComponent implements OnInit {
       },
       error: () => {
         this.refreshingVehicles.set(false);
-        this.notify.info('Flux véhicules non configuré (app.gtfs-rt.vehicle-positions-url vide)');
+        this.notify.info(this.transloco.translate('admin.realtime.vehiclesNotConfigured'));
       },
     });
   }
@@ -446,11 +448,11 @@ export class RealtimeComponent implements OnInit {
     return 'help_outline';
   }
 
-  occupancyShort(v: VehiclePosition): string {
+  occupancyShort(v: VehiclePosition, t: (key: string) => string): string {
     const cls = this.occupancyClass(v);
-    if (cls === 'occ-low') {return 'Disponible';}
-    if (cls === 'occ-mid') {return 'Bondé';}
-    if (cls === 'occ-high') {return 'Plein';}
+    if (cls === 'occ-low') {return t('admin.realtime.occupancy.available');}
+    if (cls === 'occ-mid') {return t('admin.realtime.occupancy.crowded');}
+    if (cls === 'occ-high') {return t('admin.realtime.occupancy.full');}
     return v.occupancyPercentage !== null ? `${v.occupancyPercentage}%` : '?';
   }
 

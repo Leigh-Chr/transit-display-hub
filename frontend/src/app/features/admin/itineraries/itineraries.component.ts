@@ -28,6 +28,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-itineraries',
@@ -47,13 +48,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminTableState],
   template: `
+    <ng-container *transloco="let t">
     <div class="itineraries-page">
       <div class="page-header">
-        <h1 class="page-title">Itineraries</h1>
+        <h1 class="page-title">{{ t('admin.itineraries.title') }}</h1>
         @if (isAdmin()) {
           <button
             mat-flat-button
@@ -62,16 +65,16 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             [disabled]="lines().length === 0"
           >
             <mat-icon>add</mat-icon>
-            New Itinerary
+            {{ t('admin.itineraries.newItinerary') }}
           </button>
         }
       </div>
 
       <div class="toolbar">
         <mat-form-field appearance="outline" class="line-filter">
-          <mat-label>Filter by Line</mat-label>
+          <mat-label>{{ t('admin.itineraries.filterByLine') }}</mat-label>
           <mat-select [value]="lineId" (selectionChange)="onLineChange($event.value)">
-            <mat-option value="">All lines</mat-option>
+            <mat-option value="">{{ t('admin.itineraries.allLines') }}</mat-option>
             @for (line of lines(); track line.id) {
               <mat-option [value]="line.id">
                 {{ line.code }} - {{ line.name }}
@@ -81,7 +84,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         </mat-form-field>
 
         <app-search-input
-          placeholder="Search itineraries..."
+          [placeholder]="t('admin.itineraries.searchPlaceholder')"
           [initialValue]="tableState.search"
           (searchChange)="tableState.onSearchChange($event)"
         />
@@ -97,8 +100,8 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           <app-empty-state
             icon="route"
             iconColor="primary"
-            title="No lines configured"
-            description="Create lines first before adding itineraries."
+            [title]="t('admin.itineraries.emptyNoLinesTitle')"
+            [description]="t('admin.itineraries.emptyNoLinesDesc')"
           />
         </mat-card>
       } @else if (dataSource.data.length === 0 && !tableState.search && !lineId) {
@@ -106,9 +109,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           <app-empty-state
             icon="route"
             iconColor="primary"
-            title="No itineraries configured"
-            description="Itineraries define ordered sequences of stops for each direction on a line."
-            [actionLabel]="isAdmin() ? 'Create Itinerary' : ''"
+            [title]="t('admin.itineraries.emptyTitle')"
+            [description]="t('admin.itineraries.emptyDescription')"
+            [actionLabel]="isAdmin() ? t('admin.itineraries.emptyAction') : ''"
             [actionIcon]="isAdmin() ? 'add' : ''"
             (action)="openCreateDialog()"
           />
@@ -117,15 +120,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
-            title="No results found"
-            description="Try adjusting your search terms or filter."
+            [title]="t('admin.itineraries.emptySearchTitle')"
+            [description]="t('admin.itineraries.emptySearchDescription')"
           />
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
           <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Line</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colLine') }}</th>
               <td mat-cell *matCellDef="let itinerary">
                 <span class="line-badge" [style.backgroundColor]="itinerary.line.color">
                   {{ itinerary.line.code }}
@@ -134,19 +137,19 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </ng-container>
 
             <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Itinerary Name</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colName') }}</th>
               <td mat-cell *matCellDef="let itinerary">{{ itinerary.name }}</td>
             </ng-container>
 
             <ng-container matColumnDef="terminusName">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Terminus</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colTerminus') }}</th>
               <td mat-cell *matCellDef="let itinerary" class="terminus-cell">
-                {{ itinerary.terminusName || '(no stops)' }}
+                {{ itinerary.terminusName || t('admin.itineraries.noStops') }}
               </td>
             </ng-container>
 
             <ng-container matColumnDef="direction">
-              <th mat-header-cell *matHeaderCellDef>Direction</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colDirection') }}</th>
               <td mat-cell *matCellDef="let itinerary">
                 @if (itinerary.directionId === 0) {
                   <span class="dir-badge dir-out" matTooltip="GTFS direction_id = 0 (outbound)">→ Aller</span>
@@ -157,17 +160,17 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </ng-container>
 
             <ng-container matColumnDef="stops">
-              <th mat-header-cell *matHeaderCellDef>Stops</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colStops') }}</th>
               <td mat-cell *matCellDef="let itinerary">
-                <span class="stop-count">{{ itinerary.stops?.length || 0 }} stops</span>
+                <span class="stop-count">{{ t('admin.itineraries.stopCount', { count: itinerary.stops?.length || 0 }) }}</span>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="amenities">
-              <th mat-header-cell *matHeaderCellDef>Amenities</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colAmenities') }}</th>
               <td mat-cell *matCellDef="let itinerary">
                 @if (itinerary.carsAllowedDefault === 'ALLOWED') {
-                  <span class="dir-badge amenity-cars" matTooltip="Cars allowed on this trip (motorail / car-ferry)">
+                  <span class="dir-badge amenity-cars" [matTooltip]="t('admin.itineraries.carsAllowedTooltip')">
                     🚗 Voitures
                   </span>
                 }
@@ -175,16 +178,16 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
             </ng-container>
 
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+              <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.itineraries.colActions') }}</th>
               <td mat-cell *matCellDef="let itinerary" class="actions-column">
                 @if (isAdmin()) {
-                  <button mat-icon-button color="primary" (click)="openEditDialog(itinerary)" matTooltip="Edit itinerary">
+                  <button mat-icon-button color="primary" (click)="openEditDialog(itinerary)" [matTooltip]="t('admin.itineraries.editTooltip')">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="accent" (click)="openStopsDialog(itinerary)" matTooltip="Manage stops">
+                  <button mat-icon-button color="accent" (click)="openStopsDialog(itinerary)" [matTooltip]="t('admin.itineraries.editStopsTooltip')">
                     <mat-icon>reorder</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteItinerary(itinerary)" matTooltip="Delete">
+                  <button mat-icon-button color="warn" (click)="deleteItinerary(itinerary)" [matTooltip]="t('admin.itineraries.deleteTooltip')">
                     <mat-icon>delete</mat-icon>
                   </button>
                 }
@@ -206,6 +209,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
         </mat-card>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -312,6 +316,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
   private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   readonly isAdmin = this.authService.isAdmin;
   readonly tableState = inject(AdminTableState);
@@ -340,7 +345,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
 
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error('Failed to load lines'),
+      error: () => this.notify.error(this.transloco.translate('admin.itineraries.loadLinesFailed')),
     });
 
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -385,7 +390,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, 'Failed to load itineraries'));
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.loadFailed')));
         },
       });
   }
@@ -408,10 +413,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadItineraries();
-            this.notify.success('Itinerary created');
+            this.notify.success(this.transloco.translate('admin.itineraries.createSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to create itinerary'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.createFailed')));
           },
         });
       }
@@ -430,10 +435,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         this.itineraryService.update(itinerary.id, result as CreateItineraryRequest).subscribe({
           next: () => {
             this.loadItineraries();
-            this.notify.success('Itinerary updated');
+            this.notify.success(this.transloco.translate('admin.itineraries.updateSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update itinerary'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.updateFailed')));
           },
         });
       }
@@ -452,10 +457,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         this.itineraryService.updateStops(itinerary.id, result).subscribe({
           next: () => {
             this.loadItineraries();
-            this.notify.success('Stops updated');
+            this.notify.success(this.transloco.translate('admin.itineraries.stopsUpdated'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to update stops'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.stopsUpdateFailed')));
           },
         });
       }
@@ -465,9 +470,9 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
   deleteItinerary(itinerary: Itinerary): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete Itinerary',
-        message: `Delete itinerary "${itinerary.name}"? This will also delete all associated schedules.`,
-        confirmText: 'Delete',
+        title: this.transloco.translate('admin.itineraries.confirm.deleteTitle'),
+        message: this.transloco.translate('admin.itineraries.confirm.deleteMessage', { name: itinerary.name }),
+        confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
       ariaLabel: `Confirm deletion of itinerary ${itinerary.name}`,
@@ -478,10 +483,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         this.itineraryService.delete(itinerary.id).subscribe({
           next: () => {
             this.loadItineraries();
-            this.notify.success('Itinerary deleted');
+            this.notify.success(this.transloco.translate('admin.itineraries.deleteSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to delete itinerary'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.deleteFailed')));
           },
         });
       }

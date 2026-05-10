@@ -5,6 +5,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ImportAuditComponent } from './import-audit.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { ImportAudit } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLang = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
 
 describe('ImportAuditComponent', () => {
   let component: ImportAuditComponent;
@@ -36,7 +39,14 @@ describe('ImportAuditComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [ImportAuditComponent],
+      imports: [
+        ImportAuditComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLang, fr: translocoLang },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: GtfsDataService, useValue: mockService },

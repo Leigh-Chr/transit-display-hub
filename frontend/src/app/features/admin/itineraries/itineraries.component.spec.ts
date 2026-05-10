@@ -10,6 +10,28 @@ import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
 import { Itinerary, Line, PageResponse } from '@shared/models';
 import { ItinerariesComponent } from './itineraries.component';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLang = {
+  admin: {
+    itineraries: {
+      loadFailed: 'Failed to load itineraries',
+      loadLinesFailed: 'Failed to load lines',
+      createSuccess: 'Itinerary created',
+      updateSuccess: 'Itinerary updated',
+      deleteSuccess: 'Itinerary deleted',
+      stopsUpdated: 'Stops updated',
+      createFailed: 'Failed to create itinerary',
+      updateFailed: 'Failed to update itinerary',
+      deleteFailed: 'Failed to delete itinerary',
+      stopsUpdateFailed: 'Failed to update stops',
+      confirm: { deleteTitle: 'Delete Itinerary', deleteMessage: 'Delete itinerary?' },
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Delete' },
+};
 
 const mockLine: Line = {
   id: 'l1',
@@ -83,7 +105,14 @@ describe('ItinerariesComponent', () => {
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
 
     TestBed.configureTestingModule({
-      imports: [ItinerariesComponent],
+      imports: [
+        ItinerariesComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLang, fr: translocoLang },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: ItineraryService, useValue: mockItineraryService },

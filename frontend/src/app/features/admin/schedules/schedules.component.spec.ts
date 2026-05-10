@@ -10,6 +10,30 @@ import { Line, Stop, Schedule } from '@shared/models';
 import { SchedulesComponent } from './schedules.component';
 import { ScheduleDialogComponent } from './schedule-dialog.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLang = {
+  admin: {
+    schedules: {
+      loadLinesFailed: 'Failed to load lines',
+      loadStopsFailed: 'Failed to load stops',
+      loadFailed: 'Failed to load schedules',
+      createSuccess: 'Schedule entry created',
+      updateSuccess: 'Schedule entry updated',
+      deleteSuccess: 'Schedule entry deleted',
+      createFailed: 'Failed to create schedule entry',
+      updateFailed: 'Failed to update schedule entry',
+      deleteFailed: 'Failed to delete schedule entry',
+      confirm: {
+        deleteTitle: 'Delete Schedule Entry',
+        deleteMessage: 'Delete schedule entry at {{time}} to {{terminus}}?',
+      },
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Delete' },
+};
 
 const mockLine: Line = { id: 'l1', code: 'L1', name: 'Line 1', color: '#F00', type: null, stopCount: 2, itineraryCount: 1 };
 const mockStop: Stop = { id: 's1', name: 'Central', latitude: 48.8, longitude: 2.3, lines: [{ id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' }], scheduleCount: 3, hasDevice: false };
@@ -45,7 +69,14 @@ describe('SchedulesComponent', () => {
     mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
-      imports: [SchedulesComponent],
+      imports: [
+        SchedulesComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLang, fr: translocoLang },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },

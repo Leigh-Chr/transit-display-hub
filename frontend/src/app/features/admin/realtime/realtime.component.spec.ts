@@ -6,6 +6,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RealtimeComponent } from './realtime.component';
 import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLang = { admin: { realtime: { occupancy: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
 
 describe('RealtimeComponent', () => {
   let component: RealtimeComponent;
@@ -60,7 +63,14 @@ describe('RealtimeComponent', () => {
     mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
-      imports: [RealtimeComponent],
+      imports: [
+        RealtimeComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLang, fr: translocoLang },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: RealtimeService, useValue: mockService },

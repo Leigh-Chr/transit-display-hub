@@ -19,6 +19,7 @@ import {
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-devices',
@@ -33,24 +34,26 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     MatFormFieldModule,
     CardSkeletonComponent,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="devices-page">
       <div class="page-header">
-        <h1 class="page-title">Devices</h1>
+        <h1 class="page-title">{{ t('admin.devices.title') }}</h1>
         <button mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>add</mat-icon>
-          Register Device
+          {{ t('admin.devices.registerDevice') }}
         </button>
       </div>
 
       <mat-form-field appearance="outline" class="status-filter">
-        <mat-label>Status</mat-label>
+        <mat-label>{{ t('admin.devices.filterStatus') }}</mat-label>
         <mat-select [(ngModel)]="statusFilter" (selectionChange)="loadDevices()">
-          <mat-option value="">All Statuses</mat-option>
-          <mat-option value="ONLINE">Online</mat-option>
-          <mat-option value="OFFLINE">Offline</mat-option>
+          <mat-option value="">{{ t('admin.devices.allStatuses') }}</mat-option>
+          <mat-option value="ONLINE">{{ t('admin.devices.statusOnline') }}</mat-option>
+          <mat-option value="OFFLINE">{{ t('admin.devices.statusOffline') }}</mat-option>
         </mat-select>
       </mat-form-field>
 
@@ -65,9 +68,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
           <app-empty-state
             icon="tv"
             iconColor="primary"
-            title="No devices registered"
-            description="Register a device to connect your transit displays."
-            actionLabel="Register Device"
+            [title]="t('admin.devices.emptyTitle')"
+            [description]="t('admin.devices.emptyDescription')"
+            [actionLabel]="t('admin.devices.emptyAction')"
             actionIcon="add"
             (action)="openCreateDialog()"
           />
@@ -96,14 +99,14 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
                     [class.status-online]="device.status === 'ONLINE'"
                     [class.status-offline]="device.status === 'OFFLINE'"
                   >
-                    {{ device.status }}
+                    {{ device.status === 'ONLINE' ? t('admin.devices.statusOnline') : t('admin.devices.statusOffline') }}
                   </span>
                 </div>
 
                 <div class="device-meta">
                   @if (device.lastHeartbeat) {
                     <div class="meta-item">
-                      <span class="meta-label">Last seen:</span>
+                      <span class="meta-label">{{ t('admin.devices.lastSeen') }}</span>
                       {{ device.lastHeartbeat | date : 'short' }}
                     </div>
                   }
@@ -113,11 +116,11 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
               <mat-card-actions align="end">
                 <button mat-button (click)="openKioskPreview(device.stopId)">
                   <mat-icon>visibility</mat-icon>
-                  View Display
+                  {{ t('admin.devices.viewDisplay') }}
                 </button>
                 <button mat-button color="warn" (click)="deleteDevice(device)">
                   <mat-icon>delete</mat-icon>
-                  Remove
+                  {{ t('admin.devices.removeDevice') }}
                 </button>
               </mat-card-actions>
             </mat-card>
@@ -130,12 +133,11 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       <div class="token-overlay">
         <mat-card class="token-card">
           <mat-card-header>
-            <mat-card-title>Device Registered</mat-card-title>
+            <mat-card-title>{{ t('admin.devices.tokenTitle') }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <p class="token-instructions">
-              Copy this token and configure it on your display device.
-              This token is shown only once.
+              {{ t('admin.devices.tokenInstructions') }}
             </p>
             <div class="token-display">
               {{ newDeviceToken() }}
@@ -147,17 +149,18 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
               (click)="copyToken()"
             >
               <mat-icon>content_copy</mat-icon>
-              Copy Token to Clipboard
+              {{ t('admin.devices.copyToken') }}
             </button>
           </mat-card-content>
           <mat-card-actions>
             <button mat-stroked-button class="full-width" (click)="closeTokenModal()">
-              Done
+              {{ t('admin.common.done') }}
             </button>
           </mat-card-actions>
         </mat-card>
       </div>
     }
+    </ng-container>
   `,
   styles: `
     .page-header {
@@ -316,6 +319,7 @@ export class DevicesComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   loading = signal(true);
   devices = signal<Device[]>([]);
@@ -327,7 +331,7 @@ export class DevicesComponent implements OnInit {
     this.loadDevices();
     this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error('Failed to load lines'),
+      error: () => this.notify.error(this.transloco.translate('admin.devices.loadLinesFailed')),
     });
   }
 
@@ -341,7 +345,7 @@ export class DevicesComponent implements OnInit {
       },
       error: (err: unknown) => {
         this.loading.set(false);
-        this.notify.error(httpErrorMessage(err, 'Failed to load devices'));
+        this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.loadFailed')));
       },
     });
   }
@@ -361,7 +365,7 @@ export class DevicesComponent implements OnInit {
             this.loadDevices();
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to register device'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.registerFailed')));
           },
         });
       }
@@ -377,10 +381,10 @@ export class DevicesComponent implements OnInit {
     if (token) {
       navigator.clipboard.writeText(token).then(
         () => {
-          this.notify.success('Token copied to clipboard');
+          this.notify.success(this.transloco.translate('admin.devices.tokenCopied'));
         },
         () => {
-          this.notify.error('Failed to copy token');
+          this.notify.error(this.transloco.translate('admin.devices.tokenCopyFailed'));
         }
       );
     }
@@ -389,9 +393,9 @@ export class DevicesComponent implements OnInit {
   deleteDevice(device: Device): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Remove Device',
-        message: `Remove device at "${device.stopName}"?`,
-        confirmText: 'Remove',
+        title: this.transloco.translate('admin.devices.confirm.removeTitle'),
+        message: this.transloco.translate('admin.devices.confirm.removeMessage', { stopName: device.stopName }),
+        confirmText: this.transloco.translate('admin.common.remove'),
         confirmColor: 'warn',
       },
       ariaLabel: `Confirm removal of device at ${device.stopName}`,
@@ -402,10 +406,10 @@ export class DevicesComponent implements OnInit {
         this.deviceService.delete(device.id).subscribe({
           next: () => {
             this.loadDevices();
-            this.notify.success('Device removed');
+            this.notify.success(this.transloco.translate('admin.devices.removeSuccess'));
           },
           error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, 'Failed to remove device'));
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.removeFailed')));
           },
         });
       }

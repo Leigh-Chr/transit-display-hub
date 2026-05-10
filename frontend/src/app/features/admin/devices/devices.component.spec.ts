@@ -7,6 +7,25 @@ import { DeviceService } from '@core/api/device.service';
 import { LineService } from '@core/api/line.service';
 import { Device, DeviceRegistration, Line } from '@shared/models';
 import { DevicesComponent } from './devices.component';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLang = {
+  admin: {
+    devices: {
+      loadFailed: 'Failed to load devices',
+      loadLinesFailed: 'Failed to load lines',
+      registerFailed: 'Failed to register device',
+      removeSuccess: 'Device removed',
+      removeFailed: 'Failed to remove device',
+      tokenCopied: 'Token copied to clipboard',
+      tokenCopyFailed: 'Failed to copy token',
+      confirm: { removeTitle: 'Remove Device', removeMessage: 'Remove device?' },
+    },
+    common: { remove: 'Remove' },
+    navigation: {},
+  },
+  common: { delete: 'Delete' },
+};
 
 describe('DevicesComponent', () => {
   let component: DevicesComponent;
@@ -72,7 +91,14 @@ describe('DevicesComponent', () => {
     mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
-      imports: [DevicesComponent],
+      imports: [
+        DevicesComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLang, fr: translocoLang },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         { provide: DeviceService, useValue: mockDeviceService },
         { provide: LineService, useValue: mockLineService },

@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FeedInfoService } from '@core/api/feed-info.service';
 import { FeedInfo } from '@shared/models';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * Compact card surfacing GTFS feed provenance and validity status, rendered
@@ -17,14 +18,15 @@ import { FeedInfo } from '@shared/models';
 @Component({
   selector: 'app-feed-info-card',
   standalone: true,
-  imports: [DatePipe, MatCardModule, MatIconModule, MatTooltipModule],
+  imports: [DatePipe, MatCardModule, MatIconModule, MatTooltipModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     @if (loaded() && feed(); as info) {
       <mat-card class="feed-info-card" [class.expired]="status() === 'expired'" [class.expiring]="status() === 'expiring'">
         <mat-card-content>
           <div class="feed-header">
-            <mat-icon class="feed-icon" [matTooltip]="statusTooltip()">{{ statusIcon() }}</mat-icon>
+            <mat-icon class="feed-icon" [matTooltip]="statusTooltip(t)">{{ statusIcon() }}</mat-icon>
             <div class="feed-title">
               <strong>{{ info.publisherName || 'GTFS feed' }}</strong>
               @if (info.feedVersion) {
@@ -41,7 +43,7 @@ import { FeedInfo } from '@shared/models';
                   &rarr;
                   {{ info.endDate ? (info.endDate | date:'mediumDate') : '?' }}
                   @if (daysRemaining() !== null) {
-                    <span class="days-remaining">({{ daysRemaining() }} day{{ daysRemaining() === 1 ? '' : 's' }} left)</span>
+                    <span class="days-remaining">({{ daysRemaining() }} {{ daysRemaining() === 1 ? t('admin.dashboard.feedInfo.dayLeft') : t('admin.dashboard.feedInfo.daysLeft') }})</span>
                   }
                 </span>
               </div>
@@ -49,7 +51,7 @@ import { FeedInfo } from '@shared/models';
             @if (info.importedAt) {
               <div class="feed-line">
                 <mat-icon class="feed-line-icon">cloud_download</mat-icon>
-                <span>Imported {{ info.importedAt | date:'medium' }}</span>
+                <span>{{ t('admin.dashboard.feedInfo.imported') }} {{ info.importedAt | date:'medium' }}</span>
               </div>
             }
             @if (info.sourceUrl) {
@@ -62,9 +64,9 @@ import { FeedInfo } from '@shared/models';
               <div class="feed-line">
                 <mat-icon class="feed-line-icon">translate</mat-icon>
                 <span>
-                  Source language: <strong>{{ info.lang || '?' }}</strong>
+                  {{ t('admin.dashboard.feedInfo.sourceLang') }} <strong>{{ info.lang || '?' }}</strong>
                   @if (info.defaultLang && info.defaultLang !== info.lang) {
-                    · default <strong>{{ info.defaultLang }}</strong>
+                    · {{ t('admin.dashboard.feedInfo.defaultLang') }} <strong>{{ info.defaultLang }}</strong>
                   }
                 </span>
               </div>
@@ -73,6 +75,7 @@ import { FeedInfo } from '@shared/models';
         </mat-card-content>
       </mat-card>
     }
+    </ng-container>
   `,
   styles: `
     :host {
@@ -195,13 +198,13 @@ export class FeedInfoCardComponent implements OnInit {
     }
   });
 
-  readonly statusTooltip = computed(() => {
+  statusTooltip(t: (key: string) => string): string {
     switch (this.status()) {
-      case 'expired': return 'Feed validity has lapsed — refresh from source';
-      case 'expiring': return 'Feed validity ends within a week — refresh soon';
-      default: return 'Feed is current';
+      case 'expired': return t('admin.dashboard.feedInfo.statusExpired');
+      case 'expiring': return t('admin.dashboard.feedInfo.statusExpiring');
+      default: return t('admin.dashboard.feedInfo.statusCurrent');
     }
-  });
+  }
 
   ngOnInit(): void {
     this.feedInfoService.getFeedInfo().subscribe({
