@@ -74,7 +74,7 @@ on screens at stops.
 | Database       | H2 (dev), PostgreSQL (prod)                                 |
 | Real-time      | WebSocket with STOMP                                        |
 | Authentication | JWT                                                         |
-| Tests          | JUnit 5, Vitest, Playwright                                 |
+| Tests          | JUnit 5, Vitest                                             |
 | Benchmarks     | JMH (micro + Spring full-stack)                             |
 | Observability  | Spring Actuator + Micrometer + Prometheus + Grafana         |
 

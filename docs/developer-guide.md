@@ -721,12 +721,6 @@ cd frontend
 
 # Unit tests (Vitest)
 npm test
-
-# Tests with coverage
-npm run test:coverage
-
-# E2E tests (Playwright)
-npm run e2e
 ```
 
 Component and service tests with zoneless configuration
