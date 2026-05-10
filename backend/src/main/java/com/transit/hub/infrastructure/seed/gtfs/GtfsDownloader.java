@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -64,43 +65,44 @@ public class GtfsDownloader {
         }
 
         log.info("Downloading GTFS feed from {}", feedUrl);
-        HttpClient client = HttpClient.newBuilder()
+        try (HttpClient client = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(CONNECT_TIMEOUT)
-                .build();
+                .build()) {
 
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(feedUrl))
-                .timeout(REQUEST_TIMEOUT)
-                .GET();
-        CachedHeaders cached = readCachedHeaders(meta);
-        if (Files.exists(target) && cached != null) {
-            cached.lastModified().ifPresent(v -> builder.header("If-Modified-Since", v));
-            cached.etag().ifPresent(v -> builder.header("If-None-Match", v));
-        }
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(feedUrl))
+                    .timeout(REQUEST_TIMEOUT)
+                    .GET();
+            CachedHeaders cached = readCachedHeaders(meta);
+            if (Files.exists(target) && cached != null) {
+                cached.lastModified().ifPresent(v -> builder.header("If-Modified-Since", v));
+                cached.etag().ifPresent(v -> builder.header("If-None-Match", v));
+            }
 
-        Path tmp = Files.createTempFile(cacheDir, "download-", ".zip.tmp");
-        HttpResponse<Path> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofFile(tmp));
+            Path tmp = Files.createTempFile(cacheDir, "download-", ".zip.tmp");
+            HttpResponse<Path> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofFile(tmp));
 
-        if (response.statusCode() == 304 && Files.exists(target)) {
-            // Server confirmed the cached copy is current. Touch the file so
-            // future calls within DEFAULT_TTL can short-circuit on isFresh.
-            Files.deleteIfExists(tmp);
-            Files.setLastModifiedTime(target, java.nio.file.attribute.FileTime.from(Instant.now()));
-            log.info("GTFS feed unchanged (304 Not Modified) — reusing cached copy: {}", target);
+            if (response.statusCode() == 304 && Files.exists(target)) {
+                // Server confirmed the cached copy is current. Touch the file so
+                // future calls within DEFAULT_TTL can short-circuit on isFresh.
+                Files.deleteIfExists(tmp);
+                Files.setLastModifiedTime(target, java.nio.file.attribute.FileTime.from(Instant.now()));
+                log.info("GTFS feed unchanged (304 Not Modified) — reusing cached copy: {}", target);
+                return target;
+            }
+
+            if (response.statusCode() / 100 != 2) {
+                Files.deleteIfExists(tmp);
+                throw new IOException("GTFS download failed: HTTP " + response.statusCode() + " from " + feedUrl);
+            }
+
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            writeCachedHeaders(meta,
+                    response.headers().firstValue("Last-Modified").orElse(null),
+                    response.headers().firstValue("ETag").orElse(null));
+            log.info("GTFS feed downloaded: {} ({} bytes)", target, Files.size(target));
             return target;
         }
-
-        if (response.statusCode() / 100 != 2) {
-            Files.deleteIfExists(tmp);
-            throw new IOException("GTFS download failed: HTTP " + response.statusCode() + " from " + feedUrl);
-        }
-
-        Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        writeCachedHeaders(meta,
-                response.headers().firstValue("Last-Modified").orElse(null),
-                response.headers().firstValue("ETag").orElse(null));
-        log.info("GTFS feed downloaded: {} ({} bytes)", target, Files.size(target));
-        return target;
     }
 
     private static boolean isFresh(Path path, Duration ttl) throws IOException {
@@ -132,7 +134,7 @@ public class GtfsDownloader {
             for (String line : Files.readAllLines(meta, StandardCharsets.UTF_8)) {
                 int sep = line.indexOf(':');
                 if (sep < 0) { continue; }
-                String key = line.substring(0, sep).trim().toLowerCase();
+                String key = line.substring(0, sep).trim().toLowerCase(Locale.ROOT);
                 String value = line.substring(sep + 1).trim();
                 if (value.isEmpty()) { continue; }
                 if ("last-modified".equals(key)) { lastModified = value; }
@@ -173,7 +175,7 @@ public class GtfsDownloader {
     private static String hash(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(input.getBytes());
+            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest).substring(0, 16);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
