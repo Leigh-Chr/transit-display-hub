@@ -36,21 +36,6 @@ describe('BreakpointService', () => {
       expect(typeof service.isMobile()).toBe('boolean');
     });
 
-    it('should have isTablet signal with initial value', () => {
-      expect(service.isTablet()).toBeDefined();
-      expect(typeof service.isTablet()).toBe('boolean');
-    });
-
-    it('should have isDesktop signal with initial value', () => {
-      expect(service.isDesktop()).toBeDefined();
-      expect(typeof service.isDesktop()).toBe('boolean');
-    });
-
-    it('should have isHandset signal with initial value', () => {
-      expect(service.isHandset()).toBeDefined();
-      expect(typeof service.isHandset()).toBe('boolean');
-    });
-
     it('should have isSmallScreen signal with initial value', () => {
       expect(service.isSmallScreen()).toBeDefined();
       expect(typeof service.isSmallScreen()).toBe('boolean');
@@ -62,22 +47,8 @@ describe('BreakpointService', () => {
       expect(service.isMobile()).toBe(false);
     });
 
-    it('should default isTablet to false', () => {
-      expect(service.isTablet()).toBe(false);
-    });
-
-    it('should default isHandset to false', () => {
-      expect(service.isHandset()).toBe(false);
-    });
-
     it('should default isSmallScreen to false', () => {
       expect(service.isSmallScreen()).toBe(false);
-    });
-
-    it('should default isDesktop to false when breakpoint observer returns no match', () => {
-      // With our mock returning matches: false, the observable emits false
-      // But initial value is true, so the emitted false overrides it
-      expect(typeof service.isDesktop()).toBe('boolean');
     });
   });
 
@@ -85,8 +56,8 @@ describe('BreakpointService', () => {
     it('should call breakpointObserver.observe for each signal', () => {
       // The service constructor calls observe for each signal definition
       expect(mockBreakpointObserver.observe).toHaveBeenCalled();
-      // 5 signals: isMobile, isTablet, isDesktop, isHandset, isSmallScreen
-      expect(mockBreakpointObserver.observe.mock.calls.length).toBe(5);
+      // 2 signals: isMobile, isSmallScreen
+      expect(mockBreakpointObserver.observe.mock.calls.length).toBe(2);
     });
   });
 });
