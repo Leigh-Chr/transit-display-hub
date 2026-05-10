@@ -22,7 +22,7 @@ plugins {
     // the @Benchmark indexer, and a sensible default fork / warmup
     // configuration. Out-of-band of the standard test task so a JMH
     // run stays explicit (`./gradlew jmh`) and never blocks CI.
-    id("me.champeau.jmh") version "0.7.2"
+    id("me.champeau.jmh") version "0.7.3"
 }
 
 group = "com.transit"
