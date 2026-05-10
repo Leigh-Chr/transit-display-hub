@@ -2,10 +2,10 @@
 # Transit Display Hub — kiosk installer
 #
 # Bootstraps a single-host kiosk on a Linux box: installs Docker if
-# missing, pulls the docker-compose.kiosk.yml file, brings the stack
-# up, and (when X / Wayland are available) launches Chromium pointed
-# at http://localhost in fullscreen kiosk mode. Idempotent: re-running
-# the script restarts the stack on the latest tag.
+# missing, clones the repository, builds the images locally, brings the
+# stack up, and (when X / Wayland are available) launches Chromium
+# pointed at http://localhost in fullscreen kiosk mode. Idempotent:
+# re-running the script pulls the latest source and rebuilds.
 #
 # Usage (interactive):
 #   curl -fsSL https://raw.githubusercontent.com/Leigh-Chr/transit-display-hub/main/ops/kiosk/install.sh | bash
@@ -15,11 +15,15 @@
 #
 # Usage (skip the chromium auto-launch — useful for headless servers):
 #   KIOSK_BROWSER=none ./install.sh
+#
+# Note: pre-built GHCR images are not yet published. The script clones
+# the repository and builds images locally. A future release will
+# restore the pull-only path once CI publishes multi-arch images.
 
 set -euo pipefail
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.transit-display-hub}"
-COMPOSE_URL="${COMPOSE_URL:-https://raw.githubusercontent.com/Leigh-Chr/transit-display-hub/main/ops/kiosk/docker-compose.kiosk.yml}"
+REPO_URL="${REPO_URL:-https://github.com/Leigh-Chr/transit-display-hub.git}"
 KIOSK_URL="${KIOSK_URL:-http://localhost}"
 KIOSK_BROWSER="${KIOSK_BROWSER:-auto}"
 
@@ -40,17 +44,22 @@ ensure_docker() {
   fi
 }
 
-fetch_compose() {
-  mkdir -p "$INSTALL_DIR"
-  log "Downloading docker-compose.kiosk.yml to $INSTALL_DIR…"
-  curl -fsSL "$COMPOSE_URL" -o "$INSTALL_DIR/docker-compose.kiosk.yml"
+clone_or_update_repo() {
+  if [ -d "$INSTALL_DIR/.git" ]; then
+    log "Updating existing clone in $INSTALL_DIR…"
+    git -C "$INSTALL_DIR" pull --ff-only
+  else
+    log "Cloning repository to $INSTALL_DIR…"
+    git clone "$REPO_URL" "$INSTALL_DIR"
+  fi
 }
 
 start_stack() {
-  log "Pulling images…"
-  (cd "$INSTALL_DIR" && docker compose -f docker-compose.kiosk.yml pull)
-  log "Bringing up the stack…"
-  (cd "$INSTALL_DIR" && docker compose -f docker-compose.kiosk.yml up -d)
+  log "Building images and bringing up the stack…"
+  (cd "$INSTALL_DIR" && \
+    JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48)}" \
+    GTFS_FEED_URL="${GTFS_FEED_URL:-}" \
+    docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build)
 }
 
 wait_for_frontend() {
@@ -61,7 +70,7 @@ wait_for_frontend() {
     tries=$((tries - 1))
   done
   if [ $tries -eq 0 ]; then
-    err "Frontend did not respond after 120 s. Run 'docker compose -f $INSTALL_DIR/docker-compose.kiosk.yml logs' to investigate."
+    err "Frontend did not respond after 120 s. Run 'docker compose -f $INSTALL_DIR/ops/kiosk/docker-compose.kiosk.yml logs' to investigate."
     exit 1
   fi
   log "Frontend reachable."
@@ -91,7 +100,7 @@ main() {
     warn "Running as root; the installer recommends running as a regular user."
   fi
   ensure_docker
-  fetch_compose
+  clone_or_update_repo
   start_stack
   wait_for_frontend
   launch_browser

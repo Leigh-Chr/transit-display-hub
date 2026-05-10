@@ -72,7 +72,11 @@ For a turnkey kiosk on a Raspberry Pi, see
 [`docs/kiosk-raspberry-pi.md`](docs/kiosk-raspberry-pi.md):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Leigh-Chr/transit-display-hub/main/ops/kiosk/install.sh | bash
+git clone https://github.com/Leigh-Chr/transit-display-hub.git
+cd transit-display-hub
+export JWT_SECRET=$(openssl rand -base64 48)
+GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
+  docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build
 ```
 
 ## Highlights

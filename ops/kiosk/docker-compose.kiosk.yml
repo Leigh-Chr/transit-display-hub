@@ -6,7 +6,7 @@
 #   - frontend   : Nginx serving the Angular bundle on :80
 #
 # Usage:
-#   GTFS_FEED_URL=https://… docker compose -f docker-compose.kiosk.yml up -d
+#   GTFS_FEED_URL=https://… docker compose -f docker-compose.kiosk.yml up -d --build
 #
 # A Chromium instance pointed at http://localhost/display/<stopId>
 # turns the host into a kiosk. See docs/kiosk-raspberry-pi.md.
@@ -29,7 +29,10 @@ services:
       retries: 5
 
   backend:
-    image: ghcr.io/leigh-chr/transit-display-hub-backend:latest
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    image: transit-display-hub-backend:local
     container_name: transit-backend
     restart: unless-stopped
     depends_on:
@@ -37,7 +40,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: kiosk
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - generate with: openssl rand -base64 48}
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required - generate with: openssl rand -base64 48}"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transit
       SPRING_DATASOURCE_USERNAME: transit
       SPRING_DATASOURCE_PASSWORD: transit
@@ -47,7 +50,10 @@ services:
       - "8080:8080"
 
   frontend:
-    image: ghcr.io/leigh-chr/transit-display-hub-frontend:latest
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    image: transit-display-hub-frontend:local
     container_name: transit-frontend
     restart: unless-stopped
     depends_on:

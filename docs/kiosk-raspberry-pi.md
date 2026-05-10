@@ -42,7 +42,22 @@ If `JWT_SECRET` is missing, both Docker Compose (via `:?` syntax) and
 Spring Boot (no fallback in the kiosk profile) will fail fast with an
 explicit error.
 
-## One-line install
+## Install (build from source)
+
+```bash
+git clone https://github.com/Leigh-Chr/transit-display-hub.git
+cd transit-display-hub
+export JWT_SECRET=$(openssl rand -base64 48)
+GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
+  docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build
+```
+
+> Pre-built multi-arch GHCR images are not yet published. Until a CI
+> release pipeline is in place, the kiosk image is built locally from
+> the cloned repository.
+
+Alternatively, the automated installer script handles Docker setup,
+cloning, and the browser launch for you:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Leigh-Chr/transit-display-hub/main/ops/kiosk/install.sh | bash
@@ -52,9 +67,8 @@ The script:
 
 1. Installs Docker if missing (uses the upstream
    `get.docker.com` script).
-2. Downloads `docker-compose.kiosk.yml` to
-   `~/.transit-display-hub/`.
-3. Pulls the two pre-built images from GHCR and starts
+2. Clones the repository to `~/.transit-display-hub/`.
+3. Builds the backend and frontend images locally and starts
    PostgreSQL + backend + frontend.
 4. Polls `http://localhost` until the frontend responds.
 5. Launches Chromium in `--kiosk` mode against
@@ -82,7 +96,7 @@ KIOSK_URL=http://localhost/display/STA_CENTRAL \
 After the script finishes, three containers should be running:
 
 ```bash
-docker compose -f ~/.transit-display-hub/docker-compose.kiosk.yml ps
+docker compose -f ~/.transit-display-hub/ops/kiosk/docker-compose.kiosk.yml ps
 ```
 
 The default credentials (Admin / `admin123`) load on first boot.
@@ -93,8 +107,8 @@ public.
 
 ```bash
 cd ~/.transit-display-hub
-docker compose -f docker-compose.kiosk.yml pull
-docker compose -f docker-compose.kiosk.yml up -d
+git pull --ff-only
+docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build
 ```
 
 ## Auto-start on boot
@@ -132,5 +146,5 @@ Enable it: `systemctl --user enable --now transit-kiosk.service`.
 Logs:
 
 ```bash
-docker compose -f ~/.transit-display-hub/docker-compose.kiosk.yml logs -f
+docker compose -f ~/.transit-display-hub/ops/kiosk/docker-compose.kiosk.yml logs -f
 ```
