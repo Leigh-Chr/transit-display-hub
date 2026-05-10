@@ -3,7 +3,7 @@ plugins {
     jacoco
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.google.protobuf") version "0.9.4"
+    id("com.google.protobuf") version "0.9.5"
     // Official JMH plugin — provides the `jmh` source set, the
     // {@code jmh} verification task, annotation-processor wiring for
     // the @Benchmark indexer, and a sensible default fork / warmup
