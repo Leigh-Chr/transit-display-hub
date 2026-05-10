@@ -937,7 +937,6 @@ dedicated admin page in the UI.
 
 | Method | Endpoint                                          | Purpose                                          |
 | ------ | ------------------------------------------------- | ------------------------------------------------ |
-| `GET`  | `/api/agencies`                                   | exploiting agencies                              |
 | `GET`  | `/api/attributions`                               | public credit block (`attributions.txt`)         |
 | `GET`  | `/api/itineraries/{id}/shape`                     | GTFS polyline of an itinerary                    |
 | `GET`  | `/api/stops/{id}/pathways`                        | indoor topology for a station                    |

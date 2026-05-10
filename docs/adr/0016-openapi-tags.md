@@ -24,7 +24,7 @@ d'authentification :
 | « Écrans publics » | Public GET | `DisplayController` |
 | « Carte réseau » | Public GET | `NetworkMapController` |
 | « Information publique » | Public GET | `AttributionController` |
-| « Données GTFS — *X* » | Lecture authentifiée (admin/agent) | `AgencyController`, `PathwayController`, `ShapeController` |
+| « Données GTFS — *X* » | Lecture authentifiée (admin/agent) | `PathwayController`, `ShapeController` |
 | « Administration — *X* » | ROLE_ADMIN | `FareController`, `BookingRuleController`, `TranslationController`, `FeedInfoController`, `GtfsAdminController`, `ImportAuditController` |
 
 Le préfixe seul indique la barrière de sécurité, le suffixe

@@ -570,7 +570,7 @@ public class DisplayStateCalculator {
      *       so the resolution is deterministic.</li>
      *   <li>The first non-blank {@code agency.timezone} encountered.</li>
      *   <li>The {@code app.timezone} property — kept as a global fallback
-     *       for synthetic-seed installs and feeds without {@code agency.txt}.</li>
+     *       for installs whose feed has no {@code agency.txt}.</li>
      * </ol>
      * Invalid timezone strings (legacy or typo'd) silently fall through to
      * the next step rather than throwing, so a single bad row in the feed

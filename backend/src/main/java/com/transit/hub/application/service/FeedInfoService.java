@@ -17,8 +17,8 @@ public class FeedInfoService {
     /**
      * Returns the singleton feed metadata when a feed has been imported,
      * otherwise empty. The endpoint stays under {@code /api/admin/} so an
-     * empty result is the legitimate state for installs that never imported
-     * (e.g. running the synthetic seed instead of GTFS).
+     * empty result is the legitimate state for installs that have not yet
+     * pulled a GTFS feed.
      */
     @Transactional(readOnly = true)
     public Optional<FeedInfoResponse> getFeedInfo() {

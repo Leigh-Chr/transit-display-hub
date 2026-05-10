@@ -9,7 +9,7 @@ import { FeedInfo } from '@shared/models';
 /**
  * Compact card surfacing GTFS feed provenance and validity status, rendered
  * in the admin dashboard. Three states:
- *   - {@code none}    no feed imported yet (synthetic seed installs)
+ *   - {@code none}    no feed imported yet
  *   - {@code expired} the feed's declared {@code endDate} has lapsed
  *   - {@code expiring} less than 7 days remain before {@code endDate}
  *   - {@code current} otherwise

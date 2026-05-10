@@ -6,7 +6,7 @@ import { FeedInfo } from '@shared/models';
 /**
  * Reads the singleton {@link FeedInfo} record describing the GTFS feed
  * currently loaded into the database. Returns {@code null} when no feed
- * has been imported yet (the synthetic seed path leaves the table empty).
+ * has been imported yet (the table is empty until the first import).
  */
 @Injectable({ providedIn: 'root' })
 export class FeedInfoService {

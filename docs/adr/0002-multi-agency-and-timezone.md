@@ -39,8 +39,8 @@ four sources, in order:**
    served = highest line count among the stop's lines, ties broken by
    line code so the choice is deterministic).
 3. The first non-blank `agency.timezone` encountered.
-4. The `app.timezone` property — the global fallback for synthetic-seed
-   installs and feeds without `agency.txt`.
+4. The `app.timezone` property — the global fallback for installs whose
+   feed has no `agency.txt`.
 
 Invalid timezone strings (legacy entries, typos) silently fall through
 to the next step. We never throw; a malformed agency row should not
@@ -62,8 +62,8 @@ display-state computation; a stop typically has 1–5 lines. Negligible.
 ## Alternatives rejected
 
 - **Lazily detect a single timezone per import and stash it on
-  `FeedInfo`.** Doesn't work for multi-zone feeds. Doesn't work for
-  installs that import nothing (synthetic seed).
+  `FeedInfo`.** Doesn't work for multi-zone feeds, and doesn't work
+  before the first GTFS import has run.
 - **Drop `app.timezone` entirely once `Agency` exists.** Keeps a
-  reasonable fallback path for the dev profile and any deployment
-  running the synthetic seed loader without ever touching GTFS.
+  reasonable fallback for any deployment whose feed lacks `agency.txt`
+  or whose first import has not completed yet.

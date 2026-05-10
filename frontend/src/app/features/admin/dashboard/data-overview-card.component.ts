@@ -13,7 +13,7 @@ import { DataOverview } from '@shared/models';
  * Realtime feeds appear with a dot indicator: green when the cache
  * holds data, grey when the URL is configured but empty, hidden
  * when the feed isn't configured at all. That keeps the card
- * relevant on synthetic-seed installs without RT.
+ * relevant on installs without GTFS-RT.
  */
 @Component({
   selector: 'app-data-overview-card',
