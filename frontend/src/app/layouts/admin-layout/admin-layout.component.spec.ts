@@ -2,10 +2,45 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { AdminLayoutComponent } from './admin-layout.component';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
+
+const en = {
+  admin: {
+    navigation: {
+      dashboard: 'Dashboard',
+      sectionNetwork: 'Network',
+      sectionCommunication: 'Communication',
+      sectionAdministration: 'Administration',
+      lines: 'Lines',
+      stops: 'Stops',
+      itineraries: 'Itineraries',
+      schedules: 'Schedules',
+      networkMap: 'Network Map',
+      hubDisplay: 'Hub Display',
+      messages: 'Messages',
+      devices: 'Devices',
+      realtime: 'Real-time',
+      gtfsData: 'GTFS Data',
+      importAudit: 'Import History',
+      pathways: 'Pathways',
+      shapes: 'Shapes',
+      tadZones: 'DRT Zones',
+      flexStopTimes: 'DRT Stop Times',
+      fareCalculator: 'Fare Calculator',
+      users: 'Users',
+      skipToMain: 'Skip to main content',
+      toggleSidebar: 'Toggle sidebar',
+      toggleMenu: 'Menu',
+      switchLight: 'Switch to light mode',
+      switchDark: 'Switch to dark mode',
+      logout: 'Logout',
+    },
+  },
+};
 
 describe('AdminLayoutComponent', () => {
   let component: AdminLayoutComponent;
@@ -44,7 +79,13 @@ describe('AdminLayoutComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [AdminLayoutComponent],
+      imports: [
+        AdminLayoutComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: mockAuthService },

@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
@@ -31,10 +32,12 @@ import {
     MatButtonModule,
     MatDividerModule,
     MatTooltipModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <ng-container *transloco="let t">
+    <a class="skip-link" href="#main-content">{{ t('admin.navigation.skipToMain') }}</a>
     <mat-sidenav-container class="admin-container">
       <mat-sidenav
         #sidenav
@@ -42,7 +45,7 @@ import {
         [opened]="sidenavOpen()"
         class="admin-sidenav"
         role="navigation"
-        aria-label="Main navigation"
+        [attr.aria-label]="t('admin.navigation.dashboard')"
       >
         <div class="sidenav-header">
           <img src="assets/logo.png" alt="" class="sidenav-logo">
@@ -57,12 +60,12 @@ import {
             (click)="closeSidenavOnMobile()"
           >
             <mat-icon matListItemIcon>dashboard</mat-icon>
-            <span matListItemTitle>Dashboard</span>
+            <span matListItemTitle>{{ t('admin.navigation.dashboard') }}</span>
           </a>
 
           @if (authService.isAdmin()) {
             <mat-divider></mat-divider>
-            <div class="nav-section-title">Network</div>
+            <div class="nav-section-title">{{ t('admin.navigation.sectionNetwork') }}</div>
 
             <a
               mat-list-item
@@ -71,7 +74,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>subway</mat-icon>
-              <span matListItemTitle>Lines</span>
+              <span matListItemTitle>{{ t('admin.navigation.lines') }}</span>
             </a>
 
             <a
@@ -81,7 +84,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>place</mat-icon>
-              <span matListItemTitle>Stops</span>
+              <span matListItemTitle>{{ t('admin.navigation.stops') }}</span>
             </a>
 
             <a
@@ -91,7 +94,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>route</mat-icon>
-              <span matListItemTitle>Itineraries</span>
+              <span matListItemTitle>{{ t('admin.navigation.itineraries') }}</span>
             </a>
 
             <a
@@ -101,7 +104,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>schedule</mat-icon>
-              <span matListItemTitle>Schedules</span>
+              <span matListItemTitle>{{ t('admin.navigation.schedules') }}</span>
             </a>
           }
 
@@ -112,7 +115,7 @@ import {
             (click)="closeSidenavOnMobile()"
           >
             <mat-icon matListItemIcon>map</mat-icon>
-            <span matListItemTitle>Network Map</span>
+            <span matListItemTitle>{{ t('admin.navigation.networkMap') }}</span>
           </a>
 
           @if (authService.isAdmin()) {
@@ -121,12 +124,12 @@ import {
               (click)="openHubDisplay(); closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>hub</mat-icon>
-              <span matListItemTitle>Hub Display</span>
+              <span matListItemTitle>{{ t('admin.navigation.hubDisplay') }}</span>
             </a>
           }
 
           <mat-divider></mat-divider>
-          <div class="nav-section-title">Communication</div>
+          <div class="nav-section-title">{{ t('admin.navigation.sectionCommunication') }}</div>
 
           <a
             mat-list-item
@@ -135,7 +138,7 @@ import {
             (click)="closeSidenavOnMobile()"
           >
             <mat-icon matListItemIcon>campaign</mat-icon>
-            <span matListItemTitle>Messages</span>
+            <span matListItemTitle>{{ t('admin.navigation.messages') }}</span>
           </a>
 
           @if (authService.isAdmin()) {
@@ -146,7 +149,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>tv</mat-icon>
-              <span matListItemTitle>Devices</span>
+              <span matListItemTitle>{{ t('admin.navigation.devices') }}</span>
             </a>
 
             <a
@@ -156,7 +159,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>sensors</mat-icon>
-              <span matListItemTitle>Temps réel</span>
+              <span matListItemTitle>{{ t('admin.navigation.realtime') }}</span>
             </a>
 
             <a
@@ -166,7 +169,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>dataset</mat-icon>
-              <span matListItemTitle>Données GTFS</span>
+              <span matListItemTitle>{{ t('admin.navigation.gtfsData') }}</span>
             </a>
 
             <a
@@ -176,7 +179,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>history</mat-icon>
-              <span matListItemTitle>Historique imports</span>
+              <span matListItemTitle>{{ t('admin.navigation.importAudit') }}</span>
             </a>
 
             <a
@@ -186,7 +189,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>alt_route</mat-icon>
-              <span matListItemTitle>Pathways</span>
+              <span matListItemTitle>{{ t('admin.navigation.pathways') }}</span>
             </a>
 
             <a
@@ -196,7 +199,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>polyline</mat-icon>
-              <span matListItemTitle>Shapes</span>
+              <span matListItemTitle>{{ t('admin.navigation.shapes') }}</span>
             </a>
 
             <a
@@ -206,7 +209,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>layers</mat-icon>
-              <span matListItemTitle>Zones TAD</span>
+              <span matListItemTitle>{{ t('admin.navigation.tadZones') }}</span>
             </a>
 
             <a
@@ -216,7 +219,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>phone_callback</mat-icon>
-              <span matListItemTitle>Stop_times TAD</span>
+              <span matListItemTitle>{{ t('admin.navigation.flexStopTimes') }}</span>
             </a>
 
             <a
@@ -226,11 +229,11 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>calculate</mat-icon>
-              <span matListItemTitle>Calculateur tarifaire</span>
+              <span matListItemTitle>{{ t('admin.navigation.fareCalculator') }}</span>
             </a>
 
             <mat-divider></mat-divider>
-            <div class="nav-section-title">Administration</div>
+            <div class="nav-section-title">{{ t('admin.navigation.sectionAdministration') }}</div>
 
             <a
               mat-list-item
@@ -239,7 +242,7 @@ import {
               (click)="closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>people</mat-icon>
-              <span matListItemTitle>Users</span>
+              <span matListItemTitle>{{ t('admin.navigation.users') }}</span>
             </a>
           }
         </mat-nav-list>
@@ -251,8 +254,8 @@ import {
             mat-icon-button
             type="button"
             (click)="toggleSidenav()"
-            aria-label="Toggle navigation menu"
-            matTooltip="Toggle sidebar"
+            [attr.aria-label]="t('admin.navigation.toggleMenu')"
+            [matTooltip]="t('admin.navigation.toggleSidebar')"
           >
             <mat-icon aria-hidden="true">{{ sidenavOpen() ? 'menu_open' : 'menu' }}</mat-icon>
           </button>
@@ -261,8 +264,8 @@ import {
             mat-icon-button
             type="button"
             (click)="themeService.toggleTheme()"
-            [matTooltip]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
-            [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+            [matTooltip]="themeService.isDarkMode() ? t('admin.navigation.switchLight') : t('admin.navigation.switchDark')"
+            [attr.aria-label]="themeService.isDarkMode() ? t('admin.navigation.switchLight') : t('admin.navigation.switchDark')"
             [attr.aria-pressed]="themeService.isDarkMode()"
           >
             <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -270,10 +273,10 @@ import {
           @if (!breakpointService.isMobile()) {
             <span class="username">{{ authService.currentUser()?.username }}</span>
           }
-          <button mat-button type="button" (click)="logout()" aria-label="Logout">
+          <button mat-button type="button" (click)="logout()" [attr.aria-label]="t('admin.navigation.logout')">
             <mat-icon aria-hidden="true">logout</mat-icon>
             @if (!breakpointService.isMobile()) {
-              Logout
+              {{ t('admin.navigation.logout') }}
             }
           </button>
         </mat-toolbar>
@@ -283,6 +286,7 @@ import {
         </main>
       </mat-sidenav-content>
     </mat-sidenav-container>
+    </ng-container>
   `,
   styles: `
     .admin-container {
