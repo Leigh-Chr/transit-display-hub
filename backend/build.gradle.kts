@@ -1,5 +1,6 @@
 plugins {
     java
+    jacoco
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.protobuf") version "0.9.4"
@@ -159,6 +160,49 @@ tasks.register<Test>("testRealFeed") {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Xlint:deprecation")
+}
+
+// JaCoCo wires automatically into the `test` task; `jacocoTestReport`
+// then writes both an HTML and an XML report under
+// build/reports/jacoco/. We require ./gradlew check to run the report
+// after tests so a CI pipeline gets coverage data without a second
+// command. The minimum coverage threshold is intentionally modest —
+// the goal is to detect a regression below the current baseline, not
+// to block merges on every uncovered branch.
+tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("test"))
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
+    // JMH benchmark sources live outside the `test` source set so they
+    // shouldn't count against coverage; the default classDirectories
+    // already excludes them. We keep generated protobuf code out too —
+    // mechanical Java the validator never lands on.
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude("com/google/transit/realtime/**")
+            }
+        })
+    )
+}
+
+tasks.named("check") {
+    dependsOn(tasks.named("jacocoTestReport"))
+}
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    violationRules {
+        rule {
+            element = "BUNDLE"
+            limit {
+                counter = "INSTRUCTION"
+                value = "COVEREDRATIO"
+                minimum = "0.55".toBigDecimal()
+            }
+        }
+    }
 }
 
 /**
