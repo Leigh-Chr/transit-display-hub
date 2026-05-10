@@ -93,34 +93,6 @@ describe('DeviceService', () => {
     });
   });
 
-  describe('get', () => {
-    it('should return a single device by id', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.get(id).subscribe(device => {
-        expect(device).toEqual(mockDevice);
-        expect(device.stopName).toBe('Central Station');
-      });
-
-      const req = httpMock.expectOne(`/api/devices/${id}`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockDevice);
-    });
-
-    it('should propagate 404 error for non-existent device', () => {
-      const id = 'non-existent-id';
-
-      service.get(id).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/devices/${id}`);
-      req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
-    });
-  });
-
   describe('register', () => {
     it('should register a new device and return registration with token', () => {
       const request: RegisterDeviceRequest = {
@@ -157,62 +129,6 @@ describe('DeviceService', () => {
       });
 
       const req = httpMock.expectOne('/api/devices');
-      req.flush({ message: 'Stop not found' }, { status: 404, statusText: 'Not Found' });
-    });
-  });
-
-  describe('update', () => {
-    it('should update device stop assignment', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-      const request: RegisterDeviceRequest = {
-        stopId: 'new-stop-id'
-      };
-      const updatedDevice: Device = {
-        ...mockDevice,
-        stopId: 'new-stop-id',
-        stopName: 'New Station'
-      };
-
-      service.update(id, request).subscribe(device => {
-        expect(device).toEqual(updatedDevice);
-        expect(device.stopId).toBe('new-stop-id');
-      });
-
-      const req = httpMock.expectOne(`/api/devices/${id}`);
-      expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual(request);
-      req.flush(updatedDevice);
-    });
-
-    it('should propagate 404 error for non-existent device', () => {
-      const id = 'non-existent-id';
-      const request: RegisterDeviceRequest = {
-        stopId: 'stop-123'
-      };
-
-      service.update(id, request).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/devices/${id}`);
-      req.flush({ message: 'Device not found' }, { status: 404, statusText: 'Not Found' });
-    });
-
-    it('should propagate 404 error for non-existent stop', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-      const request: RegisterDeviceRequest = {
-        stopId: 'non-existent-stop'
-      };
-
-      service.update(id, request).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/devices/${id}`);
       req.flush({ message: 'Stop not found' }, { status: 404, statusText: 'Not Found' });
     });
   });

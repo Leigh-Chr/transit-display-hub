@@ -43,28 +43,6 @@ describe('UserService', () => {
     httpMock.verify();
   });
 
-  describe('getAll', () => {
-    it('should return all users', () => {
-      service.getAll().subscribe(users => {
-        expect(users).toEqual(mockUsers);
-        expect(users.length).toBe(2);
-      });
-
-      const req = httpMock.expectOne('/api/users');
-      expect(req.request.method).toBe('GET');
-      req.flush(mockUsers);
-    });
-
-    it('should return empty array when no users', () => {
-      service.getAll().subscribe(users => {
-        expect(users).toEqual([]);
-      });
-
-      const req = httpMock.expectOne('/api/users');
-      req.flush([]);
-    });
-  });
-
   describe('getAllPaginated', () => {
     const mockPageResponse: PageResponse<User> = {
       content: mockUsers,
@@ -102,33 +80,6 @@ describe('UserService', () => {
       );
       expect(req.request.method).toBe('GET');
       req.flush(mockPageResponse);
-    });
-  });
-
-  describe('get', () => {
-    it('should return a single user by id', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.get(id).subscribe(user => {
-        expect(user).toEqual(mockUser);
-      });
-
-      const req = httpMock.expectOne(`/api/users/${id}`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockUser);
-    });
-
-    it('should propagate 404 error', () => {
-      const id = 'non-existent-id';
-
-      service.get(id).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/users/${id}`);
-      req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
 

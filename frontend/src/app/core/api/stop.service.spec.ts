@@ -89,34 +89,6 @@ describe('StopService', () => {
     });
   });
 
-  describe('get', () => {
-    it('should return a single stop by id', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.get(id).subscribe(stop => {
-        expect(stop).toEqual(mockStop);
-        expect(stop.name).toBe('Central Station');
-      });
-
-      const req = httpMock.expectOne(`/api/stops/${id}`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockStop);
-    });
-
-    it('should propagate 404 error for non-existent stop', () => {
-      const id = 'non-existent-id';
-
-      service.get(id).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/stops/${id}`);
-      req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
-    });
-  });
-
   describe('create', () => {
     it('should create a new stop', () => {
       const request: CreateStopRequest = {

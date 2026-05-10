@@ -34,10 +34,6 @@ export class MessageService {
     return this.http.get<PageResponse<BroadcastMessage>>(this.baseUrl, { params });
   }
 
-  get(id: string): Observable<BroadcastMessage> {
-    return this.http.get<BroadcastMessage>(`${this.baseUrl}/${id}`);
-  }
-
   create(request: CreateMessageRequest): Observable<BroadcastMessage> {
     return this.http.post<BroadcastMessage>(this.baseUrl, request);
   }

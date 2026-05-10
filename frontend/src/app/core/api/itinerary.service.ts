@@ -39,10 +39,6 @@ export class ItineraryService {
     return this.http.get<PageResponse<Itinerary>>(this.baseUrl, { params });
   }
 
-  get(id: string): Observable<Itinerary> {
-    return this.http.get<Itinerary>(`${this.baseUrl}/${id}`);
-  }
-
   create(request: CreateItineraryRequest): Observable<Itinerary> {
     return this.http.post<Itinerary>(this.baseUrl, request);
   }

@@ -23,10 +23,6 @@ export class LineService {
     return this.http.get<PageResponse<Line>>(this.baseUrl, { params });
   }
 
-  get(id: string): Observable<Line> {
-    return this.http.get<Line>(`${this.baseUrl}/${id}`);
-  }
-
   create(request: CreateLineRequest): Observable<Line> {
     return this.http.post<Line>(this.baseUrl, request);
   }

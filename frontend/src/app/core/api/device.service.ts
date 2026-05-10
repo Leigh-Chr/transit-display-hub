@@ -18,16 +18,8 @@ export class DeviceService {
     return this.http.get<Device[]>(this.baseUrl, { params });
   }
 
-  get(id: string): Observable<Device> {
-    return this.http.get<Device>(`${this.baseUrl}/${id}`);
-  }
-
   register(request: RegisterDeviceRequest): Observable<DeviceRegistration> {
     return this.http.post<DeviceRegistration>(this.baseUrl, request);
-  }
-
-  update(id: string, request: RegisterDeviceRequest): Observable<Device> {
-    return this.http.put<Device>(`${this.baseUrl}/${id}`, request);
   }
 
   delete(id: string): Observable<void> {

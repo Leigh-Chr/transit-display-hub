@@ -32,10 +32,6 @@ export class StopService {
     return this.http.get<PageResponse<Stop>>(this.baseUrl, { params });
   }
 
-  get(id: string): Observable<Stop> {
-    return this.http.get<Stop>(`${this.baseUrl}/${id}`);
-  }
-
   create(request: CreateStopRequest): Observable<Stop> {
     return this.http.post<Stop>(this.baseUrl, request);
   }

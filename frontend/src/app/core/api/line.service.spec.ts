@@ -72,34 +72,6 @@ describe('LineService', () => {
     });
   });
 
-  describe('get', () => {
-    it('should return a single line by id', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.get(id).subscribe(line => {
-        expect(line).toEqual(mockLine);
-        expect(line.id).toBe(id);
-      });
-
-      const req = httpMock.expectOne(`/api/lines/${id}`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockLine);
-    });
-
-    it('should propagate 404 error for non-existent line', () => {
-      const id = 'non-existent-id';
-
-      service.get(id).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/lines/${id}`);
-      req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
-    });
-  });
-
   describe('create', () => {
     it('should create a new line', () => {
       const request: CreateLineRequest = {

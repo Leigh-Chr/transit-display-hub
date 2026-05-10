@@ -99,34 +99,6 @@ describe('MessageService', () => {
     });
   });
 
-  describe('get', () => {
-    it('should return a single message by id', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.get(id).subscribe(message => {
-        expect(message).toEqual(mockMessage);
-        expect(message.title).toBe('Test Alert');
-      });
-
-      const req = httpMock.expectOne(`/api/messages/${id}`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockMessage);
-    });
-
-    it('should propagate 404 error for non-existent message', () => {
-      const id = 'non-existent-id';
-
-      service.get(id).subscribe({
-        error: (err) => {
-          expect(err.status).toBe(404);
-        }
-      });
-
-      const req = httpMock.expectOne(`/api/messages/${id}`);
-      req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
-    });
-  });
-
   describe('create', () => {
     it('should create a NETWORK scope message', () => {
       const request: CreateMessageRequest = {

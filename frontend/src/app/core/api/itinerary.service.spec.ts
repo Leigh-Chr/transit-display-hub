@@ -118,20 +118,6 @@ describe('ItineraryService', () => {
     });
   });
 
-  describe('get', () => {
-    it('should return a single itinerary by id', () => {
-      const id = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.get(id).subscribe(itinerary => {
-        expect(itinerary).toEqual(mockItinerary);
-      });
-
-      const req = httpMock.expectOne(`/api/itineraries/${id}`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockItinerary);
-    });
-  });
-
   describe('create', () => {
     it('should create a new itinerary', () => {
       const request: CreateItineraryRequest = {
