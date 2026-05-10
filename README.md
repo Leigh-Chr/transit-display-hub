@@ -151,7 +151,7 @@ transit-display-hub/
 +-- ops/                     # Operations artifacts
 |   +-- grafana/            # Dashboard JSON + provisioning notes
 +-- docs/                    # Documentation
-|   +-- adr/                # Architecture Decision Records (35)
+|   +-- adr/                # Architecture Decision Records (36)
 ```
 
 ## Documentation
@@ -167,7 +167,7 @@ transit-display-hub/
 - [User Guide](docs/user-guide.md) -
   Admin interface usage
 - [Architecture Decision Records](docs/adr/README.md) -
-  35 ADRs documenting non-obvious choices
+  36 ADRs documenting non-obvious choices
 - [Grafana provisioning](ops/grafana/README.md) -
   Importing the bundled dashboard
 - [Changelog](CHANGELOG.md) - Version history

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — 0.11.0 milestone : Runtime i18n via Transloco (May 2026)
+
+Lays down the runtime translation infrastructure with French as
+the default and English as the second shipped locale. Documents
+the architectural choice in ADR 0036.
+
+- `@jsverse/transloco` (MIT) wired via `provideAppTransloco()` in
+  `app.config.ts`. JSON dictionaries lazy-loaded from
+  `assets/i18n/<lang>.json` on first reference.
+- `LocaleService` exposes a `current()` signal + `toggle()` /
+  `setLang()` mutators. Initial language resolution: localStorage
+  → `navigator.language` prefix match → Transloco default ('fr').
+- `assets/i18n/fr.json` and `assets/i18n/en.json` ship the four
+  initial namespaces (`common`, `kiosk`, `map`, `admin`) plus
+  every label needed by the freshly migrated components.
+- First wave of migrated components: Kiosk a11y toolbar, Network
+  map header, Network list page. The remaining admin browsers /
+  login / feature pages keep their FR literals; the JSON
+  dictionaries already cover their keys for a follow-up batch.
+- The `/map` header gains a 'EN/FR' toggle button calling
+  `LocaleService.toggle()`.
+
 ### Added — 0.10.0 milestone : Accessibility foundations (May 2026)
 
 Brings the project to WCAG 2.2 AA on every persona (kiosk
