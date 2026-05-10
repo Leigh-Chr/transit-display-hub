@@ -7,10 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Post-1.0 cleanup pass to reduce dead weight without changing
-runtime behaviour. No new features, no breaking changes — every
-removal is dead code, an unused dependency, a documentation
-duplicate or an artifact that did not belong in the public repo.
+Post-1.0 hardening and cleanup: three security fixes, several
+correctness fixes identified by static analysis (SpotBugs, PMD)
+and coverage enforcement, toolchain bumps, and a dead-weight
+removal pass. No breaking changes, no new user-facing features.
+
+### Security
+
+- **Whitelist `sortBy` query parameters** on all paginated admin
+  endpoints. Previously any column name was forwarded to the JPA
+  `Sort` expression; now only the declared sortable fields are
+  accepted, returning 400 on unknown values.
+- **Block tracked `.env` file** in CI: a pre-push hook and a
+  dedicated GitHub Actions step abort the push when a `.env`
+  file carrying real secrets is tracked by git.
+- **Gate the default-credentials hint** behind `isDevMode()`.
+  The login page used to display a helper hint with the seeded
+  admin password in all environments; the hint is now suppressed
+  in production builds.
+
+### Fixed
+
+- **Kiosk Spring profile**: added a dedicated `kiosk` profile
+  that enforces `JWT_SECRET` to be set, preventing accidental
+  startup with the default insecure value in production.
+- **`/map/list` column keys and eager `LocaleService`**: fixed
+  wrong i18n keys on the tabular network-map alternative and
+  ensured `LocaleService` initialises before the first render.
+- **Realtime multi-catch**: split an `instanceof`-guarded
+  multi-catch in the GTFS-RT pipeline into separate catch blocks
+  to satisfy the compiler and avoid a silent swallow.
+- **Frontend ESLint warnings** (7 occurrences): unused imports,
+  unnecessary type assertions and stale `@ts-ignore` comments
+  cleared by the ESLint 10 stricter rule set.
+- **`serialVersionUID`** pinned on six `Serializable` JPA entity
+  types flagged by SpotBugs `SE_NO_SERIALVERSIONID`.
+- **`findAll(Pageable)` override** marked `@Override` explicitly
+  on six repository interfaces where the compiler did not see the
+  parent signature (PMD `MissingOverride`).
+- **`GtfsImportService`**: return `Optional<Boolean>` instead of
+  nullable `Boolean`; locale locked to `Locale.ROOT` on the
+  import side to avoid locale-sensitive string comparisons.
+- **`GtfsDownloader`**: `HttpClient` now closed in a
+  try-with-resources block; SHA-256 hash forced to UTF-8; cache
+  key normalised with `Locale.ROOT`.
+- **Frontend coverage reporters**: `@vitest/coverage-v8`
+  reporters now declared explicitly in `vitest.config.ts` so
+  the CI artifact upload finds the LCOV file.
+- **`jacocoTestCoverageVerification`** wired into the Gradle
+  `check` lifecycle so the minimum instruction ratio (0.55) is
+  enforced on `./gradlew check`, not just during a separate task.
+- **STOMP client factory injected** in the frontend specs so
+  unit tests can swap the client without touching
+  `window.location`.
+
+### Changed
+
+- **License metadata** in `package.json` and `build.gradle.kts`
+  aligned with the `AGPL-3.0-only` SPDX identifier to match the
+  `LICENSE` file.
+- **Admin table state centralised**: page index, sort column and
+  search term are now managed in a shared service rather than
+  duplicated per-table component.
+- **`Pageables` helper** extracted on the backend to build
+  `PageRequest` objects from validated sort parameters, replacing
+  inline construction spread across controllers.
+- **`docs/api.md` 971 → 178 lines.** Endpoint catalogue removed —
+  Swagger UI at `/swagger-ui.html` is now the single source of
+  truth. The file keeps the cross-cutting parts only (auth flow,
+  error format, WebSocket usage, GTFS coverage tables, custom
+  Prometheus meters).
+- **`backend/build.gradle.kts`**: `jmhImplementation` no longer
+  extends `runtimeOnly` (only the removed integration bench
+  needed the production runtime classpath).
 
 ### Removed
 
@@ -37,17 +106,36 @@ duplicate or an artifact that did not belong in the public repo.
   called) and `Stop.removeLine` (no reference anywhere). Associated
   unit-test blocks dropped accordingly. Backend compile + 950+
   tests green.
+- **`excludingId` parameter** on `UserService` removed (unused
+  across all callers).
+- **`EnumSet` → `Set`** in GTFS helpers: widened the return type,
+  dropped manual unboxing and an unused dead parameter.
 
-### Changed
+### Internal
 
-- **`docs/api.md` 971 → 178 lines.** Endpoint catalogue removed —
-  Swagger UI at `/swagger-ui.html` is now the single source of
-  truth. The file keeps the cross-cutting parts only (auth flow,
-  error format, WebSocket usage, GTFS coverage tables, custom
-  Prometheus meters).
-- **`backend/build.gradle.kts`**: `jmhImplementation` no longer
-  extends `runtimeOnly` (only the removed integration bench
-  needed the production runtime classpath).
+- **Quality gate**: `./gradlew check` now runs JaCoCo coverage
+  verification, SpotBugs and PMD in addition to the test suite.
+  SpotBugs, PMD, `versions` and OWASP dependency-check plugins
+  wired in `build.gradle.kts`.
+- **Pre-push hook** (Husky): runs lint + knip + `check` on the
+  touched stack so quality regressions are caught before the push.
+- **E2E and dependency-check CI workflows** added alongside the
+  existing backend/frontend workflows.
+- **Hidden source maps** emitted in the production frontend build
+  for post-deploy error symbolication without exposing source to
+  end users.
+- **jscpd defaults pinned** and its report output directory added
+  to `.gitignore`.
+- **Dependency bumps**: TypeScript 6 (frontend, dropped deprecated
+  `baseUrl`), ESLint 10, knip 6, jsdom 29, springdoc-openapi
+  2.8.6, Gradle wrapper + pinned backend deps, protobuf plugin
+  0.9.5.
+- **GTFS-RT cache unit tests** added for the three cache classes
+  (`AlertCache`, `TripUpdateCache`, `VehiclePositionCache`).
+- **Network-map spec fixtures hoisted** into shared helpers to
+  eliminate duplication across the route-result specs.
+- **Redundant knip ignore entries** for spec files and `.d.ts`
+  auto-handled paths removed.
 
 ## [1.0.0] — 2026-05-10
 
@@ -110,9 +198,9 @@ This release is tagged `v1.0.0`.
 
 ---
 
-## [Unreleased]
+### Pre-1.0 milestone notes (folded into 1.0.0 tag)
 
-### Added — 0.12.0 milestone : Quality gates and CI (May 2026)
+#### Added — 0.12.0 milestone : Quality gates and CI (May 2026)
 
 Wires automated quality signals around the project so a
 regression below the current baseline is caught without manual
@@ -137,7 +225,7 @@ inspection.
   threshold, Chromium-only Playwright, no webServer block,
   no Codecov badge.
 
-### Added — 0.11.0 milestone : Runtime i18n via Transloco (May 2026)
+#### Added — 0.11.0 milestone : Runtime i18n via Transloco (May 2026)
 
 Lays down the runtime translation infrastructure with French as
 the default and English as the second shipped locale. Documents
@@ -159,7 +247,7 @@ the architectural choice in ADR 0036.
 - The `/map` header gains a 'EN/FR' toggle button calling
   `LocaleService.toggle()`.
 
-### Added — 0.10.0 milestone : Accessibility foundations (May 2026)
+#### Added — 0.10.0 milestone : Accessibility foundations (May 2026)
 
 Brings the project to WCAG 2.2 AA on every persona (kiosk
 passenger, admin operator, map visitor). All commits keep the
@@ -198,7 +286,7 @@ existing test suites green.
   TTS) and the parallel-route table (vs. SVG keyboard
   retrofitting).
 
-### Added — 0.9.0 milestone : 100 % GTFS spec coverage + MobilityData validator (May 2026)
+#### Added — 0.9.0 milestone : 100 % GTFS spec coverage + MobilityData validator (May 2026)
 
 Closes the last documented field gaps and wires the canonical
 [MobilityData gtfs-validator] (Apache 2.0) into the import pipeline.
@@ -251,7 +339,7 @@ frontend tests) and land sequentially on `main`.
 
 [MobilityData gtfs-validator]: https://github.com/MobilityData/gtfs-validator
 
-### Removed — GTFS-centric scope cleanup (May 2026)
+#### Removed — GTFS-centric scope cleanup (May 2026)
 
 A full audit of the codebase against the GTFS spec and current
 consumers identified the unused / non-GTFS surface. Ten atomic commits
@@ -295,7 +383,7 @@ the test suites (backend + 950 frontend tests) remain green.
 - Trivia: orphan `favicon-48x48.png`, dead `@environments/*` tsconfig
   alias, `test-visual-2.js` debug script.
 
-### Added — GTFS data exploitation pass (Phases 1-8)
+#### Added — GTFS data exploitation pass (Phases 1-8)
 
 After the V36-V47 spec-coverage pass closed every persistence gap,
 this pass turns the data into product features. Eight phases, ~25
@@ -373,7 +461,7 @@ commits, four new ADRs.
 - ADR 0031 (indoor pathway), 0032 (accessibility-aware routing),
   0033 (FareCalculator V1+V2).
 
-### Wrapping the deferred backlog
+#### Wrapping the deferred backlog
 
 The five sub-tasks left under "Known follow-ups (deferred)" after the
 GTFS exploitation sprint all landed in a follow-up pass:
@@ -416,7 +504,7 @@ GTFS exploitation sprint all landed in a follow-up pass:
   every result well under the 50 ms target documented in
   `project_deferred_backlog`.
 
-### Added — offline rich-fixture seed (May 2026)
+#### Added — offline rich-fixture seed (May 2026)
 
 `src/main/resources/fixtures/gtfs-rich/` ships an in-classpath GTFS
 feed that exercises every spec surface the importer supports
@@ -435,7 +523,7 @@ inside the Docker image. Used during the deferred-backlog wrap-up
 validation pass to manually walk every popup section, every admin
 page and every metric without depending on a public feed.
 
-### Fixed
+#### Fixed
 
 - `gtfs_entity_count{kind=…}` was returning `NaN` on every Prometheus
   scrape because `MeterRegistry.gauge` keeps a weak reference to the
@@ -455,7 +543,7 @@ page and every metric without depending on a public feed.
   so the row lands in `flex_stop_times` and the stop gets the
   on-demand badge.
 
-### Added — full GTFS-spec coverage pass (V36 → V47)
+#### Added — full GTFS-spec coverage pass (V36 → V47)
 
 The May audit catalogued every field gap between
 `GtfsImportService` and the live gtfs.org reference. This
@@ -548,7 +636,7 @@ departure_time), V40 (transfer qualifiers), V41
 (fare_transfer_rules boarding times), V47 (translation
 sub_id + language_context).
 
-### Fixed
+#### Fixed
 - **Synthetic data loader** now evicts the
   `networkMap` / `networkAlerts` Caffeine caches at the
   end of its run. A warm-up request issued by the dev
@@ -558,7 +646,7 @@ sub_id + language_context).
   5-minute TTL expired. `GtfsDataLoader` was already OK
   via `GtfsImportOrchestrator.evictNetworkCaches()`.
 
-### Security
+#### Security
 - **Bumped Angular to 21.2.12** (and the rest of the
   frontend deps via `npm update`) to clear seven
   high-severity vulnerabilities, notably the
