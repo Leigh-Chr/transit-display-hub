@@ -5,6 +5,43 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Post-1.0 cleanup pass to reduce dead weight without changing
+runtime behaviour. No new features, no breaking changes — every
+removal is dead code, an unused dependency, a documentation
+duplicate or an artifact that did not belong in the public repo.
+
+### Removed
+
+- **`sockjs-client` + `@types/sockjs-client`** (and the matching
+  `.withSockJS()` call in `WebSocketConfig`). STOMP now uses the
+  native WebSocket transport; the three frontend services compute
+  `brokerURL` from `window.location`. Targets only Chromium-based
+  kiosks, so the HTTP-streaming fallback was never going to fire.
+- **`@fontsource/roboto`**. Inter is the only typeface the styles
+  actually used; the hub fell back to Inter, the two `Roboto Mono`
+  references switched to system `monospace`.
+- **`DisplayStateCalculatorIntegrationBenchmark`** (full-stack JMH
+  bench booting a Spring Boot context per fork). Six service-level
+  micro-benchmarks remain; ADR 0028 updated.
+- **`docs/announcements/`** — channel-specific announcement drafts
+  (Show HN, Reddit, Mastodon, LinkedIn, awesome-transit, Devoxx)
+  moved out of the public repo. ADR 0038 compressed accordingly.
+- Empty `infrastructure/layout/` package and orphan
+  `docs/mvp-brief.md`.
+
+### Changed
+
+- **`docs/api.md` 971 → 178 lines.** Endpoint catalogue removed —
+  Swagger UI at `/swagger-ui.html` is now the single source of
+  truth. The file keeps the cross-cutting parts only (auth flow,
+  error format, WebSocket usage, GTFS coverage tables, custom
+  Prometheus meters).
+- **`backend/build.gradle.kts`**: `jmhImplementation` no longer
+  extends `runtimeOnly` (only the removed integration bench
+  needed the production runtime classpath).
+
 ## [1.0.0] — 2026-05-10
 
 ### Headline
