@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": ["src/test-setup.ts"],
   "project": ["src/**/*.ts"],
-  "ignore": ["src/**/*.spec.ts", "src/**/*.d.ts"],
   "ignoreDependencies": [
     "@vitest/browser",
     "@fontsource/inter",
