@@ -28,6 +28,7 @@ import { TableSkeletonComponent } from '@shared/components/skeleton/table-skelet
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 @Component({
   selector: 'app-stops',
@@ -453,8 +454,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const httpErr = err as { error?: { message?: string } };
-          const message = httpErr.error?.message ?? 'Failed to load stops';
+          const message = httpErrorMessage(err, 'Failed to load stops');
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -487,8 +487,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to create stop';
+            const message = httpErrorMessage(err, 'Failed to create stop');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -517,8 +516,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to update stop';
+            const message = httpErrorMessage(err, 'Failed to update stop');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -548,8 +546,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to delete stop';
+            const message = httpErrorMessage(err, 'Failed to delete stop');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

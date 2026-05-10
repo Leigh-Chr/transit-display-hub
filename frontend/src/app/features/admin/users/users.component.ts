@@ -22,6 +22,7 @@ import { TableSkeletonComponent } from '@shared/components/skeleton/table-skelet
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 @Component({
   selector: 'app-users',
@@ -294,8 +295,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const httpErr = err as { error?: { message?: string } };
-          const message = httpErr.error?.message ?? 'Failed to load users';
+          const message = httpErrorMessage(err, 'Failed to load users');
           this.snackBar.open(message, 'Close', { duration: 5000 });
         },
       });
@@ -336,8 +336,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to create user';
+            const message = httpErrorMessage(err, 'Failed to create user');
             this.snackBar.open(message, 'Close', {
               duration: 5000,
               panelClass: 'error-snackbar',
@@ -366,8 +365,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to update user';
+            const message = httpErrorMessage(err, 'Failed to update user');
             this.snackBar.open(message, 'Close', {
               duration: 5000,
               panelClass: 'error-snackbar',
@@ -400,8 +398,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to delete user';
+            const message = httpErrorMessage(err, 'Failed to delete user');
             this.snackBar.open(message, 'Close', {
               duration: 5000,
               panelClass: 'error-snackbar',

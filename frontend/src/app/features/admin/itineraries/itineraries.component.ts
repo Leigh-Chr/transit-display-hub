@@ -27,6 +27,7 @@ import { TableSkeletonComponent } from '@shared/components/skeleton/table-skelet
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 @Component({
   selector: 'app-itineraries',
@@ -384,8 +385,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const httpErr = err as { error?: { message?: string } };
-          const message = httpErr.error?.message ?? 'Failed to load itineraries';
+          const message = httpErrorMessage(err, 'Failed to load itineraries');
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -415,8 +415,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to create itinerary';
+            const message = httpErrorMessage(err, 'Failed to create itinerary');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -442,8 +441,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to update itinerary';
+            const message = httpErrorMessage(err, 'Failed to update itinerary');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -469,8 +467,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to update stops';
+            const message = httpErrorMessage(err, 'Failed to update stops');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -500,8 +497,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to delete itinerary';
+            const message = httpErrorMessage(err, 'Failed to delete itinerary');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

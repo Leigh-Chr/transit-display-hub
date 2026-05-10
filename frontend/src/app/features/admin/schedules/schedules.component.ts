@@ -20,6 +20,7 @@ import {
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 @Component({
   selector: 'app-schedules',
@@ -299,8 +300,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const httpErr = err as { error?: { message?: string } };
-          const message = httpErr.error?.message ?? 'Failed to load schedules';
+          const message = httpErrorMessage(err, 'Failed to load schedules');
           this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
         },
       });
@@ -331,8 +331,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to create schedule entry';
+            const message = httpErrorMessage(err, 'Failed to create schedule entry');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -361,8 +360,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to update schedule entry';
+            const message = httpErrorMessage(err, 'Failed to update schedule entry');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -393,8 +391,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to delete schedule entry';
+            const message = httpErrorMessage(err, 'Failed to delete schedule entry');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });

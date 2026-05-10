@@ -18,6 +18,7 @@ import {
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 @Component({
   selector: 'app-devices',
@@ -340,8 +341,7 @@ export class DevicesComponent implements OnInit {
       },
       error: (err: unknown) => {
         this.loading.set(false);
-        const httpErr = err as { error?: { message?: string } };
-        const message = httpErr.error?.message ?? 'Failed to load devices';
+        const message = httpErrorMessage(err, 'Failed to load devices');
         this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
       },
     });
@@ -362,8 +362,7 @@ export class DevicesComponent implements OnInit {
             this.loadDevices();
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to register device';
+            const message = httpErrorMessage(err, 'Failed to register device');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
@@ -417,8 +416,7 @@ export class DevicesComponent implements OnInit {
             });
           },
           error: (err: unknown) => {
-            const httpErr = err as { error?: { message?: string } };
-            const message = httpErr.error?.message ?? 'Failed to remove device';
+            const message = httpErrorMessage(err, 'Failed to remove device');
             this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
           },
         });
