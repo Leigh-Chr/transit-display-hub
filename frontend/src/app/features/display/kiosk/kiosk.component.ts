@@ -18,6 +18,8 @@ import { ThemeService } from '@core/services/theme.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
+import { LocaleService } from '@core/i18n/locale.service';
+import { formatLocaleDate } from '@shared/utils/locale-date.utils';
 
 @Component({
   selector: 'app-kiosk',
@@ -916,6 +918,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   private readonly displayService = inject(DisplayService);
   private readonly wsService = inject(WebSocketService);
   private readonly transloco = inject(TranslocoService);
+  private readonly localeService = inject(LocaleService);
   /** Exposed to the template so the a11y toolbar can bind to its
    *  three signals (dark / contrast / large text) directly. */
   readonly themeService = inject(ThemeService);
@@ -1349,14 +1352,14 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private formatTime(date: Date): string {
-    return date.toLocaleTimeString([], {
+    return formatLocaleDate(date, this.localeService.current(), {
       hour: '2-digit',
       minute: '2-digit',
     });
   }
 
   private formatDate(date: Date): string {
-    return date.toLocaleDateString('en-US', {
+    return formatLocaleDate(date, this.localeService.current(), {
       weekday: 'short',
       month: 'short',
       day: 'numeric',

@@ -21,6 +21,8 @@ import {
   MessageInfo,
 } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
+import { LocaleService } from '@core/i18n/locale.service';
+import { formatLocaleDate } from '@shared/utils/locale-date.utils';
 
 @Component({
   selector: 'app-hub',
@@ -720,6 +722,7 @@ export class HubComponent implements OnInit, OnDestroy {
   private readonly displayService = inject(DisplayService);
   private readonly hubWsService = inject(HubWebSocketService);
   private readonly transloco = inject(TranslocoService);
+  private readonly localeService = inject(LocaleService);
 
   hubState = signal<HubDisplayState | null>(null);
   error = signal<string | null>(null);
@@ -1012,14 +1015,14 @@ export class HubComponent implements OnInit, OnDestroy {
   }
 
   private formatTime(date: Date): string {
-    return date.toLocaleTimeString([], {
+    return formatLocaleDate(date, this.localeService.current(), {
       hour: '2-digit',
       minute: '2-digit',
     });
   }
 
   private formatDate(date: Date): string {
-    return date.toLocaleDateString('en-US', {
+    return formatLocaleDate(date, this.localeService.current(), {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
