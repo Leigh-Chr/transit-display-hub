@@ -48,7 +48,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/devices/authenticate").permitAll()
                         .requestMatchers("/api/display/**").permitAll()  // Public for kiosk displays
                         .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
                         .requestMatchers(HttpMethod.GET, "/api/attributions").permitAll()  // Public credit block

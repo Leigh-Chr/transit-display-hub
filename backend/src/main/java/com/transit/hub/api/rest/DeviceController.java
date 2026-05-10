@@ -1,8 +1,6 @@
 package com.transit.hub.api.rest;
 
-import com.transit.hub.application.dto.request.DeviceAuthRequest;
 import com.transit.hub.application.dto.request.RegisterDeviceRequest;
-import com.transit.hub.application.dto.response.DeviceAuthResponse;
 import com.transit.hub.application.dto.response.DeviceRegistrationResponse;
 import com.transit.hub.application.dto.response.DeviceResponse;
 import com.transit.hub.application.service.DeviceService;
@@ -67,14 +65,5 @@ public class DeviceController {
     public ResponseEntity<Void> deleteDevice(@PathVariable UUID id) {
         deviceService.deleteDevice(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/authenticate")
-    public ResponseEntity<DeviceAuthResponse> authenticateDevice(@Valid @RequestBody DeviceAuthRequest request) {
-        DeviceAuthResponse response = deviceService.authenticateDevice(request.token());
-        if (response.valid()) {
-            return ResponseEntity.ok(response);
-        }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 }

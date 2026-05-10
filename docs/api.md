@@ -51,7 +51,6 @@ Content-Type: application/json
 | `/api/auth/**`                             | Public       |
 | `/api/display/**`                          | Public       |
 | `/api/network-map/**`                      | Public       |
-| `/api/devices/authenticate`                | Public       |
 | `GET /api/itineraries/**`                  | Public       |
 | `GET /api/stops/*/schedules`               | Public       |
 | `/api/messages/**`                         | Admin, Agent |
@@ -646,37 +645,6 @@ Content-Type: application/json
 ```http
 DELETE /api/devices/{id}
 Authorization: Bearer <token>
-```
-
-### Authenticate a Device
-
-```http
-POST /api/devices/authenticate
-Content-Type: application/json
-
-{
-  "token": "device-token"
-}
-```
-
-> This endpoint is public.
-
-**Response** (200 OK):
-
-```json
-{
-  "valid": true,
-  "stopId": "stop-uuid",
-  "stopName": "Central Station",
-  "lines": [
-    {
-      "id": "line-uuid",
-      "code": "M1",
-      "name": "Metro Line 1",
-      "color": "#3B82F6"
-    }
-  ]
-}
 ```
 
 ---

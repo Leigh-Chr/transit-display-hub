@@ -1,7 +1,6 @@
 package com.transit.hub.api.rest;
 
 import tools.jackson.databind.ObjectMapper;
-import com.transit.hub.application.dto.request.DeviceAuthRequest;
 import com.transit.hub.application.dto.request.RegisterDeviceRequest;
 import com.transit.hub.domain.model.Device;
 import com.transit.hub.domain.model.Line;
@@ -118,55 +117,6 @@ class DeviceControllerIntegrationTest {
                 .status(DeviceStatus.OFFLINE)
                 .build();
         deviceRepository.save(testDevice);
-    }
-
-    @Nested
-    @DisplayName("POST /api/devices/authenticate")
-    class AuthenticateDevice {
-
-        @Test
-        @DisplayName("returns success without JWT (public endpoint)")
-        void publicEndpoint_NoJwtRequired() throws Exception {
-            DeviceAuthRequest request = new DeviceAuthRequest(plainDeviceToken);
-
-            mockMvc.perform(post("/api/devices/authenticate")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.valid", is(true)))
-                    .andExpect(jsonPath("$.stopId", is(testStop.getId().toString())))
-                    .andExpect(jsonPath("$.stopName", is("Central Station")))
-                    .andExpect(jsonPath("$.lines", hasSize(1)))
-                    .andExpect(jsonPath("$.lines[0].code", is("L1")));
-        }
-
-        @Test
-        @DisplayName("returns 401 for invalid token")
-        void withInvalidToken_Returns401() throws Exception {
-            DeviceAuthRequest request = new DeviceAuthRequest("invalid_token");
-
-            mockMvc.perform(post("/api/devices/authenticate")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnauthorized())
-                    .andExpect(jsonPath("$.valid", is(false)));
-        }
-
-        @Test
-        @DisplayName("sets device status to ONLINE on successful auth")
-        void onSuccess_SetsDeviceOnline() throws Exception {
-            DeviceAuthRequest request = new DeviceAuthRequest(plainDeviceToken);
-
-            mockMvc.perform(post("/api/devices/authenticate")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.valid", is(true)));
-
-            Device updated = deviceRepository.findById(testDevice.getId()).orElseThrow();
-            assertThat(updated.getStatus()).isEqualTo(DeviceStatus.ONLINE);
-            assertThat(updated.getLastHeartbeat()).isNotNull();
-        }
     }
 
     @Nested
@@ -300,30 +250,6 @@ class DeviceControllerIntegrationTest {
                     .andExpect(status().isNotFound());
         }
 
-        @Test
-        @DisplayName("registered device can authenticate with returned token")
-        void registeredDeviceCanAuthenticate() throws Exception {
-            RegisterDeviceRequest registerRequest = new RegisterDeviceRequest(testStop.getId());
-
-            MvcResult registerResult = mockMvc.perform(post("/api/devices")
-                            .header("Authorization", "Bearer " + adminToken)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(registerRequest)))
-                    .andExpect(status().isCreated())
-                    .andReturn();
-
-            String responseJson = registerResult.getResponse().getContentAsString();
-            String newToken = objectMapper.readTree(responseJson).get("token").asString();
-
-            // Now authenticate with the new token
-            DeviceAuthRequest authRequest = new DeviceAuthRequest(newToken);
-
-            mockMvc.perform(post("/api/devices/authenticate")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(authRequest)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.valid", is(true)));
-        }
     }
 
     @Nested
