@@ -27,6 +27,21 @@ describe('SchematicMapComponent', () => {
     ['L2', '#0000FF'],
   ]);
 
+  /** Three-stop L1 route reused by the overlay / arrows / marker / active-stop tests. */
+  const routeS1S2S3 = {
+    segments: [{
+      lineId: 'line1',
+      lineCode: 'L1',
+      lineColor: '#FF0000',
+      stopIds: ['s1', 's2', 's3'],
+      stopNames: ['Alpha', 'Transfer', 'Bravo'],
+      directionName: 'Bravo',
+    }],
+    transfers: 0,
+    transferStopIds: [],
+    allStopIds: ['s1', 's2', 's3'],
+  } as const;
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [SchematicMapComponent],
@@ -668,19 +683,7 @@ describe('SchematicMapComponent', () => {
 
   describe('route overlay paths', () => {
     it('should return path data when routeResult has segments matching stop IDs', () => {
-      fixture.componentRef.setInput('routeResult', {
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2', 's3'],
-          stopNames: ['Alpha', 'Transfer', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2', 's3'],
-      });
+      fixture.componentRef.setInput('routeResult', routeS1S2S3);
       fixture.detectChanges();
 
       const overlays = component.routeOverlayPaths();
@@ -694,19 +697,7 @@ describe('SchematicMapComponent', () => {
 
   describe('route direction arrows', () => {
     it('should return arrow data when routeResult has segments', () => {
-      fixture.componentRef.setInput('routeResult', {
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2', 's3'],
-          stopNames: ['Alpha', 'Transfer', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2', 's3'],
-      });
+      fixture.componentRef.setInput('routeResult', routeS1S2S3);
       fixture.detectChanges();
 
       const arrows = component.routeDirectionArrows();
@@ -722,19 +713,7 @@ describe('SchematicMapComponent', () => {
     it('should locate departure stop in networkLineRows when departureStopId is set', () => {
       fixture.componentRef.setInput('departureStopId', 's1');
       fixture.componentRef.setInput('arrivalStopId', 's3');
-      fixture.componentRef.setInput('routeResult', {
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2', 's3'],
-          stopNames: ['Alpha', 'Transfer', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2', 's3'],
-      });
+      fixture.componentRef.setInput('routeResult', routeS1S2S3);
       fixture.detectChanges();
 
       // Verify that networkLineRows contain the departure and arrival stops
@@ -754,19 +733,7 @@ describe('SchematicMapComponent', () => {
     it('should correctly report active stops on the route line', () => {
       fixture.componentRef.setInput('departureStopId', 's1');
       fixture.componentRef.setInput('arrivalStopId', 's3');
-      fixture.componentRef.setInput('routeResult', {
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2', 's3'],
-          stopNames: ['Alpha', 'Transfer', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2', 's3'],
-      });
+      fixture.componentRef.setInput('routeResult', routeS1S2S3);
       fixture.detectChanges();
 
       expect(component.isStopActiveOnLine('s1', 'line1')).toBe(true);

@@ -47,6 +47,21 @@ describe('StopPopupComponent', () => {
     lineAlerts: [],
   };
 
+  /** Reused by the TAD zone tests and the next-flex-window tests. */
+  const mockZone: FlexLocation = {
+    id: 'loc-1',
+    externalId: 'FLEX_NORTH',
+    stopExternalId: 'EXT_STOP_1',
+    name: 'Zone Nord',
+    geometryType: 'Polygon',
+    geometryJson: JSON.stringify({
+      type: 'Polygon',
+      coordinates: [[[5.70, 45.18], [5.75, 45.18], [5.75, 45.20], [5.70, 45.20], [5.70, 45.18]]],
+    }),
+    minLongitude: 5.70, maxLongitude: 5.75,
+    minLatitude: 45.18, maxLatitude: 45.20,
+  };
+
   const now = new Date();
   const futureHour = now.getHours() + 2;
   const futureTimeStr = `${String(futureHour).padStart(2, '0')}:30:00`;
@@ -210,20 +225,6 @@ describe('StopPopupComponent', () => {
   });
 
   describe('TAD zone', () => {
-    const mockZone: FlexLocation = {
-      id: 'loc-1',
-      externalId: 'FLEX_NORTH',
-      stopExternalId: 'EXT_STOP_1',
-      name: 'Zone Nord',
-      geometryType: 'Polygon',
-      geometryJson: JSON.stringify({
-        type: 'Polygon',
-        coordinates: [[[5.70, 45.18], [5.75, 45.18], [5.75, 45.20], [5.70, 45.20], [5.70, 45.18]]],
-      }),
-      minLongitude: 5.70, maxLongitude: 5.75,
-      minLatitude: 45.18, maxLatitude: 45.20,
-    };
-
     it('skips the fetch when the stop has no on-demand pickup', () => {
       createComponent({ stop: { ...mockStop, hasOnDemand: false } });
       fixture.detectChanges();
@@ -373,20 +374,6 @@ describe('StopPopupComponent', () => {
   });
 
   describe('next flex window', () => {
-    const mockZone: FlexLocation = {
-      id: 'loc-1',
-      externalId: 'FLEX_NORTH',
-      stopExternalId: 'EXT_STOP_1',
-      name: 'Zone Nord',
-      geometryType: 'Polygon',
-      geometryJson: JSON.stringify({
-        type: 'Polygon',
-        coordinates: [[[5.70, 45.18], [5.75, 45.18], [5.75, 45.20], [5.70, 45.20], [5.70, 45.18]]],
-      }),
-      minLongitude: 5.70, maxLongitude: 5.75,
-      minLatitude: 45.18, maxLatitude: 45.20,
-    };
-
     function buildWindow(start: string, end: string, headsign: string | null = null): FlexStopTime {
       return {
         id: `fst-${start}`,

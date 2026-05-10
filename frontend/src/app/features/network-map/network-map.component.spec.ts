@@ -67,6 +67,22 @@ describe('NetworkMapComponent', () => {
     { id: 's3', name: 'Charlie', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L2'], x: 300, y: 300 },
   ];
 
+  /** Single-segment direct L1 route from s1 to s2, reused by every test that
+   *  needs an "active route" without caring about the route's specifics. */
+  const directRouteS1S2: RouteResult = {
+    segments: [{
+      lineId: 'line1',
+      lineCode: 'L1',
+      lineColor: '#FF0000',
+      stopIds: ['s1', 's2'],
+      stopNames: ['Alpha', 'Bravo'],
+      directionName: 'Bravo',
+    }],
+    transfers: 0,
+    transferStopIds: [],
+    allStopIds: ['s1', 's2'],
+  };
+
   const mockNetworkMap: NetworkMap = {
     lines: [
       { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, itineraries: [['s1', 's2']] },
@@ -228,19 +244,7 @@ describe('NetworkMapComponent', () => {
     it('should show route info when route is active', () => {
       fixture.detectChanges();
 
-      component.routeResult.set({
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2'],
-          stopNames: ['Alpha', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2'],
-      });
+      component.routeResult.set(directRouteS1S2);
 
       expect(component.subtitle()).toContain('Direct route');
       expect(component.subtitle()).toContain('2 stops');
@@ -266,26 +270,13 @@ describe('NetworkMapComponent', () => {
 
   describe('route operations', () => {
     it('should find route using route finder', () => {
-      const mockResult: RouteResult = {
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2'],
-          stopNames: ['Alpha', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2'],
-      };
-      mockRouteFinder.findRoute = vi.fn().mockReturnValue(mockResult);
+      mockRouteFinder.findRoute = vi.fn().mockReturnValue(directRouteS1S2);
       fixture.detectChanges();
 
       component.onRouteSearch({ from: 's1', to: 's2' });
 
       expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2', { accessibleOnly: false, pathwayPenaltySeconds: 0 });
-      expect(component.routeResult()).toEqual(mockResult);
+      expect(component.routeResult()).toEqual(directRouteS1S2);
     });
 
     it('should clear route state on onRouteClear', () => {
@@ -472,20 +463,7 @@ describe('NetworkMapComponent', () => {
 
   describe('route selection mode', () => {
     it('should set arrival and trigger route search when clicking a different stop', () => {
-      const mockResult: RouteResult = {
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2'],
-          stopNames: ['Alpha', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2'],
-      };
-      mockRouteFinder.findRoute = vi.fn().mockReturnValue(mockResult);
+      mockRouteFinder.findRoute = vi.fn().mockReturnValue(directRouteS1S2);
       fixture.detectChanges();
 
       // Enter route selection mode: departure set, arrival null, no routeResult
@@ -498,7 +476,7 @@ describe('NetworkMapComponent', () => {
 
       expect(component.arrivalStop()).toEqual(mockStops[1]!);
       expect(mockRouteFinder.findRoute).toHaveBeenCalledWith(mockNetworkMap, 's1', 's2', { accessibleOnly: false, pathwayPenaltySeconds: 0 });
-      expect(component.routeResult()).toEqual(mockResult);
+      expect(component.routeResult()).toEqual(directRouteS1S2);
     });
 
     it('should open popup instead when clicking the same departure stop', () => {
@@ -522,19 +500,7 @@ describe('NetworkMapComponent', () => {
     it('should set showFullNetwork to true when route is active', () => {
       fixture.detectChanges();
 
-      component.routeResult.set({
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2'],
-          stopNames: ['Alpha', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2'],
-      });
+      component.routeResult.set(directRouteS1S2);
       component.showFullNetwork.set(false);
 
       component.onFilterChange(['L1']);
@@ -547,19 +513,7 @@ describe('NetworkMapComponent', () => {
     it('should return only route line codes when route is active and showFullNetwork is false', () => {
       fixture.detectChanges();
 
-      component.routeResult.set({
-        segments: [{
-          lineId: 'line1',
-          lineCode: 'L1',
-          lineColor: '#FF0000',
-          stopIds: ['s1', 's2'],
-          stopNames: ['Alpha', 'Bravo'],
-          directionName: 'Bravo',
-        }],
-        transfers: 0,
-        transferStopIds: [],
-        allStopIds: ['s1', 's2'],
-      });
+      component.routeResult.set(directRouteS1S2);
       component.showFullNetwork.set(false);
 
       const codes = component.visibleLineCodes();
