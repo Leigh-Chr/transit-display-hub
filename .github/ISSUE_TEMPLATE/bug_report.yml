@@ -1,0 +1,69 @@
+name: Bug report
+description: Report a bug, regression or unexpected behaviour.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in
+        the sections below — the more concrete the steps, the faster we
+        can reproduce and fix.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, concise description of the bug.
+      placeholder: "When I click X, the page Y crashes with Z message."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: A numbered list, ideally starting from a clean install.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Run `git rev-parse --short HEAD` if you build from source, or paste the docker image tag.
+      placeholder: "1.0.0 / commit abc1234 / ghcr.io/...@sha256:..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      multiple: true
+      options:
+        - Backend (Spring Boot)
+        - Frontend admin (/admin/*)
+        - Network map (/map)
+        - Kiosk (/display/*)
+        - GTFS import / validator
+        - GTFS-Realtime cache
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      placeholder: "I expected …"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / screenshots
+      description: Backend log excerpts, browser console errors, screenshots — anything that helps narrow it down.
+      render: shell

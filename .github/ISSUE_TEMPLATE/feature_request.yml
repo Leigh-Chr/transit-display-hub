@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new capability or an improvement to an existing one.
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing an improvement. Try to describe the
+        outcome you want, not just the implementation — alternative
+        designs may achieve the same result more cleanly.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem you are trying to solve
+      description: What can't you do today that this feature would unlock?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: How would you like the feature to work? UI mocks, API sketches, GTFS spec references all welcome.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Which approaches did you think about and reject? Why?
+
+  - type: dropdown
+    id: target-persona
+    attributes:
+      label: Who benefits?
+      multiple: true
+      options:
+        - Passengers (kiosk + map visitors)
+        - Administrators (data managers)
+        - Agents (broadcast operators)
+        - Developers / contributors
+        - Operators / SREs
+    validations:
+      required: true

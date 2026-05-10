@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/Leigh-Chr/transit-display-hub/blob/main/CONTRIBUTING.md
+    about: Read the contributing guide before opening a PR.
+  - name: Security report
+    url: https://github.com/Leigh-Chr/transit-display-hub/blob/main/SECURITY.md
+    about: Vulnerabilities are disclosed privately — do not file a public issue.
