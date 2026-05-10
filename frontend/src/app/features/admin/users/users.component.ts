@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -10,7 +11,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, takeUntil } from 'rxjs';
 import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
 import { User, PageResponse, CreateUserRequest, UpdateUserRequest } from '@shared/models';
@@ -237,13 +237,13 @@ import { AdminTableState } from '@shared/admin/admin-table-state.service';
     /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
-export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
+export class UsersComponent implements OnInit, AfterViewInit {
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroy$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly tableState = inject(AdminTableState);
   readonly sort = viewChild(MatSort);
@@ -256,7 +256,7 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.tableState.init({ sortBy: 'username' });
 
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.tableState.syncFromQueryParams(params);
       this.loadUsers();
     });
@@ -268,11 +268,6 @@ export class UsersComponent implements OnInit, AfterViewInit, OnDestroy {
       sortRef.active = this.tableState.sortBy;
       sortRef.direction = this.tableState.sortDir;
     }
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   loadUsers(): void {

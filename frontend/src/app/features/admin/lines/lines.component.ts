@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -10,7 +11,6 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { Line, PageResponse, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
@@ -302,13 +302,13 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
-export class LinesComponent implements OnInit, OnDestroy {
+export class LinesComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroy$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
 
   loading = signal(true);
   lines = signal<Line[]>([]);
@@ -321,18 +321,13 @@ export class LinesComponent implements OnInit, OnDestroy {
   totalElements = 0;
 
   ngOnInit(): void {
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.page = params['page'] ? +params['page'] : 0;
       this.size = params['size'] ? +params['size'] : 12;
       this.sortBy = (params['sortBy'] as string | undefined) ?? 'code';
       this.search = (params['search'] as string | undefined) ?? '';
       this.loadLines();
     });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   loadLines(): void {

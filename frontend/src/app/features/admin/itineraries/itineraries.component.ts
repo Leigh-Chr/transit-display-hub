@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -13,7 +14,6 @@ import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, takeUntil } from 'rxjs';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -303,14 +303,14 @@ import { AdminTableState } from '@shared/admin/admin-table-state.service';
     }
   `,
 })
-export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ItinerariesComponent implements OnInit, AfterViewInit {
   private readonly itineraryService = inject(ItineraryService);
   private readonly lineService = inject(LineService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroy$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly isAdmin = this.authService.isAdmin;
   readonly tableState = inject(AdminTableState);
@@ -342,7 +342,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
     });
 
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.tableState.syncFromQueryParams(params);
       this.lineId = (params['lineId'] as string | undefined) ?? '';
       this.loadItineraries();
@@ -357,10 +357,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
+
 
   loadItineraries(): void {
     this.loading.set(true);

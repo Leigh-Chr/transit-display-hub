@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -9,7 +10,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, MatSort } from '@angular/material/sort';
-import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
@@ -237,13 +237,13 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     }
   `,
 })
-export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SchedulesComponent implements OnInit, AfterViewInit {
   private readonly lineService = inject(LineService);
   private readonly stopService = inject(StopService);
   private readonly scheduleService = inject(ScheduleService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly destroy$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly sort = viewChild(MatSort);
   loading = signal(false);
@@ -257,7 +257,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
   displayedColumns = ['line', 'destination', 'time', 'actions'];
 
   ngOnInit(): void {
-    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
+    this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lines) => this.lines.set(lines),
       error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
     });
@@ -270,11 +270,6 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
   onLineChange(): void {
     this.selectedStopId = '';
     this.selectedStop.set(null);
@@ -282,7 +277,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.selectedLineId) {
       this.stopService
         .getAll(this.selectedLineId)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (stops) => this.stops.set(stops),
           error: () => this.snackBar.open('Failed to load stops', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
@@ -297,7 +292,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loading.set(true);
       const stop = this.stops().find((s) => s.id === this.selectedStopId);
       this.selectedStop.set(stop ?? null);
-      this.scheduleService.getForStop(this.selectedStopId).pipe(takeUntil(this.destroy$)).subscribe({
+      this.scheduleService.getForStop(this.selectedStopId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (schedules) => {
           this.dataSource.data = schedules.sort((a, b) => a.time.localeCompare(b.time));
           this.loading.set(false);

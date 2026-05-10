@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, input, output, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-search-input',
@@ -50,7 +51,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
     }
   `,
 })
-export class SearchInputComponent implements OnInit, OnDestroy {
+export class SearchInputComponent implements OnInit {
   readonly placeholder = input('Search...');
   readonly initialValue = input('');
   readonly debounceMs = input(300);
@@ -58,8 +59,8 @@ export class SearchInputComponent implements OnInit, OnDestroy {
 
   searchValue = '';
 
+  private readonly destroyRef = inject(DestroyRef);
   private readonly searchSubject = new Subject<string>();
-  private readonly destroy$ = new Subject<void>();
 
   ngOnInit(): void {
     this.searchValue = this.initialValue();
@@ -68,16 +69,11 @@ export class SearchInputComponent implements OnInit, OnDestroy {
       .pipe(
         debounceTime(this.debounceMs()),
         distinctUntilChanged(),
-        takeUntil(this.destroy$)
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((value) => {
         this.searchChange.emit(value);
       });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   onSearchChange(value: string): void {

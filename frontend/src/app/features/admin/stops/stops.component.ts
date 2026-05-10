@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -12,7 +13,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
-import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop, PageResponse, CreateStopRequest } from '@shared/models';
@@ -377,13 +377,13 @@ import { AdminTableState } from '@shared/admin/admin-table-state.service';
     }
   `,
 })
-export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
+export class StopsComponent implements OnInit, AfterViewInit {
   private readonly lineService = inject(LineService);
   private readonly stopService = inject(StopService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroy$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly tableState = inject(AdminTableState);
   readonly sort = viewChild(MatSort);
@@ -402,7 +402,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.loadLines();
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.tableState.syncFromQueryParams(params);
       this.lineId = (params['lineId'] as string | undefined) ?? '';
       this.loadStops();
@@ -417,10 +417,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
+
 
   loadLines(): void {
     this.lineService.getAll().subscribe({

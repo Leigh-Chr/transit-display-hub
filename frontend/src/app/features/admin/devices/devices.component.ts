@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +9,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Device, DeviceStatus, RegisterDeviceRequest } from '@shared/models';
@@ -309,12 +309,12 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
-export class DevicesComponent implements OnInit, OnDestroy {
+export class DevicesComponent implements OnInit {
   private readonly deviceService = inject(DeviceService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly destroy$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
 
   loading = signal(true);
   devices = signal<Device[]>([]);
@@ -324,21 +324,16 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadDevices();
-    this.lineService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
+    this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lines) => this.lines.set(lines),
       error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
     });
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
   loadDevices(): void {
     this.loading.set(true);
     const status = this.statusFilter || undefined;
-    this.deviceService.getAll(status).pipe(takeUntil(this.destroy$)).subscribe({
+    this.deviceService.getAll(status).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (devices) => {
         this.devices.set(devices);
         this.loading.set(false);
