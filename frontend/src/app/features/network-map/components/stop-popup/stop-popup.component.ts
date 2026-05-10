@@ -761,7 +761,7 @@ export class StopPopupComponent implements OnInit {
     const result = this.fareResult();
     if (!result) {return null;}
     const v2 = result.v2[0];
-    if (v2 && v2.amount !== null && v2.currency) {
+    if (v2?.amount !== null && v2?.currency) {
       return this.formatCurrency(v2.amount, v2.currency);
     }
     const v1 = result.v1[0];
@@ -890,7 +890,7 @@ export class StopPopupComponent implements OnInit {
    *  doesn't carry a value. */
   formatPriorNotice(rule: BookingRule): string | null {
     const min = rule.priorNoticeDurationMin;
-    if (min === null || min === undefined) {return null;}
+    if (min === null) {return null;}
     if (min >= 3600) {
       const hours = Math.round(min / 3600);
       return `au moins ${hours}h à l'avance`;

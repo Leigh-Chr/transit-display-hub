@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Translation, TranslocoLoader } from '@jsverse/transloco';
+import { Observable } from 'rxjs';
 
 /**
  * Pulls the per-language JSON dictionaries from
@@ -10,7 +11,7 @@ import { Translation, TranslocoLoader } from '@jsverse/transloco';
 export class HttpTranslocoLoader implements TranslocoLoader {
   private readonly http = inject(HttpClient);
 
-  getTranslation(lang: string) {
+  getTranslation(lang: string): Observable<Translation> {
     return this.http.get<Translation>(`/assets/i18n/${lang}.json`);
   }
 }

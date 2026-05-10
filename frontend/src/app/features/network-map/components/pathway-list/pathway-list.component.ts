@@ -168,8 +168,8 @@ export class PathwayListComponent {
     if (!g) {return [];}
     return g.pathways.map(p => ({
       pathway: p,
-      icon: MODE_ICON[p.pathwayMode] ?? 'alt_route',
-      label: MODE_LABEL[p.pathwayMode] ?? 'Connexion',
+      icon: MODE_ICON[p.pathwayMode],
+      label: MODE_LABEL[p.pathwayMode],
       durationLabel: this.formatDuration(p.traversalTimeSeconds),
       detailLabel: this.detailFor(p),
     }));
@@ -183,7 +183,7 @@ export class PathwayListComponent {
   });
 
   private formatDuration(seconds: number | null): string | null {
-    if (seconds === null || seconds === undefined) {return null;}
+    if (seconds === null) {return null;}
     if (seconds < 60) {return `${seconds} s`;}
     const minutes = Math.round(seconds / 60);
     return `${minutes} min`;
@@ -191,7 +191,7 @@ export class PathwayListComponent {
 
   private detailFor(p: Pathway): string | null {
     const parts: string[] = [];
-    if (p.stairCount !== null && p.stairCount !== undefined && p.stairCount !== 0) {
+    if (p.stairCount !== null && p.stairCount !== 0) {
       const dir = p.stairCount > 0 ? 'montée' : 'descente';
       parts.push(`${Math.abs(p.stairCount)} marches (${dir})`);
     }

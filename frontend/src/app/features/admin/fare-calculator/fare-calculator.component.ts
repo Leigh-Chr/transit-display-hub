@@ -287,7 +287,7 @@ export class FareCalculatorComponent implements OnInit {
   }
 
   formatTransfers(t: number | null): string {
-    if (t === null || t === undefined) {return '∞';}
+    if (t === null) {return '∞';}
     return String(t);
   }
 }
