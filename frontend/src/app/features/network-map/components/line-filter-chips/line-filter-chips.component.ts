@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MessageSeverity, NetworkLine } from '@shared/models';
+import { lineTextColor } from '@shared/utils/color.utils';
 
 @Component({
   selector: 'app-line-filter-chips',
@@ -17,7 +18,7 @@ import { MessageSeverity, NetworkLine } from '@shared/models';
           class="filter-chip"
           [class.active]="visibleSet().has(line.code)"
           [style.--chip-color]="line.color"
-          [style.--chip-text]="textColorFor(line.color)"
+          [style.--chip-text]="lineTextColor(line)"
           [attr.title]="'Click to toggle ' + line.code + ' · Double-click to focus'"
           (click)="lineToggle.emit(line.code)"
           (dblclick)="focusLine.emit(line.code)"
@@ -144,18 +145,5 @@ export class LineFilterChipsComponent {
     return this.alertSeverityByLineId().get(lineId) ?? null;
   }
 
-  /** YIQ-luminance based contrast pick. Bright brand colors (RATP yellow,
-   *  pastel pinks) get black text; the rest keep white. Threshold biased
-   *  toward black so mid-range pastels stay readable. */
-  textColorFor(bg: string): string {
-    const raw = bg.startsWith('#') ? bg.slice(1) : bg;
-    const expanded = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
-    if (expanded.length !== 6) {return '#fff';}
-    const r = parseInt(expanded.slice(0, 2), 16);
-    const g = parseInt(expanded.slice(2, 4), 16);
-    const b = parseInt(expanded.slice(4, 6), 16);
-    if ([r, g, b].some(c => Number.isNaN(c))) {return '#fff';}
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 160 ? '#1a1a1a' : '#fff';
-  }
+  readonly lineTextColor = lineTextColor;
 }
