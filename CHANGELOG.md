@@ -30,6 +30,13 @@ duplicate or an artifact that did not belong in the public repo.
   moved out of the public repo. ADR 0038 compressed accordingly.
 - Empty `infrastructure/layout/` package and orphan
   `docs/mvp-brief.md`.
+- Dead public methods uncovered by a usage audit:
+  `ItineraryService.getItineraryEntity`, `LineService.getLineEntity`,
+  `StopService.getStopEntity` (only ever called from their own unit
+  tests), `GtfsValidatorService.NoticeSummary.totalNotices` (never
+  called) and `Stop.removeLine` (no reference anywhere). Associated
+  unit-test blocks dropped accordingly. Backend compile + 950+
+  tests green.
 
 ### Changed
 
