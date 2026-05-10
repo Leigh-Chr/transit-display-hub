@@ -239,7 +239,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
       background: var(--app-kiosk-surface);
       color: var(--app-kiosk-on-surface);
       min-height: 100vh;
-      font-family: 'Roboto', 'Arial', sans-serif;
+      font-family: 'Inter', 'Arial', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 

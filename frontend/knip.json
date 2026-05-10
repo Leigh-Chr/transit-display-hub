@@ -6,7 +6,6 @@
   "ignoreDependencies": [
     "@vitest/browser",
     "@fontsource/inter",
-    "@fontsource/roboto",
     "material-icons"
   ],
   "angular": {

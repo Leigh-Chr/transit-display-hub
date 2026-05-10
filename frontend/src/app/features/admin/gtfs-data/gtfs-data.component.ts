@@ -489,7 +489,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       font-variant-numeric: tabular-nums;
     }
     .data-table code {
-      font-family: 'Roboto Mono', monospace;
+      font-family: monospace;
       font-size: 0.85em;
       padding: 1px 6px;
       background: var(--mat-sys-surface-container-high);
