@@ -149,10 +149,10 @@ public class RealtimeAlertCache {
                 headerRef.set(parseHeader(feed));
                 log.info("GTFS-RT alerts: refreshed snapshot with {} alerts", alerts.size());
             }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("GTFS-RT alerts: refresh interrupted: {}", e.getMessage());
+        } catch (IOException e) {
             log.warn("GTFS-RT alerts: refresh failed: {}", e.getMessage());
         }
     }

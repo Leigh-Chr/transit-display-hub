@@ -145,10 +145,10 @@ public class RealtimeTripUpdateCache {
                 headerRef.set(RealtimeAlertCache.parseHeader(feed));
                 log.info("GTFS-RT trip updates: refreshed snapshot with {} trips", indexed.size());
             }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("GTFS-RT trip updates: refresh interrupted: {}", e.getMessage());
+        } catch (IOException e) {
             log.warn("GTFS-RT trip updates: refresh failed: {}", e.getMessage());
         }
     }

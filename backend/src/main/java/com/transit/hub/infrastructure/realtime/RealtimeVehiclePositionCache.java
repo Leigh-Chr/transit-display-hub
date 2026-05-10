@@ -113,10 +113,10 @@ public class RealtimeVehiclePositionCache {
                 headerRef.set(RealtimeAlertCache.parseHeader(feed));
                 log.info("GTFS-RT vehicle positions: refreshed snapshot with {} vehicles", parsed.size());
             }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("GTFS-RT vehicle positions: refresh interrupted: {}", e.getMessage());
+        } catch (IOException e) {
             log.warn("GTFS-RT vehicle positions: refresh failed: {}", e.getMessage());
         }
     }
