@@ -21,6 +21,27 @@ Raspberry Pi OS Lite 64-bit, Debian 12, or Ubuntu Server 24.04.
 A graphical desktop is optional — the installer skips the
 Chromium auto-launch when no `DISPLAY` is found.
 
+## Required environment variables
+
+The kiosk backend refuses to start without an explicit JWT signing
+key. Generate one (≥ 256 bits, base64-encoded) and export it in your
+shell before launching the stack:
+
+```bash
+export JWT_SECRET=$(openssl rand -base64 48)
+```
+
+Then start the stack:
+
+```bash
+GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
+  docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d
+```
+
+If `JWT_SECRET` is missing, both Docker Compose (via `:?` syntax) and
+Spring Boot (no fallback in the kiosk profile) will fail fast with an
+explicit error.
+
 ## One-line install
 
 ```bash

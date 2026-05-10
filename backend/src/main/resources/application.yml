@@ -140,3 +140,46 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8
+
+---
+# Kiosk profile — same posture as prod (PostgreSQL, validate-only DDL,
+# explicit JWT_SECRET required) but tuned for single-host LAN
+# deployments documented in docs/kiosk-raspberry-pi.md. Differences
+# from prod:
+#   - logs are tighter (no SQL trace);
+#   - actuator surface is minimal (health only — no Prometheus scrape
+#     since no Grafana on a kiosk host);
+#   - Hikari pool sized for ≤4 connections (the kiosk is the only
+#     consumer beyond the GTFS-RT scheduler).
+spring:
+  config:
+    activate:
+      on-profile: kiosk
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://postgres:5432/transit}
+    driver-class-name: org.postgresql.Driver
+    username: ${DATABASE_USER:transit}
+    password: ${DATABASE_PASSWORD:transit}
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 1
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: "0"
+    locations: classpath:db/migration,classpath:db/migration-postgres
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-hours: 8

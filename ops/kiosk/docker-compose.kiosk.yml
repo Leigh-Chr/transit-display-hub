@@ -37,6 +37,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: kiosk
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - generate with: openssl rand -base64 48}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transit
       SPRING_DATASOURCE_USERNAME: transit
       SPRING_DATASOURCE_PASSWORD: transit
