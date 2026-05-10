@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GtfsDataComponent } from './gtfs-data.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 
 describe('GtfsDataComponent', () => {
   let component: GtfsDataComponent;
@@ -74,7 +75,14 @@ describe('GtfsDataComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [GtfsDataComponent],
+      imports: [
+        GtfsDataComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: {}, fr: {} },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: GtfsDataService, useValue: mockService },

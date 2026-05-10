@@ -13,6 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * One-stop browser for the GTFS extension tables — fares, booking
@@ -41,23 +42,22 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     MatTableModule,
     MatTooltipModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="gtfs-data-page">
       <div class="page-header">
-        <h1 class="page-title">Données GTFS</h1>
-        <p class="page-subtitle">
-          Browse en lecture seule des tables annexes alimentées par
-          l'import GTFS — tarifs, transport à la demande, traductions.
-        </p>
+        <h1 class="page-title">{{ t('admin.gtfsData.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.gtfsData.subtitle') }}</p>
       </div>
 
       <mat-tab-group animationDuration="0ms">
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">payments</mat-icon>
-            Tarifs
+            {{ t('admin.gtfsData.tabFares') }}
             <span class="tab-count">{{ fares().length }}</span>
           </ng-template>
 
@@ -65,39 +65,39 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             @if (fares().length === 0) {
               <app-empty-state
                 icon="payments"
-                title="Aucun tarif importé"
-                description="Le feed GTFS courant ne contient pas de fare_attributes.txt, ou le fichier est vide." />
+                [title]="t('admin.gtfsData.noFares')"
+                [description]="t('admin.gtfsData.noFaresDesc')" />
             } @else {
               <table mat-table [dataSource]="fares()" class="data-table">
                 <ng-container matColumnDef="externalId">
-                  <th mat-header-cell *matHeaderCellDef>fare_id</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colFareId') }}</th>
                   <td mat-cell *matCellDef="let f"><code>{{ f.externalId || '—' }}</code></td>
                 </ng-container>
 
                 <ng-container matColumnDef="price">
-                  <th mat-header-cell *matHeaderCellDef>Prix</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colPrice') }}</th>
                   <td mat-cell *matCellDef="let f">
                     <strong>{{ f.price }}</strong> {{ f.currency }}
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="paymentMethod">
-                  <th mat-header-cell *matHeaderCellDef>Paiement</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colPayment') }}</th>
                   <td mat-cell *matCellDef="let f">{{ paymentLabel(f.paymentMethod) }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="transfers">
-                  <th mat-header-cell *matHeaderCellDef>Correspondances</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colTransfers') }}</th>
                   <td mat-cell *matCellDef="let f">{{ transferLabel(f) }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="agency">
-                  <th mat-header-cell *matHeaderCellDef>Agence</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colAgency') }}</th>
                   <td mat-cell *matCellDef="let f">{{ f.agencyName || '—' }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="rules">
-                  <th mat-header-cell *matHeaderCellDef>Règles</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colRules') }}</th>
                   <td mat-cell *matCellDef="let f">
                     <span [matTooltip]="ruleTooltip(f)">{{ f.rules.length }}</span>
                   </td>
@@ -113,7 +113,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">confirmation_number</mat-icon>
-            Fares v2
+            {{ t('admin.gtfsData.tabFaresV2') }}
             @if (faresV2(); as fv2) {
               <span class="tab-count">{{ fv2.products.length }}</span>
             }
@@ -124,22 +124,22 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
               @if (fv2.products.length === 0 && fv2.areas.length === 0) {
                 <app-empty-state
                   icon="confirmation_number"
-                  title="Pas de Fares v2"
-                  description="Le feed n'a pas de fare_products.txt / areas.txt. La page Tarifs affiche la v1 si elle est présente." />
+                  [title]="t('admin.gtfsData.noFaresV2')"
+                  [description]="t('admin.gtfsData.noFaresV2Desc')" />
               } @else {
                 @if (fv2.networks.length > 0) {
-                  <h3 class="section-title">Réseaux ({{ fv2.networks.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionNetworks') }} ({{ fv2.networks.length }})</h3>
                   <table mat-table [dataSource]="fv2.networks" class="data-table">
                     <ng-container matColumnDef="externalId">
                       <th mat-header-cell *matHeaderCellDef>network_id</th>
                       <td mat-cell *matCellDef="let n"><code>{{ n.externalId }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="name">
-                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colName') }}</th>
                       <td mat-cell *matCellDef="let n">{{ n.name || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="routeCount">
-                      <th mat-header-cell *matHeaderCellDef>Lignes</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colRouteCount') }}</th>
                       <td mat-cell *matCellDef="let n">{{ n.routeCount }}</td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="v2NetworkColumns"></tr>
@@ -148,18 +148,18 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 }
 
                 @if (fv2.fareMedia.length > 0) {
-                  <h3 class="section-title">Supports ({{ fv2.fareMedia.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionMedia') }} ({{ fv2.fareMedia.length }})</h3>
                   <table mat-table [dataSource]="fv2.fareMedia" class="data-table">
                     <ng-container matColumnDef="externalId">
                       <th mat-header-cell *matHeaderCellDef>fare_media_id</th>
                       <td mat-cell *matCellDef="let m"><code>{{ m.externalId }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="name">
-                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colName') }}</th>
                       <td mat-cell *matCellDef="let m">{{ m.name || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="mediaType">
-                      <th mat-header-cell *matHeaderCellDef>Type</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colMediaType') }}</th>
                       <td mat-cell *matCellDef="let m">{{ mediaTypeLabel(m.mediaType) }}</td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="v2MediaColumns"></tr>
@@ -168,22 +168,22 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 }
 
                 @if (fv2.products.length > 0) {
-                  <h3 class="section-title">Produits ({{ fv2.products.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionProducts') }} ({{ fv2.products.length }})</h3>
                   <table mat-table [dataSource]="fv2.products" class="data-table">
                     <ng-container matColumnDef="externalId">
                       <th mat-header-cell *matHeaderCellDef>fare_product_id</th>
                       <td mat-cell *matCellDef="let p"><code>{{ p.externalId }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="name">
-                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colName') }}</th>
                       <td mat-cell *matCellDef="let p">{{ p.name || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="amount">
-                      <th mat-header-cell *matHeaderCellDef>Prix</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colAmount') }}</th>
                       <td mat-cell *matCellDef="let p"><strong>{{ p.amount }}</strong> {{ p.currency }}</td>
                     </ng-container>
                     <ng-container matColumnDef="media">
-                      <th mat-header-cell *matHeaderCellDef>Support</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colMedia') }}</th>
                       <td mat-cell *matCellDef="let p">{{ p.fareMediaId || '—' }}</td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="v2ProductColumns"></tr>
@@ -192,18 +192,18 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 }
 
                 @if (fv2.areas.length > 0) {
-                  <h3 class="section-title">Zones ({{ fv2.areas.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionAreas') }} ({{ fv2.areas.length }})</h3>
                   <table mat-table [dataSource]="fv2.areas" class="data-table">
                     <ng-container matColumnDef="externalId">
                       <th mat-header-cell *matHeaderCellDef>area_id</th>
                       <td mat-cell *matCellDef="let a"><code>{{ a.externalId }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="name">
-                      <th mat-header-cell *matHeaderCellDef>Nom</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colName') }}</th>
                       <td mat-cell *matCellDef="let a">{{ a.name || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="stopCount">
-                      <th mat-header-cell *matHeaderCellDef>Arrêts</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colStopCount') }}</th>
                       <td mat-cell *matCellDef="let a">{{ a.stopCount }}</td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="v2AreaColumns"></tr>
@@ -212,26 +212,26 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 }
 
                 @if (fv2.legRules.length > 0) {
-                  <h3 class="section-title">Leg rules ({{ fv2.legRules.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionLegRules') }} ({{ fv2.legRules.length }})</h3>
                   <table mat-table [dataSource]="fv2.legRules" class="data-table">
                     <ng-container matColumnDef="legGroup">
-                      <th mat-header-cell *matHeaderCellDef>leg_group</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colLegGroup') }}</th>
                       <td mat-cell *matCellDef="let r"><code>{{ r.legGroupId || '—' }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="from">
-                      <th mat-header-cell *matHeaderCellDef>De</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colFrom') }}</th>
                       <td mat-cell *matCellDef="let r">{{ r.fromAreaName || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="to">
-                      <th mat-header-cell *matHeaderCellDef>Vers</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colTo') }}</th>
                       <td mat-cell *matCellDef="let r">{{ r.toAreaName || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="window">
-                      <th mat-header-cell *matHeaderCellDef>Fenêtre</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colWindow') }}</th>
                       <td mat-cell *matCellDef="let r">{{ r.fromTimeframeGroupId || r.toTimeframeGroupId || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="product">
-                      <th mat-header-cell *matHeaderCellDef>Produit</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colProduct') }}</th>
                       <td mat-cell *matCellDef="let r">
                         @if (r.productExternalId) {
                           <code>{{ r.productExternalId }}</code>
@@ -242,7 +242,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                       </td>
                     </ng-container>
                     <ng-container matColumnDef="priority">
-                      <th mat-header-cell *matHeaderCellDef>Priorité</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colPriority') }}</th>
                       <td mat-cell *matCellDef="let r">{{ r.rulePriority ?? '—' }}</td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="v2LegColumns"></tr>
@@ -251,22 +251,22 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 }
 
                 @if (fv2.legJoinRules.length > 0) {
-                  <h3 class="section-title">Leg join rules ({{ fv2.legJoinRules.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionLegJoinRules') }} ({{ fv2.legJoinRules.length }})</h3>
                   <table mat-table [dataSource]="fv2.legJoinRules" class="data-table">
                     <ng-container matColumnDef="fromNetwork">
-                      <th mat-header-cell *matHeaderCellDef>Réseau source</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colFromNetwork') }}</th>
                       <td mat-cell *matCellDef="let r"><code>{{ r.fromNetworkId || '—' }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="toNetwork">
-                      <th mat-header-cell *matHeaderCellDef>Réseau cible</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colToNetwork') }}</th>
                       <td mat-cell *matCellDef="let r"><code>{{ r.toNetworkId || '—' }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="fromStop">
-                      <th mat-header-cell *matHeaderCellDef>Arrêt source</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colFromStop') }}</th>
                       <td mat-cell *matCellDef="let r">{{ r.fromStopName || '—' }}</td>
                     </ng-container>
                     <ng-container matColumnDef="toStop">
-                      <th mat-header-cell *matHeaderCellDef>Arrêt cible</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colToStop') }}</th>
                       <td mat-cell *matCellDef="let r">{{ r.toStopName || '—' }}</td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="v2LegJoinColumns"></tr>
@@ -275,18 +275,18 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 }
 
                 @if (fv2.transferRules.length > 0) {
-                  <h3 class="section-title">Transfer rules ({{ fv2.transferRules.length }})</h3>
+                  <h3 class="section-title">{{ t('admin.gtfsData.sectionTransferRules') }} ({{ fv2.transferRules.length }})</h3>
                   <table mat-table [dataSource]="fv2.transferRules" class="data-table">
                     <ng-container matColumnDef="from">
-                      <th mat-header-cell *matHeaderCellDef>Depuis</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colFrom') }}</th>
                       <td mat-cell *matCellDef="let r"><code>{{ r.fromLegGroupId || '—' }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="to">
-                      <th mat-header-cell *matHeaderCellDef>Vers</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colTo') }}</th>
                       <td mat-cell *matCellDef="let r"><code>{{ r.toLegGroupId || '—' }}</code></td>
                     </ng-container>
                     <ng-container matColumnDef="duration">
-                      <th mat-header-cell *matHeaderCellDef>Validité</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colDuration') }}</th>
                       <td mat-cell *matCellDef="let r">
                         @if (r.durationLimit) {
                           {{ r.durationLimit / 60 | number:'1.0-0' }} min
@@ -294,11 +294,11 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                       </td>
                     </ng-container>
                     <ng-container matColumnDef="type">
-                      <th mat-header-cell *matHeaderCellDef>Type</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colType') }}</th>
                       <td mat-cell *matCellDef="let r">{{ transferTypeLabel(r.fareTransferType) }}</td>
                     </ng-container>
                     <ng-container matColumnDef="product">
-                      <th mat-header-cell *matHeaderCellDef>Produit</th>
+                      <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colProduct') }}</th>
                       <td mat-cell *matCellDef="let r">
                         @if (r.productExternalId) {
                           <code>{{ r.productExternalId }}</code>
@@ -320,7 +320,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">phone_callback</mat-icon>
-            TAD
+            {{ t('admin.gtfsData.tabTad') }}
             <span class="tab-count">{{ bookingRules().length }}</span>
           </ng-template>
 
@@ -328,8 +328,8 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             @if (bookingRules().length === 0) {
               <app-empty-state
                 icon="phone_callback"
-                title="Aucune règle de réservation"
-                description="Le feed GTFS courant ne contient pas de booking_rules.txt — pas de transport à la demande." />
+                [title]="t('admin.gtfsData.noBookingRules')"
+                [description]="t('admin.gtfsData.noBookingRulesDesc')" />
             } @else {
               <table mat-table [dataSource]="bookingRules()" class="data-table">
                 <ng-container matColumnDef="externalId">
@@ -338,17 +338,17 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 </ng-container>
 
                 <ng-container matColumnDef="bookingType">
-                  <th mat-header-cell *matHeaderCellDef>Type</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colBookingType') }}</th>
                   <td mat-cell *matCellDef="let b">{{ bookingTypeLabel(b.bookingType) }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="notice">
-                  <th mat-header-cell *matHeaderCellDef>Préavis</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colNotice') }}</th>
                   <td mat-cell *matCellDef="let b">{{ noticeLabel(b) }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="phone">
-                  <th mat-header-cell *matHeaderCellDef>Téléphone</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colPhone') }}</th>
                   <td mat-cell *matCellDef="let b">
                     @if (b.phone) {
                       <a [href]="'tel:' + b.phone">{{ b.phone }}</a>
@@ -357,18 +357,18 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 </ng-container>
 
                 <ng-container matColumnDef="bookingUrl">
-                  <th mat-header-cell *matHeaderCellDef>Réservation</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colBookingUrl') }}</th>
                   <td mat-cell *matCellDef="let b">
                     @if (b.bookingUrl) {
                       <a [href]="b.bookingUrl" target="_blank" rel="noopener">
-                        Lien <mat-icon class="inline-icon">open_in_new</mat-icon>
+                        {{ t('admin.gtfsData.bookingLink') }} <mat-icon class="inline-icon">open_in_new</mat-icon>
                       </a>
                     } @else { — }
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="message">
-                  <th mat-header-cell *matHeaderCellDef>Message</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colMessage') }}</th>
                   <td mat-cell *matCellDef="let b" class="ellipsis">
                     <span [matTooltip]="b.message || ''">{{ b.message || '—' }}</span>
                   </td>
@@ -384,14 +384,14 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">translate</mat-icon>
-            Traductions
+            {{ t('admin.gtfsData.tabTranslations') }}
             <span class="tab-count">{{ translations().length }}</span>
           </ng-template>
 
           <div class="tab-content">
             <div class="translation-toolbar">
               <mat-form-field appearance="outline" class="lang-field">
-                <mat-label>Langue</mat-label>
+                <mat-label>{{ t('admin.gtfsData.language') }}</mat-label>
                 <mat-select [(ngModel)]="language" (selectionChange)="loadTranslations()">
                   @for (l of LANGUAGES; track l) {
                     <mat-option [value]="l">{{ l }}</mat-option>
@@ -400,54 +400,54 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="table-field">
-                <mat-label>Table (optionnel)</mat-label>
+                <mat-label>{{ t('admin.gtfsData.tableFilter') }}</mat-label>
                 <mat-select [(ngModel)]="tableFilter" (selectionChange)="loadTranslations()">
-                  <mat-option [value]="''">Toutes</mat-option>
-                  @for (t of TABLES; track t) {
-                    <mat-option [value]="t">{{ t }}</mat-option>
+                  <mat-option [value]="''">{{ t('admin.gtfsData.allTables') }}</mat-option>
+                  @for (tbl of TABLES; track tbl) {
+                    <mat-option [value]="tbl">{{ tbl }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
 
               <button mat-stroked-button (click)="loadTranslations()" [disabled]="loadingTranslations()">
                 <mat-icon>refresh</mat-icon>
-                Recharger
+                {{ t('admin.gtfsData.reload') }}
               </button>
             </div>
 
             @if (translations().length === 0) {
               <app-empty-state
                 icon="translate"
-                title="Aucune traduction"
-                description="Aucune ligne pour cette langue. Le feed contient peut-être seulement la langue par défaut." />
+                [title]="t('admin.gtfsData.noTranslations')"
+                [description]="t('admin.gtfsData.noTranslationsDesc')" />
             } @else {
               <table mat-table [dataSource]="translations()" class="data-table">
                 <ng-container matColumnDef="tableName">
-                  <th mat-header-cell *matHeaderCellDef>Table</th>
-                  <td mat-cell *matCellDef="let t"><code>{{ t.tableName }}</code></td>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colTable') }}</th>
+                  <td mat-cell *matCellDef="let row"><code>{{ row.tableName }}</code></td>
                 </ng-container>
 
                 <ng-container matColumnDef="recordId">
-                  <th mat-header-cell *matHeaderCellDef>record_id</th>
-                  <td mat-cell *matCellDef="let t">{{ t.recordId || '—' }}</td>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colRecordId') }}</th>
+                  <td mat-cell *matCellDef="let row">{{ row.recordId || '—' }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="fieldName">
-                  <th mat-header-cell *matHeaderCellDef>Champ</th>
-                  <td mat-cell *matCellDef="let t"><code>{{ t.fieldName }}</code></td>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colField') }}</th>
+                  <td mat-cell *matCellDef="let row"><code>{{ row.fieldName }}</code></td>
                 </ng-container>
 
                 <ng-container matColumnDef="fieldValue">
-                  <th mat-header-cell *matHeaderCellDef>Source</th>
-                  <td mat-cell *matCellDef="let t" class="ellipsis">
-                    <span [matTooltip]="t.fieldValue || ''">{{ t.fieldValue || '—' }}</span>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colSource') }}</th>
+                  <td mat-cell *matCellDef="let row" class="ellipsis">
+                    <span [matTooltip]="row.fieldValue || ''">{{ row.fieldValue || '—' }}</span>
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="translation">
-                  <th mat-header-cell *matHeaderCellDef>Traduction</th>
-                  <td mat-cell *matCellDef="let t" class="ellipsis">
-                    <span [matTooltip]="t.translation">{{ t.translation }}</span>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.gtfsData.colTranslation') }}</th>
+                  <td mat-cell *matCellDef="let row" class="ellipsis">
+                    <span [matTooltip]="row.translation">{{ row.translation }}</span>
                   </td>
                 </ng-container>
 
@@ -459,6 +459,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         </mat-tab>
       </mat-tab-group>
     </div>
+    </ng-container>
   `,
   styles: `
     .gtfs-data-page { max-width: 1300px; }

@@ -14,6 +14,7 @@ import { StopService } from '@core/api/stop.service';
 import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
 import { Pathway, PathwayMode, StationLevelInfo, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * Browse the indoor topology — pathways.txt — around any stop.
@@ -38,34 +39,32 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     MatTableModule,
     MatTooltipModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="pathways-page">
       <div class="page-header">
-        <h1 class="page-title">Topologie indoor</h1>
-        <p class="page-subtitle">
-          Connexions piétonnes intra-station — escaliers, ascenseurs,
-          sorties — depuis pathways.txt. Sélectionne un arrêt pour
-          voir ses segments entrants et sortants.
-        </p>
+        <h1 class="page-title">{{ t('admin.pathways.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.pathways.subtitle') }}</p>
       </div>
 
       <mat-form-field appearance="outline" class="stop-picker">
-        <mat-label>Arrêt</mat-label>
+        <mat-label>{{ t('admin.pathways.stopPickerLabel') }}</mat-label>
         <input
           type="text"
           matInput
           [(ngModel)]="search"
           (ngModelChange)="onSearchChange()"
           [matAutocomplete]="auto"
-          placeholder="Tape le nom de l'arrêt…">
+          [placeholder]="t('admin.pathways.stopPickerPlaceholder')">
         <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onStopSelected($event.option.value)">
           @for (s of filteredStops(); track s.id) {
             <mat-option [value]="s">
               {{ s.name }}
               @if (s.platformCode) {
-                <span class="platform">— quai {{ s.platformCode }}</span>
+                <span class="platform">{{ t('admin.pathways.platform', { code: s.platformCode }) }}</span>
               }
             </mat-option>
           }
@@ -78,11 +77,11 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
           <h2>{{ stop.name }}</h2>
           @if (stationLevels().length > 0) {
             <div class="levels-row">
-              <mat-icon class="levels-icon" matTooltip="Niveaux déclarés pour la station — GTFS levels.txt">layers</mat-icon>
-              <span class="levels-label">{{ stationName() || 'Station' }} :</span>
+              <mat-icon class="levels-icon" [matTooltip]="t('admin.pathways.levelsTooltip')">layers</mat-icon>
+              <span class="levels-label">{{ stationName() || t('admin.pathways.stationDefault') }} :</span>
               @for (lvl of stationLevels(); track lvl.id) {
                 <span class="level-chip" [matTooltip]="'level_index = ' + lvl.index">
-                  {{ lvl.name || ('niveau ' + lvl.index) }}
+                  {{ lvl.name || t('admin.pathways.levelDefault', { index: lvl.index }) }}
                 </span>
               }
             </div>
@@ -90,21 +89,21 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
           @if (pathways().length === 0) {
             <app-empty-state
               icon="alt_route"
-              title="Pas de pathway pour cet arrêt"
-              description="Soit la station n'a pas de topologie indoor déclarée, soit l'arrêt est un poteau bus." />
+              [title]="t('admin.pathways.emptyPathwayTitle')"
+              [description]="t('admin.pathways.emptyPathwayDesc')" />
           } @else {
             @if (graphLayout(); as g) {
               <div class="pathway-graph">
                 <h3 class="graph-title">
                   <mat-icon class="graph-icon">hub</mat-icon>
-                  Schéma topologique
+                  {{ t('admin.pathways.graphTitle') }}
                 </h3>
                 <svg
                   class="graph-svg"
                   [attr.viewBox]="g.viewBox"
                   preserveAspectRatio="xMidYMid meet"
                   role="img"
-                  aria-label="Graphe des pathways autour de l'arrêt sélectionné"
+                  [attr.aria-label]="t('admin.pathways.graphAria')"
                 >
                   <!-- edges first so node circles render on top -->
                   @for (edge of g.edges; track edge.key) {
@@ -163,7 +162,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             <div class="pathways-table-wrapper">
               <table mat-table [dataSource]="pathways()" class="pathways-table">
                 <ng-container matColumnDef="mode">
-                  <th mat-header-cell *matHeaderCellDef>Mode</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colMode') }}</th>
                   <td mat-cell *matCellDef="let p">
                     <mat-icon class="mode-icon" [matTooltip]="modeLabel(p.pathwayMode)">
                       {{ modeIcon(p.pathwayMode) }}
@@ -172,7 +171,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 </ng-container>
 
                 <ng-container matColumnDef="from">
-                  <th mat-header-cell *matHeaderCellDef>Depuis</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colFrom') }}</th>
                   <td mat-cell *matCellDef="let p">
                     <strong [class.current]="p.fromStopId === selectedStop()?.id">
                       {{ p.fromStopName }}
@@ -190,7 +189,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 </ng-container>
 
                 <ng-container matColumnDef="to">
-                  <th mat-header-cell *matHeaderCellDef>Vers</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colTo') }}</th>
                   <td mat-cell *matCellDef="let p">
                     <strong [class.current]="p.toStopId === selectedStop()?.id">
                       {{ p.toStopName }}
@@ -199,7 +198,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 </ng-container>
 
                 <ng-container matColumnDef="signpost">
-                  <th mat-header-cell *matHeaderCellDef>Signalétique</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colSignpost') }}</th>
                   <td mat-cell *matCellDef="let p">
                     @if (p.signpostedAs || p.reversedSignpostedAs) {
                       <span class="signpost">
@@ -213,21 +212,21 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                 </ng-container>
 
                 <ng-container matColumnDef="length">
-                  <th mat-header-cell *matHeaderCellDef>Distance</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colLength') }}</th>
                   <td mat-cell *matCellDef="let p">
                     {{ p.lengthMetres !== null ? (p.lengthMetres + ' m') : '—' }}
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="time">
-                  <th mat-header-cell *matHeaderCellDef>Durée</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colTime') }}</th>
                   <td mat-cell *matCellDef="let p">
                     {{ p.traversalTimeSeconds !== null ? (p.traversalTimeSeconds + ' s') : '—' }}
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="details">
-                  <th mat-header-cell *matHeaderCellDef>Détails</th>
+                  <th mat-header-cell *matHeaderCellDef>{{ t('admin.pathways.colDetails') }}</th>
                   <td mat-cell *matCellDef="let p" class="details-cell">
                     @if (p.stairCount) {
                       <span class="detail-chip"><mat-icon>stairs</mat-icon>{{ p.stairCount }}</span>
@@ -250,10 +249,11 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
       } @else {
         <app-empty-state
           icon="search"
-          title="Sélectionne un arrêt"
-          description="Tape un nom dans le champ ci-dessus pour voir les pathways autour d'une station." />
+          [title]="t('admin.pathways.emptySelectTitle')"
+          [description]="t('admin.pathways.emptySelectDesc')" />
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .pathways-page { max-width: 1300px; }

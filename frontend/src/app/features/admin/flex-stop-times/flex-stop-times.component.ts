@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { FlexStopTime } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * Browse the GTFS-flex stop_times — the on-demand counterpart of
@@ -25,37 +26,34 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     MatTableModule,
     MatTooltipModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="flex-page">
       <div class="page-header">
-        <h1 class="page-title">Stop_times TAD (flex)</h1>
-        <p class="page-subtitle">
-          Fenêtres de réservation à la demande — ouvertes sur une zone
-          polygonale (location_id), un groupe d'arrêts (location_group_id)
-          ou un arrêt fixe — depuis la spec GTFS-flex.
-        </p>
+        <h1 class="page-title">{{ t('admin.flexStopTimes.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.flexStopTimes.subtitle') }}</p>
       </div>
 
       @if (rows().length === 0) {
         <mat-card>
           <app-empty-state
             icon="phone_callback"
-            title="Pas de stop_times TAD"
-            description="Le feed GTFS courant ne déclare pas de service à la demande
-                         (location_id / location_group_id + windows sur stop_times)." />
+            [title]="t('admin.flexStopTimes.emptyTitle')"
+            [description]="t('admin.flexStopTimes.emptyDesc')" />
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
           <div class="legend">
-            <span class="legend-pill pill-target-stop"><mat-icon>place</mat-icon>Arrêt</span>
-            <span class="legend-pill pill-target-location"><mat-icon>layers</mat-icon>Zone polygonale</span>
-            <span class="legend-pill pill-target-group"><mat-icon>group_work</mat-icon>Groupe d'arrêts</span>
+            <span class="legend-pill pill-target-stop"><mat-icon>place</mat-icon>{{ t('admin.flexStopTimes.legendStop') }}</span>
+            <span class="legend-pill pill-target-location"><mat-icon>layers</mat-icon>{{ t('admin.flexStopTimes.legendLocation') }}</span>
+            <span class="legend-pill pill-target-group"><mat-icon>group_work</mat-icon>{{ t('admin.flexStopTimes.legendGroup') }}</span>
           </div>
           <table mat-table [dataSource]="rows()" class="full-width">
             <ng-container matColumnDef="line">
-              <th mat-header-cell *matHeaderCellDef>Ligne</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.flexStopTimes.colLine') }}</th>
               <td mat-cell *matCellDef="let r">
                 @if (r.lineCode) {
                   <span class="line-badge" [style.backgroundColor]="r.lineColor">{{ r.lineCode }}</span>
@@ -64,12 +62,12 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="itinerary">
-              <th mat-header-cell *matHeaderCellDef>Itinéraire</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.flexStopTimes.colItinerary') }}</th>
               <td mat-cell *matCellDef="let r">{{ r.itineraryName || '—' }}</td>
             </ng-container>
 
             <ng-container matColumnDef="target">
-              <th mat-header-cell *matHeaderCellDef>Cible</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.flexStopTimes.colTarget') }}</th>
               <td mat-cell *matCellDef="let r">
                 @if (r.locationExternalId) {
                   <span class="legend-pill pill-target-location">
@@ -91,14 +89,14 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="window">
-              <th mat-header-cell *matHeaderCellDef>Fenêtre</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.flexStopTimes.colWindow') }}</th>
               <td mat-cell *matCellDef="let r" class="time-cell">
                 {{ formatTime(r.startPickupDropOffWindow) }} → {{ formatTime(r.endPickupDropOffWindow) }}
               </td>
             </ng-container>
 
             <ng-container matColumnDef="bookings">
-              <th mat-header-cell *matHeaderCellDef>Booking rules</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.flexStopTimes.colBookings') }}</th>
               <td mat-cell *matCellDef="let r">
                 @if (r.pickupBookingRuleExternalId) {
                   <span class="rule-tag" matTooltip="pickup_booking_rule_id">
@@ -115,12 +113,12 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </ng-container>
 
             <ng-container matColumnDef="calendar">
-              <th mat-header-cell *matHeaderCellDef>Calendrier</th>
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.flexStopTimes.colCalendar') }}</th>
               <td mat-cell *matCellDef="let r">
                 @if (r.serviceCalendarExternalId) {
                   <span class="calendar-tag">{{ r.serviceCalendarExternalId }}</span>
                 } @else {
-                  <span class="calendar-tag muted">always</span>
+                  <span class="calendar-tag muted">{{ t('admin.flexStopTimes.calendarAlways') }}</span>
                 }
               </td>
             </ng-container>
@@ -131,6 +129,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         </mat-card>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .flex-page {

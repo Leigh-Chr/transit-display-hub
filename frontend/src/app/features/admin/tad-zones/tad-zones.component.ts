@@ -7,6 +7,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { FlexLocation } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective } from '@jsverse/transloco';
 import {
   FlatRing,
   buildViewport,
@@ -46,26 +47,24 @@ interface RenderedRing {
     MatIconModule,
     MatTooltipModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="tad-zones-page">
       <div class="page-header">
-        <h1 class="page-title">Zones TAD (locations.geojson)</h1>
-        <p class="page-subtitle">
-          Polygones GTFS-flex décrivant les zones de prise en charge
-          ou de dépose flexibles. Surface utile pour vérifier que les
-          zones importées couvrent bien le territoire desservi.
-        </p>
+        <h1 class="page-title">{{ t('admin.tadZones.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.tadZones.subtitle') }}</p>
       </div>
 
       @if (loading()) {
-        <div class="loading">Chargement…</div>
+        <div class="loading">{{ t('admin.tadZones.loading') }}</div>
       } @else if (locations().length === 0) {
         <app-empty-state
           icon="layers_clear"
-          title="Aucune zone TAD importée"
-          description="Le feed actuel ne ship pas de locations.geojson, ou l'import n'a rien persisté." />
+          [title]="t('admin.tadZones.noZones')"
+          [description]="t('admin.tadZones.noZonesDesc')" />
       } @else {
         <div class="layout">
           <mat-card class="map-card">
@@ -75,7 +74,7 @@ interface RenderedRing {
                 preserveAspectRatio="xMidYMid meet"
                 class="zones-canvas"
                 role="img"
-                aria-label="Carte des zones TAD">
+                [attr.aria-label]="t('admin.tadZones.mapAria')">
                 @for (rendered of renderedRings(); track $index) {
                   <path
                     [attr.d]="rendered.path"
@@ -92,16 +91,13 @@ interface RenderedRing {
                     (mouseleave)="hoveredIndex.set(null)" />
                 }
               </svg>
-              <p class="map-footnote">
-                Projection plate carrée, échelle libre. Les chevauchements
-                visibles ici reflètent les chevauchements réels du feed.
-              </p>
+              <p class="map-footnote">{{ t('admin.tadZones.mapFootnote') }}</p>
             </mat-card-content>
           </mat-card>
 
           <mat-card class="list-card">
             <mat-card-content>
-              <h2 class="list-title">{{ locations().length }} zone(s)</h2>
+              <h2 class="list-title">{{ t('admin.tadZones.zoneCount', { count: locations().length }) }}</h2>
               <ul class="zone-list" role="list">
                 @for (loc of locations(); track loc.id; let idx = $index) {
                   <li>
@@ -118,7 +114,7 @@ interface RenderedRing {
                         <span class="zone-id">{{ loc.externalId }}</span>
                         @if (loc.stopExternalId) {
                           <span class="zone-stop"
-                                matTooltip="Cette zone est rattachée à un stop_id GTFS">
+                                [matTooltip]="t('admin.tadZones.stopTooltip')">
                             <mat-icon>place</mat-icon>{{ loc.stopExternalId }}
                           </span>
                         }
@@ -133,6 +129,7 @@ interface RenderedRing {
         </div>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .tad-zones-page { max-width: 1400px; }

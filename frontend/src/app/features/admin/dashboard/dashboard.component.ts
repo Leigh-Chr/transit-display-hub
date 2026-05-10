@@ -22,6 +22,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
 import { lineTextColor } from '@shared/utils/color.utils';
 import { DataOverviewCardComponent } from './data-overview-card.component';
 import { FeedInfoCardComponent } from './feed-info-card.component';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-dashboard',
@@ -38,11 +39,13 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
     FeedInfoCardComponent,
     DataOverviewCardComponent,
     FeedCreditsComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="dashboard">
-      <h1 class="page-title">Dashboard</h1>
+      <h1 class="page-title">{{ t('admin.dashboard.title') }}</h1>
 
       @if (isAdmin()) {
         <app-feed-info-card />
@@ -62,7 +65,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                 </div>
                 <div class="stat-info">
                   <div class="stat-value">{{ lineCount() }}</div>
-                  <div class="stat-label">Lines</div>
+                  <div class="stat-label">{{ t('admin.dashboard.statLines') }}</div>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -74,7 +77,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                 </div>
                 <div class="stat-info">
                   <div class="stat-value">{{ stopCount() }}</div>
-                  <div class="stat-label">Stops</div>
+                  <div class="stat-label">{{ t('admin.dashboard.statStops') }}</div>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -86,7 +89,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                 </div>
                 <div class="stat-info">
                   <div class="stat-value">{{ itineraryCount() }}</div>
-                  <div class="stat-label">Itineraries</div>
+                  <div class="stat-label">{{ t('admin.dashboard.statItineraries') }}</div>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -99,7 +102,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ activeMessages().length }}</div>
-                <div class="stat-label">Active Messages</div>
+                <div class="stat-label">{{ t('admin.dashboard.statActiveMessages') }}</div>
               </div>
             </mat-card-content>
           </mat-card>
@@ -118,7 +121,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                       {{ onlineDevicesCount() }}/{{ totalDevicesCount() }}
                     }
                   </div>
-                  <div class="stat-label">Devices Online</div>
+                  <div class="stat-label">{{ t('admin.dashboard.statDevicesOnline') }}</div>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -131,16 +134,16 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
           <!-- Lines Overview -->
           <mat-card class="overview-card">
             <mat-card-header>
-              <mat-card-title>Network Lines</mat-card-title>
+              <mat-card-title>{{ t('admin.dashboard.networkLines') }}</mat-card-title>
               @if (hasMoreLines()) {
-                <a mat-button routerLink="/admin/lines" class="view-all">View All</a>
+                <a mat-button routerLink="/admin/lines" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
               }
             </mat-card-header>
             <mat-card-content>
               @if (lineCount() === 0) {
                 <div class="empty-state">
                   <mat-icon>subway</mat-icon>
-                  <span>No lines configured</span>
+                  <span>{{ t('admin.dashboard.noLinesConfigured') }}</span>
                 </div>
               } @else {
                 <div class="lines-overview">
@@ -149,7 +152,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                       [routerLink]="['/admin/stops']"
                       [queryParams]="{ lineId: line.id }"
                       class="line-item"
-                      [matTooltip]="line.name + ' - ' + line.stopCount + ' stops, ' + line.itineraryCount + ' itineraries'"
+                      [matTooltip]="line.name + ' - ' + line.stopCount + ' ' + t('admin.dashboard.stopsSuffix') + ', ' + line.itineraryCount + ' ' + t('admin.dashboard.statItineraries')"
                     >
                       <span
                         class="line-badge"
@@ -159,7 +162,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                         {{ line.code }}
                       </span>
                       <span class="line-name">{{ line.name }}</span>
-                      <span class="line-stats">{{ line.stopCount }} stops</span>
+                      <span class="line-stats">{{ line.stopCount }} {{ t('admin.dashboard.stopsSuffix') }}</span>
                     </a>
                   }
                 </div>
@@ -170,14 +173,14 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
           <!-- Device Health -->
           <mat-card class="overview-card">
             <mat-card-header>
-              <mat-card-title>Device Health</mat-card-title>
-              <a mat-button routerLink="/admin/devices" class="view-all">View All</a>
+              <mat-card-title>{{ t('admin.dashboard.deviceHealth') }}</mat-card-title>
+              <a mat-button routerLink="/admin/devices" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
             </mat-card-header>
             <mat-card-content>
               @if (totalDevicesCount() === 0) {
                 <div class="empty-state">
                   <mat-icon>tv</mat-icon>
-                  <span>No devices registered</span>
+                  <span>{{ t('admin.dashboard.noDevicesRegistered') }}</span>
                 </div>
               } @else {
                 <div class="health-container">
@@ -188,21 +191,21 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                     <div class="health-breakdown">
                       <div class="health-stat online">
                         <mat-icon>check_circle</mat-icon>
-                        <span>{{ onlineDevicesCount() }} online</span>
+                        <span>{{ onlineDevicesCount() }} {{ t('admin.dashboard.online') }}</span>
                       </div>
                       <div class="health-stat offline">
                         <mat-icon>cancel</mat-icon>
-                        <span>{{ totalDevicesCount() - onlineDevicesCount() }} offline</span>
+                        <span>{{ totalDevicesCount() - onlineDevicesCount() }} {{ t('admin.dashboard.offline') }}</span>
                       </div>
                       <div class="health-stat total">
                         <mat-icon>devices</mat-icon>
-                        <span>{{ totalDevicesCount() }} total</span>
+                        <span>{{ totalDevicesCount() }} {{ t('admin.dashboard.total') }}</span>
                       </div>
                     </div>
                   </div>
                   @if (totalDevicesCount() - onlineDevicesCount() > 0) {
                     <div class="offline-preview">
-                      <div class="offline-title">Offline devices:</div>
+                      <div class="offline-title">{{ t('admin.dashboard.offlineDevices') }}</div>
                       @for (device of displayedOfflineDevices(); track device.id) {
                         <div class="offline-device">
                           <mat-icon>tv_off</mat-icon>
@@ -211,7 +214,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                       }
                       @if (remainingOfflineCount() > 0) {
                         <a routerLink="/admin/devices" class="offline-more">
-                          +{{ remainingOfflineCount() }} more
+                          {{ t('admin.dashboard.more', { count: remainingOfflineCount() }) }}
                         </a>
                       }
                     </div>
@@ -230,10 +233,10 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
             <mat-card-header>
               <mat-card-title>
                 <mat-icon class="title-icon critical">error</mat-icon>
-                Critical Messages
+                {{ t('admin.dashboard.criticalMessages') }}
                 <span class="alert-count">({{ criticalMessages().length }})</span>
               </mat-card-title>
-              <a mat-button routerLink="/admin/messages" class="view-all">View All</a>
+              <a mat-button routerLink="/admin/messages" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
             </mat-card-header>
             <mat-card-content>
               @for (message of displayedCriticalMessages(); track message.id) {
@@ -241,13 +244,13 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                   <mat-icon class="alert-icon">error</mat-icon>
                   <div class="alert-content">
                     <span class="alert-title">{{ message.title }}</span>
-                    <span class="alert-scope">{{ message.scopeType === 'NETWORK' ? 'Network-wide' : message.scopeInfo?.name }}</span>
+                    <span class="alert-scope">{{ message.scopeType === 'NETWORK' ? t('admin.dashboard.scopeNetworkWide') : message.scopeInfo?.name }}</span>
                   </div>
                 </div>
               }
               @if (remainingCriticalCount() > 0) {
                 <a routerLink="/admin/messages" class="alert-more">
-                  +{{ remainingCriticalCount() }} more critical messages
+                  {{ t('admin.dashboard.moreCritical', { count: remainingCriticalCount() }) }}
                 </a>
               }
             </mat-card-content>
@@ -255,7 +258,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
         } @else if (!loading()) {
           <mat-card class="ops-ok-card" animate.enter="fade-in">
             <mat-icon class="ops-ok-icon">check_circle</mat-icon>
-            <span class="ops-ok-text">No critical messages — all clear.</span>
+            <span class="ops-ok-text">{{ t('admin.dashboard.allClear') }}</span>
           </mat-card>
         }
 
@@ -263,8 +266,8 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
         @if (recentMessages().length > 0) {
           <mat-card class="recent-card" animate.enter="fade-in">
             <mat-card-header>
-              <mat-card-title>Recent Messages</mat-card-title>
-              <a mat-button routerLink="/admin/messages" class="view-all">View All</a>
+              <mat-card-title>{{ t('admin.dashboard.recentMessages') }}</mat-card-title>
+              <a mat-button routerLink="/admin/messages" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
             </mat-card-header>
             <mat-card-content>
               <div class="messages-list">
@@ -291,7 +294,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                     <div class="message-info">
                       <div class="message-title">{{ message.title }}</div>
                       <div class="message-meta">
-                        {{ message.scopeType === 'NETWORK' ? 'Network-wide' : message.scopeInfo?.name }}
+                        {{ message.scopeType === 'NETWORK' ? t('admin.dashboard.scopeNetworkWide') : message.scopeInfo?.name }}
                         · {{ message.startTime | date: 'short' }}
                       </div>
                     </div>
@@ -301,9 +304,9 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
                       [class.expired]="getMessageStatus(message) === 'expired'"
                     >
                       @switch (getMessageStatus(message)) {
-                        @case ('active') { Active }
-                        @case ('scheduled') { Scheduled }
-                        @case ('expired') { Expired }
+                        @case ('active') { {{ t('admin.dashboard.messageStatus.active') }} }
+                        @case ('scheduled') { {{ t('admin.dashboard.messageStatus.scheduled') }} }
+                        @case ('expired') { {{ t('admin.dashboard.messageStatus.expired') }} }
                       }
                     </span>
                   </div>
@@ -316,44 +319,44 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
         <!-- Quick Actions -->
         <mat-card class="quick-actions-card" animate.enter="fade-in">
           <mat-card-header>
-            <mat-card-title>Quick Actions</mat-card-title>
+            <mat-card-title>{{ t('admin.dashboard.quickActions') }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="actions-grid">
               <a mat-stroked-button routerLink="/admin/messages" class="action-btn">
                 <mat-icon>campaign</mat-icon>
-                <span>New Message</span>
+                <span>{{ t('admin.dashboard.actionNewMessage') }}</span>
               </a>
               @if (isAdmin()) {
                 <a mat-stroked-button routerLink="/admin/lines" class="action-btn">
                   <mat-icon>subway</mat-icon>
-                  <span>Manage Lines</span>
+                  <span>{{ t('admin.dashboard.actionManageLines') }}</span>
                 </a>
                 <a mat-stroked-button routerLink="/admin/stops" class="action-btn">
                   <mat-icon>place</mat-icon>
-                  <span>Manage Stops</span>
+                  <span>{{ t('admin.dashboard.actionManageStops') }}</span>
                 </a>
                 <a mat-stroked-button routerLink="/admin/schedules" class="action-btn">
                   <mat-icon>schedule</mat-icon>
-                  <span>Edit Schedules</span>
+                  <span>{{ t('admin.dashboard.actionEditSchedules') }}</span>
                 </a>
                 <a mat-stroked-button routerLink="/admin/devices" class="action-btn">
                   <mat-icon>tv</mat-icon>
-                  <span>Register Device</span>
+                  <span>{{ t('admin.dashboard.actionRegisterDevice') }}</span>
                 </a>
               }
               <a mat-stroked-button routerLink="/map" class="action-btn">
                 <mat-icon>map</mat-icon>
-                <span>Network Map</span>
+                <span>{{ t('admin.dashboard.actionNetworkMap') }}</span>
               </a>
               @if (isAdmin()) {
                 <button mat-stroked-button class="action-btn" (click)="openHubDisplay()">
                   <mat-icon>hub</mat-icon>
-                  <span>Hub Display</span>
+                  <span>{{ t('admin.dashboard.actionHubDisplay') }}</span>
                 </button>
                 <a mat-stroked-button routerLink="/admin/users" class="action-btn">
                   <mat-icon>people</mat-icon>
-                  <span>Manage Users</span>
+                  <span>{{ t('admin.dashboard.actionManageUsers') }}</span>
                 </a>
               }
             </div>
@@ -363,6 +366,7 @@ import { FeedInfoCardComponent } from './feed-info-card.component';
 
       <app-feed-credits />
     </div>
+    </ng-container>
   `,
   styles: `
     .page-title {
@@ -938,6 +942,7 @@ export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
+  private readonly transloco = inject(TranslocoService);
 
   readonly isAdmin = this.authService.isAdmin;
 
@@ -1016,7 +1021,7 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.notify.errorRetryable('Failed to load dashboard data')
+          this.notify.errorRetryable(this.transloco.translate('admin.dashboard.loadFailed'))
             .subscribe(() => this.loadData());
         },
       });
@@ -1030,7 +1035,7 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.notify.errorRetryable('Failed to load dashboard data')
+          this.notify.errorRetryable(this.transloco.translate('admin.dashboard.loadFailed'))
             .subscribe(() => this.loadData());
         },
       });
@@ -1051,7 +1056,7 @@ export class DashboardComponent implements OnInit {
         this.openHubDialogWith(lines);
       },
       error: () => {
-        this.notify.error('Failed to load lines for hub selector');
+        this.notify.error(this.transloco.translate('admin.dashboard.loadLinesFailed'));
       },
     });
   }

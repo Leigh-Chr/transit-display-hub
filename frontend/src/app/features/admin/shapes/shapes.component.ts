@@ -13,6 +13,7 @@ import { ItineraryService } from '@core/api/itinerary.service';
 import { Itinerary, Shape, ShapePoint } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { lineTextColor, readableTextColor } from '@shared/utils/color.utils';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 interface ProjectedPoint { x: number; y: number; }
 
@@ -43,28 +44,26 @@ interface ProjectedPoint { x: number; y: number; }
     MatInputModule,
     MatTooltipModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="shapes-page">
       <div class="page-header">
-        <h1 class="page-title">Shapes GTFS</h1>
-        <p class="page-subtitle">
-          Aperçu géographique des polylines GTFS — utile pour vérifier
-          que l'import a correctement attaché les shapes aux itinéraires
-          et que la géométrie correspond au tracé réel.
-        </p>
+        <h1 class="page-title">{{ t('admin.shapes.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.shapes.subtitle') }}</p>
       </div>
 
       <mat-form-field appearance="outline" class="itin-picker">
-        <mat-label>Itinéraire</mat-label>
+        <mat-label>{{ t('admin.shapes.itinPickerLabel') }}</mat-label>
         <input
           type="text"
           matInput
           [(ngModel)]="search"
           (ngModelChange)="onSearchChange()"
           [matAutocomplete]="auto"
-          placeholder="Tape un nom ou code de ligne…">
+          [placeholder]="t('admin.shapes.itinPickerPlaceholder')">
         <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onItinSelected($event.option.value)">
           @for (it of filteredItins(); track it.id) {
             <mat-option [value]="it">
@@ -100,12 +99,12 @@ interface ProjectedPoint { x: number; y: number; }
               </div>
               @if (shape()) {
                 <div class="shape-stats">
-                  <span class="stat" matTooltip="Points GTFS shape_pt_sequence">
+                  <span class="stat" [matTooltip]="t('admin.shapes.tooltipPoints')">
                     <mat-icon>scatter_plot</mat-icon>
                     {{ shape()!.points.length }} pts
                   </span>
                   @if (totalDistanceKm() !== null) {
-                    <span class="stat" matTooltip="Cumul shape_dist_traveled">
+                    <span class="stat" [matTooltip]="t('admin.shapes.tooltipDistance')">
                       <mat-icon>straighten</mat-icon>
                       {{ totalDistanceKm()!.toFixed(1) }} km
                     </span>
@@ -115,12 +114,12 @@ interface ProjectedPoint { x: number; y: number; }
             </div>
 
             @if (loading()) {
-              <div class="shape-canvas placeholder">Chargement…</div>
+              <div class="shape-canvas placeholder">{{ t('admin.shapes.loading') }}</div>
             } @else if (!shape() || shape()!.points.length < 2) {
               <app-empty-state
                 icon="signal_disconnected"
-                title="Pas de shape pour cet itinéraire"
-                description="Le feed n'a pas attaché de shape_id à ce trip, ou le shape ne contient qu'un point." />
+                [title]="t('admin.shapes.emptyShapeTitle')"
+                [description]="t('admin.shapes.emptyShapeDesc')" />
             } @else {
               <svg
                 [attr.viewBox]="viewBox()"
@@ -159,10 +158,11 @@ interface ProjectedPoint { x: number; y: number; }
       } @else {
         <app-empty-state
           icon="search"
-          title="Sélectionne un itinéraire"
-          description="Tape un nom ou un code de ligne dans le champ ci-dessus pour afficher sa shape." />
+          [title]="t('admin.shapes.emptySelectTitle')"
+          [description]="t('admin.shapes.emptySelectDesc')" />
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .shapes-page { max-width: 1100px; }

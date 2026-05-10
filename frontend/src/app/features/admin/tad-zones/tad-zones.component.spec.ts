@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TadZonesComponent } from './tad-zones.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { FlexLocation } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 
 const POLYGON_NORTH: FlexLocation = {
   id: '1',
@@ -45,7 +46,14 @@ describe('TadZonesComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [TadZonesComponent],
+      imports: [
+        TadZonesComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: {}, fr: {} },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         { provide: GtfsDataService, useValue: mockGtfsData },

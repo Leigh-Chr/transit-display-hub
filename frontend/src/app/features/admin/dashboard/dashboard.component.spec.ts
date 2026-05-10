@@ -11,7 +11,30 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Line, BroadcastMessage, Device } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
-const translocoLang = { admin: { dashboard: { feedInfo: {}, messageStatus: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
+const translocoLang = {
+  admin: {
+    dashboard: {
+      feedInfo: {},
+      messageStatus: { active: 'Active', scheduled: 'Scheduled', expired: 'Expired' },
+      statActiveMessages: 'Active Messages',
+      statLines: 'Lines',
+      statStops: 'Stops',
+      statItineraries: 'Itineraries',
+      statDevicesOnline: 'Devices Online',
+      actionNewMessage: 'New Message',
+      actionNetworkMap: 'Network Map',
+      actionManageLines: 'Manage Lines',
+      actionManageStops: 'Manage Stops',
+      actionEditSchedules: 'Edit Schedules',
+      actionRegisterDevice: 'Register Device',
+      actionManageUsers: 'Manage Users',
+      actionHubDisplay: 'Hub Display',
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Delete' },
+};
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;

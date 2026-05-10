@@ -13,6 +13,7 @@ import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { StopService } from '@core/api/stop.service';
 import { FareCalculationResult, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * Admin tool to test the public fare calculator without leaving the
@@ -34,29 +35,28 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     MatInputModule,
     MatTableModule,
     EmptyStateComponent,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="fare-page">
       <div class="page-header">
-        <h1 class="page-title">Calculateur tarifaire</h1>
-        <p class="page-subtitle">
-          Combine GTFS Fares V1 et V2 pour estimer le prix d'un trajet.
-          Sélectionne un arrêt d'origine et de destination.
-        </p>
+        <h1 class="page-title">{{ t('admin.fareCalculator.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.fareCalculator.subtitle') }}</p>
       </div>
 
       <mat-card class="picker-card">
         <mat-card-content>
           <div class="picker-row">
             <mat-form-field appearance="outline" class="stop-picker">
-              <mat-label>Origine</mat-label>
+              <mat-label>{{ t('admin.fareCalculator.fieldOrigin') }}</mat-label>
               <input
                 matInput
                 [(ngModel)]="originText"
                 (input)="onSearch('origin')"
                 [matAutocomplete]="originAuto"
-                placeholder="Saisir un arrêt" />
+                [placeholder]="t('admin.fareCalculator.fieldOriginPlaceholder')" />
               <mat-autocomplete #originAuto="matAutocomplete"
                                 (optionSelected)="onStopSelected('origin', $event.option.value)"
                                 [displayWith]="displayStop">
@@ -67,13 +67,13 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="stop-picker">
-              <mat-label>Destination</mat-label>
+              <mat-label>{{ t('admin.fareCalculator.fieldDest') }}</mat-label>
               <input
                 matInput
                 [(ngModel)]="destText"
                 (input)="onSearch('dest')"
                 [matAutocomplete]="destAuto"
-                placeholder="Saisir un arrêt" />
+                [placeholder]="t('admin.fareCalculator.fieldDestPlaceholder')" />
               <mat-autocomplete #destAuto="matAutocomplete"
                                 (optionSelected)="onStopSelected('dest', $event.option.value)"
                                 [displayWith]="displayStop">
@@ -88,7 +88,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
                     [disabled]="!origin() || !dest()"
                     (click)="calculate()">
               <mat-icon>calculate</mat-icon>
-              Calculer
+              {{ t('admin.fareCalculator.calculate') }}
             </button>
           </div>
         </mat-card-content>
@@ -99,31 +99,31 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
           <mat-card>
             <mat-card-header>
               <mat-card-title>Fares V1 ({{ r.v1.length }})</mat-card-title>
-              <mat-card-subtitle>fare_attributes + fare_rules</mat-card-subtitle>
+              <mat-card-subtitle>{{ t('admin.fareCalculator.v1Subtitle') }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               @if (r.v1.length === 0) {
-                <p class="muted">Aucun tarif V1 applicable.</p>
+                <p class="muted">{{ t('admin.fareCalculator.noV1') }}</p>
               } @else {
                 <table mat-table [dataSource]="r.v1" class="full-width">
                   <ng-container matColumnDef="fareId">
-                    <th mat-header-cell *matHeaderCellDef>Fare</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colFare') }}</th>
                     <td mat-cell *matCellDef="let f">{{ f.fareId }}</td>
                   </ng-container>
                   <ng-container matColumnDef="price">
-                    <th mat-header-cell *matHeaderCellDef>Prix</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colPrice') }}</th>
                     <td mat-cell *matCellDef="let f">
                       {{ f.price | number:'1.2-2' }} {{ f.currency }}
                     </td>
                   </ng-container>
                   <ng-container matColumnDef="transfers">
-                    <th mat-header-cell *matHeaderCellDef>Transfers</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colTransfers') }}</th>
                     <td mat-cell *matCellDef="let f">{{ formatTransfers(f.transfers) }}</td>
                   </ng-container>
                   <ng-container matColumnDef="match">
-                    <th mat-header-cell *matHeaderCellDef>Matched</th>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colMatch') }}</th>
                     <td mat-cell *matCellDef="let f">
-                      @if (f.matchedRoute) { ligne {{ f.matchedRoute }} · }
+                      @if (f.matchedRoute) { {{ t('admin.fareCalculator.matchedRoute', { route: f.matchedRoute }) }} }
                       {{ f.matchedOriginZone || '*' }} → {{ f.matchedDestinationZone || '*' }}
                     </td>
                   </ng-container>
@@ -137,38 +137,38 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
           <mat-card>
             <mat-card-header>
               <mat-card-title>Fares V2 ({{ r.v2.length }})</mat-card-title>
-              <mat-card-subtitle>fare_leg_rules + areas</mat-card-subtitle>
+              <mat-card-subtitle>{{ t('admin.fareCalculator.v2Subtitle') }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               @if (r.v2.length === 0) {
-                <p class="muted">Aucune leg rule applicable.</p>
+                <p class="muted">{{ t('admin.fareCalculator.noV2') }}</p>
               } @else {
                 <table mat-table [dataSource]="r.v2" class="full-width">
                   <ng-container matColumnDef="product">
-                    <th mat-header-cell *matHeaderCellDef>Product</th>
-                    <td mat-cell *matCellDef="let r">
-                      {{ r.fareProductName || r.fareProductId || '—' }}
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colProduct') }}</th>
+                    <td mat-cell *matCellDef="let row">
+                      {{ row.fareProductName || row.fareProductId || '—' }}
                     </td>
                   </ng-container>
                   <ng-container matColumnDef="amount">
-                    <th mat-header-cell *matHeaderCellDef>Montant</th>
-                    <td mat-cell *matCellDef="let r">
-                      @if (r.amount !== null) {
-                        {{ r.amount | number:'1.2-2' }} {{ r.currency }}
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colAmount') }}</th>
+                    <td mat-cell *matCellDef="let row">
+                      @if (row.amount !== null) {
+                        {{ row.amount | number:'1.2-2' }} {{ row.currency }}
                       }
                     </td>
                   </ng-container>
                   <ng-container matColumnDef="from">
-                    <th mat-header-cell *matHeaderCellDef>From area</th>
-                    <td mat-cell *matCellDef="let r">{{ r.fromAreaName || r.fromAreaId || '*' }}</td>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colFromArea') }}</th>
+                    <td mat-cell *matCellDef="let row">{{ row.fromAreaName || row.fromAreaId || '*' }}</td>
                   </ng-container>
                   <ng-container matColumnDef="to">
-                    <th mat-header-cell *matHeaderCellDef>To area</th>
-                    <td mat-cell *matCellDef="let r">{{ r.toAreaName || r.toAreaId || '*' }}</td>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colToArea') }}</th>
+                    <td mat-cell *matCellDef="let row">{{ row.toAreaName || row.toAreaId || '*' }}</td>
                   </ng-container>
                   <ng-container matColumnDef="priority">
-                    <th mat-header-cell *matHeaderCellDef>Priority</th>
-                    <td mat-cell *matCellDef="let r">{{ r.rulePriority ?? '—' }}</td>
+                    <th mat-header-cell *matHeaderCellDef>{{ t('admin.fareCalculator.colPriority') }}</th>
+                    <td mat-cell *matCellDef="let row">{{ row.rulePriority ?? '—' }}</td>
                   </ng-container>
                   <tr mat-header-row *matHeaderRowDef="v2Cols"></tr>
                   <tr mat-row *matRowDef="let row; columns: v2Cols"></tr>
@@ -179,11 +179,13 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
         </div>
       } @else if (errored()) {
         <mat-card>
-          <app-empty-state icon="error_outline" title="Erreur"
-                           description="Impossible de calculer le tarif. Vérifie que les deux arrêts existent." />
+          <app-empty-state icon="error_outline"
+                           [title]="t('admin.fareCalculator.errorTitle')"
+                           [description]="t('admin.fareCalculator.errorDesc')" />
         </mat-card>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .fare-page { max-width: 1200px; }
