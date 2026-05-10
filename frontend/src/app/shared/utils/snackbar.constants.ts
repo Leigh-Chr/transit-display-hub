@@ -8,6 +8,8 @@ export const SNACKBAR_DURATIONS = {
   error: 5000,
   /** Soft warning, less urgent than an error. */
   warning: 4000,
+  /** Neutral informational message — same cadence as a warning. */
+  info: 4000,
   /** Errors that offer a "Retry" action — must stay long enough to click. */
   retryable: 8000,
 } as const;

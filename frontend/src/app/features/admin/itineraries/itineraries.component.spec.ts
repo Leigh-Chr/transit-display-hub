@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
@@ -63,7 +63,7 @@ describe('ItinerariesComponent', () => {
   let mockLineService: { getAll: ReturnType<typeof vi.fn> };
   let mockAuthService: { isAdmin: ReturnType<typeof signal<boolean>> };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
-  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
   let queryParams$: BehaviorSubject<Record<string, string>>;
   let router: Router;
 
@@ -79,7 +79,7 @@ describe('ItinerariesComponent', () => {
     mockLineService = { getAll: vi.fn().mockReturnValue(of([mockLine])) };
     mockAuthService = { isAdmin: signal(true) };
     mockDialog = { open: vi.fn().mockReturnValue({ afterClosed: () => of(undefined) }) };
-    mockSnackBar = { open: vi.fn() };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
 
     TestBed.configureTestingModule({
@@ -90,7 +90,7 @@ describe('ItinerariesComponent', () => {
         { provide: LineService, useValue: mockLineService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
         { provide: ActivatedRoute, useValue: { queryParams: queryParams$ } },
       ],
     });
@@ -178,14 +178,14 @@ describe('ItinerariesComponent', () => {
       expect(component.loading()).toBe(false);
     });
 
-    it('should handle error and show snackbar with server message', () => {
+    it('should handle error and show error notification with server message', () => {
       mockItineraryService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -195,7 +195,7 @@ describe('ItinerariesComponent', () => {
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load itineraries', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load itineraries');
     });
   });
 
@@ -264,10 +264,7 @@ describe('ItinerariesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockItineraryService.create).toHaveBeenCalledWith(dialogResult);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Itinerary created', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Itinerary created');
     });
 
     it('should not call create when dialog is cancelled', () => {
@@ -279,14 +276,14 @@ describe('ItinerariesComponent', () => {
       expect(mockItineraryService.create).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when create fails', () => {
+    it('should show error notification when create fails', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of({ lineId: 'l1', name: 'South' }) });
       mockItineraryService.create.mockReturnValue(throwError(() => ({ error: { message: 'Duplicate name' } })));
       fixture.detectChanges();
 
       component.openCreateDialog();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Duplicate name', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Duplicate name');
     });
   });
 
@@ -308,10 +305,7 @@ describe('ItinerariesComponent', () => {
       );
       expect(mockItineraryService.update).toHaveBeenCalledWith('i1', editResult);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Itinerary updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Itinerary updated');
     });
 
     it('should not call update when dialog is cancelled', () => {
@@ -323,14 +317,14 @@ describe('ItinerariesComponent', () => {
       expect(mockItineraryService.update).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when update fails', () => {
+    it('should show error notification when update fails', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of({ lineId: 'l1', name: 'Updated' }) });
       mockItineraryService.update.mockReturnValue(throwError(() => ({ error: { message: 'Conflict' } })));
       fixture.detectChanges();
 
       component.openEditDialog(mockItinerary);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Conflict', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 
@@ -352,10 +346,7 @@ describe('ItinerariesComponent', () => {
       );
       expect(mockItineraryService.updateStops).toHaveBeenCalledWith('i1', stopsResult);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Stops updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Stops updated');
     });
 
     it('should not call updateStops when dialog is cancelled', () => {
@@ -367,7 +358,7 @@ describe('ItinerariesComponent', () => {
       expect(mockItineraryService.updateStops).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when updateStops fails', () => {
+    it('should show error notification when updateStops fails', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of({ stopIds: ['s1'] }) });
       mockItineraryService.updateStops.mockReturnValue(
         throwError(() => ({ error: { message: 'Invalid stop' } })),
@@ -376,12 +367,12 @@ describe('ItinerariesComponent', () => {
 
       component.openStopsDialog(mockItinerary);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Invalid stop', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Invalid stop');
     });
   });
 
   describe('deleteItinerary', () => {
-    it('should call delete and show snackbar when confirmed', () => {
+    it('should call delete and show success notification when confirmed', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(true) });
       fixture.detectChanges();
       mockItineraryService.getAllPaginated.mockClear();
@@ -390,10 +381,7 @@ describe('ItinerariesComponent', () => {
 
       expect(mockItineraryService.delete).toHaveBeenCalledWith('i1');
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Itinerary deleted', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Itinerary deleted');
     });
 
     it('should not call delete when cancelled', () => {
@@ -405,7 +393,7 @@ describe('ItinerariesComponent', () => {
       expect(mockItineraryService.delete).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when delete fails', () => {
+    it('should show error notification when delete fails', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(true) });
       mockItineraryService.delete.mockReturnValue(
         throwError(() => ({ error: { message: 'Cannot delete' } })),
@@ -414,7 +402,7 @@ describe('ItinerariesComponent', () => {
 
       component.deleteItinerary(mockItinerary);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Cannot delete');
     });
   });
 });

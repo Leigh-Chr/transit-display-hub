@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
@@ -243,7 +243,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   private readonly stopService = inject(StopService);
   private readonly scheduleService = inject(ScheduleService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly sort = viewChild(MatSort);
@@ -260,7 +260,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+      error: () => this.notify.error('Failed to load lines'),
     });
   }
 
@@ -281,7 +281,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (stops) => this.stops.set(stops),
-          error: () => this.snackBar.open('Failed to load stops', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+          error: () => this.notify.error('Failed to load stops'),
         });
     } else {
       this.stops.set([]);
@@ -300,8 +300,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const message = httpErrorMessage(err, 'Failed to load schedules');
-          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+          this.notify.error(httpErrorMessage(err, 'Failed to load schedules'));
         },
       });
     } else {
@@ -325,14 +324,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         this.scheduleService.create(this.selectedStopId, result as CreateScheduleRequest).subscribe({
           next: () => {
             this.loadSchedules();
-            this.snackBar.open('Schedule entry created', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Schedule entry created');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to create schedule entry');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to create schedule entry'));
           },
         });
       }
@@ -354,14 +349,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         this.scheduleService.update(entry.id, result as CreateScheduleRequest).subscribe({
           next: () => {
             this.loadSchedules();
-            this.snackBar.open('Schedule entry updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Schedule entry updated');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to update schedule entry');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to update schedule entry'));
           },
         });
       }
@@ -385,14 +376,10 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         this.scheduleService.delete(entry.id).subscribe({
           next: () => {
             this.loadSchedules();
-            this.snackBar.open('Schedule entry deleted', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Schedule entry deleted');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to delete schedule entry');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to delete schedule entry'));
           },
         });
       }

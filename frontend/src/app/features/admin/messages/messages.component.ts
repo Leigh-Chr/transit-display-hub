@@ -11,7 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
 import { Line, BroadcastMessage, MessageSeverity, PageResponse, CreateMessageRequest } from '@shared/models';
@@ -400,7 +400,7 @@ export class MessagesComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -426,7 +426,7 @@ export class MessagesComponent implements OnInit {
 
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+      error: () => this.notify.error('Failed to load lines'),
     });
 
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -463,8 +463,7 @@ export class MessagesComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const message = httpErrorMessage(err, 'Failed to load messages');
-          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+          this.notify.error(httpErrorMessage(err, 'Failed to load messages'));
         },
       });
   }
@@ -499,14 +498,10 @@ export class MessagesComponent implements OnInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadMessages();
-            this.snackBar.open('Message created', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Message created');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to create message');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to create message'));
           },
         });
       }
@@ -525,14 +520,10 @@ export class MessagesComponent implements OnInit {
         this.messageService.update(message.id, result as CreateMessageRequest).subscribe({
           next: () => {
             this.loadMessages();
-            this.snackBar.open('Message updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Message updated');
           },
           error: (err: unknown) => {
-            const msg = httpErrorMessage(err, 'Failed to update message');
-            this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to update message'));
           },
         });
       }
@@ -555,14 +546,10 @@ export class MessagesComponent implements OnInit {
         this.messageService.delete(message.id).subscribe({
           next: () => {
             this.loadMessages();
-            this.snackBar.open('Message deleted', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Message deleted');
           },
           error: (err: unknown) => {
-            const msg = httpErrorMessage(err, 'Failed to delete message');
-            this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to delete message'));
           },
         });
       }

@@ -9,7 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { linkedQueryParam } from 'ngxtension/linked-query-param';
@@ -618,7 +618,7 @@ export class NetworkMapComponent implements OnInit {
   private readonly routeFinder = inject(RouteFinderService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   readonly themeService = inject(ThemeService);
   readonly localeService = inject(LocaleService);
   private readonly networkMapWs = inject(NetworkMapWebSocketService);
@@ -837,11 +837,7 @@ export class NetworkMapComponent implements OnInit {
       if (droppingDep) {this.fromParam.set(null);}
       if (droppingArr) {this.toParam.set(null);}
       if ((droppingDep || droppingArr) && hadActiveRoute) {
-        this.snackBar.open(
-          'Route updated: one of your stops is no longer in the network.',
-          'Close',
-          { duration: 6000, panelClass: 'warning-snackbar' },
-        );
+        this.notify.warn('Route updated: one of your stops is no longer in the network.');
       }
 
       const currentDep = this.departureStop();

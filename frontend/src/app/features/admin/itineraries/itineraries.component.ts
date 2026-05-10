@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
@@ -309,7 +309,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
   private readonly lineService = inject(LineService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -340,7 +340,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
 
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+      error: () => this.notify.error('Failed to load lines'),
     });
 
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -385,8 +385,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const message = httpErrorMessage(err, 'Failed to load itineraries');
-          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+          this.notify.error(httpErrorMessage(err, 'Failed to load itineraries'));
         },
       });
   }
@@ -409,14 +408,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadItineraries();
-            this.snackBar.open('Itinerary created', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Itinerary created');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to create itinerary');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to create itinerary'));
           },
         });
       }
@@ -435,14 +430,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         this.itineraryService.update(itinerary.id, result as CreateItineraryRequest).subscribe({
           next: () => {
             this.loadItineraries();
-            this.snackBar.open('Itinerary updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Itinerary updated');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to update itinerary');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to update itinerary'));
           },
         });
       }
@@ -461,14 +452,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         this.itineraryService.updateStops(itinerary.id, result).subscribe({
           next: () => {
             this.loadItineraries();
-            this.snackBar.open('Stops updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Stops updated');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to update stops');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to update stops'));
           },
         });
       }
@@ -491,14 +478,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         this.itineraryService.delete(itinerary.id).subscribe({
           next: () => {
             this.loadItineraries();
-            this.snackBar.open('Itinerary deleted', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Itinerary deleted');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to delete itinerary');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to delete itinerary'));
           },
         });
       }

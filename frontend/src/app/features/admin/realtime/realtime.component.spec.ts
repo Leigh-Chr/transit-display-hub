@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RealtimeComponent } from './realtime.component';
@@ -16,7 +16,7 @@ describe('RealtimeComponent', () => {
     getVehicles: ReturnType<typeof vi.fn>;
     refreshVehicles: ReturnType<typeof vi.fn>;
   };
-  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
 
   const mockAlert: RealtimeAlert = {
     id: 'a1',
@@ -57,14 +57,14 @@ describe('RealtimeComponent', () => {
       getVehicles: vi.fn().mockReturnValue(of([mockVehicle])),
       refreshVehicles: vi.fn().mockReturnValue(of([mockVehicle])),
     };
-    mockSnackBar = { open: vi.fn() };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [RealtimeComponent],
       providers: [
         provideRouter([]),
         { provide: RealtimeService, useValue: mockService },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
       ],
     });
 
@@ -96,13 +96,13 @@ describe('RealtimeComponent', () => {
     expect(component.refreshingAlerts()).toBe(false);
   });
 
-  it('refreshAlerts surfaces a snackbar error when the feed is not configured', () => {
+  it('refreshAlerts surfaces an info notification when the feed is not configured', () => {
     mockService.refreshAlerts = vi.fn().mockReturnValue(throwError(() => new Error('400')));
     fixture.detectChanges();
 
     component.refreshAlerts();
 
-    expect(mockSnackBar.open).toHaveBeenCalled();
+    expect(mockNotify.info).toHaveBeenCalled();
     expect(component.refreshingAlerts()).toBe(false);
   });
 

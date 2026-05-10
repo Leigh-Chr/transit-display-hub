@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineService } from '@core/api/line.service';
@@ -30,7 +30,7 @@ describe('LinesComponent', () => {
     delete: ReturnType<typeof vi.fn>;
   };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
-  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
   let queryParams$: BehaviorSubject<Record<string, string>>;
   let router: Router;
 
@@ -44,7 +44,7 @@ describe('LinesComponent', () => {
 
     const mockDialogRef = { afterClosed: () => of({ code: 'L2', name: 'New', color: '#00F' }) };
     mockDialog = { open: vi.fn().mockReturnValue(mockDialogRef) };
-    mockSnackBar = { open: vi.fn() };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
 
     TestBed.configureTestingModule({
@@ -53,7 +53,7 @@ describe('LinesComponent', () => {
         provideRouter([]),
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
         { provide: ActivatedRoute, useValue: { queryParams: queryParams$ } },
       ],
     });
@@ -146,14 +146,14 @@ describe('LinesComponent', () => {
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
       mockLineService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
       fixture.detectChanges();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load lines');
     });
   });
 
@@ -253,10 +253,7 @@ describe('LinesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockLineService.create).toHaveBeenCalledWith(dialogResult);
       expect(mockLineService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Line created', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Line created');
     });
 
     it('should not call create when dialog is cancelled', () => {
@@ -275,7 +272,7 @@ describe('LinesComponent', () => {
 
       component.openCreateDialog();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Duplicate code', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Duplicate code');
     });
   });
 
@@ -296,10 +293,7 @@ describe('LinesComponent', () => {
       );
       expect(mockLineService.update).toHaveBeenCalledWith('1', editResult);
       expect(mockLineService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Line updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Line updated');
     });
 
     it('should not call update when dialog is cancelled', () => {
@@ -318,7 +312,7 @@ describe('LinesComponent', () => {
 
       component.openEditDialog(existingLine);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Conflict', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 
@@ -334,10 +328,7 @@ describe('LinesComponent', () => {
 
       expect(mockLineService.delete).toHaveBeenCalledWith('1');
       expect(mockLineService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Line deleted', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Line deleted');
     });
 
     it('should not call delete when cancelled', () => {
@@ -356,7 +347,7 @@ describe('LinesComponent', () => {
 
       component.deleteLine(lineToDelete);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Cannot delete');
     });
 
     it('should show fallback error message when delete error has no message', () => {
@@ -366,7 +357,7 @@ describe('LinesComponent', () => {
 
       component.deleteLine(lineToDelete);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to delete line', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to delete line');
     });
   });
 

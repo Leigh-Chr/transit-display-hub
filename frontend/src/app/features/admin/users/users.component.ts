@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -242,7 +242,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -295,8 +295,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const message = httpErrorMessage(err, 'Failed to load users');
-          this.snackBar.open(message, 'Close', { duration: 5000 });
+          this.notify.error(httpErrorMessage(err, 'Failed to load users'));
         },
       });
   }
@@ -330,17 +329,10 @@ export class UsersComponent implements OnInit, AfterViewInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadUsers();
-            this.snackBar.open('User created', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('User created');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to create user');
-            this.snackBar.open(message, 'Close', {
-              duration: 5000,
-              panelClass: 'error-snackbar',
-            });
+            this.notify.error(httpErrorMessage(err, 'Failed to create user'));
           },
         });
       }
@@ -359,17 +351,10 @@ export class UsersComponent implements OnInit, AfterViewInit {
         this.userService.update(user.id, result as UpdateUserRequest).subscribe({
           next: () => {
             this.loadUsers();
-            this.snackBar.open('User updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('User updated');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to update user');
-            this.snackBar.open(message, 'Close', {
-              duration: 5000,
-              panelClass: 'error-snackbar',
-            });
+            this.notify.error(httpErrorMessage(err, 'Failed to update user'));
           },
         });
       }
@@ -392,17 +377,10 @@ export class UsersComponent implements OnInit, AfterViewInit {
         this.userService.delete(user.id).subscribe({
           next: () => {
             this.loadUsers();
-            this.snackBar.open('User deleted', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('User deleted');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to delete user');
-            this.snackBar.open(message, 'Close', {
-              duration: 5000,
-              panelClass: 'error-snackbar',
-            });
+            this.notify.error(httpErrorMessage(err, 'Failed to delete user'));
           },
         });
       }

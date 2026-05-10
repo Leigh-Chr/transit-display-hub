@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
@@ -308,7 +308,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
 export class LinesComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -356,8 +356,7 @@ export class LinesComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const message = httpErrorMessage(err, 'Failed to load lines');
-          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+          this.notify.error(httpErrorMessage(err, 'Failed to load lines'));
         },
       });
   }
@@ -382,14 +381,10 @@ export class LinesComponent implements OnInit {
             // (which sorts wherever the active sort dictates).
             this.tableState.resetToFirstPage();
             this.loadLines();
-            this.snackBar.open('Line created', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Line created');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to create line');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to create line'));
           },
         });
       }
@@ -408,14 +403,10 @@ export class LinesComponent implements OnInit {
         this.lineService.update(line.id, result as CreateLineRequest).subscribe({
           next: () => {
             this.loadLines();
-            this.snackBar.open('Line updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Line updated');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to update line');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to update line'));
           },
         });
       }
@@ -438,14 +429,10 @@ export class LinesComponent implements OnInit {
         this.lineService.delete(line.id).subscribe({
           next: () => {
             this.loadLines();
-            this.snackBar.open('Line deleted', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Line deleted');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to delete line');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to delete line'));
           },
         });
       }

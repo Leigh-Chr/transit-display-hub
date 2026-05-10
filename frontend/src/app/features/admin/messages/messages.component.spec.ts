@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessagesComponent } from './messages.component';
@@ -24,9 +24,7 @@ describe('MessagesComponent', () => {
   let mockDialog: {
     open: ReturnType<typeof vi.fn>;
   };
-  let mockSnackBar: {
-    open: ReturnType<typeof vi.fn>;
-  };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
   let router: Router;
   let queryParamsSubject: Subject<Record<string, string>>;
 
@@ -85,9 +83,7 @@ describe('MessagesComponent', () => {
       open: vi.fn(),
     };
 
-    mockSnackBar = {
-      open: vi.fn(),
-    };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [MessagesComponent],
@@ -96,7 +92,7 @@ describe('MessagesComponent', () => {
         { provide: MessageService, useValue: mockMessageService },
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
         {
           provide: ActivatedRoute,
           useValue: { queryParams: queryParamsSubject.asObservable() },
@@ -172,10 +168,7 @@ describe('MessagesComponent', () => {
       queryParamsSubject.next({});
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', {
-        duration: 5000,
-        panelClass: 'error-snackbar',
-      });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -186,11 +179,7 @@ describe('MessagesComponent', () => {
       fixture.detectChanges();
       queryParamsSubject.next({});
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith(
-        'Failed to load messages',
-        'Close',
-        { duration: 5000, panelClass: 'error-snackbar' },
-      );
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load messages');
     });
   });
 
@@ -291,10 +280,7 @@ describe('MessagesComponent', () => {
         severity: 'INFO',
       });
       expect(mockMessageService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Message created', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Message created');
     });
 
     it('should not create when dialog is cancelled', () => {
@@ -326,10 +312,7 @@ describe('MessagesComponent', () => {
         severity: 'WARNING',
       });
       expect(mockMessageService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Message updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Message updated');
     });
 
     it('should pass message and lines in dialog data', () => {
@@ -366,10 +349,7 @@ describe('MessagesComponent', () => {
 
       expect(mockMessageService.delete).toHaveBeenCalledWith('m1');
       expect(mockMessageService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Message deleted', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Message deleted');
     });
 
     it('should not delete message when cancelled', () => {

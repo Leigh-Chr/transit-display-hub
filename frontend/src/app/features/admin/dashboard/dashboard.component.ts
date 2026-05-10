@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   HubDisplayDialogComponent,
@@ -20,7 +20,6 @@ import { Line, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { lineTextColor } from '@shared/utils/color.utils';
-import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
 import { DataOverviewCardComponent } from './data-overview-card.component';
 import { FeedInfoCardComponent } from './feed-info-card.component';
 
@@ -937,7 +936,7 @@ export class DashboardComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly messageService = inject(MessageService);
   private readonly dashboardService = inject(DashboardService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly dialog = inject(MatDialog);
 
   readonly isAdmin = this.authService.isAdmin;
@@ -1017,9 +1016,7 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.snackBar
-            .open('Failed to load dashboard data', 'Retry', { duration: SNACKBAR_DURATIONS.retryable, panelClass: 'error-snackbar' })
-            .onAction()
+          this.notify.errorRetryable('Failed to load dashboard data')
             .subscribe(() => this.loadData());
         },
       });
@@ -1033,9 +1030,7 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.snackBar
-            .open('Failed to load dashboard data', 'Retry', { duration: SNACKBAR_DURATIONS.retryable, panelClass: 'error-snackbar' })
-            .onAction()
+          this.notify.errorRetryable('Failed to load dashboard data')
             .subscribe(() => this.loadData());
         },
       });
@@ -1056,8 +1051,7 @@ export class DashboardComponent implements OnInit {
         this.openHubDialogWith(lines);
       },
       error: () => {
-        this.snackBar.open('Failed to load lines for hub selector', 'Close',
-          { duration: SNACKBAR_DURATIONS.error, panelClass: 'error-snackbar' });
+        this.notify.error('Failed to load lines for hub selector');
       },
     });
   }

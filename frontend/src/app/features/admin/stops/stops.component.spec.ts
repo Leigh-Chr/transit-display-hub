@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { of, throwError, Subject, BehaviorSubject } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineService } from '@core/api/line.service';
@@ -60,9 +60,7 @@ describe('StopsComponent', () => {
     open: ReturnType<typeof vi.fn>;
   };
 
-  let mockSnackBar: {
-    open: ReturnType<typeof vi.fn>;
-  };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
 
   let mockRoute: {
     queryParams: BehaviorSubject<Record<string, string>>;
@@ -87,9 +85,7 @@ describe('StopsComponent', () => {
       open: vi.fn(),
     };
 
-    mockSnackBar = {
-      open: vi.fn(),
-    };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     mockRoute = {
       queryParams: queryParams$,
@@ -102,7 +98,7 @@ describe('StopsComponent', () => {
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
         { provide: ActivatedRoute, useValue: mockRoute },
       ],
     });
@@ -205,10 +201,7 @@ describe('StopsComponent', () => {
       component.loadStops();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', {
-        duration: 5000,
-        panelClass: 'error-snackbar',
-      });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback message when error has no message', () => {
@@ -218,11 +211,7 @@ describe('StopsComponent', () => {
 
       component.loadStops();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith(
-        'Failed to load stops',
-        'Close',
-        { duration: 5000, panelClass: 'error-snackbar' }
-      );
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load stops');
     });
   });
 
@@ -273,10 +262,7 @@ describe('StopsComponent', () => {
 
       expect(mockStopService.create).toHaveBeenCalledWith(createRequest);
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Stop created', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Stop created');
     });
 
     it('should do nothing when dialog is cancelled', () => {
@@ -316,10 +302,7 @@ describe('StopsComponent', () => {
 
       expect(mockStopService.update).toHaveBeenCalledWith('s1', updateRequest);
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Stop updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Stop updated');
     });
   });
 
@@ -334,10 +317,7 @@ describe('StopsComponent', () => {
 
       expect(mockStopService.delete).toHaveBeenCalledWith('s1');
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Stop deleted', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Stop deleted');
     });
 
     it('should skip deletion when cancelled', () => {

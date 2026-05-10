@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Device, DeviceStatus, RegisterDeviceRequest } from '@shared/models';
@@ -314,7 +314,7 @@ export class DevicesComponent implements OnInit {
   private readonly deviceService = inject(DeviceService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
 
   loading = signal(true);
@@ -327,7 +327,7 @@ export class DevicesComponent implements OnInit {
     this.loadDevices();
     this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+      error: () => this.notify.error('Failed to load lines'),
     });
   }
 
@@ -341,8 +341,7 @@ export class DevicesComponent implements OnInit {
       },
       error: (err: unknown) => {
         this.loading.set(false);
-        const message = httpErrorMessage(err, 'Failed to load devices');
-        this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+        this.notify.error(httpErrorMessage(err, 'Failed to load devices'));
       },
     });
   }
@@ -362,8 +361,7 @@ export class DevicesComponent implements OnInit {
             this.loadDevices();
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to register device');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to register device'));
           },
         });
       }
@@ -379,16 +377,10 @@ export class DevicesComponent implements OnInit {
     if (token) {
       navigator.clipboard.writeText(token).then(
         () => {
-          this.snackBar.open('Token copied to clipboard', 'Close', {
-            duration: 3000,
-            panelClass: 'success-snackbar',
-          });
+          this.notify.success('Token copied to clipboard');
         },
         () => {
-          this.snackBar.open('Failed to copy token', 'Close', {
-            duration: 5000,
-            panelClass: 'error-snackbar',
-          });
+          this.notify.error('Failed to copy token');
         }
       );
     }
@@ -410,14 +402,10 @@ export class DevicesComponent implements OnInit {
         this.deviceService.delete(device.id).subscribe({
           next: () => {
             this.loadDevices();
-            this.snackBar.open('Device removed', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Device removed');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to remove device');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to remove device'));
           },
         });
       }

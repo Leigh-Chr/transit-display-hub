@@ -10,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { LineService } from '@core/api/line.service';
@@ -382,7 +382,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
   private readonly lineService = inject(LineService);
   private readonly stopService = inject(StopService);
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -423,7 +423,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
   loadLines(): void {
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
-      error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
+      error: () => this.notify.error('Failed to load lines'),
     });
   }
 
@@ -454,8 +454,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          const message = httpErrorMessage(err, 'Failed to load stops');
-          this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+          this.notify.error(httpErrorMessage(err, 'Failed to load stops'));
         },
       });
   }
@@ -481,14 +480,10 @@ export class StopsComponent implements OnInit, AfterViewInit {
           next: () => {
             this.tableState.resetToFirstPage();
             this.loadStops();
-            this.snackBar.open('Stop created', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Stop created');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to create stop');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to create stop'));
           },
         });
       }
@@ -510,14 +505,10 @@ export class StopsComponent implements OnInit, AfterViewInit {
         this.stopService.update(stop.id, result as CreateStopRequest).subscribe({
           next: () => {
             this.loadStops();
-            this.snackBar.open('Stop updated', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Stop updated');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to update stop');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to update stop'));
           },
         });
       }
@@ -540,14 +531,10 @@ export class StopsComponent implements OnInit, AfterViewInit {
         this.stopService.delete(stop.id).subscribe({
           next: () => {
             this.loadStops();
-            this.snackBar.open('Stop deleted', 'Close', {
-              duration: 3000,
-              panelClass: 'success-snackbar',
-            });
+            this.notify.success('Stop deleted');
           },
           error: (err: unknown) => {
-            const message = httpErrorMessage(err, 'Failed to delete stop');
-            this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+            this.notify.error(httpErrorMessage(err, 'Failed to delete stop'));
           },
         });
       }

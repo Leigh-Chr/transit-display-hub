@@ -1,13 +1,13 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '../services/notify.service';
 import { AuthService } from './auth.service';
 import { UserRole } from '@shared/models';
 
 export const roleGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  const snackBar = inject(MatSnackBar);
+  const notify = inject(NotifyService);
 
   const requiredRole = route.data['requiredRole'] as UserRole | undefined;
 
@@ -19,10 +19,7 @@ export const roleGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  snackBar.open('Access denied: insufficient permissions', 'Close', {
-    duration: 5000,
-    panelClass: 'error-snackbar',
-  });
+  notify.error('Access denied: insufficient permissions');
   void router.navigate(['/admin/dashboard']);
   return false;
 };

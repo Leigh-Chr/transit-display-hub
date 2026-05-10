@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { of, throwError, Subject } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceService } from '@core/api/device.service';
@@ -52,9 +52,7 @@ describe('DevicesComponent', () => {
     open: ReturnType<typeof vi.fn>;
   };
 
-  let mockSnackBar: {
-    open: ReturnType<typeof vi.fn>;
-  };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockDeviceService = {
@@ -71,9 +69,7 @@ describe('DevicesComponent', () => {
       open: vi.fn(),
     };
 
-    mockSnackBar = {
-      open: vi.fn(),
-    };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [DevicesComponent],
@@ -81,7 +77,7 @@ describe('DevicesComponent', () => {
         { provide: DeviceService, useValue: mockDeviceService },
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
       ],
     });
 
@@ -124,14 +120,14 @@ describe('DevicesComponent', () => {
       expect(mockDeviceService.getAll).toHaveBeenCalledWith('ONLINE');
     });
 
-    it('should handle error by showing snackbar', () => {
+    it('should handle error by showing error notification', () => {
       const error = { error: { message: 'Server error' } };
       mockDeviceService.getAll.mockReturnValue(throwError(() => error));
 
       component.loadDevices();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback message when error has no message', () => {
@@ -139,7 +135,7 @@ describe('DevicesComponent', () => {
 
       component.loadDevices();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load devices', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load devices');
     });
   });
 
@@ -166,7 +162,7 @@ describe('DevicesComponent', () => {
       expect(mockDeviceService.register).not.toHaveBeenCalled();
     });
 
-    it('should show snackbar on registration error', () => {
+    it('should show error notification on registration error', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
       const error = { error: { message: 'Stop already has a device' } };
@@ -175,7 +171,7 @@ describe('DevicesComponent', () => {
       component.openCreateDialog();
       afterClosed$.next({ stopId: 's1' });
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Stop already has a device', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Stop already has a device');
     });
 
     it('should show fallback message on registration error without message', () => {
@@ -186,7 +182,7 @@ describe('DevicesComponent', () => {
       component.openCreateDialog();
       afterClosed$.next({ stopId: 's1' });
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to register device', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to register device');
     });
   });
 
@@ -210,10 +206,7 @@ describe('DevicesComponent', () => {
       await writeText.mock.results[0]!.value;
 
       expect(writeText).toHaveBeenCalledWith('jwt-token-123');
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Token copied to clipboard', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Token copied to clipboard');
     });
 
     it('should not call clipboard when token is null', () => {
@@ -237,10 +230,7 @@ describe('DevicesComponent', () => {
 
       expect(mockDeviceService.delete).toHaveBeenCalledWith('d1');
       expect(mockDeviceService.getAll).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Device removed', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Device removed');
     });
 
     it('should skip deletion when cancelled', () => {
@@ -253,7 +243,7 @@ describe('DevicesComponent', () => {
       expect(mockDeviceService.delete).not.toHaveBeenCalled();
     });
 
-    it('should show snackbar on delete error', () => {
+    it('should show error notification on delete error', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
       const error = { error: { message: 'Cannot remove device' } };
@@ -262,7 +252,7 @@ describe('DevicesComponent', () => {
       component.deleteDevice(mockDevice);
       afterClosed$.next(true);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot remove device', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Cannot remove device');
     });
   });
 

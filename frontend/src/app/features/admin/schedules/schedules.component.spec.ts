@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineService } from '@core/api/line.service';
@@ -30,7 +30,7 @@ describe('SchedulesComponent', () => {
     delete: ReturnType<typeof vi.fn>;
   };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
-  let mockSnackBar: { open: ReturnType<typeof vi.fn> };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockLineService = { getAll: vi.fn().mockReturnValue(of([mockLine])) };
@@ -42,7 +42,7 @@ describe('SchedulesComponent', () => {
       delete: vi.fn().mockReturnValue(of(void 0)),
     };
     mockDialog = { open: vi.fn() };
-    mockSnackBar = { open: vi.fn() };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [SchedulesComponent],
@@ -51,7 +51,7 @@ describe('SchedulesComponent', () => {
         { provide: StopService, useValue: mockStopService },
         { provide: ScheduleService, useValue: mockScheduleService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
       ],
     });
 
@@ -150,7 +150,7 @@ describe('SchedulesComponent', () => {
       component.loadSchedules();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -161,7 +161,7 @@ describe('SchedulesComponent', () => {
 
       component.loadSchedules();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load schedules', 'Close', { duration: 5000, panelClass: 'error-snackbar' });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load schedules');
     });
   });
 
@@ -202,10 +202,7 @@ describe('SchedulesComponent', () => {
       });
       expect(mockScheduleService.create).toHaveBeenCalledWith('s1', dialogResult);
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Schedule entry created', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Schedule entry created');
     });
 
     it('should not call create when dialog is cancelled', () => {
@@ -237,10 +234,7 @@ describe('SchedulesComponent', () => {
       });
       expect(mockScheduleService.update).toHaveBeenCalledWith('sc1', editResult);
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Schedule entry updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Schedule entry updated');
     });
 
     it('should not call update when dialog is cancelled', () => {
@@ -274,10 +268,7 @@ describe('SchedulesComponent', () => {
       });
       expect(mockScheduleService.delete).toHaveBeenCalledWith('sc1');
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Schedule entry deleted', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('Schedule entry deleted');
     });
 
     it('should not call delete when cancelled', () => {

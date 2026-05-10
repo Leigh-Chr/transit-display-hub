@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -44,9 +44,7 @@ describe('UsersComponent', () => {
     open: ReturnType<typeof vi.fn>;
   };
 
-  let mockSnackBar: {
-    open: ReturnType<typeof vi.fn>;
-  };
+  let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
 
   let mockRouter: {
     navigate: ReturnType<typeof vi.fn>;
@@ -75,9 +73,7 @@ describe('UsersComponent', () => {
       open: vi.fn(),
     };
 
-    mockSnackBar = {
-      open: vi.fn(),
-    };
+    mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
     mockRouter = {
       navigate: vi.fn(),
@@ -94,7 +90,7 @@ describe('UsersComponent', () => {
         { provide: UserService, useValue: mockUserService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: MatDialog, useValue: mockDialog },
-        { provide: MatSnackBar, useValue: mockSnackBar },
+        { provide: NotifyService, useValue: mockNotify },
         { provide: Router, useValue: mockRouter },
         { provide: ActivatedRoute, useValue: mockRoute },
       ],
@@ -156,14 +152,14 @@ describe('UsersComponent', () => {
       });
     });
 
-    it('should set loading to false and show snackbar on error', () => {
+    it('should set loading to false and show error on error', () => {
       const error = { error: { message: 'Server error' } };
       mockUserService.getAllPaginated.mockReturnValue(throwError(() => error));
 
       component.ngOnInit();
 
       expect(component.loading()).toBe(false);
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Server error', 'Close', { duration: 5000 });
+      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -171,7 +167,7 @@ describe('UsersComponent', () => {
 
       component.ngOnInit();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load users', 'Close', { duration: 5000 });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load users');
     });
   });
 
@@ -199,10 +195,7 @@ describe('UsersComponent', () => {
         role: 'AGENT',
       });
       expect(mockUserService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('User created', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('User created');
     });
 
     it('should do nothing when dialog is cancelled', () => {
@@ -214,7 +207,7 @@ describe('UsersComponent', () => {
       expect(mockUserService.create).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when API create fails', () => {
+    it('should show error when API create fails', () => {
       const afterClosed$ = of({ username: 'newuser', password: 'pass123', role: 'AGENT' });
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       mockUserService.create.mockReturnValue(
@@ -223,10 +216,7 @@ describe('UsersComponent', () => {
 
       component.openCreateDialog();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Username already exists', 'Close', {
-        duration: 5000,
-        panelClass: 'error-snackbar',
-      });
+      expect(mockNotify.error).toHaveBeenCalledWith('Username already exists');
     });
 
     it('should show fallback error message when API error has no message', () => {
@@ -236,10 +226,7 @@ describe('UsersComponent', () => {
 
       component.openCreateDialog();
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to create user', 'Close', {
-        duration: 5000,
-        panelClass: 'error-snackbar',
-      });
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to create user');
     });
   });
 
@@ -254,10 +241,7 @@ describe('UsersComponent', () => {
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockUserService.update).toHaveBeenCalledWith(mockOtherUser.id, updateData);
       expect(mockUserService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('User updated', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('User updated');
     });
 
     it('should do nothing when edit dialog is cancelled', () => {
@@ -269,7 +253,7 @@ describe('UsersComponent', () => {
       expect(mockUserService.update).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when API update fails', () => {
+    it('should show error when API update fails', () => {
       const afterClosed$ = of({ role: 'ADMIN', enabled: true });
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       mockUserService.update.mockReturnValue(
@@ -278,10 +262,7 @@ describe('UsersComponent', () => {
 
       component.openEditDialog(mockOtherUser);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Update failed', 'Close', {
-        duration: 5000,
-        panelClass: 'error-snackbar',
-      });
+      expect(mockNotify.error).toHaveBeenCalledWith('Update failed');
     });
   });
 
@@ -324,10 +305,7 @@ describe('UsersComponent', () => {
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockUserService.delete).toHaveBeenCalledWith(mockOtherUser.id);
       expect(mockUserService.getAllPaginated).toHaveBeenCalled();
-      expect(mockSnackBar.open).toHaveBeenCalledWith('User deleted', 'Close', {
-        duration: 3000,
-        panelClass: 'success-snackbar',
-      });
+      expect(mockNotify.success).toHaveBeenCalledWith('User deleted');
     });
 
     it('should not delete when dialog is cancelled', () => {
@@ -339,7 +317,7 @@ describe('UsersComponent', () => {
       expect(mockUserService.delete).not.toHaveBeenCalled();
     });
 
-    it('should show error snackbar when API delete fails', () => {
+    it('should show error when API delete fails', () => {
       const afterClosed$ = of(true);
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       mockUserService.delete.mockReturnValue(
@@ -348,10 +326,7 @@ describe('UsersComponent', () => {
 
       component.deleteUser(mockOtherUser);
 
-      expect(mockSnackBar.open).toHaveBeenCalledWith('Cannot delete last admin', 'Close', {
-        duration: 5000,
-        panelClass: 'error-snackbar',
-      });
+      expect(mockNotify.error).toHaveBeenCalledWith('Cannot delete last admin');
     });
   });
 });

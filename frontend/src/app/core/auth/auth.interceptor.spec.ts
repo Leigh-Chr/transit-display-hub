@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
 import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
@@ -13,8 +13,8 @@ describe('authInterceptor', () => {
     getToken: MockedFunction<() => string | null>;
     logout: MockedFunction<() => void>;
   };
-  let snackBarSpy: {
-    open: MockedFunction<MatSnackBar['open']>;
+  let notifySpy: {
+    error: MockedFunction<NotifyService['error']>;
   };
 
   const testUrl = '/api/test';
@@ -25,8 +25,8 @@ describe('authInterceptor', () => {
       getToken: vi.fn(),
       logout: vi.fn()
     };
-    snackBarSpy = {
-      open: vi.fn()
+    notifySpy = {
+      error: vi.fn()
     };
 
     TestBed.configureTestingModule({
@@ -34,7 +34,7 @@ describe('authInterceptor', () => {
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: MatSnackBar, useValue: snackBarSpy }
+        { provide: NotifyService, useValue: notifySpy }
       ]
     });
 
@@ -146,15 +146,13 @@ describe('authInterceptor', () => {
   });
 
   describe('403 error handling', () => {
-    it('should show snackbar on 403 error', () => {
+    it('should show error notification on 403 error', () => {
       authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: () => {
-          expect(snackBarSpy.open).toHaveBeenCalledWith(
-            'Access denied: insufficient permissions',
-            'Close',
-            { duration: 5000, panelClass: 'error-snackbar' }
+          expect(notifySpy.error).toHaveBeenCalledWith(
+            'Access denied: insufficient permissions'
           );
         }
       });
@@ -163,13 +161,13 @@ describe('authInterceptor', () => {
       req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
     });
 
-    it('should re-throw the error after showing snackbar', () => {
+    it('should re-throw the error after showing notification', () => {
       authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: (err: HttpErrorResponse) => {
           expect(err.status).toBe(403);
-          expect(snackBarSpy.open).toHaveBeenCalled();
+          expect(notifySpy.error).toHaveBeenCalled();
         }
       });
 
@@ -177,12 +175,12 @@ describe('authInterceptor', () => {
       req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
     });
 
-    it('should not show snackbar for non-403 errors', () => {
+    it('should not show notification for non-403 errors', () => {
       authServiceSpy.getToken.mockReturnValue('token');
 
       httpClient.get(testUrl).subscribe({
         error: () => {
-          expect(snackBarSpy.open).not.toHaveBeenCalled();
+          expect(notifySpy.error).not.toHaveBeenCalled();
         }
       });
 

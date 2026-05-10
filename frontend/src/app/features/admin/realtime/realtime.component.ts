@@ -7,7 +7,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotifyService } from '@core/services/notify.service';
 import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -367,7 +367,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 })
 export class RealtimeComponent implements OnInit {
   private readonly realtime = inject(RealtimeService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
 
   readonly alerts = signal<RealtimeAlert[]>([]);
   readonly vehicles = signal<VehiclePosition[]>([]);
@@ -393,7 +393,7 @@ export class RealtimeComponent implements OnInit {
       },
       error: () => {
         this.refreshingAlerts.set(false);
-        this.snackBar.open('Flux alertes non configuré (app.gtfs-rt.alerts-url vide)', 'OK', {duration: 4000});
+        this.notify.info('Flux alertes non configuré (app.gtfs-rt.alerts-url vide)');
       },
     });
   }
@@ -408,7 +408,7 @@ export class RealtimeComponent implements OnInit {
       },
       error: () => {
         this.refreshingVehicles.set(false);
-        this.snackBar.open('Flux véhicules non configuré (app.gtfs-rt.vehicle-positions-url vide)', 'OK', {duration: 4000});
+        this.notify.info('Flux véhicules non configuré (app.gtfs-rt.vehicle-positions-url vide)');
       },
     });
   }
