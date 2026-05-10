@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed — GTFS-centric scope cleanup (May 2026)
+
+A full audit of the codebase against the GTFS spec and current
+consumers identified the unused / non-GTFS surface. Ten atomic commits
+remove ~2 700 LOC without touching any feature still in use. Knip and
+the test suites (backend + 950 frontend tests) remain green.
+
+**Backend**
+- 9 unused JPA repository methods: `StopRepository.findByLineIdWithLines`
+  + `findAllByIdInWithLines` slim variants, the four
+  `findByExternalId` (Agency, Location, RiderCategory, ServiceCalendar),
+  `BroadcastMessageRepository.findByScopeTypeAndScopeId`,
+  `DeviceRepository.findByTokenHash` (replaced by
+  `findByTokenLookup` + BCrypt), and three on `FlexStopTimeRepository`.
+- `POST /api/devices/authenticate` + its DTO, security rule, doc and
+  five tests — the kiosk auth flow uses the `X-Device-Token` header
+  on `GET /api/display`.
+- `SyntheticDataLoader` (1 041 LOC). The classpath `gtfs-rich`
+  fixture covers the offline demo path.
+- The agencies surface end-to-end: `AgencyController`, `AgencyService`,
+  `AgencyResponse` DTO and integration test. The `Agency` entity
+  stays — `Line.agency`, `FareAttribute.agency`,
+  `GtfsImportService` and `DataOverviewService` still need it.
+
+**Frontend**
+- `DisplayLayoutComponent` (orphan layout — `/display` loads
+  `KioskComponent` directly).
+- `AgencyService` + `Agency` interface (no consumer).
+- Dashboard: dead `allMessages` signal, `readableTextColor` alias,
+  matching test.
+- BreakpointService: unused `isTablet` / `isDesktop` / `isHandset`
+  signals (only `isMobile` and `isSmallScreen` are read).
+- Six dead `service.get(id)` methods (line, stop, itinerary, message,
+  device, user), `userService.getAll`, `deviceService.update` plus
+  their test blocks. Admin pages already use `getAllPaginated` and
+  pass row data through dialog inputs.
+- Dependencies: `@angular/animations` (Material 21 no longer requires
+  it; `inject(ANIMATION_MODULE_TYPE, { optional: true })` falls back
+  gracefully), `puppeteer` (doublon of Playwright),
+  `playwright` + `@playwright/test` (only consumer was the ad-hoc
+  `test-visual-2.js` script).
+- Trivia: orphan `favicon-48x48.png`, dead `@environments/*` tsconfig
+  alias, `test-visual-2.js` debug script.
+
 ### Added — GTFS data exploitation pass (Phases 1-8)
 
 After the V36-V47 spec-coverage pass closed every persistence gap,
