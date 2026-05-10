@@ -33,6 +33,7 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final LoginRateLimitFilter loginRateLimitFilter;
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsCsv;
@@ -120,6 +121,7 @@ public class SecurityConfig {
                             ));
                         })
                 )
+                .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 // For H2 console
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));

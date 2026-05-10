@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.request.LoginRequest;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
+import com.transit.hub.infrastructure.security.LoginRateLimitFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,12 +42,16 @@ class AuthControllerIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private LoginRateLimitFilter loginRateLimitFilter;
+
     private User testAdmin;
     private User testAgent;
     private User disabledUser;
 
     @BeforeEach
     void setUp() {
+        loginRateLimitFilter.clearBuckets();
         userRepository.deleteAll();
 
         testAdmin = User.builder()
