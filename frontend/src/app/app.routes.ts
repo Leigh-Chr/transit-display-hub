@@ -121,6 +121,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/network-map/network-map.component').then(m => m.NetworkMapComponent)
   },
   {
+    // Tabular alternative to the SVG map for keyboard / screen-reader
+    // users. Ships every line and every stop the schematic exposes,
+    // navigable with Tab / arrow keys.
+    path: 'map/list',
+    loadComponent: () => import('./features/network-map/network-list/network-list.component').then(m => m.NetworkListComponent)
+  },
+  {
     path: 'display',
     loadComponent: () => import('./features/display/kiosk/kiosk.component').then(m => m.KioskComponent)
   },

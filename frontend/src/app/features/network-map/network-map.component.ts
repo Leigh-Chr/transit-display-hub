@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, computed, effect, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,6 +30,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     MatAutocompleteModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -49,6 +51,11 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
           <h1>Network Map</h1>
         </div>
         <p class="subtitle">{{ subtitle() }}</p>
+        <a routerLink="/map/list" class="list-alt-link"
+           aria-label="Vue tabulaire accessible (clavier / lecteur d'écran)">
+          <mat-icon aria-hidden="true">view_list</mat-icon>
+          <span>Vue liste</span>
+        </a>
         <button
           class="theme-toggle"
           type="button"
@@ -236,6 +243,31 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
       color: var(--app-map-on-surface-variant);
       cursor: pointer;
       backdrop-filter: blur(8px);
+    }
+
+    .list-alt-link {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--app-map-outline);
+      border-radius: 18px;
+      background: var(--app-map-overlay-bg);
+      color: var(--app-map-on-surface-variant);
+      text-decoration: none;
+      backdrop-filter: blur(8px);
+    }
+    .list-alt-link:hover {
+      background: var(--app-map-surface-container-high);
+    }
+    .list-alt-link mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .list-alt-link + .theme-toggle {
+      margin-left: 8px;
     }
 
     .theme-toggle:hover {
