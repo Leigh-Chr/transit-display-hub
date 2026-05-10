@@ -86,7 +86,7 @@ dependencies {
     // gtfs-realtime.proto file in src/main/proto/. Used by the
     // ServiceAlerts cache to surface operator-pushed alerts on
     // kiosks and hubs.
-    implementation("com.google.protobuf:protobuf-java:3.25.5")
+    implementation("com.google.protobuf:protobuf-java:3.25.6")
 
     // Canonical MobilityData GTFS Schedule validator (Apache 2.0). The
     // import-audit page invokes it after each GTFS import so an
@@ -103,17 +103,19 @@ dependencies {
     implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.0")
     implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.0")
 
-    // Database
+    // Database. Versions pinned ahead of the Spring Boot BOM defaults to
+    // pull in the latest patch releases (CVE bumps, JDBC fixes).
     runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("org.postgresql:postgresql:42.7.11")
 
     // Flyway
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
 
-    // Lombok
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
+    // Lombok — pinned ahead of the Spring Boot BOM to take in the latest
+    // bytecode-compat fixes for JDK 21+ records.
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // DevTools
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -136,7 +138,7 @@ dependencies {
 // no system-wide protoc install required.
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.25.5"
+        artifact = "com.google.protobuf:protoc:3.25.6"
     }
 }
 
