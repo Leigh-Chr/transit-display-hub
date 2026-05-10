@@ -554,22 +554,6 @@ export interface Attribution {
   phone: string | null;
 }
 
-// GTFS Agency
-export interface Agency {
-  id: string;
-  externalId: string | null;
-  name: string;
-  url: string | null;
-  timezone: string | null;
-  lang: string | null;
-  phone: string | null;
-  fareUrl: string | null;
-  email: string | null;
-  /** GTFS agency.cemv_support — contactless EMV. May be overridden per
-   *  line via Line.cemvSupport. */
-  cemvSupport?: 0 | 1 | 2 | null;
-}
-
 // Aggregated data overview (admin diagnostic)
 export interface DataOverview {
   staticGtfs: DataOverviewStaticGtfs;
