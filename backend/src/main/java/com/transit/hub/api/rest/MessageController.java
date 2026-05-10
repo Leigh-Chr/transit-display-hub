@@ -1,5 +1,6 @@
 package com.transit.hub.api.rest;
 
+import com.transit.hub.api.rest.support.Pageables;
 import com.transit.hub.application.dto.request.CreateMessageRequest;
 import com.transit.hub.application.dto.response.MessageResponse;
 import com.transit.hub.application.service.MessageService;
@@ -7,9 +8,7 @@ import com.transit.hub.domain.model.enums.MessageSeverity;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -44,10 +43,7 @@ public class MessageController {
             @RequestParam(required = false) String search
     ) {
         if (page != null) {
-            Sort sort = "desc".equalsIgnoreCase(sortDir)
-                    ? Sort.by(sortBy).descending()
-                    : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
+            Pageable pageable = Pageables.from(page, size, sortBy, sortDir);
             return ResponseEntity.ok(messageService.getAllMessages(active, severity, search, pageable));
         }
         if (active != null && active) {
