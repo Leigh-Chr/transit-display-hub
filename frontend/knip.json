@@ -4,10 +4,7 @@
   "project": ["src/**/*.ts"],
   "ignore": ["src/**/*.spec.ts", "src/**/*.d.ts"],
   "ignoreDependencies": [
-    "puppeteer",
     "@vitest/browser",
-    "playwright",
-    "@playwright/test",
     "@fontsource/inter",
     "@fontsource/roboto",
     "material-icons"
