@@ -1,5 +1,7 @@
 package com.transit.hub.application.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.mobilitydata.gtfsvalidator.input.CountryCode;
 import org.mobilitydata.gtfsvalidator.runner.ApplicationType;
@@ -51,6 +53,22 @@ public class GtfsValidatorService {
             Path reportHtmlPath,
             Path systemErrorsPath) {}
 
+    /**
+     * Pre-computed counts of the notices the runner emitted, broken
+     * down by severity. Lets callers render a "23 errors / 7
+     * warnings" badge without re-parsing report.json on every read.
+     */
+    public record NoticeSummary(int errorCount, int warningCount, int infoCount) {
+
+        public static NoticeSummary empty() {
+            return new NoticeSummary(0, 0, 0);
+        }
+
+        public int totalNotices() {
+            return errorCount + warningCount + infoCount;
+        }
+    }
+
     public ValidationResult validate(Path feedZip, Path outputDirectory) throws IOException {
         return validate(feedZip, outputDirectory, "FR", LocalDate.now());
     }
@@ -93,5 +111,42 @@ public class GtfsValidatorService {
                 outputDirectory.resolve(REPORT_JSON),
                 outputDirectory.resolve(REPORT_HTML),
                 outputDirectory.resolve(SYSTEM_ERRORS_JSON));
+    }
+
+    /**
+     * Parses the {@code notices} array from a runner report and tallies
+     * the entries by severity. Returns an empty summary when the file
+     * is missing or malformed — caller decides whether to surface that
+     * as a UI warning. Each notice carries a {@code totalNotices}
+     * count (the runner already groups individual occurrences by
+     * code), so the summation is over groups, not occurrences.
+     */
+    public NoticeSummary summarize(Path reportJsonPath) {
+        if (reportJsonPath == null || !Files.exists(reportJsonPath)) {
+            return NoticeSummary.empty();
+        }
+        try {
+            JsonNode root = new ObjectMapper().readTree(reportJsonPath.toFile());
+            JsonNode notices = root.path("notices");
+            int errors = 0;
+            int warnings = 0;
+            int infos = 0;
+            for (JsonNode notice : notices) {
+                int total = notice.path("totalNotices").asInt(0);
+                String severity = notice.path("severity").asText("");
+                switch (severity) {
+                    case "ERROR" -> errors += total;
+                    case "WARNING" -> warnings += total;
+                    case "INFO" -> infos += total;
+                    default -> log.debug("Unknown notice severity '{}' in {}",
+                            severity, reportJsonPath);
+                }
+            }
+            return new NoticeSummary(errors, warnings, infos);
+        } catch (IOException e) {
+            log.warn("Failed to summarise validation report at {}: {}",
+                    reportJsonPath, e.getMessage());
+            return NoticeSummary.empty();
+        }
     }
 }

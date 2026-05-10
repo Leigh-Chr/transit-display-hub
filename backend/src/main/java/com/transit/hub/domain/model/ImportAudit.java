@@ -80,4 +80,33 @@ public class ImportAudit {
      */
     @Column(name = "triggered_by", length = 50)
     private String triggeredBy;
+
+    /**
+     * Filesystem directory where {@code GtfsValidatorService} wrote the
+     * three MobilityData reports (report.json, report.html,
+     * system_errors.json) for this import. Null when validation was
+     * disabled, skipped or failed before any output landed on disk.
+     */
+    @Column(name = "validation_report_dir", length = 500)
+    private String validationReportDir;
+
+    /**
+     * Outcome of the {@code gtfs-validator} run, orthogonal to the
+     * import {@link #status}: {@code SUCCESS} when the runner completed
+     * (the feed itself may still hold ERROR-level notices),
+     * {@code FAILED} when the runner threw, {@code SKIPPED} when
+     * validation was disabled or no zip was retained.
+     */
+    @Column(name = "validation_status", length = 20)
+    private String validationStatus;
+
+    /** Number of ERROR-level notices in the validation report — pulled
+     *  out of the JSON so the admin timeline can render a badge without
+     *  re-parsing the document. */
+    @Column(name = "validation_notice_errors")
+    private Integer validationNoticeErrors;
+
+    /** Number of WARNING-level notices in the validation report. */
+    @Column(name = "validation_notice_warnings")
+    private Integer validationNoticeWarnings;
 }

@@ -19,7 +19,10 @@ public record ImportAuditResponse(
         Integer schedulesCount,
         ImportStatus status,
         String errorMessage,
-        String triggeredBy
+        String triggeredBy,
+        String validationStatus,
+        Integer validationNoticeErrors,
+        Integer validationNoticeWarnings
 ) {
     public static ImportAuditResponse from(ImportAudit audit) {
         return new ImportAuditResponse(
@@ -35,7 +38,10 @@ public record ImportAuditResponse(
                 audit.getSchedulesCount(),
                 audit.getStatus(),
                 audit.getErrorMessage(),
-                audit.getTriggeredBy()
+                audit.getTriggeredBy(),
+                audit.getValidationStatus(),
+                audit.getValidationNoticeErrors(),
+                audit.getValidationNoticeWarnings()
         );
     }
 }

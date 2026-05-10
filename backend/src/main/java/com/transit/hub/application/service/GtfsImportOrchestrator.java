@@ -9,12 +9,14 @@ import com.transit.hub.infrastructure.seed.gtfs.GtfsImportService;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
@@ -48,6 +50,22 @@ public class GtfsImportOrchestrator {
     private final ImportAuditRepository auditRepository;
     private final CacheManager cacheManager;
     private final GtfsImportMetrics metrics;
+    private final GtfsValidatorService validator;
+
+    /** When false the MobilityData runner is bypassed entirely — the
+     *  import audit row simply records {@code validationStatus =
+     *  SKIPPED}. Useful in resource-constrained environments or
+     *  on-CI runs that don't need a second-pass validation. */
+    @Value("${app.gtfs.validation.enabled:true}")
+    private boolean validationEnabled = true;
+
+    /** Parent directory under which each successful import drops a
+     *  {@code <auditId>/} subfolder holding the three runner reports.
+     *  Defaults to a {@code gtfs-validation} folder inside the JVM's
+     *  temp dir so a clean start always works without operator
+     *  configuration. */
+    @Value("${app.gtfs.validation.report-base-dir:#{null}}")
+    private String validationReportBaseDir;
 
     private final ReentrantLock importLock = new ReentrantLock();
 
@@ -89,6 +107,12 @@ public class GtfsImportOrchestrator {
             GtfsImportService.ImportResult result = importer.importFromZip(feed, feedUrl, hash);
 
             evictNetworkCaches();
+            // Run MobilityData validator before finalising the audit so
+            // the row carries both the import counts and the validation
+            // outcome in a single transaction. The runner's own failures
+            // are caught and surfaced through validationStatus only —
+            // they never demote the import itself.
+            runValidationIfEnabled(audit, feed);
             finalizeAudit(audit, ImportStatus.SUCCESS, result, null);
             metrics.recordSuccess(sample, result.lines(), result.stops(), result.schedules());
             log.info("GTFS import completed by {}: {} lines, {} stops, {} schedules",
@@ -123,6 +147,38 @@ public class GtfsImportOrchestrator {
             audit.setSchedulesCount(result.schedules());
         }
         auditRepository.save(audit);
+    }
+
+    /**
+     * Invokes the MobilityData runner on the freshly-imported feed and
+     * stores the outcome on the audit row. Caught exceptions surface
+     * through {@code validationStatus = FAILED} only — the GTFS import
+     * itself remains successful from the orchestrator's perspective.
+     */
+    private void runValidationIfEnabled(ImportAudit audit, Path feedZip) {
+        if (!validationEnabled) {
+            audit.setValidationStatus("SKIPPED");
+            return;
+        }
+        Path baseDir = validationReportBaseDir != null
+                ? Paths.get(validationReportBaseDir)
+                : Paths.get(System.getProperty("java.io.tmpdir"), "gtfs-validation");
+        Path outputDir = baseDir.resolve(audit.getId().toString());
+        try {
+            GtfsValidatorService.ValidationResult vr = validator.validate(feedZip, outputDir);
+            audit.setValidationReportDir(outputDir.toString());
+            audit.setValidationStatus(vr.success() ? "SUCCESS" : "FAILED");
+            GtfsValidatorService.NoticeSummary summary =
+                    validator.summarize(vr.reportJsonPath());
+            audit.setValidationNoticeErrors(summary.errorCount());
+            audit.setValidationNoticeWarnings(summary.warningCount());
+            log.info("GTFS validation: {} errors, {} warnings (auditId={})",
+                    summary.errorCount(), summary.warningCount(), audit.getId());
+        } catch (Exception e) {
+            log.warn("GTFS validation failed for auditId={}: {}",
+                    audit.getId(), e.getMessage(), e);
+            audit.setValidationStatus("FAILED");
+        }
     }
 
     private void evictNetworkCaches() {
