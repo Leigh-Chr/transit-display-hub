@@ -71,7 +71,13 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "tsConfig": "tsconfig.spec.json",
-            "setupFiles": ["src/test-setup.ts"]
+            "setupFiles": ["src/test-setup.ts"],
+            "coverageThresholds": {
+              "statements": 65,
+              "branches": 60,
+              "functions": 68,
+              "lines": 70
+            }
           }
         }
       }
