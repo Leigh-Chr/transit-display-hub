@@ -16,7 +16,7 @@ plugins {
     // OWASP dependency-check. Runs out-of-band (`./gradlew dependencyCheckAnalyze`)
     // because the first NVD download takes minutes and a CI cache must
     // be primed; the actual gating is in a dedicated workflow.
-    id("org.owasp.dependencycheck") version "11.1.1"
+    id("org.owasp.dependencycheck") version "12.2.2"
     // Official JMH plugin — provides the `jmh` source set, the
     // {@code jmh} verification task, annotation-processor wiring for
     // the @Benchmark indexer, and a sensible default fork / warmup
