@@ -3,12 +3,14 @@ import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { Observable, Subject } from 'rxjs';
 import { DisplayState } from '@shared/models';
 import { AuthService } from '@core/auth/auth.service';
+import { STOMP_CLIENT_FACTORY } from './stomp-client.factory';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HubWebSocketService {
   private readonly authService = inject(AuthService);
+  private readonly stompClientFactory = inject(STOMP_CLIENT_FACTORY);
   private client: Client | null = null;
   private subscriptions: StompSubscription[] = [];
   private updateSubject = new Subject<DisplayState>();
@@ -31,7 +33,7 @@ export class HubWebSocketService {
     const token = this.authService.getToken();
     const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
-    this.client = new Client({
+    this.client = this.stompClientFactory({
       brokerURL: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
       connectHeaders,
       reconnectDelay: 5000,

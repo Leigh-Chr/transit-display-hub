@@ -4,6 +4,7 @@ import { Observable, Subject, timer } from 'rxjs';
 import { takeUntil, tap } from 'rxjs/operators';
 import { DisplayState } from '@shared/models';
 import { AuthService } from '@core/auth/auth.service';
+import { STOMP_CLIENT_FACTORY } from './stomp-client.factory';
 
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
 
@@ -12,6 +13,7 @@ export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'REC
 })
 export class WebSocketService {
   private readonly authService = inject(AuthService);
+  private readonly stompClientFactory = inject(STOMP_CLIENT_FACTORY);
   private client: Client | null = null;
   private readonly displayStateSubject = new Subject<DisplayState>();
   private readonly connectionStateSignal = signal<ConnectionState>('DISCONNECTED');
@@ -40,7 +42,7 @@ export class WebSocketService {
     const token = this.authService.getToken();
     const connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
-    this.client = new Client({
+    this.client = this.stompClientFactory({
       brokerURL: `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
       connectHeaders,
       reconnectDelay: 5000,
