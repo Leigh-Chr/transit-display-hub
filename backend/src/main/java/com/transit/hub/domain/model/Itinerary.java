@@ -107,6 +107,19 @@ public class Itinerary {
     @Column(name = "safe_duration_offset")
     private Double safeDurationOffset;
 
+    /** GTFS {@code trips.mean_duration_factor} — multiplier applied
+     *  to the timetabled duration to predict the average dwell time
+     *  on flex segments (point-to-point or zone-to-zone). Used
+     *  alongside {@link #meanDurationOffset} to surface a realistic
+     *  ETA in the kiosk popup. Null when the feed doesn't declare it. */
+    @Column(name = "mean_duration_factor")
+    private Double meanDurationFactor;
+
+    /** GTFS {@code trips.mean_duration_offset} — additive constant
+     *  (seconds) layered on top of {@link #meanDurationFactor}. */
+    @Column(name = "mean_duration_offset")
+    private Double meanDurationOffset;
+
 
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")

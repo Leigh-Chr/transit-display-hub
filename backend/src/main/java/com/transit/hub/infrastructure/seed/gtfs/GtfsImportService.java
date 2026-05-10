@@ -641,6 +641,7 @@ public class GtfsImportService {
     private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
                             int wheelchairAccessible, int bikesAllowed, int carsAllowed,
                             Double safeDurationFactor, Double safeDurationOffset,
+                            Double meanDurationFactor, Double meanDurationOffset,
                             String blockId, String shapeId) {}
 
     /** A single frequency window from frequencies.txt, opening from
@@ -679,6 +680,8 @@ public class GtfsImportService {
                         parseInt(optional(record, "cars_allowed"), 0),
                         parseDoubleOrNull(optional(record, "safe_duration_factor")),
                         parseDoubleOrNull(optional(record, "safe_duration_offset")),
+                        parseDoubleOrNull(optional(record, "mean_duration_factor")),
+                        parseDoubleOrNull(optional(record, "mean_duration_offset")),
                         isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40),
                         isBlank(rawShapeId) ? null : rawShapeId.trim()));
             }
@@ -802,6 +805,8 @@ public class GtfsImportService {
                         .carsAllowedDefault(carsDefault)
                         .safeDurationFactor(info.safeDurationFactor)
                         .safeDurationOffset(info.safeDurationOffset)
+                        .meanDurationFactor(info.meanDurationFactor)
+                        .meanDurationOffset(info.meanDurationOffset)
                         .shape(shape)
                         .itineraryStops(new ArrayList<>())
                         .build();
@@ -814,6 +819,8 @@ public class GtfsImportService {
                 itinerary.setCarsAllowedDefault(carsDefault);
                 itinerary.setSafeDurationFactor(info.safeDurationFactor);
                 itinerary.setSafeDurationOffset(info.safeDurationOffset);
+                itinerary.setMeanDurationFactor(info.meanDurationFactor);
+                itinerary.setMeanDurationOffset(info.meanDurationOffset);
                 itinerary.setBikesAllowedDefault(bikesDefault);
                 itinerary.setShape(shape);
                 // orphanRemoval=true on the OneToMany picks up the
