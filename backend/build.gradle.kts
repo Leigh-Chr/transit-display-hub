@@ -188,9 +188,21 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 
 tasks.named("check") {
     dependsOn(tasks.named("jacocoTestReport"))
+    dependsOn(tasks.named("jacocoTestCoverageVerification"))
 }
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    dependsOn(tasks.named("test"))
+    // Same protobuf exclusion as the report so the bundle ratio reflects
+    // hand-written code, not the 19k LoC GtfsRealtime.java the validator
+    // never lands on.
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude("com/google/transit/realtime/**")
+            }
+        })
+    )
     violationRules {
         rule {
             element = "BUNDLE"
