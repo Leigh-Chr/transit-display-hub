@@ -25,6 +25,9 @@ describe('ImportAuditComponent', () => {
     status: 'SUCCESS',
     errorMessage: null,
     triggeredBy: 'admin',
+    validationStatus: 'SUCCESS',
+    validationNoticeErrors: 0,
+    validationNoticeWarnings: 3,
   };
 
   beforeEach(() => {

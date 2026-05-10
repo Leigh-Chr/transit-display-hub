@@ -120,6 +120,49 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="validation">
+              <th mat-header-cell *matHeaderCellDef>Validation</th>
+              <td mat-cell *matCellDef="let a">
+                @if (!a.validationStatus || a.validationStatus === 'SKIPPED') {
+                  <span class="muted" matTooltip="Validation MobilityData désactivée ou non exécutée">—</span>
+                } @else if (a.validationStatus === 'FAILED') {
+                  <span class="validation-badge failed" matTooltip="Le validateur n'a pas pu s'exécuter">
+                    <mat-icon class="inline-icon">error_outline</mat-icon>
+                    Échec
+                  </span>
+                } @else {
+                  <div class="validation-row">
+                    <span class="validation-counts" [matTooltip]="validationCountsTooltip(a)">
+                      @if ((a.validationNoticeErrors ?? 0) > 0) {
+                        <span class="badge errors">
+                          <mat-icon class="inline-icon">error</mat-icon>
+                          {{ a.validationNoticeErrors }}
+                        </span>
+                      }
+                      @if ((a.validationNoticeWarnings ?? 0) > 0) {
+                        <span class="badge warnings">
+                          <mat-icon class="inline-icon">warning</mat-icon>
+                          {{ a.validationNoticeWarnings }}
+                        </span>
+                      }
+                      @if ((a.validationNoticeErrors ?? 0) === 0 && (a.validationNoticeWarnings ?? 0) === 0) {
+                        <span class="badge clean">
+                          <mat-icon class="inline-icon">verified</mat-icon>
+                          Aucun avis
+                        </span>
+                      }
+                    </span>
+                    <a mat-icon-button class="report-link"
+                       [href]="reportHtmlUrl(a.id)"
+                       target="_blank" rel="noopener noreferrer"
+                       matTooltip="Ouvrir le rapport MobilityData (HTML)">
+                      <mat-icon>open_in_new</mat-icon>
+                    </a>
+                  </div>
+                }
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="hash">
               <th mat-header-cell *matHeaderCellDef>Hash</th>
               <td mat-cell *matCellDef="let a">
@@ -211,6 +254,49 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
     tr.row-running {
       background: rgba(241, 158, 11, 0.05);
     }
+
+    .validation-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .validation-counts {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .badge.errors {
+      background: rgba(220, 38, 38, 0.12);
+      color: rgb(220, 38, 38);
+    }
+    .badge.warnings {
+      background: rgba(241, 158, 11, 0.16);
+      color: rgb(180, 134, 6);
+    }
+    .badge.clean {
+      background: rgba(46, 174, 96, 0.12);
+      color: rgb(46, 174, 96);
+    }
+    .validation-badge.failed {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: rgb(220, 38, 38);
+      font-size: 0.85rem;
+    }
+    .report-link {
+      width: 32px;
+      height: 32px;
+    }
   `,
 })
 export class ImportAuditComponent implements OnInit {
@@ -219,7 +305,7 @@ export class ImportAuditComponent implements OnInit {
   readonly audits = signal<ImportAudit[]>([]);
   readonly loading = signal(false);
 
-  readonly columns = ['status', 'startedAt', 'duration', 'counts', 'hash', 'error'];
+  readonly columns = ['status', 'startedAt', 'duration', 'counts', 'validation', 'hash', 'error'];
 
   ngOnInit(): void {
     this.reload();
@@ -283,5 +369,18 @@ export class ImportAuditComponent implements OnInit {
   formatLarge(value: number): string {
     if (value < 10_000) {return value.toLocaleString('fr-FR');}
     return (value / 1000).toFixed(1).replace('.', ',') + 'k';
+  }
+
+  reportHtmlUrl(auditId: string): string {
+    return `/api/admin/import-audit/${auditId}/validation-report.html`;
+  }
+
+  validationCountsTooltip(audit: ImportAudit): string {
+    const errors = audit.validationNoticeErrors ?? 0;
+    const warnings = audit.validationNoticeWarnings ?? 0;
+    if (errors === 0 && warnings === 0) {
+      return 'Le validateur MobilityData n\'a remonté aucun avis sur ce feed.';
+    }
+    return `${errors} erreur(s) et ${warnings} avertissement(s) — cliquez sur le rapport pour le détail.`;
   }
 }

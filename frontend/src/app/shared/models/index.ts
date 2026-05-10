@@ -821,6 +821,11 @@ export interface StationPathwayGraph {
 // GTFS import audit (admin browse)
 export type ImportStatus = 'RUNNING' | 'SUCCESS' | 'SKIPPED_UNCHANGED' | 'FAILED';
 
+/** Outcome of the post-import MobilityData runner — orthogonal to
+ *  `status`. SUCCESS means the runner completed (the feed itself
+ *  may still hold ERROR-level notices). */
+export type ValidationStatus = 'SUCCESS' | 'FAILED' | 'SKIPPED';
+
 export interface ImportAudit {
   id: string;
   sourceUrl: string | null;
@@ -837,6 +842,9 @@ export interface ImportAudit {
   status: ImportStatus;
   errorMessage: string | null;
   triggeredBy: string | null;
+  validationStatus: ValidationStatus | null;
+  validationNoticeErrors: number | null;
+  validationNoticeWarnings: number | null;
 }
 
 // GTFS translations (admin browse)
