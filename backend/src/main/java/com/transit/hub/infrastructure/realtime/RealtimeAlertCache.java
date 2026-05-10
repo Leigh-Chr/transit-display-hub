@@ -157,7 +157,7 @@ public class RealtimeAlertCache {
         }
     }
 
-    private static List<AlertSnapshot> parseAlerts(GtfsRealtime.FeedMessage feed) {
+    static List<AlertSnapshot> parseAlerts(GtfsRealtime.FeedMessage feed) {
         List<AlertSnapshot> result = new ArrayList<>(feed.getEntityCount());
         for (GtfsRealtime.FeedEntity entity : feed.getEntityList()) {
             if (entity.getIsDeleted() || !entity.hasAlert()) {

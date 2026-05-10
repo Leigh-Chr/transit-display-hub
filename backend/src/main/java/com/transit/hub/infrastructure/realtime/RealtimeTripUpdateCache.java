@@ -153,7 +153,7 @@ public class RealtimeTripUpdateCache {
         }
     }
 
-    private static Map<String, TripAdjustment> parseTripUpdates(GtfsRealtime.FeedMessage feed) {
+    static Map<String, TripAdjustment> parseTripUpdates(GtfsRealtime.FeedMessage feed) {
         Map<String, TripAdjustment> out = new HashMap<>();
         for (GtfsRealtime.FeedEntity entity : feed.getEntityList()) {
             if (entity.getIsDeleted() || !entity.hasTripUpdate()) {

@@ -121,7 +121,7 @@ public class RealtimeVehiclePositionCache {
         }
     }
 
-    private static List<VehicleSnapshot> parseVehicles(GtfsRealtime.FeedMessage feed) {
+    static List<VehicleSnapshot> parseVehicles(GtfsRealtime.FeedMessage feed) {
         List<VehicleSnapshot> out = new ArrayList<>(feed.getEntityCount());
         for (GtfsRealtime.FeedEntity entity : feed.getEntityList()) {
             if (entity.getIsDeleted() || !entity.hasVehicle()) {
