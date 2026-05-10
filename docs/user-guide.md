@@ -332,6 +332,32 @@ Or for direct access by stop (testing):
 https://transit.example.com/display/STOP_ID
 ```
 
+### Kiosk accessibility toolbar
+
+Three buttons in the kiosk header let any passenger
+adapt the screen on the fly:
+
+- **High-contrast mode** (icon `contrast`) — switches
+  to a WCAG-AAA black/yellow palette. Useful in direct
+  sunlight or for low-vision passengers.
+- **Larger text** (icon `format_size`) — boosts every
+  font size by ~1.4×.
+- **Read the next departure aloud** (icon `volume_up`)
+  — speaks the head of the arrivals list through the
+  device's text-to-speech engine.
+
+Each toggle is independent and persisted on the device,
+so a passenger's preference survives a kiosk restart.
+
+### Language switch
+
+The network map and admin app expose an `EN`/`FR`
+toggle in their headers. The kiosk reads its language
+from the device-wide setting (resolved at boot from
+`localStorage` → `navigator.language` → French as
+default), so there is no on-screen toggle on the kiosk
+itself — language follows the operator's configuration.
+
 ### Delete a Device
 
 1. Click **Delete**

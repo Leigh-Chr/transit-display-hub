@@ -119,6 +119,24 @@ the corresponding feed without affecting the others.
   kiosk fleet should display (`fr`, `en`, …). Falls back
   to the GTFS feed's default language when unset.
 
+##### MobilityData GTFS validator (optional)
+
+The canonical
+[MobilityData runner](https://github.com/MobilityData/gtfs-validator)
+runs after every successful import; the outcome lands on
+the matching `ImportAudit` row (status, error / warning
+counts, on-disk report directory).
+
+- `app.gtfs.validation.enabled`: `true` (default) /
+  `false`. Disable on resource-constrained CI boxes; the
+  audit row then carries `validationStatus = SKIPPED`.
+- `app.gtfs.validation.report-base-dir`: parent directory
+  for `<auditId>/report.{json,html}`. Default
+  `${java.io.tmpdir}/gtfs-validation`.
+
+ADR 0034 documents the integration choice (library vs.
+sub-process, validation runs after import not before).
+
 #### Development Profile (default)
 
 ```yaml

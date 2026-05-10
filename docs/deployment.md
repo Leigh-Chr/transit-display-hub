@@ -214,6 +214,9 @@ The repository includes ready-to-use Docker configuration:
 - `frontend/Dockerfile` — Multi-stage build (Node for compilation, nginx for serving)
 - `frontend/nginx.conf` — SPA fallback, API/WebSocket proxy, gzip, cache headers
 - `docker-compose.yml` — PostgreSQL + backend + frontend with healthchecks
+- `ops/kiosk/docker-compose.kiosk.yml` — same three services
+  pre-tuned for a single-host kiosk (Raspberry Pi 4+,
+  x86 mini-PC). See [Option 3](#option-3-raspberry-pi-kiosk).
 
 ### Quick Start
 
@@ -261,6 +264,33 @@ docker compose down -v
 
 ---
 
+## Option 3: Raspberry Pi kiosk
+
+Single-host deployment for a Pi 4 (or any Linux mini-PC)
+turning the box into a fullscreen kiosk pointing at one
+stop. Bootstraps Docker if missing, pulls the multi-arch
+images, brings up PostgreSQL + backend + frontend, and
+launches Chromium.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Leigh-Chr/transit-display-hub/main/ops/kiosk/install.sh | bash
+```
+
+Customisation via environment variables before the
+`curl | bash`:
+
+- `GTFS_FEED_URL` — feed imported on first boot.
+- `KIOSK_URL` — what Chromium points at (default
+  `http://localhost`; pass
+  `http://localhost/display/<stopId>` for a real kiosk).
+- `KIOSK_BROWSER=none` — skip the auto-launch (headless
+  servers).
+
+Compose file: `ops/kiosk/docker-compose.kiosk.yml`.
+Detailed guide: [`docs/kiosk-raspberry-pi.md`](kiosk-raspberry-pi.md).
+
+---
+
 ## Database Migrations
 
 ### Flyway
@@ -282,10 +312,17 @@ backend/src/main/resources/db/migration/
 ├── V29__add_location_groups_*.sql       # TAD location groups + booking rules (ADR 0015)
 ├── V30__add_fares_v2.sql                # Fares v2 core (ADR 0021)
 ├── V31__add_fares_v2_networks_*.sql     # Networks + fare media follow-up
-├── V32__link_booking_rules_*.sql        # schedules ↔ booking_rules wiring
-├── V33__add_stop_parent_*.sql           # Per-platform stops (ADR 0022)
-└── V34__add_fare_leg_join_rules.sql     # Closes Fares v2 spec
+├── V32..V34                              # Booking-rule wiring, per-platform stops,
+│                                        #   fare-leg-join-rules
+├── V35..V47                              # GTFS-spec coverage closure (CEMV support,
+│                                        #   stop_access, rider categories, fare_transfer
+│                                        #   boarding times, translation sub-id)
+├── V48__add_itinerary_mean_duration.sql # GTFS-flex 2024 mean_duration_* fields
+└── V49__add_import_audit_validation.sql # MobilityData validator outcome on the audit row
 ```
+
+The full per-migration story lives in the
+[CHANGELOG](../CHANGELOG.md) and the matching ADRs.
 
 - **Dev profile**: Flyway is disabled. Hibernate `create-drop` manages the schema, and the DataLoader seeds sample data (multiple users, lines, stops, etc.).
 - **Prod profile**: Flyway runs automatically on startup with `baseline-on-migrate: true`. The DataLoader is disabled. Only the `admin` user is created by V2 migration.

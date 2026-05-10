@@ -364,8 +364,12 @@ src/app/
 |   |   +-- display.service.ts
 |   +-- websocket/
 |   |   +-- websocket.service.ts  # STOMP client
+|   +-- i18n/
+|   |   +-- transloco.providers.ts # Transloco wiring
+|   |   +-- transloco.loader.ts    # /assets/i18n/{lang}.json loader
+|   |   +-- locale.service.ts      # Active language signal
 |   +-- services/
-|       +-- theme.service.ts      # Theme management
+|       +-- theme.service.ts      # Theme + a11y signals (dark / contrast / large-text)
 |       +-- breakpoint.service.ts # Responsive detection
 +-- shared/
 |   +-- models/
@@ -393,6 +397,7 @@ src/app/
 |   |   +-- kiosk/
 |   +-- network-map/
 |       +-- network-map.component.ts
+|       +-- network-list/         # Tabular alternative (a11y)
 |       +-- services/
 |       +-- components/
 |       |   +-- schematic-map/
@@ -403,6 +408,12 @@ src/app/
 |       +-- utils/
 +-- layouts/
     +-- admin-layout/
+```
+
+```text
+src/assets/i18n/
++-- fr.json                       # French dictionary (default)
++-- en.json                       # English dictionary
 ```
 
 ### Routes
@@ -719,12 +730,38 @@ JWT security, authentication filter, connection tracker.
 ```bash
 cd frontend
 
-# Unit tests (Vitest)
+# Unit tests (Vitest, watch mode)
 npm test
+
+# One-shot run with V8 coverage report under coverage/
+npm run test:coverage
+
+# Smoke E2E (Playwright Chromium, requires backend + frontend up)
+npm run e2e
 ```
 
 Component and service tests with zoneless configuration
-(`provideZonelessChangeDetection`).
+(`provideZonelessChangeDetection`). Coverage uses
+`@vitest/coverage-v8` (V8 provider, MIT). Smoke E2E lives
+in `frontend/e2e/` — three Chromium scenarios covering
+`/map`, `/map/list` and `/login`. ADR 0037 documents the
+quality-gate strategy and the rationale for not running
+E2E in the pre-push hook.
+
+### Continuous integration
+
+Two GitHub Actions workflows under `.github/workflows/`,
+gated on path filters so a doc-only commit doesn't burn
+minutes:
+
+- `backend.yml`: JDK 21 (temurin), gradle cache, runs
+  `./gradlew test jacocoTestReport`, uploads JaCoCo HTML
+  as a 7-day artifact.
+- `frontend.yml`: Node 20, `npm ci`, lint + knip +
+  `test:coverage` + `ng build --configuration production`,
+  uploads coverage as artifact.
+
+Only official `actions/*` actions used.
 
 ### Real-feed integration tests (opt-in)
 
@@ -794,6 +831,107 @@ with H2 in-memory before measuring
 
 See ADR 0028 for the full rationale (no CI gating, single
 fork by default for dev iteration speed).
+
+---
+
+## Internationalisation (i18n)
+
+Runtime language switching via Transloco
+(`@jsverse/transloco`, MIT). Two languages shipped:
+French (default) and English.
+
+### Architecture
+
+- `core/i18n/transloco.providers.ts` declares the
+  available languages and the loader. `provideAppTransloco()`
+  is plugged into `app.config.ts`.
+- `core/i18n/transloco.loader.ts` fetches
+  `/assets/i18n/{lang}.json` once per language per session.
+- `core/i18n/locale.service.ts` wraps `TranslocoService`
+  behind a signal API (`current()`, `setLang()`, `toggle()`).
+  Eagerly instantiated at boot via `provideAppInitializer`
+  so the language resolved from `localStorage` /
+  `navigator.language` is applied before any component
+  renders.
+- `assets/i18n/fr.json` and `assets/i18n/en.json` are
+  organised in four namespaces: `common`, `kiosk`, `map`,
+  `admin`. Adding a new language = drop a `<code>.json`
+  in the same folder and add the code to
+  `TRANSLOCO_AVAILABLE_LANGS`.
+
+### Adding a new translation key
+
+1. Add the key in `fr.json` and `en.json` (same path).
+2. Reference it in the template:
+   `{{ 'namespace.key' | transloco }}` for an interpolated
+   value or `*transloco="let t"` + `{{ t('namespace.key') }}`
+   for multiple keys in the same template fragment.
+3. For service code:
+   `inject(TranslocoService).translate('namespace.key')`.
+
+### Testing components that use Transloco
+
+The pipe needs a Transloco provider in the test bed:
+
+```typescript
+imports: [
+  YourComponent,
+  TranslocoTestingModule.forRoot({
+    langs: { en: {}, fr: {} },
+    translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' },
+  }),
+]
+```
+
+See `network-map.component.spec.ts` for a worked example
+that combines the testing module with `overrideComponent`
+to mock child components.
+
+ADR 0036 records the choice (Transloco vs.
+`@angular/localize`).
+
+---
+
+## Accessibility (WCAG 2.2 AA)
+
+Three orthogonal accessibility signals on `ThemeService`,
+each persisted to localStorage independently:
+
+- `isDarkMode` — light / dark palette.
+- `isHighContrast` — WCAG-AAA black/yellow palette
+  overriding M3 surface tokens. Defaults to
+  `prefers-contrast: more`.
+- `isLargeText` — boosts every M3 typescale variable by
+  ~1.4×.
+
+Applied via classes on `document.documentElement`
+(`.dark-theme`, `.high-contrast-theme`,
+`.large-text-theme`). Style overrides live in the global
+`styles.scss`, so any route hosting the toggles inherits
+the look.
+
+Kiosk surface (`features/display/kiosk/`):
+
+- 3-button toolbar in the header (high contrast / large
+  text / vocal next-departure).
+- `aria-pressed` reflects the toggle state, 44×44 px hit
+  zones, French aria-labels translated through Transloco.
+- Vocal announcement uses
+  `window.speechSynthesis` directly — French locale,
+  rate 0.95, cancels any in-flight utterance before
+  speaking.
+
+Admin and map surfaces:
+
+- Admin layout ships a skip-link to `#main-content`,
+  ESLint enforces `template/click-events-have-key-events`,
+  Material 21 wires `cdkTrapFocus` on every `MatDialog`
+  by default.
+- Network map exposes a tabular alternative at
+  `/map/list` for keyboard / screen reader users — same
+  data, no SVG.
+
+ADR 0035 records the design decisions.
 
 ---
 
