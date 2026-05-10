@@ -5,6 +5,7 @@ import com.transit.hub.domain.model.enums.LineType;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Pure parsing helpers for GTFS text fields. Extracted from {@link GtfsImportService}
@@ -55,7 +56,7 @@ final class GtfsParse {
             if (Character.isLetter(c)) {sb.append(c);}
             else {break;}
         }
-        return sb.toString().toUpperCase();
+        return sb.toString().toUpperCase(Locale.ROOT);
     }
 
     /**

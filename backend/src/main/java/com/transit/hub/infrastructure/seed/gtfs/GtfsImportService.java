@@ -87,6 +87,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipFile;
@@ -1147,9 +1148,9 @@ public class GtfsImportService {
                 // value diverges from the itinerary's majority default. Saves
                 // ~2 bytes × millions of rows on most feeds.
                 Boolean wheelchairOverride = computeWheelchairOverride(trip.wheelchairAccessible,
-                        itinerary.getWheelchairDefault());
+                        itinerary.getWheelchairDefault()).orElse(null);
                 Boolean bikesOverride = computeBikesOverride(trip.bikesAllowed,
-                        itinerary.getBikesAllowedDefault());
+                        itinerary.getBikesAllowedDefault()).orElse(null);
                 // GTFS timepoint defaults to "exact" when omitted; only an
                 // explicit 0 means the time is approximate.
                 String timepointRaw = optional(record, "timepoint");
@@ -2594,34 +2595,34 @@ public class GtfsImportService {
      * the schedule row stores nothing). Returns true/false only when the
      * trip explicitly diverges.
      */
-    private static Boolean computeWheelchairOverride(int tripWheelchair,
+    private static Optional<Boolean> computeWheelchairOverride(int tripWheelchair,
             com.transit.hub.domain.model.enums.WheelchairAccess itineraryDefault) {
         if (tripWheelchair == 1) {
             return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE
-                    ? null : Boolean.TRUE;
+                    ? Optional.empty() : Optional.of(Boolean.TRUE);
         }
         if (tripWheelchair == 2) {
             return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE
-                    ? null : Boolean.FALSE;
+                    ? Optional.empty() : Optional.of(Boolean.FALSE);
         }
-        return null; // unknown — inherit from itinerary
+        return Optional.empty();
     }
 
     /**
      * Computes the per-schedule bikes override following the same
-     * null-means-inherit rule as {@link #computeWheelchairOverride}.
+     * empty-means-inherit rule as {@link #computeWheelchairOverride}.
      */
-    private static Boolean computeBikesOverride(int tripBikes,
+    private static Optional<Boolean> computeBikesOverride(int tripBikes,
             com.transit.hub.domain.model.enums.BikesAllowed itineraryDefault) {
         if (tripBikes == 1) {
             return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED
-                    ? null : Boolean.TRUE;
+                    ? Optional.empty() : Optional.of(Boolean.TRUE);
         }
         if (tripBikes == 2) {
             return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED
-                    ? null : Boolean.FALSE;
+                    ? Optional.empty() : Optional.of(Boolean.FALSE);
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -2735,7 +2736,7 @@ public class GtfsImportService {
             String trimmed = rawTextColor.trim();
             String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
             if (hex.matches("^#[0-9A-Fa-f]{6}$")) {
-                return hex.toUpperCase();
+                return hex.toUpperCase(java.util.Locale.ROOT);
             }
         }
         return ColorContrast.readableTextColor(backgroundColor);
