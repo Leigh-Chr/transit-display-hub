@@ -27,9 +27,7 @@ describe('MessagesComponent', () => {
   let mockSnackBar: {
     open: ReturnType<typeof vi.fn>;
   };
-  let mockRouter: {
-    navigate: ReturnType<typeof vi.fn>;
-  };
+  let router: Router;
   let queryParamsSubject: Subject<Record<string, string>>;
 
   const now = new Date();
@@ -91,10 +89,6 @@ describe('MessagesComponent', () => {
       open: vi.fn(),
     };
 
-    mockRouter = {
-      navigate: vi.fn(),
-    };
-
     TestBed.configureTestingModule({
       imports: [MessagesComponent],
       providers: [
@@ -103,7 +97,6 @@ describe('MessagesComponent', () => {
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
         { provide: MatSnackBar, useValue: mockSnackBar },
-        { provide: Router, useValue: mockRouter },
         {
           provide: ActivatedRoute,
           useValue: { queryParams: queryParamsSubject.asObservable() },
@@ -113,6 +106,8 @@ describe('MessagesComponent', () => {
 
     fixture = TestBed.createComponent(MessagesComponent);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   it('should create', () => {
@@ -204,12 +199,12 @@ describe('MessagesComponent', () => {
       fixture.detectChanges();
       queryParamsSubject.next({});
 
-      component.page = 3;
+      component.tableState.page = 3;
       component.onSeverityChange('WARNING');
 
       expect(component.severity).toBe('WARNING');
-      expect(component.page).toBe(0);
-      expect(mockRouter.navigate).toHaveBeenCalled();
+      expect(component.tableState.page).toBe(0);
+      expect(router.navigate).toHaveBeenCalled();
     });
   });
 
@@ -218,12 +213,12 @@ describe('MessagesComponent', () => {
       fixture.detectChanges();
       queryParamsSubject.next({});
 
-      component.page = 5;
+      component.tableState.page = 5;
       component.onActiveChange(true);
 
       expect(component.showActiveOnly).toBe(true);
-      expect(component.page).toBe(0);
-      expect(mockRouter.navigate).toHaveBeenCalled();
+      expect(component.tableState.page).toBe(0);
+      expect(router.navigate).toHaveBeenCalled();
     });
   });
 

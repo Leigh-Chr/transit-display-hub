@@ -85,19 +85,19 @@ describe('LinesComponent', () => {
       queryParams$.next({ page: '2', size: '24', sortBy: 'name:desc', search: 'metro' });
       fixture.detectChanges();
 
-      expect(component.page).toBe(2);
-      expect(component.size).toBe(24);
-      expect(component.sortBy).toBe('name:desc');
-      expect(component.search).toBe('metro');
+      expect(component.tableState.page).toBe(2);
+      expect(component.tableState.size).toBe(24);
+      expect(component.tableState.sortBy).toBe('name:desc');
+      expect(component.tableState.search).toBe('metro');
     });
 
     it('should use defaults when query params are empty', () => {
       fixture.detectChanges();
 
-      expect(component.page).toBe(0);
-      expect(component.size).toBe(12);
-      expect(component.sortBy).toBe('code');
-      expect(component.search).toBe('');
+      expect(component.tableState.page).toBe(0);
+      expect(component.tableState.size).toBe(12);
+      expect(component.tableState.sortBy).toBe('code');
+      expect(component.tableState.search).toBe('');
     });
   });
 
@@ -157,27 +157,27 @@ describe('LinesComponent', () => {
     });
   });
 
-  describe('onPageChange', () => {
+  describe('tableState.onPageChange', () => {
     it('should update page and size then call updateUrl', () => {
       fixture.detectChanges();
 
-      component.onPageChange({ pageIndex: 3, pageSize: 24, length: 100 });
+      component.tableState.onPageChange({ pageIndex: 3, pageSize: 24, length: 100 });
 
-      expect(component.page).toBe(3);
-      expect(component.size).toBe(24);
+      expect(component.tableState.page).toBe(3);
+      expect(component.tableState.size).toBe(24);
       expect(router.navigate).toHaveBeenCalled();
     });
   });
 
-  describe('onSearchChange', () => {
+  describe('tableState.onSearchChange', () => {
     it('should reset page to 0 and set search', () => {
       fixture.detectChanges();
-      component.page = 5;
+      component.tableState.page = 5;
 
-      component.onSearchChange('tram');
+      component.tableState.onSearchChange('tram');
 
-      expect(component.search).toBe('tram');
-      expect(component.page).toBe(0);
+      expect(component.tableState.search).toBe('tram');
+      expect(component.tableState.page).toBe(0);
       expect(router.navigate).toHaveBeenCalled();
     });
   });
@@ -185,17 +185,17 @@ describe('LinesComponent', () => {
   describe('onSortChange', () => {
     it('should reset page to 0 and call updateUrl', () => {
       fixture.detectChanges();
-      component.page = 3;
+      component.tableState.page = 3;
 
       component.onSortChange();
 
-      expect(component.page).toBe(0);
+      expect(component.tableState.page).toBe(0);
       expect(router.navigate).toHaveBeenCalled();
     });
 
     it('should include the new sortBy value in query params', () => {
       fixture.detectChanges();
-      component.sortBy = 'name:desc';
+      component.tableState.sortBy = 'name:desc';
 
       component.onSortChange();
 
@@ -207,15 +207,15 @@ describe('LinesComponent', () => {
     });
   });
 
-  describe('updateUrl', () => {
+  describe('tableState URL sync', () => {
     it('should include only non-default params in query', () => {
       fixture.detectChanges();
-      component.page = 2;
-      component.size = 24;
-      component.sortBy = 'name:desc';
-      component.search = 'bus';
+      component.tableState.page = 2;
+      component.tableState.size = 24;
+      component.tableState.sortBy = 'name:desc';
+      component.tableState.search = 'bus';
 
-      component.updateUrl();
+      component.tableState.updateUrl();
 
       expect(router.navigate).toHaveBeenCalledWith([], {
         relativeTo: expect.anything(),
@@ -226,12 +226,12 @@ describe('LinesComponent', () => {
 
     it('should omit default values from query params', () => {
       fixture.detectChanges();
-      component.page = 0;
-      component.size = 12;
-      component.sortBy = 'code';
-      component.search = '';
+      component.tableState.page = 0;
+      component.tableState.size = 12;
+      component.tableState.sortBy = 'code';
+      component.tableState.search = '';
 
-      component.updateUrl();
+      component.tableState.updateUrl();
 
       expect(router.navigate).toHaveBeenCalledWith([], {
         relativeTo: expect.anything(),

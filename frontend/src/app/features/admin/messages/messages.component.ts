@@ -2,14 +2,14 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { LineService } from '@core/api/line.service';
@@ -22,6 +22,7 @@ import {
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
+import { AdminTableState } from '@shared/admin/admin-table-state.service';
 
 @Component({
   selector: 'app-messages',
@@ -41,6 +42,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     SearchInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AdminTableState],
   template: `
     <div class="messages-page">
       <div class="page-header">
@@ -54,8 +56,8 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       <div class="toolbar">
         <app-search-input
           placeholder="Search messages..."
-          [initialValue]="search"
-          (searchChange)="onSearchChange($event)"
+          [initialValue]="tableState.search"
+          (searchChange)="tableState.onSearchChange($event)"
         />
 
         <mat-form-field appearance="outline" class="severity-filter">
@@ -83,7 +85,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
             <app-card-skeleton [showIcon]="true" />
           }
         </div>
-      } @else if (messages().length === 0 && !search && !severity && !showActiveOnly) {
+      } @else if (messages().length === 0 && !tableState.search && !severity && !showActiveOnly) {
         <mat-card>
           <app-empty-state
             icon="campaign"
@@ -183,10 +185,10 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
         <mat-paginator
           [length]="totalElements"
-          [pageIndex]="page"
-          [pageSize]="size"
+          [pageIndex]="tableState.page"
+          [pageSize]="tableState.size"
           [pageSizeOptions]="[5, 10, 25, 50]"
-          (page)="onPageChange($event)"
+          (page)="tableState.onPageChange($event)"
           showFirstLastButtons
         />
       }
@@ -398,32 +400,36 @@ export class MessagesComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly tableState = inject(AdminTableState);
   loading = signal(true);
   messages = signal<BroadcastMessage[]>([]);
   lines = signal<Line[]>([]);
 
-  // Pagination and filter state
-  page = 0;
-  size = 10;
-  search = '';
+  // Extra filter state (pushed into URL via the extras supplier)
   severity: MessageSeverity | '' = '';
   showActiveOnly = false;
   totalElements = 0;
 
   ngOnInit(): void {
+    this.tableState.init({
+      sortBy: 'startTime',
+      sortDir: 'desc',
+      extras: () => ({
+        severity: this.severity || undefined,
+        active: this.showActiveOnly ? 'true' : undefined,
+      }),
+    });
+
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
       error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
     });
 
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      this.page = params['page'] ? +params['page'] : 0;
-      this.size = params['size'] ? +params['size'] : 10;
-      this.search = (params['search'] as string | undefined) ?? '';
+      this.tableState.syncFromQueryParams(params);
       this.severity = (params['severity'] as MessageSeverity | undefined) ?? '';
       this.showActiveOnly = params['active'] === 'true';
       this.loadMessages();
@@ -434,9 +440,9 @@ export class MessagesComponent implements OnInit {
     this.loading.set(true);
     this.messageService
       .getAllPaginated({
-        page: this.page,
-        size: this.size,
-        search: this.search || undefined,
+        page: this.tableState.page,
+        size: this.tableState.size,
+        search: this.tableState.search || undefined,
         severity: this.severity || undefined,
         active: this.showActiveOnly || undefined,
         sortBy: 'startTime',
@@ -444,9 +450,9 @@ export class MessagesComponent implements OnInit {
       })
       .subscribe({
         next: (response: PageResponse<BroadcastMessage>) => {
-          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
-            this.page = Math.max(0, response.totalPages - 1);
-            this.updateUrl();
+          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
+            this.tableState.page = Math.max(0, response.totalPages - 1);
+            this.tableState.updateUrl();
             this.loadMessages();
             return;
           }
@@ -463,43 +469,16 @@ export class MessagesComponent implements OnInit {
       });
   }
 
-  updateUrl(): void {
-    const queryParams: Record<string, string | number | boolean> = {};
-    if (this.page > 0) {queryParams['page'] = this.page;}
-    if (this.size !== 10) {queryParams['size'] = this.size;}
-    if (this.search) {queryParams['search'] = this.search;}
-    if (this.severity) {queryParams['severity'] = this.severity;}
-    if (this.showActiveOnly) {queryParams['active'] = 'true';}
-
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      replaceUrl: true,
-    });
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.page = event.pageIndex;
-    this.size = event.pageSize;
-    this.updateUrl();
-  }
-
-  onSearchChange(search: string): void {
-    this.search = search;
-    this.page = 0;
-    this.updateUrl();
-  }
-
   onSeverityChange(severity: MessageSeverity | ''): void {
     this.severity = severity;
-    this.page = 0;
-    this.updateUrl();
+    this.tableState.page = 0;
+    this.tableState.updateUrl();
   }
 
   onActiveChange(active: boolean): void {
     this.showActiveOnly = active;
-    this.page = 0;
-    this.updateUrl();
+    this.tableState.page = 0;
+    this.tableState.updateUrl();
   }
 
   isActive(message: BroadcastMessage): boolean {
@@ -518,8 +497,7 @@ export class MessagesComponent implements OnInit {
       if (result) {
         this.messageService.create(result as CreateMessageRequest).subscribe({
           next: () => {
-            this.page = 0;
-            this.updateUrl();
+            this.tableState.resetToFirstPage();
             this.loadMessages();
             this.snackBar.open('Message created', 'Close', {
               duration: 3000,

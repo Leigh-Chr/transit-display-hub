@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,6 +20,7 @@ import {
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
+import { AdminTableState } from '@shared/admin/admin-table-state.service';
 
 @Component({
   selector: 'app-lines',
@@ -38,6 +39,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     SearchInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AdminTableState],
   template: `
     <div class="lines-page">
       <div class="page-header">
@@ -51,12 +53,12 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
       <div class="toolbar">
         <app-search-input
           placeholder="Search lines..."
-          [initialValue]="search"
-          (searchChange)="onSearchChange($event)"
+          [initialValue]="tableState.search"
+          (searchChange)="tableState.onSearchChange($event)"
         />
         <mat-form-field appearance="outline" class="sort-field">
           <mat-label>Sort by</mat-label>
-          <mat-select [(ngModel)]="sortBy" (selectionChange)="onSortChange()">
+          <mat-select [(ngModel)]="tableState.sortBy" (selectionChange)="onSortChange()">
             <mat-option value="code">Code (A-Z)</mat-option>
             <mat-option value="code:desc">Code (Z-A)</mat-option>
             <mat-option value="name">Name (A-Z)</mat-option>
@@ -75,7 +77,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
             <app-card-skeleton />
           }
         </div>
-      } @else if (lines().length === 0 && !search) {
+      } @else if (lines().length === 0 && !tableState.search) {
         <mat-card>
           <app-empty-state
             icon="subway"
@@ -87,7 +89,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
             (action)="openCreateDialog()"
           />
         </mat-card>
-      } @else if (lines().length === 0 && search) {
+      } @else if (lines().length === 0 && tableState.search) {
         <mat-card>
           <app-empty-state
             icon="search_off"
@@ -150,10 +152,10 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
         <mat-paginator
           [length]="totalElements"
-          [pageIndex]="page"
-          [pageSize]="size"
+          [pageIndex]="tableState.page"
+          [pageSize]="tableState.size"
           [pageSizeOptions]="[8, 12, 24, 48]"
-          (page)="onPageChange($event)"
+          (page)="tableState.onPageChange($event)"
           showFirstLastButtons
         />
       }
@@ -306,51 +308,44 @@ export class LinesComponent implements OnInit {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly tableState = inject(AdminTableState);
   loading = signal(true);
   lines = signal<Line[]>([]);
-
-  // Pagination and sort state
-  page = 0;
-  size = 12;
-  sortBy = 'code';
-  search = '';
   totalElements = 0;
 
   ngOnInit(): void {
+    this.tableState.init({ sortBy: 'code', size: 12 });
+
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      this.page = params['page'] ? +params['page'] : 0;
-      this.size = params['size'] ? +params['size'] : 12;
-      this.sortBy = (params['sortBy'] as string | undefined) ?? 'code';
-      this.search = (params['search'] as string | undefined) ?? '';
+      this.tableState.syncFromQueryParams(params);
       this.loadLines();
     });
   }
 
   loadLines(): void {
     this.loading.set(true);
-    const [field, direction] = this.sortBy.includes(':')
-      ? this.sortBy.split(':')
-      : [this.sortBy, 'asc'];
+    const [field, direction] = this.tableState.sortBy.includes(':')
+      ? this.tableState.sortBy.split(':')
+      : [this.tableState.sortBy, 'asc'];
 
     this.lineService
       .getAllPaginated({
-        page: this.page,
-        size: this.size,
+        page: this.tableState.page,
+        size: this.tableState.size,
         sortBy: field,
         sortDir: direction as 'asc' | 'desc',
-        search: this.search || undefined,
+        search: this.tableState.search || undefined,
       })
       .subscribe({
         next: (response: PageResponse<Line>) => {
           // After a delete on the last item of a page > 0, the server returns
           // an empty page. Step back instead of showing a blank screen.
-          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
-            this.page = Math.max(0, response.totalPages - 1);
-            this.updateUrl();
+          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
+            this.tableState.page = Math.max(0, response.totalPages - 1);
+            this.tableState.updateUrl();
             this.loadLines();
             return;
           }
@@ -367,35 +362,9 @@ export class LinesComponent implements OnInit {
       });
   }
 
-  updateUrl(): void {
-    const queryParams: Record<string, string | number> = {};
-    if (this.page > 0) {queryParams['page'] = this.page;}
-    if (this.size !== 12) {queryParams['size'] = this.size;}
-    if (this.sortBy !== 'code') {queryParams['sortBy'] = this.sortBy;}
-    if (this.search) {queryParams['search'] = this.search;}
-
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      replaceUrl: true,
-    });
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.page = event.pageIndex;
-    this.size = event.pageSize;
-    this.updateUrl();
-  }
-
-  onSearchChange(search: string): void {
-    this.search = search;
-    this.page = 0;
-    this.updateUrl();
-  }
-
   onSortChange(): void {
-    this.page = 0;
-    this.updateUrl();
+    this.tableState.page = 0;
+    this.tableState.updateUrl();
   }
 
   openCreateDialog(): void {
@@ -411,8 +380,7 @@ export class LinesComponent implements OnInit {
           next: () => {
             // Jump back to page 0 so the user actually sees the new item
             // (which sorts wherever the active sort dictates).
-            this.page = 0;
-            this.updateUrl();
+            this.tableState.resetToFirstPage();
             this.loadLines();
             this.snackBar.open('Line created', 'Close', {
               duration: 3000,
