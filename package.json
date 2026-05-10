@@ -2,6 +2,7 @@
   "private": true,
   "name": "transit-display-hub-tooling",
   "description": "Root tooling package for git hooks",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "prepare": "husky"
   },

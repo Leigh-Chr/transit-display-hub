@@ -2,7 +2,7 @@
 
 [![Backend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
-[![License](https://img.shields.io/badge/license-Proprietary-blue.svg)](#license)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![ADRs](https://img.shields.io/badge/ADRs-38-informational)](docs/adr/README.md)
 [![Version](https://img.shields.io/badge/version-1.0.0-success)](CHANGELOG.md)
 
@@ -180,6 +180,7 @@ transit-display-hub/
 - [Changelog](CHANGELOG.md) — version history
 - [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Security](SECURITY.md)
 
+
 ## License
 
-Proprietary — all rights reserved.
+This project is licensed under the **GNU Affero General Public License v3.0**. See [LICENSE](LICENSE) for the full text. Network use of a modified version triggers source-disclosure obligations under section 13 of the AGPL.
