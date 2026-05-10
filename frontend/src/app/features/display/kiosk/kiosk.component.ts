@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { ThemeService } from '@core/services/theme.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
@@ -132,9 +132,9 @@ import { lineTextColor } from '@shared/utils/color.utils';
         <!-- Main departures board -->
         <main class="departures">
           <div class="departures-header">
-            <span class="col-line">Line</span>
-            <span class="col-destination">Destination</span>
-            <span class="col-time">Next departure</span>
+            <span class="col-line">{{ 'kiosk.headerLine' | transloco }}</span>
+            <span class="col-destination">{{ 'kiosk.headerDestination' | transloco }}</span>
+            <span class="col-time">{{ 'kiosk.headerNextDeparture' | transloco }}</span>
           </div>
           <div class="departures-viewport">
             <div class="departures-track"
@@ -152,19 +152,19 @@ import { lineTextColor } from '@shared/utils/color.utils';
                     </span>
                     @if (showPerArrivalPlatform(arrival)) {
                       <span class="platform-badge"
-                            [attr.aria-label]="'Quai ' + arrival.platformCode">
+                            [attr.aria-label]="'kiosk.accessibility.platform' | transloco:{ code: arrival.platformCode }">
                         {{ arrival.platformCode }}
                       </span>
                     }
                     <span class="destination">
                       {{ arrival.destinationName }}
                       @if (arrival.wheelchairAccessible === 'ACCESSIBLE') {
-                        <mat-icon class="access-icon access-yes" aria-label="Wheelchair accessible">accessible_forward</mat-icon>
+                        <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.wheelchairYes' | transloco">accessible_forward</mat-icon>
                       } @else if (arrival.wheelchairAccessible === 'NOT_ACCESSIBLE') {
-                        <mat-icon class="access-icon access-no" aria-label="Not wheelchair accessible">do_not_disturb</mat-icon>
+                        <mat-icon class="access-icon access-no" [attr.aria-label]="'kiosk.accessibility.wheelchairNo' | transloco">do_not_disturb</mat-icon>
                       }
                       @if (arrival.bikesAllowed === 'ALLOWED') {
-                        <mat-icon class="access-icon access-yes" aria-label="Bicycles allowed">directions_bike</mat-icon>
+                        <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.bikesAllowed' | transloco">directions_bike</mat-icon>
                       }
                       @if (pickupBadge(arrival.pickupKind); as badge) {
                         <span class="pickup-badge">{{ badge }}</span>
@@ -176,7 +176,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
                         <span class="live-badge"
                               [class.delay-late]="(arrival.realtimeDelaySeconds ?? 0) > 60"
                               [class.delay-early]="(arrival.realtimeDelaySeconds ?? 0) < -60"
-                              aria-label="Temps réel">
+                              [attr.aria-label]="'kiosk.accessibility.liveData' | transloco">
                           ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
                         </span>
                       }
@@ -186,7 +186,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
                           @if (b.phone) {
                             {{ b.phone }}
                           } @else {
-                            Réservation
+                            {{ 'kiosk.booking.label' | transloco }}
                           }
                           @if (b.priorNoticeMinutes) {
                             <span class="booking-notice">≥ {{ b.priorNoticeMinutes }} min</span>
@@ -204,7 +204,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
                   </div>
                 } @empty {
                   <div class="no-departures">
-                    No scheduled departures
+                    {{ 'kiosk.noScheduledDepartures' | transloco }}
                   </div>
                 }
               </div>
@@ -279,24 +279,24 @@ import { lineTextColor } from '@shared/utils/color.utils';
         @if (!connected()) {
           <div class="connection-warning" role="status" aria-live="polite">
             <mat-icon aria-hidden="true">wifi_off</mat-icon>
-            Reconnecting...
+            {{ 'kiosk.connection.reconnecting' | transloco }}
           </div>
         } @else if (isStale()) {
           <div class="connection-warning stale-warning" role="status" aria-live="polite">
             <mat-icon aria-hidden="true">schedule</mat-icon>
-            Last update {{ staleMinutes() }}m ago
+            {{ 'kiosk.connection.stale' | transloco:{ minutes: staleMinutes() } }}
           </div>
         }
       } @else if (error()) {
         <div class="error-state">
           <mat-icon>error_outline</mat-icon>
-          <h1>Display Error</h1>
+          <h1>{{ 'kiosk.error.title' | transloco }}</h1>
           <p>{{ error() }}</p>
         </div>
       } @else {
         <div class="loading-state">
           <mat-spinner diameter="80" aria-label="Loading display"></mat-spinner>
-          <h1>Loading...</h1>
+          <h1>{{ 'kiosk.loading' | transloco }}</h1>
         </div>
       }
     </div>
@@ -915,6 +915,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly displayService = inject(DisplayService);
   private readonly wsService = inject(WebSocketService);
+  private readonly transloco = inject(TranslocoService);
   /** Exposed to the template so the a11y toolbar can bind to its
    *  three signals (dark / contrast / large text) directly. */
   readonly themeService = inject(ThemeService);
@@ -941,8 +942,8 @@ export class KioskComponent implements OnInit, OnDestroy {
   frequencyLabel(headwaySeconds: number | null | undefined): string | null {
     if (!headwaySeconds || headwaySeconds <= 0) {return null;}
     const minutes = Math.round(headwaySeconds / 60);
-    if (minutes <= 1) {return 'every minute';}
-    return `every ${minutes} min`;
+    if (minutes <= 1) {return this.transloco.translate('kiosk.frequency.everyMinute');}
+    return this.transloco.translate('kiosk.frequency.everyMinutes', { minutes });
   }
 
   /** Maps a {@link PickupKind} to a short label rendered next to the
@@ -951,10 +952,10 @@ export class KioskComponent implements OnInit, OnDestroy {
    *  pattern cleanly. */
   pickupBadge(kind: PickupKind | undefined): string | null {
     switch (kind) {
-      case 'DROP_OFF_ONLY': return 'Drop-off only';
-      case 'PICKUP_ONLY': return 'Pickup only';
-      case 'ON_REQUEST_AGENCY': return 'On request — call agency';
-      case 'ON_REQUEST_DRIVER': return 'On request — wave the driver';
+      case 'DROP_OFF_ONLY': return this.transloco.translate('kiosk.pickup.dropOffOnly');
+      case 'PICKUP_ONLY': return this.transloco.translate('kiosk.pickup.pickupOnly');
+      case 'ON_REQUEST_AGENCY': return this.transloco.translate('kiosk.pickup.onRequestAgency');
+      case 'ON_REQUEST_DRIVER': return this.transloco.translate('kiosk.pickup.onRequestDriver');
       default: return null;
     }
   }
@@ -967,14 +968,14 @@ export class KioskComponent implements OnInit, OnDestroy {
     return delaySeconds !== null && delaySeconds !== undefined;
   }
 
-  /** Short label rendered next to the live indicator: "à l'heure",
-   *  "+3 min", "−2 min". Sub-minute values collapse to "à l'heure"
+  /** Short label rendered next to the live indicator: "à l'heure" / "on time",
+   *  "+3 min", "−2 min". Sub-minute values collapse to the "on time" key
    *  to avoid screen churn at 30 s granularity. */
   liveLabel(delaySeconds: number | null | undefined): string {
     if (delaySeconds === null || delaySeconds === undefined) {return '';}
     const sign = delaySeconds >= 0 ? '+' : '−';
     const abs = Math.round(Math.abs(delaySeconds) / 60);
-    if (abs === 0) {return 'à l\'heure';}
+    if (abs === 0) {return this.transloco.translate('kiosk.onTime');}
     return `${sign}${abs} min`;
   }
 
@@ -987,20 +988,22 @@ export class KioskComponent implements OnInit, OnDestroy {
   speakNextDeparture(): void {
     const next = this.allArrivals()[0];
     if (!next) {
-      this.speak('Aucun passage à annoncer pour le moment.');
+      this.speak(this.transloco.translate('kiosk.speak.noArrivals'));
       return;
     }
     const time = this.formatScheduledTime(next.scheduledTime);
     const delay = next.realtimeDelaySeconds ?? null;
-    const delayPart = delay === null
-      ? ''
-      : delay === 0
-        ? ', à l\'heure'
-        : delay > 0
-          ? `, retardé de ${Math.round(delay / 60)} minutes`
-          : `, en avance de ${Math.round(Math.abs(delay) / 60)} minutes`;
-    const text = `Prochain passage : ligne ${next.line.code}, `
-      + `direction ${next.destinationName}, à ${time}${delayPart}.`;
+    const params = { line: next.line.code, destination: next.destinationName, time };
+    let text: string;
+    if (delay === null) {
+      text = this.transloco.translate('kiosk.speak.next', params);
+    } else if (delay === 0) {
+      text = this.transloco.translate('kiosk.speak.nextOnTime', params);
+    } else if (delay > 0) {
+      text = this.transloco.translate('kiosk.speak.nextDelayed', { ...params, minutes: Math.round(delay / 60) });
+    } else {
+      text = this.transloco.translate('kiosk.speak.nextEarly', { ...params, minutes: Math.round(Math.abs(delay) / 60) });
+    }
     this.speak(text);
   }
 
@@ -1042,7 +1045,7 @@ export class KioskComponent implements OnInit, OnDestroy {
    *  "réservation 0123456789, 30 minutes minimum" rather than just
    *  "phone_callback 0123456789". */
   bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
-    const parts: string[] = ['Réservation requise'];
+    const parts: string[] = [this.transloco.translate('kiosk.booking.aria')];
     if (b.phone) {parts.push(b.phone);}
     if (b.priorNoticeMinutes) {parts.push(`${b.priorNoticeMinutes} minutes minimum`);}
     return parts.join(', ');
@@ -1389,9 +1392,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   formatRelativeTime(time: string): string {
     const minutes = this.getMinutesUntil(time);
     if (minutes === 0) {
-      return 'Imminent';
+      return this.transloco.translate('kiosk.imminent');
     }
-    return `${minutes} min`;
+    return this.transloco.translate('kiosk.minutesShort', { minutes });
   }
 
   /** Whether the next departure is happening now (within the same minute).

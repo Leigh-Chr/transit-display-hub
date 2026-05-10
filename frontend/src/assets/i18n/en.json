@@ -19,13 +19,54 @@
   },
   "kiosk": {
     "noArrivals": "No upcoming departure",
+    "noScheduledDepartures": "No scheduled departures",
     "alertWarning": "Service alert",
     "speakNext": "Read the next departure aloud",
     "highContrast": "High-contrast mode",
     "largeText": "Larger text",
     "headerLine": "Line",
+    "headerPlatform": "Platform",
     "headerDestination": "Destination",
-    "headerNextDeparture": "Next departure"
+    "headerNextDeparture": "Next departure",
+    "imminent": "Imminent",
+    "minutesShort": "{{ minutes }} min",
+    "onTime": "on time",
+    "pickup": {
+      "dropOffOnly": "Drop-off only",
+      "pickupOnly": "Pick-up only",
+      "onRequestAgency": "On request — call agency",
+      "onRequestDriver": "On request — wave the driver"
+    },
+    "frequency": {
+      "everyMinute": "Every minute",
+      "everyMinutes": "Every {{ minutes }} min"
+    },
+    "booking": {
+      "label": "Reservation",
+      "aria": "Reservation required"
+    },
+    "accessibility": {
+      "wheelchairYes": "Wheelchair accessible",
+      "wheelchairNo": "Not wheelchair accessible",
+      "bikesAllowed": "Bicycles allowed",
+      "platform": "Platform {{ code }}",
+      "liveData": "Live data"
+    },
+    "connection": {
+      "reconnecting": "Reconnecting…",
+      "stale": "Last update {{ minutes }} min ago"
+    },
+    "error": {
+      "title": "Display Error"
+    },
+    "loading": "Loading…",
+    "speak": {
+      "noArrivals": "No upcoming departure to announce.",
+      "next": "Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}.",
+      "nextOnTime": "Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, on time.",
+      "nextDelayed": "Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, delayed by {{ minutes }} minutes.",
+      "nextEarly": "Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, {{ minutes }} minutes early."
+    }
   },
   "map": {
     "title": "Network map",
@@ -129,7 +170,34 @@
       },
       "stopsSuffix": "stops",
       "loadFailed": "Failed to load dashboard data",
-      "loadLinesFailed": "Failed to load lines for hub selector"
+      "loadLinesFailed": "Failed to load lines for hub selector",
+      "overview": {
+        "feedData": "Feed data",
+        "calendars": "calendars",
+        "bookingRules": "booking rules",
+        "tooltipLines": "Lines (routes.txt)",
+        "tooltipStops": "Stops (stops.txt)",
+        "tooltipStopsOrphans": "Stops ({{ count }} orphans from last import)",
+        "tooltipItineraries": "Active itineraries (route, direction)",
+        "tooltipSchedules": "Persisted schedules (all lines, all services)",
+        "tooltipCalendars": "Service calendars (calendar.txt + calendar_dates.txt)",
+        "tooltipTransfers": "Transfers between stops",
+        "tooltipShapes": "Geographic polylines (shapes.txt)",
+        "tooltipPathways": "Intra-station connections (pathways.txt)",
+        "tooltipFares": "Fares (Fares v1)",
+        "tooltipTranslations": "Translations (translations.txt)",
+        "tooltipBookingRules": "DRT booking rules"
+      },
+      "feedInfo": {
+        "dayLeft": "day left",
+        "daysLeft": "days left",
+        "imported": "Imported",
+        "sourceLang": "Source language:",
+        "defaultLang": "default",
+        "statusExpired": "Feed validity has lapsed — refresh from source",
+        "statusExpiring": "Feed validity ends within a week — refresh soon",
+        "statusCurrent": "Feed is current"
+      }
     },
     "lines": {
       "title": "Lines",
@@ -443,16 +511,23 @@
       "colLine": "Line",
       "colName": "Name",
       "colTerminus": "Terminus",
+      "colDirection": "Direction",
       "colStops": "Stops",
+      "colAmenities": "Amenities",
       "colActions": "Actions",
+      "carsAllowedTooltip": "Cars allowed on this trip (motorail / car-ferry)",
       "editTooltip": "Edit itinerary",
       "editStopsTooltip": "Manage stops",
       "deleteTooltip": "Delete itinerary",
       "emptyTitle": "No itineraries configured",
       "emptyDescription": "Create itineraries to define routes and directions for your lines.",
       "emptyAction": "Create Itinerary",
+      "emptyNoLinesTitle": "No lines configured",
+      "emptyNoLinesDesc": "Create lines first before adding itineraries.",
       "emptySearchTitle": "No results found",
       "emptySearchDescription": "Try adjusting your search terms.",
+      "noStops": "(no stops)",
+      "stopCount": "{{ count }} stops",
       "createSuccess": "Itinerary created",
       "updateSuccess": "Itinerary updated",
       "deleteSuccess": "Itinerary deleted",
@@ -467,22 +542,33 @@
         "titleCreate": "New Itinerary",
         "titleEdit": "Edit Itinerary",
         "fieldLine": "Line",
+        "fieldLineHint": "Line cannot be changed after creation",
         "fieldLineRequired": "Line is required",
-        "fieldName": "Name",
-        "fieldNamePlaceholder": "e.g., Direction Downtown",
+        "fieldName": "Itinerary Name",
+        "fieldNamePlaceholder": "e.g., Direction Eastern Terminal",
+        "fieldNameHint": "Name for this direction/itinerary",
         "fieldNameRequired": "Name is required",
         "fieldTerminus": "Terminus",
         "fieldTerminusPlaceholder": "e.g., North Terminal",
+        "infoAfterCreate": "After creating the itinerary, you can add stops to define the terminus.",
+        "terminusLabel": "Terminus:",
+        "terminusHint": "The terminus is automatically derived from the last stop.",
         "actionCreate": "Create Itinerary",
         "actionSave": "Save Changes"
       },
       "stopsDialog": {
-        "title": "Stops for itinerary {{ name }}",
+        "title": "Manage Stops - {{ name }}",
+        "addStop": "Add a stop",
+        "addStopHint": "Select a stop to add to this itinerary",
+        "noMoreStops": "No more stops available",
+        "noStopsYet": "No stops added yet. Add stops to define the itinerary.",
+        "terminusLabel": "Terminus:",
+        "loadFailed": "Failed to load stops",
         "available": "Available stops",
         "selected": "Selected stops",
         "searchPlaceholder": "Search a stop…",
-        "noStopsAvailable": "No stops available",
-        "noStopsSelected": "No stops selected",
+        "noStopsAvailable": "No more stops available",
+        "noStopsSelected": "No stops added yet. Add stops to define the itinerary.",
         "addTooltip": "Add stop",
         "removeTooltip": "Remove stop",
         "moveUpTooltip": "Move up",
@@ -564,6 +650,9 @@
       "validationFailedLabel": "Failed",
       "noValidationNotices": "No notices",
       "openReport": "Open MobilityData report (HTML)",
+      "attempts": "attempt(s)",
+      "validationClean": "The MobilityData validator raised no notices on this feed.",
+      "validationSummary": "{{ errors }} error(s) and {{ warnings }} warning(s) — open the report for details.",
       "status": {
         "success": "Success",
         "skipped": "Skipped (feed unchanged)",

@@ -19,13 +19,54 @@
   },
   "kiosk": {
     "noArrivals": "Aucun passage prévu",
+    "noScheduledDepartures": "Aucun passage à annoncer",
     "alertWarning": "Alerte trafic",
     "speakNext": "Écouter le prochain passage",
     "highContrast": "Mode contrasté",
     "largeText": "Texte agrandi",
     "headerLine": "Ligne",
+    "headerPlatform": "Quai",
     "headerDestination": "Destination",
-    "headerNextDeparture": "Prochain passage"
+    "headerNextDeparture": "Prochain passage",
+    "imminent": "Imminent",
+    "minutesShort": "{{ minutes }} min",
+    "onTime": "à l'heure",
+    "pickup": {
+      "dropOffOnly": "Descente uniquement",
+      "pickupOnly": "Montée uniquement",
+      "onRequestAgency": "Sur réservation — appeler",
+      "onRequestDriver": "Sur réservation — signe au conducteur"
+    },
+    "frequency": {
+      "everyMinute": "Toutes les minutes",
+      "everyMinutes": "Toutes les {{ minutes }} min"
+    },
+    "booking": {
+      "label": "Réservation",
+      "aria": "Réservation requise"
+    },
+    "accessibility": {
+      "wheelchairYes": "Accessible PMR",
+      "wheelchairNo": "Non accessible PMR",
+      "bikesAllowed": "Vélos autorisés",
+      "platform": "Quai {{ code }}",
+      "liveData": "Temps réel"
+    },
+    "connection": {
+      "reconnecting": "Reconnexion…",
+      "stale": "Dernière mise à jour il y a {{ minutes }} min"
+    },
+    "error": {
+      "title": "Erreur d'affichage"
+    },
+    "loading": "Chargement…",
+    "speak": {
+      "noArrivals": "Aucun passage à annoncer pour le moment.",
+      "next": "Prochain passage : ligne {{ line }}, direction {{ destination }}, à {{ time }}.",
+      "nextOnTime": "Prochain passage : ligne {{ line }}, direction {{ destination }}, à {{ time }}, à l'heure.",
+      "nextDelayed": "Prochain passage : ligne {{ line }}, direction {{ destination }}, à {{ time }}, retardé de {{ minutes }} minutes.",
+      "nextEarly": "Prochain passage : ligne {{ line }}, direction {{ destination }}, à {{ time }}, en avance de {{ minutes }} minutes."
+    }
   },
   "map": {
     "title": "Plan du réseau",
@@ -129,7 +170,34 @@
       },
       "stopsSuffix": "arrêts",
       "loadFailed": "Impossible de charger les données du tableau de bord",
-      "loadLinesFailed": "Impossible de charger les lignes pour le sélecteur hub"
+      "loadLinesFailed": "Impossible de charger les lignes pour le sélecteur hub",
+      "overview": {
+        "feedData": "Données du feed",
+        "calendars": "calendriers",
+        "bookingRules": "réservations",
+        "tooltipLines": "Lignes (routes.txt)",
+        "tooltipStops": "Arrêts (stops.txt)",
+        "tooltipStopsOrphans": "Arrêts ({{ count }} orphelins du dernier import)",
+        "tooltipItineraries": "Itinéraires actifs (route, direction)",
+        "tooltipSchedules": "Horaires persistés (toutes lignes, tous services)",
+        "tooltipCalendars": "Calendriers de service (calendar.txt + calendar_dates.txt)",
+        "tooltipTransfers": "Transfers entre arrêts",
+        "tooltipShapes": "Polylines géographiques (shapes.txt)",
+        "tooltipPathways": "Connexions intra-station (pathways.txt)",
+        "tooltipFares": "Tarifs (Fares v1)",
+        "tooltipTranslations": "Traductions (translations.txt)",
+        "tooltipBookingRules": "Règles de réservation TAD"
+      },
+      "feedInfo": {
+        "dayLeft": "jour restant",
+        "daysLeft": "jours restants",
+        "imported": "Importé le",
+        "sourceLang": "Langue source :",
+        "defaultLang": "défaut",
+        "statusExpired": "La validité du feed est expirée — rafraîchissez depuis la source",
+        "statusExpiring": "La validité du feed expire dans moins d'une semaine — rafraîchissez bientôt",
+        "statusCurrent": "Le feed est à jour"
+      }
     },
     "lines": {
       "title": "Lignes",
@@ -443,16 +511,23 @@
       "colLine": "Ligne",
       "colName": "Nom",
       "colTerminus": "Terminus",
+      "colDirection": "Direction",
       "colStops": "Arrêts",
+      "colAmenities": "Services",
       "colActions": "Actions",
+      "carsAllowedTooltip": "Voitures autorisées sur ce trajet (Motorail / car-ferry)",
       "editTooltip": "Modifier l'itinéraire",
       "editStopsTooltip": "Gérer les arrêts",
       "deleteTooltip": "Supprimer l'itinéraire",
       "emptyTitle": "Aucun itinéraire configuré",
       "emptyDescription": "Créez des itinéraires pour définir les parcours et directions de vos lignes.",
       "emptyAction": "Créer un itinéraire",
+      "emptyNoLinesTitle": "Aucune ligne configurée",
+      "emptyNoLinesDesc": "Créez d'abord des lignes avant d'ajouter des itinéraires.",
       "emptySearchTitle": "Aucun résultat",
       "emptySearchDescription": "Essayez de modifier vos termes de recherche.",
+      "noStops": "(aucun arrêt)",
+      "stopCount": "{{ count }} arrêts",
       "createSuccess": "Itinéraire créé",
       "updateSuccess": "Itinéraire mis à jour",
       "deleteSuccess": "Itinéraire supprimé",
@@ -467,22 +542,33 @@
         "titleCreate": "Nouvel itinéraire",
         "titleEdit": "Modifier l'itinéraire",
         "fieldLine": "Ligne",
+        "fieldLineHint": "La ligne ne peut pas être modifiée après la création",
         "fieldLineRequired": "La ligne est requise",
-        "fieldName": "Nom",
-        "fieldNamePlaceholder": "ex. Direction Centre-ville",
+        "fieldName": "Nom de l'itinéraire",
+        "fieldNamePlaceholder": "ex. Direction Terminus Est",
+        "fieldNameHint": "Nom pour cette direction/itinéraire",
         "fieldNameRequired": "Le nom est requis",
         "fieldTerminus": "Terminus",
         "fieldTerminusPlaceholder": "ex. Terminus Nord",
+        "infoAfterCreate": "Après avoir créé l'itinéraire, vous pouvez ajouter des arrêts pour définir le terminus.",
+        "terminusLabel": "Terminus :",
+        "terminusHint": "Le terminus est automatiquement dérivé du dernier arrêt.",
         "actionCreate": "Créer l'itinéraire",
         "actionSave": "Enregistrer"
       },
       "stopsDialog": {
-        "title": "Arrêts de l'itinéraire {{ name }}",
+        "title": "Gérer les arrêts — {{ name }}",
+        "addStop": "Ajouter un arrêt",
+        "addStopHint": "Sélectionnez un arrêt à ajouter à cet itinéraire",
+        "noMoreStops": "Plus d'arrêts disponibles",
+        "noStopsYet": "Aucun arrêt ajouté. Ajoutez des arrêts pour définir l'itinéraire.",
+        "terminusLabel": "Terminus :",
+        "loadFailed": "Impossible de charger les arrêts",
         "available": "Arrêts disponibles",
         "selected": "Arrêts sélectionnés",
         "searchPlaceholder": "Rechercher un arrêt…",
-        "noStopsAvailable": "Aucun arrêt disponible",
-        "noStopsSelected": "Aucun arrêt sélectionné",
+        "noStopsAvailable": "Plus d'arrêts disponibles",
+        "noStopsSelected": "Aucun arrêt ajouté. Ajoutez des arrêts pour définir l'itinéraire.",
         "addTooltip": "Ajouter l'arrêt",
         "removeTooltip": "Retirer l'arrêt",
         "moveUpTooltip": "Monter",
@@ -564,6 +650,9 @@
       "validationFailedLabel": "Échec",
       "noValidationNotices": "Aucun avis",
       "openReport": "Ouvrir le rapport MobilityData (HTML)",
+      "attempts": "tentative(s)",
+      "validationClean": "Le validateur MobilityData n'a remonté aucun avis sur ce feed.",
+      "validationSummary": "{{ errors }} erreur(s) et {{ warnings }} avertissement(s) — cliquez sur le rapport pour le détail.",
       "status": {
         "success": "Succès",
         "skipped": "Sauté (feed inchangé)",

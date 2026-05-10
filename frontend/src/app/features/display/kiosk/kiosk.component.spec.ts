@@ -7,6 +7,50 @@ import { of, Subject, EMPTY, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { DisplayState } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLangs = {
+  en: {
+    kiosk: {
+      noArrivals: 'No upcoming departure',
+      noScheduledDepartures: 'No scheduled departures',
+      imminent: 'Imminent',
+      minutesShort: '{{ minutes }} min',
+      onTime: 'on time',
+      pickup: {
+        dropOffOnly: 'Drop-off only',
+        pickupOnly: 'Pick-up only',
+        onRequestAgency: 'On request — call agency',
+        onRequestDriver: 'On request — wave the driver',
+      },
+      frequency: { everyMinute: 'Every minute', everyMinutes: 'Every {{ minutes }} min' },
+      booking: { label: 'Reservation', aria: 'Reservation required' },
+      accessibility: {
+        wheelchairYes: 'Wheelchair accessible',
+        wheelchairNo: 'Not wheelchair accessible',
+        bikesAllowed: 'Bicycles allowed',
+        platform: 'Platform {{ code }}',
+        liveData: 'Live data',
+      },
+      connection: { reconnecting: 'Reconnecting…', stale: 'Last update {{ minutes }} min ago' },
+      error: { title: 'Display Error' },
+      loading: 'Loading…',
+      highContrast: 'High-contrast mode',
+      largeText: 'Larger text',
+      speakNext: 'Read the next departure aloud',
+      headerLine: 'Line',
+      headerDestination: 'Destination',
+      headerNextDeparture: 'Next departure',
+      speak: {
+        noArrivals: 'No upcoming departure to announce.',
+        next: 'Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}.',
+        nextOnTime: 'Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, on time.',
+        nextDelayed: 'Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, delayed by {{ minutes }} minutes.',
+        nextEarly: 'Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, {{ minutes }} minutes early.',
+      },
+    },
+  },
+};
 
 describe('KioskComponent', () => {
   let component: KioskComponent;
@@ -71,7 +115,14 @@ describe('KioskComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [KioskComponent],
+      imports: [
+        KioskComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLangs.en, fr: translocoLangs.en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         {

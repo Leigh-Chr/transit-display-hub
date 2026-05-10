@@ -7,6 +7,27 @@ import { HubComponent } from './hub.component';
 import { DisplayService } from '@core/api/display.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
 import { HubDisplayState } from '@shared/models';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+
+const translocoLangs = {
+  en: {
+    kiosk: {
+      noArrivals: 'No upcoming departure',
+      noScheduledDepartures: 'No scheduled departures',
+      imminent: 'Imminent',
+      minutesShort: '{{ minutes }} min',
+      onTime: 'on time',
+      headerLine: 'Line',
+      headerPlatform: 'Platform',
+      headerDestination: 'Destination',
+      headerNextDeparture: 'Next departure',
+      booking: { label: 'Reservation', aria: 'Reservation required' },
+      connection: { reconnecting: 'Reconnecting…', stale: 'Last update {{ minutes }} min ago' },
+      error: { title: 'Display Error' },
+      loading: 'Loading…',
+    },
+  },
+};
 
 const mockHubState: HubDisplayState = {
   hubName: 'Test Hub',
@@ -56,7 +77,14 @@ describe('HubComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [HubComponent],
+      imports: [
+        HubComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: translocoLangs.en, fr: translocoLangs.en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         provideRouter([]),
         {

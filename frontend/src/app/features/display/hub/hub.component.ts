@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
 import {
@@ -24,7 +25,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
 @Component({
   selector: 'app-hub',
   standalone: true,
-  imports: [MatIconModule, MatProgressSpinnerModule],
+  imports: [MatIconModule, MatProgressSpinnerModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="kiosk">
@@ -88,10 +89,10 @@ import { lineTextColor } from '@shared/utils/color.utils';
         <!-- Main departures board (4 columns) -->
         <main class="departures">
           <div class="departures-header">
-            <span class="col-line">Line</span>
-            <span class="col-platform">Platform</span>
-            <span class="col-destination">Destination</span>
-            <span class="col-time">Next departure</span>
+            <span class="col-line">{{ 'kiosk.headerLine' | transloco }}</span>
+            <span class="col-platform">{{ 'kiosk.headerPlatform' | transloco }}</span>
+            <span class="col-destination">{{ 'kiosk.headerDestination' | transloco }}</span>
+            <span class="col-time">{{ 'kiosk.headerNextDeparture' | transloco }}</span>
           </div>
           <div class="departures-viewport">
             <div class="departures-track"
@@ -113,7 +114,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
                       @if (arrival.booking; as b) {
                         <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
                           <mat-icon class="booking-icon">phone_callback</mat-icon>
-                          @if (b.phone) { {{ b.phone }} } @else { Réservation }
+                          @if (b.phone) { {{ b.phone }} } @else { {{ 'kiosk.booking.label' | transloco }} }
                         </span>
                       }
                     </span>
@@ -127,7 +128,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
                   </div>
                 } @empty {
                   <div class="no-departures">
-                    No scheduled departures
+                    {{ 'kiosk.noScheduledDepartures' | transloco }}
                   </div>
                 }
               </div>
@@ -150,7 +151,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
                         @if (arrival.booking; as b) {
                           <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
                             <mat-icon class="booking-icon">phone_callback</mat-icon>
-                            @if (b.phone) { {{ b.phone }} } @else { Réservation }
+                            @if (b.phone) { {{ b.phone }} } @else { {{ 'kiosk.booking.label' | transloco }} }
                           </span>
                         }
                       </span>
@@ -206,24 +207,24 @@ import { lineTextColor } from '@shared/utils/color.utils';
         @if (!connected()) {
           <div class="connection-warning" role="status" aria-live="polite">
             <mat-icon aria-hidden="true">wifi_off</mat-icon>
-            Reconnecting...
+            {{ 'kiosk.connection.reconnecting' | transloco }}
           </div>
         } @else if (isStale()) {
           <div class="connection-warning stale-warning" role="status" aria-live="polite">
             <mat-icon aria-hidden="true">schedule</mat-icon>
-            Last update {{ staleMinutes() }}m ago
+            {{ 'kiosk.connection.stale' | transloco:{ minutes: staleMinutes() } }}
           </div>
         }
       } @else if (error()) {
         <div class="error-state">
           <mat-icon>error_outline</mat-icon>
-          <h1>Display Error</h1>
+          <h1>{{ 'kiosk.error.title' | transloco }}</h1>
           <p>{{ error() }}</p>
         </div>
       } @else {
         <div class="loading-state">
           <mat-spinner diameter="80" aria-label="Loading hub display"></mat-spinner>
-          <h1>Loading...</h1>
+          <h1>{{ 'kiosk.loading' | transloco }}</h1>
         </div>
       }
     </div>
@@ -718,6 +719,7 @@ export class HubComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly displayService = inject(DisplayService);
   private readonly hubWsService = inject(HubWebSocketService);
+  private readonly transloco = inject(TranslocoService);
 
   hubState = signal<HubDisplayState | null>(null);
   error = signal<string | null>(null);
@@ -732,7 +734,7 @@ export class HubComponent implements OnInit, OnDestroy {
    *  "réservation 0123456789, 30 minutes minimum" rather than just
    *  "phone_callback 0123456789". Mirrors the kiosk implementation. */
   bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
-    const parts: string[] = ['Réservation requise'];
+    const parts: string[] = [this.transloco.translate('kiosk.booking.aria')];
     if (b.phone) {parts.push(b.phone);}
     if (b.priorNoticeMinutes) {parts.push(`${b.priorNoticeMinutes} minutes minimum`);}
     return parts.join(', ');
@@ -1050,9 +1052,9 @@ export class HubComponent implements OnInit, OnDestroy {
   formatRelativeTime(time: string): string {
     const minutes = this.getMinutesUntil(time);
     if (minutes === 0) {
-      return 'Imminent';
+      return this.transloco.translate('kiosk.imminent');
     }
-    return `${minutes} min`;
+    return this.transloco.translate('kiosk.minutesShort', { minutes });
   }
 
   /** Whether the next departure is happening now (within the same minute).
