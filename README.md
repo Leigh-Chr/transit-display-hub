@@ -12,7 +12,14 @@ on screens at stops.
 
 ### Key Features
 
-- **GTFS coverage**: full schedule import (20 standard
+- **100 % GTFS spec coverage** — Schedule v1 (20 files), Fares
+  v1, Fares v2, GTFS-flex (canonical 2024) and GTFS-Realtime
+  (ServiceAlerts + TripUpdates + VehiclePositions, including
+  feed header metadata, vehicle descriptors and per-stop
+  occupancy). Backed by the canonical
+  [MobilityData gtfs-validator] which runs after every import
+  and surfaces its report in the admin timeline (see ADR 0034).
+- **GTFS coverage detail**: full schedule import (20 standard
   files) — agency, routes, stops with parent_station /
   platform hierarchy, trips, stop_times, multi-day
   calendars, transfers, attributions, frequencies (with
@@ -49,7 +56,11 @@ on screens at stops.
   / PostGIS — see ADR 0026 + 0029)
 - **Admin browsers**: read-only pages for every imported
   GTFS family — fares v1+v2, TAD, translations, pathways,
-  shapes, locations, import audit, real-time caches
+  shapes, locations, import audit (with
+  [MobilityData] validation report), real-time caches
+
+[MobilityData gtfs-validator]: https://github.com/MobilityData/gtfs-validator
+[MobilityData]: https://github.com/MobilityData/gtfs-validator
 - **OpenAPI / Swagger UI** bundled at `/swagger-ui.html`
 - **Observability**: Prometheus scrape at
   `/actuator/prometheus` with custom GTFS import meters,
@@ -140,7 +151,7 @@ transit-display-hub/
 +-- ops/                     # Operations artifacts
 |   +-- grafana/            # Dashboard JSON + provisioning notes
 +-- docs/                    # Documentation
-|   +-- adr/                # Architecture Decision Records (29)
+|   +-- adr/                # Architecture Decision Records (34)
 ```
 
 ## Documentation
@@ -156,7 +167,7 @@ transit-display-hub/
 - [User Guide](docs/user-guide.md) -
   Admin interface usage
 - [Architecture Decision Records](docs/adr/README.md) -
-  29 ADRs documenting non-obvious choices
+  34 ADRs documenting non-obvious choices
 - [Grafana provisioning](ops/grafana/README.md) -
   Importing the bundled dashboard
 - [Changelog](CHANGELOG.md) - Version history

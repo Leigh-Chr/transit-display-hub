@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — 0.9.0 milestone : 100 % GTFS spec coverage + MobilityData validator (May 2026)
+
+Closes the last documented field gaps and wires the canonical
+[MobilityData gtfs-validator] (Apache 2.0) into the import pipeline.
+All commits keep the existing test suites green (backend + 950
+frontend tests) and land sequentially on `main`.
+
+**Schedule / Realtime field-level closures**
+- `Itinerary` gains `mean_duration_factor` / `mean_duration_offset`
+  (GTFS-flex 2024 trip-level fields), persisted via Flyway V48 and
+  parsed from `trips.txt` alongside the existing `safe_duration_*`
+  pair.
+- New `FeedHeaderInfo` record captured on every realtime cache
+  refresh — alerts, trip updates and vehicle positions all expose
+  `currentHeader()` so consumers can validate freshness and detect
+  differential updates (`gtfs_realtime_version`, `incrementality`,
+  `timestamp`).
+- `RealtimeTripUpdateCache.TripAdjustment` carries the
+  `TripUpdate.vehicle` VehicleDescriptor (`vehicleId`,
+  `vehicleLabel`) plus the per-trip `timestamp`. The local
+  `gtfs-realtime.proto` subset gains the missing
+  `optional VehicleDescriptor vehicle = 3` field at the
+  upstream-canonical position.
+
+**Test fixtures**
+- `gtfs-rich/` (classpath fixture) now ships `shapes.txt`,
+  `frequencies.txt` and the four trip-level duration columns
+  (`safe_duration_*` + `mean_duration_*`) so every GTFS file
+  documented by the reference has a row exercising it.
+
+**MobilityData runner integration (ADR 0034)**
+- `GtfsValidatorService` wraps `ValidationRunner` (8.0.0). Returns
+  the on-disk paths of `report.json`, `report.html` and
+  `system_errors.json`, plus a pre-counted `NoticeSummary`
+  (errors + warnings + infos).
+- `GtfsImportOrchestrator` invokes the validator on every
+  successful import. Outcome lands on the matching `ImportAudit`
+  row (`validation_report_dir`, `validation_status`,
+  `validation_notice_errors`, `validation_notice_warnings`) via
+  Flyway V49. Validator failures never demote the import itself.
+- `GET /api/admin/import-audit/{id}/validation-report` and
+  `…/validation-report.html` serve the runner artefacts back to
+  the admin UI. Service whitelists three filenames to keep the
+  endpoint from doubling as a directory traversal sink.
+- `/admin/import-audit` table grows a "Validation" column with
+  ERROR / WARNING badges and an open-in-new icon button linking
+  to the HTML report.
+- Configurable via `app.gtfs.validation.enabled` (default `true`)
+  and `app.gtfs.validation.report-base-dir`
+  (default `${java.io.tmpdir}/gtfs-validation`).
+
+[MobilityData gtfs-validator]: https://github.com/MobilityData/gtfs-validator
+
 ### Removed — GTFS-centric scope cleanup (May 2026)
 
 A full audit of the codebase against the GTFS spec and current

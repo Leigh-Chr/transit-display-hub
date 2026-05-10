@@ -39,6 +39,7 @@ should think twice before reverting.
 | [0031](0031-indoor-pathway-rendering-in-schematic-mode.md) | Indoor pathway rendering in schematic mode |
 | [0032](0032-accessibility-aware-routing.md) | Accessibility-aware routing |
 | [0033](0033-fare-calculator-v1-v2.md) | FareCalculator combining V1 and V2 |
+| [0034](0034-mobilitydata-validator-integration.md) | MobilityData gtfs-validator integration and 100 % spec coverage |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
