@@ -21,6 +21,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,8 +90,8 @@ public class ServiceCalendar {
     @Builder.Default
     private List<ServiceCalendarException> exceptions = new ArrayList<>();
 
-    /** Returns the weekly pattern as an {@link EnumSet} for quick lookup. */
-    public EnumSet<DayOfWeek> daysOfWeek() {
+    /** Returns the weekly pattern as a {@link Set} (backed by {@link EnumSet}) for quick lookup. */
+    public Set<DayOfWeek> daysOfWeek() {
         EnumSet<DayOfWeek> set = EnumSet.noneOf(DayOfWeek.class);
         if (monday) {set.add(DayOfWeek.MONDAY);}
         if (tuesday) {set.add(DayOfWeek.TUESDAY);}
@@ -102,7 +103,7 @@ public class ServiceCalendar {
         return set;
     }
 
-    public void setDaysOfWeek(EnumSet<DayOfWeek> days) {
+    public void setDaysOfWeek(Set<DayOfWeek> days) {
         this.monday = days.contains(DayOfWeek.MONDAY);
         this.tuesday = days.contains(DayOfWeek.TUESDAY);
         this.wednesday = days.contains(DayOfWeek.WEDNESDAY);

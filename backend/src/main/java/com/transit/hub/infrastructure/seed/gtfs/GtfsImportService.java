@@ -774,7 +774,7 @@ public class GtfsImportService {
             }
             trip.sort((a, b) -> Integer.compare(a.sequence, b.sequence));
 
-            String itineraryName = buildItineraryName(line.getCode(), info.headsign, key.directionId);
+            String itineraryName = buildItineraryName(info.headsign, key.directionId);
             // Majority vote on wheelchair_accessible across every trip
             // matching this (route, direction). The representative trip
             // alone would underestimate accessibility on networks where
@@ -888,7 +888,7 @@ public class GtfsImportService {
     private record ServiceCalendarSnapshot(
             LocalDate startDate,
             LocalDate endDate,
-            EnumSet<DayOfWeek> daysOfWeek,
+            Set<DayOfWeek> daysOfWeek,
             Set<LocalDate> addedDates,
             Set<LocalDate> removedDates) {
         boolean isActiveOn(LocalDate date) {
@@ -903,11 +903,11 @@ public class GtfsImportService {
     private static final class ServiceCalendarSnapshotBuilder {
         private LocalDate startDate;
         private LocalDate endDate;
-        private EnumSet<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
+        private Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
         private final Set<LocalDate> added = new HashSet<>();
         private final Set<LocalDate> removed = new HashSet<>();
 
-        void withWeekly(LocalDate start, LocalDate end, EnumSet<DayOfWeek> daysOfWeek) {
+        void withWeekly(LocalDate start, LocalDate end, Set<DayOfWeek> daysOfWeek) {
             this.startDate = start;
             this.endDate = end;
             this.days = daysOfWeek;
@@ -1304,7 +1304,7 @@ public class GtfsImportService {
 
         return FlexStopTime.builder()
                 .itinerary(itinerary)
-                .stopSequence(sequence == null ? 0 : sequence)
+                .stopSequence(sequence == null ? Integer.valueOf(0) : sequence)
                 .stop(stop)
                 .location(location)
                 .locationGroup(locationGroup)
@@ -1380,7 +1380,7 @@ public class GtfsImportService {
             try (CSVParser parser = openCsv(calendar)) {
                 for (CSVRecord record : parser) {
                     String serviceId = record.get("service_id");
-                    EnumSet<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
+                    Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
                     if ("1".equals(optional(record, "monday"))) {days.add(DayOfWeek.MONDAY);}
                     if ("1".equals(optional(record, "tuesday"))) {days.add(DayOfWeek.TUESDAY);}
                     if ("1".equals(optional(record, "wednesday"))) {days.add(DayOfWeek.WEDNESDAY);}
@@ -2742,7 +2742,7 @@ public class GtfsImportService {
         return ColorContrast.readableTextColor(backgroundColor);
     }
 
-    private static String buildItineraryName(String lineCode, String headsign, String directionId) {
+    private static String buildItineraryName(String headsign, String directionId) {
         if (!isBlank(headsign)) {
             return "→ " + headsign.trim();
         }
