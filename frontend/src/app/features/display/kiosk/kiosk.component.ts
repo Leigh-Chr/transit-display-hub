@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { ThemeService } from '@core/services/theme.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
@@ -21,7 +22,13 @@ import { lineTextColor } from '@shared/utils/color.utils';
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatTooltipModule],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="kiosk">
@@ -56,30 +63,30 @@ import { lineTextColor } from '@shared/utils/color.utils';
                can reach them whatever the layout. aria-pressed is
                the canonical WAI-ARIA way to expose toggle state to
                assistive tech. -->
-          <div class="a11y-controls" role="group" aria-label="Accessibilité">
+          <div class="a11y-controls" role="group" [attr.aria-label]="'kiosk.highContrast' | transloco">
             <button
               mat-icon-button
               type="button"
               [attr.aria-pressed]="themeService.isHighContrast()"
-              [attr.aria-label]="themeService.isHighContrast() ? 'Désactiver le mode contrasté' : 'Activer le mode contrasté'"
-              [matTooltip]="themeService.isHighContrast() ? 'Mode contrasté actif' : 'Activer le mode contrasté'"
+              [attr.aria-label]="'kiosk.highContrast' | transloco"
+              [matTooltip]="'kiosk.highContrast' | transloco"
               (click)="themeService.toggleHighContrast()">
-              <mat-icon>{{ themeService.isHighContrast() ? 'contrast' : 'contrast' }}</mat-icon>
+              <mat-icon>contrast</mat-icon>
             </button>
             <button
               mat-icon-button
               type="button"
               [attr.aria-pressed]="themeService.isLargeText()"
-              [attr.aria-label]="themeService.isLargeText() ? 'Désactiver le texte agrandi' : 'Activer le texte agrandi'"
-              [matTooltip]="themeService.isLargeText() ? 'Texte agrandi actif' : 'Agrandir le texte'"
+              [attr.aria-label]="'kiosk.largeText' | transloco"
+              [matTooltip]="'kiosk.largeText' | transloco"
               (click)="themeService.toggleLargeText()">
               <mat-icon>format_size</mat-icon>
             </button>
             <button
               mat-icon-button
               type="button"
-              aria-label="Annoncer vocalement le prochain passage"
-              matTooltip="Écouter le prochain passage"
+              [attr.aria-label]="'kiosk.speakNext' | transloco"
+              [matTooltip]="'kiosk.speakNext' | transloco"
               [disabled]="!speechAvailable"
               (click)="speakNextDeparture()">
               <mat-icon>volume_up</mat-icon>

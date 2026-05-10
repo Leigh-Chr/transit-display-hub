@@ -1,5 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, RouterLink } from '@angular/router';
 import { signal, Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslocoPipe, TranslocoTestingModule } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MatDialog } from '@angular/material/dialog';
@@ -114,7 +115,7 @@ describe('NetworkMapComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [NetworkMapComponent],
+      imports: [NetworkMapComponent, TranslocoTestingModule.forRoot({ langs: { en: {}, fr: {} }, translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' } })],
       providers: [
         provideRouter([]),
         { provide: NetworkMapDataService, useValue: mockNetworkMapService },
@@ -128,6 +129,7 @@ describe('NetworkMapComponent', () => {
       set: {
         imports: [
           ReactiveFormsModule,
+          RouterLink,
           MatAutocompleteModule,
           MatButtonModule,
           MatFormFieldModule,
@@ -137,6 +139,7 @@ describe('NetworkMapComponent', () => {
           MockSchematicMapComponent,
           MockRouteSearchBarComponent,
           MockFeedCreditsComponent,
+          TranslocoPipe,
         ],
       },
     });

@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
 import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
 
@@ -36,54 +37,52 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
     MatIconModule,
     MatInputModule,
     MatTableModule,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <div class="page">
       <header class="page-header">
-        <a routerLink="/map" class="back-link" aria-label="Revenir au plan schématique">
+        <a routerLink="/map" class="back-link" [attr.aria-label]="t('map.title')">
           <mat-icon>map</mat-icon>
-          Plan visuel
+          {{ t('map.title') }}
         </a>
-        <h1 class="page-title">Réseau — vue tabulaire</h1>
-        <p class="page-subtitle">
-          Alternative accessible au plan schématique : navigation au
-          clavier (Tab / flèches), lecteur d'écran compatible.
-          Toutes les lignes et tous les arrêts y figurent.
-        </p>
+        <h1 class="page-title">{{ t('map.title') }} — {{ t('map.viewList') }}</h1>
+        <p class="page-subtitle">{{ t('map.viewListAria') }}</p>
       </header>
 
-      <section class="controls" aria-label="Filtres">
+      <section class="controls" [attr.aria-label]="t('common.search')">
         <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Filtrer par nom d'arrêt</mat-label>
+          <mat-label>{{ t('map.searchStop') }}</mat-label>
           <input matInput
                  type="search"
                  [ngModel]="search()"
-                 (ngModelChange)="search.set($event)"
-                 placeholder="ex. Centrale">
+                 (ngModelChange)="search.set($event)">
         </mat-form-field>
         <mat-checkbox [checked]="accessibleOnly()"
                       (change)="accessibleOnly.set($event.checked)">
-          Arrêts accessibles PMR uniquement
+          {{ t('map.filterAccessible') }}
         </mat-checkbox>
         <mat-checkbox [checked]="onDemandOnly()"
                       (change)="onDemandOnly.set($event.checked)">
-          Arrêts à la demande (TAD) uniquement
+          {{ t('map.filterOnDemand') }}
         </mat-checkbox>
       </section>
 
       @if (loading()) {
-        <p class="muted" role="status" aria-live="polite">Chargement du réseau…</p>
+        <p class="muted" role="status" aria-live="polite">{{ t('map.loadingNetwork') }}</p>
       } @else if (data(); as map) {
         <section class="lines-section" aria-labelledby="lines-heading">
-          <h2 id="lines-heading">Lignes ({{ map.lines.length }})</h2>
+          <h2 id="lines-heading">{{ t('map.linesCount') }} ({{ map.lines.length }})</h2>
           <ul class="lines-list">
             @for (line of map.lines; track line.id) {
               <li class="line-item">
                 <span class="line-badge"
                       [style.backgroundColor]="line.color"
                       [style.color]="line.textColor || '#fff'"
-                      [attr.aria-label]="'Ligne ' + line.code + ' ' + line.name">
+                      [attr.aria-label]="line.code + ' ' + line.name">
                   {{ line.code }}
                 </span>
                 <span class="line-name">{{ line.name }}</span>
@@ -91,8 +90,8 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
                   <span class="line-type">{{ lineTypeLabel(line.type) }}</span>
                 }
                 @if (line.scheduleCount && line.scheduleCount > 0) {
-                  <span class="line-count" [attr.aria-label]="line.scheduleCount + ' horaires'">
-                    {{ formatCount(line.scheduleCount) }} horaires
+                  <span class="line-count">
+                    {{ formatCount(line.scheduleCount) }}
                   </span>
                 }
               </li>
@@ -102,39 +101,38 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
 
         <section class="stops-section" aria-labelledby="stops-heading">
           <h2 id="stops-heading">
-            Arrêts ({{ filteredStops().length }} sur {{ map.stops.length }})
+            {{ t('map.stopsCount') }} ({{ filteredStops().length }} / {{ map.stops.length }})
           </h2>
           @if (filteredStops().length === 0) {
-            <p class="muted">Aucun arrêt ne correspond aux filtres actifs.</p>
+            <p class="muted">{{ t('map.noMatchingStops') }}</p>
           } @else {
             <table mat-table [dataSource]="filteredStops()" class="stops-table">
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef scope="col">Nom</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'kiosk.headerLine' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">{{ stop.name }}</td>
               </ng-container>
               <ng-container matColumnDef="lines">
-                <th mat-header-cell *matHeaderCellDef scope="col">Lignes</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.linesCount' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   @for (code of stop.lineCodes; track code) {
-                    <span class="line-tag"
-                          [attr.aria-label]="'Ligne ' + code">{{ code }}</span>
+                    <span class="line-tag">{{ code }}</span>
                   }
                 </td>
               </ng-container>
               <ng-container matColumnDef="accessibility">
-                <th mat-header-cell *matHeaderCellDef scope="col">Accessibilité</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'kiosk.highContrast' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   {{ accessibilityLabel(stop.wheelchairBoarding) }}
                 </td>
               </ng-container>
               <ng-container matColumnDef="ondemand">
-                <th mat-header-cell *matHeaderCellDef scope="col">À la demande</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'map.filterOnDemand' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
-                  {{ stop.hasOnDemand ? 'Oui' : 'Non' }}
+                  {{ stop.hasOnDemand ? t('common.yes') : t('common.no') }}
                 </td>
               </ng-container>
               <ng-container matColumnDef="zones">
-                <th mat-header-cell *matHeaderCellDef scope="col">Zones tarifaires</th>
+                <th mat-header-cell *matHeaderCellDef scope="col">{{ 'admin.navigation.fares' | transloco }}</th>
                 <td mat-cell *matCellDef="let stop">
                   {{ stop.fareAreaNames?.join(', ') || '—' }}
                 </td>
@@ -145,11 +143,10 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
           }
         </section>
       } @else {
-        <p class="error" role="alert">
-          Impossible de charger le réseau. Réessayez plus tard.
-        </p>
+        <p class="error" role="alert">{{ t('map.loadFailed') }}</p>
       }
     </div>
+    </ng-container>
   `,
   styles: `
     .page { padding: 24px; max-width: 1300px; margin: 0 auto; }
@@ -225,6 +222,7 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
 })
 export class NetworkListComponent implements OnInit {
   private readonly dataService = inject(NetworkMapDataService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly data = signal<NetworkMap | null>(null);
   readonly loading = signal<boolean>(true);
@@ -263,11 +261,11 @@ export class NetworkListComponent implements OnInit {
 
   accessibilityLabel(value: NetworkStop['wheelchairBoarding']): string {
     switch (value) {
-      case 'ACCESSIBLE': return 'Accessible PMR';
-      case 'NOT_ACCESSIBLE': return 'Non accessible';
+      case 'ACCESSIBLE': return this.transloco.translate('map.accessibility.accessible');
+      case 'NOT_ACCESSIBLE': return this.transloco.translate('map.accessibility.notAccessible');
       case 'UNKNOWN':
       case undefined:
-      case null: return 'Non renseigné';
+      case null: return this.transloco.translate('map.accessibility.unknown');
     }
   }
 

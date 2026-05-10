@@ -21,6 +21,7 @@ import { RouteSearchBarComponent } from './components/route-search-bar/route-sea
 import { LineIndexComponent } from './components/line-index/line-index.component';
 import { StopPopupComponent, LineAlertInfo } from './components/stop-popup/stop-popup.component';
 import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
@@ -42,6 +43,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
     RouteSearchBarComponent,
     LineIndexComponent,
     FeedCreditsComponent,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -53,9 +55,9 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
         </div>
         <p class="subtitle">{{ subtitle() }}</p>
         <a routerLink="/map/list" class="list-alt-link"
-           aria-label="Vue tabulaire accessible (clavier / lecteur d'écran)">
+           [attr.aria-label]="'map.viewListAria' | transloco">
           <mat-icon aria-hidden="true">view_list</mat-icon>
-          <span>Vue liste</span>
+          <span>{{ 'map.viewList' | transloco }}</span>
         </a>
         <button
           class="lang-toggle"
