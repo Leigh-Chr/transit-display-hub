@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Stop, CreateStopRequest, PageRequest, PageResponse } from '@shared/models';
+import { pageRequestToHttpParams } from '@shared/utils/page-request.utils';
 
 export interface StopPageRequest extends PageRequest {
   lineId?: string | undefined;
@@ -23,12 +24,10 @@ export class StopService {
   }
 
   getAllPaginated(request: StopPageRequest = {}): Observable<PageResponse<Stop>> {
-    let params = new HttpParams().set('page', String(request.page ?? 0));
-    if (request.size) {params = params.set('size', String(request.size));}
-    if (request.sortBy) {params = params.set('sortBy', request.sortBy);}
-    if (request.sortDir) {params = params.set('sortDir', request.sortDir);}
-    if (request.search) {params = params.set('search', request.search);}
-    if (request.lineId) {params = params.set('lineId', request.lineId);}
+    const params = pageRequestToHttpParams(
+      { ...request, page: request.page ?? 0 },
+      { lineId: request.lineId },
+    );
     return this.http.get<PageResponse<Stop>>(this.baseUrl, { params });
   }
 

@@ -9,6 +9,7 @@ import {
   PageRequest,
   PageResponse
 } from '@shared/models';
+import { pageRequestToHttpParams } from '@shared/utils/page-request.utils';
 
 export interface ItineraryPageRequest extends PageRequest {
   lineId?: string | undefined;
@@ -30,12 +31,10 @@ export class ItineraryService {
   }
 
   getAllPaginated(request: ItineraryPageRequest = {}): Observable<PageResponse<Itinerary>> {
-    let params = new HttpParams().set('page', String(request.page ?? 0));
-    if (request.size) {params = params.set('size', String(request.size));}
-    if (request.sortBy) {params = params.set('sortBy', request.sortBy);}
-    if (request.sortDir) {params = params.set('sortDir', request.sortDir);}
-    if (request.search) {params = params.set('search', request.search);}
-    if (request.lineId) {params = params.set('lineId', request.lineId);}
+    const params = pageRequestToHttpParams(
+      { ...request, page: request.page ?? 0 },
+      { lineId: request.lineId },
+    );
     return this.http.get<PageResponse<Itinerary>>(this.baseUrl, { params });
   }
 

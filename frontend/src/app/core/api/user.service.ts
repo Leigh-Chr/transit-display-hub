@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User, CreateUserRequest, UpdateUserRequest, PageRequest, PageResponse } from '@shared/models';
+import { pageRequestToHttpParams } from '@shared/utils/page-request.utils';
 
 @Injectable({
   providedIn: 'root'
@@ -11,11 +12,7 @@ export class UserService {
   private readonly http = inject(HttpClient);
 
   getAllPaginated(request: PageRequest = {}): Observable<PageResponse<User>> {
-    let params = new HttpParams().set('page', String(request.page ?? 0));
-    if (request.size) {params = params.set('size', String(request.size));}
-    if (request.sortBy) {params = params.set('sortBy', request.sortBy);}
-    if (request.sortDir) {params = params.set('sortDir', request.sortDir);}
-    if (request.search) {params = params.set('search', request.search);}
+    const params = pageRequestToHttpParams({ ...request, page: request.page ?? 0 });
     return this.http.get<PageResponse<User>>(this.baseUrl, { params });
   }
 
