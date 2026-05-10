@@ -1,12 +1,15 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": ["src/test-setup.ts"],
   "project": ["src/**/*.ts"],
   "ignoreDependencies": [
-    "@vitest/browser",
     "@fontsource/inter",
     "material-icons"
   ],
+  "rules": {
+    "types": "off",
+    "enumMembers": "off"
+  },
   "angular": {
     "entry": [
       "src/app/**/*.component.ts",
