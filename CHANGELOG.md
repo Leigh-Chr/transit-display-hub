@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-11
+
+Sprint 2: internationalisation complète côté admin et displays, helpers
+frontend, modernisation des patterns Angular, et infrastructure CI/release.
+Aucun changement cassant, aucune modification de schéma de base de données.
+
+### Added
+
+- **Transloco coverage — admin surface (15 composants)**: navigation du
+  layout admin, puis les features lignes, arrêts, messages, utilisateurs,
+  appareils, horaires, itinéraires, temps-réel, audit d'import, fiche
+  feed-info, tableau de bord, données GTFS, cheminements, formes,
+  zones TAD, calculateur tarifaire, et fenêtres flex-stop-times câblées
+  avec `TranslocoModule` et clés extraites dans `fr.json` / `en.json`.
+- **Transloco coverage — displays passagers**: kiosque et hub traduits
+  (labels d'arrêt, messages temps-réel, indicateurs d'accessibilité,
+  écran de chargement).
+- **Formatage de date sensible à la locale**: les formateurs de date du
+  kiosque et du hub respectent désormais la locale active (FR/EN) via
+  `TranslocoService`, sans rechargement de page.
+
+### Changed
+
+- **`NotifyService`**: wrapper centralisé autour de `MatSnackBar` remplaçant
+  60+ littéraux `snackBar.open(...)` dispersés dans les composants admin.
+- **`httpErrorMessage`**: helper typé extrayant le message d'erreur HTTP,
+  éliminant 28 duplications de blocs `catch`.
+- **`pageRequestToHttpParams`**: helper supprimant la construction inline
+  de `HttpParams` dans 8 data services.
+- **`AdminTableState` étendu** aux features lignes et messages; état de
+  page, colonne de tri et terme de recherche gérés de façon centralisée.
+- **Migration `takeUntilDestroyed`**: pattern `Subject<void>` + `takeUntil`
+  remplacé par l'opérateur Angular `takeUntilDestroyed` dans 8 composants.
+
+### Internal
+
+- **Workflow de release** (`release.yml`): build multi-arch Docker, push
+  GHCR et création de GitHub Releases déclenchés sur tag `v*`.
+- **Dependabot** configuré pour les dépendances npm et Gradle (mises à
+  jour hebdomadaires groupées).
+- **`.editorconfig`** ajouté à la racine pour homogénéiser l'indentation
+  et le retour chariot entre éditeurs.
+- **Seuil de couverture frontend**: floor Vitest ajouté en CI; la PR est
+  bloquée si la couverture d'instructions descend sous le seuil.
+- **Backend — Hikari pool**: taille de pool et timeouts configurés
+  explicitement dans `application.yml`.
+- **Backend — build info**: endpoint `/actuator/info` expose désormais la
+  version et le commit SHA via Spring Boot Build Info.
+- **Backend — constructor injection** sur `GtfsCoverageMetrics`; gardes
+  de log redondants supprimés.
+- **`test(network-map)`**: spec `next-flex-window` rendue robuste aux
+  variations d'heure de la journée.
+
 ## [1.0.1] — 2026-05-10
 
 Post-1.0 hardening and cleanup: three security fixes, several
