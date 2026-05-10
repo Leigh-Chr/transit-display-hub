@@ -2,183 +2,183 @@
 
 [![Backend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
+[![License](https://img.shields.io/badge/license-Proprietary-blue.svg)](#license)
+[![ADRs](https://img.shields.io/badge/ADRs-38-informational)](docs/adr/README.md)
 
-Real-time passenger information platform for public
-transport networks. **Stable 1.0.0** — 100 % GTFS spec coverage,
-WCAG 2.2 AA accessibility, runtime FR/EN, JaCoCo + Vitest +
-Playwright quality gates, and a turnkey Raspberry-Pi kiosk
-deployment.
+> **The only open-source transit back-office that combines GTFS
+> Schedule, Fares v2, GTFS-flex and GTFS-Realtime in a single
+> tool — with WCAG 2.2 AA kiosks and a Raspberry-Pi deployment
+> recipe.**
 
-## Overview
+`Transit Display Hub` is an end-to-end real-time passenger
+information platform for public transport networks. One
+codebase covers three personas — operators import and curate a
+GTFS feed through the admin app, passengers read real-time
+schedules on the kiosk and consult the schematic map, and
+on-call SREs watch Grafana dashboards backed by Prometheus
+metrics.
 
-Transit Display Hub allows transport operators to manage
-their network (lines, stops, itineraries, schedules),
-broadcast alert messages, and display real-time information
-on screens at stops.
+It ships with **100 % GTFS spec coverage**, validated on every
+import by the canonical
+[MobilityData gtfs-validator][validator]. **Stable 1.0.0** is
+tagged.
 
-### Key Features
+[validator]: https://github.com/MobilityData/gtfs-validator
 
-- **100 % GTFS spec coverage** — Schedule v1 (20 files), Fares
-  v1, Fares v2, GTFS-flex (canonical 2024) and GTFS-Realtime
-  (ServiceAlerts + TripUpdates + VehiclePositions, including
-  feed header metadata, vehicle descriptors and per-stop
-  occupancy). Backed by the canonical
-  [MobilityData gtfs-validator] which runs after every import
-  and surfaces its report in the admin timeline (see ADR 0034).
-- **GTFS coverage detail**: full schedule import (20 standard
-  files) — agency, routes, stops with parent_station /
-  platform hierarchy, trips, stop_times, multi-day
-  calendars, transfers, attributions, frequencies (with
-  fan-out into per-departure rows), pathways, levels,
-  translations, fares v1, shapes, location groups,
-  booking rules, feed_info
-- **GTFS Fares v2**: areas, timeframes, products,
-  leg / transfer / leg-join rules, networks and fare media
-- **GTFS-Realtime**: ServiceAlerts, TripUpdates and
-  VehiclePositions polled via vendored protobuf bindings;
-  live delay badges and projected times on the kiosk
-- **Demand-responsive transit (TAD)**: `booking_rules`
-  resolved per arrival; phone / URL CTA on kiosk and hub
-- **Per-platform routing** (Phase 1.3): each GTFS platform
-  persists separately; kiosks bound to a parent station
-  aggregate child schedules transparently
-- **Network management**: lines (metro, bus, tram, train,
-  ferry, funicular, cable car, trolleybus, monorail),
-  stops, itineraries, and schedules
-- **Broadcast messages**: alerts (Info, Warning, Critical)
-  with scope targeting (network, line, stop)
-- **Real-time display**: kiosk screens with automatic
-  updates via WebSocket
-- **Network map**: interactive schematic with parent /
-  platform collapse, fare-zone and accessibility filters,
-  frequency-scaled stroke width, TAD-ring indicators and
-  toggleable fare-zone color overlay; the stop popup
-  inlines the GTFS-flex zone polygon when the stop carries
-  one
-- **GTFS-flex `locations.geojson`**: polygons persisted
-  with a pre-computed bounding box, browsable on the
-  `/admin/tad-zones` map, point-in-polygon spatial query
-  on `/api/admin/locations/contains?lat=…&lon=…` (no JTS
-  / PostGIS — see ADR 0026 + 0029)
-- **Admin browsers**: read-only pages for every imported
-  GTFS family — fares v1+v2, TAD, translations, pathways,
-  shapes, locations, import audit (with
-  [MobilityData] validation report), real-time caches
+## Why this exists
 
-[MobilityData gtfs-validator]: https://github.com/MobilityData/gtfs-validator
-[MobilityData]: https://github.com/MobilityData/gtfs-validator
-- **OpenAPI / Swagger UI** bundled at `/swagger-ui.html`
-- **Observability**: Prometheus scrape at
-  `/actuator/prometheus` with custom GTFS import meters,
-  JVM / HTTP / Caffeine cache series; ready-to-import
-  Grafana dashboard at `ops/grafana/transit-display-hub.json`
-  (see ADR 0027)
-- **Performance benchmarks**: JMH micro-benchmarks for the
-  three hot-path utilities plus a full-stack Spring-context
-  benchmark on the kiosk refresh path (`./gradlew jmh`,
-  see ADR 0028)
-- **Device management**: registration and monitoring of
-  display screens
-- **User management**: account administration (Admin,
-  Agent)
+Most open-source GTFS tooling stops at *parsing*: validators,
+exporters, route-finders. Operators wanting a deployable
+back-office (admin UI + kiosk + map + observability) have to
+either glue several tools together or pay for a closed SaaS.
+Transit Display Hub is the all-in-one alternative: a single
+binary per service, runtime-switchable language, accessible by
+default, and deployable on a Raspberry Pi for the price of an
+SD card.
 
-## Tech Stack
+## Screenshots
 
-| Component      | Technology                                                  |
-| -------------- | ----------------------------------------------------------- |
-| Backend        | Spring Boot 4.0.2, Java 21                                  |
-| Frontend       | Angular 21.2, Angular Material (M3)                         |
-| Database       | H2 (dev), PostgreSQL (prod)                                 |
-| Real-time      | WebSocket with STOMP                                        |
-| Authentication | JWT                                                         |
-| Tests          | JUnit 5, Vitest                                             |
-| Benchmarks     | JMH (micro + Spring full-stack)                             |
-| Observability  | Spring Actuator + Micrometer + Prometheus + Grafana         |
+> Captures live in [`docs/screenshots/`](docs/screenshots/).
+> Drop new ones there and reference them from the markdown
+> tables below — keeps the README diff small.
 
-## Quick Start
+| Surface | Preview |
+|---------|---------|
+| Admin dashboard      | ![Dashboard](docs/screenshots/admin-dashboard.png) |
+| Network schematic    | ![Schematic](docs/screenshots/network-map.png) |
+| Stop popup           | ![Popup](docs/screenshots/stop-popup.png) |
+| Kiosk arrivals board | ![Kiosk](docs/screenshots/kiosk.png) |
+| Import audit (with MobilityData report) | ![Audit](docs/screenshots/import-audit.png) |
+| Tabular network view | ![List](docs/screenshots/network-list.png) |
 
-### Prerequisites
-
-- Java 21 (JDK)
-- Node.js 20+
-- npm 10+
-
-### Installation
+## Quick start
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+git clone https://github.com/Leigh-Chr/transit-display-hub.git
 cd transit-display-hub
 
-# Backend
-cd backend
-./gradlew bootRun
+# Backend (Spring Boot, port 8080)
+(cd backend && ./gradlew bootRun)
 
-# Frontend (new terminal)
-cd frontend
-npm install
-npm start
+# Frontend (Angular, port 4200) — second terminal
+(cd frontend && npm install && npm start)
 ```
 
-### Access
+Open <http://localhost:4200>. Default credentials live in the
+[Quick start](#access-and-credentials) section below.
 
-- **Admin Interface**: <http://localhost:4200>
-- **Backend API**: <http://localhost:8080>
-- **Network Map**: <http://localhost:4200/map>
-- **Kiosk Display**:
-  `http://localhost:4200/display/{stopId}`
+For a turnkey kiosk on a Raspberry Pi, see
+[`docs/kiosk-raspberry-pi.md`](docs/kiosk-raspberry-pi.md):
 
-### Default Credentials
+```bash
+curl -fsSL https://raw.githubusercontent.com/Leigh-Chr/transit-display-hub/main/ops/kiosk/install.sh | bash
+```
+
+## Highlights
+
+- **GTFS Schedule v1 (20 files)** + **Fares v1+v2** + **GTFS-flex
+  (canonical 2024)** + **GTFS-Realtime (Alerts + TripUpdates +
+  VehiclePositions, including FeedHeader, vehicle descriptors,
+  occupancy)**. Validated by [MobilityData gtfs-validator][validator]
+  on every import (ADR 0034).
+- **Schematic map** with parent / platform collapse, fare-zone
+  and accessibility filters, frequency-scaled stroke width,
+  TAD-ring indicators, route-finder with PMR pathway penalty
+  (ADR 0032), tabular alternative at `/map/list` for
+  keyboard / screen reader users.
+- **Kiosk** with WebSocket live updates, GTFS-RT delay badges,
+  on-demand booking CTA, **WCAG 2.2 AA accessibility**:
+  high-contrast mode, large text, vocal Web Speech API
+  announcements (ADR 0035).
+- **Runtime FR / EN switching** via Transloco — a kiosk in a
+  multilingual station flips languages without redeploying
+  (ADR 0036).
+- **Demand-responsive transit (TAD)**: `booking_rules` resolved
+  per arrival, `locations.geojson` zones browsable, in-memory
+  point-in-polygon spatial query (ADR 0026 + 0029).
+- **Observability**: Prometheus scrape, ready-to-import Grafana
+  dashboard at `ops/grafana/transit-display-hub.json`, JMH
+  micro-benchmarks for the hot-path utilities (ADR 0027 + 0028).
+- **Quality gates**: JaCoCo coverage rule (≥ 55 %), Vitest
+  V8 coverage report, Playwright Chromium smoke E2E, two
+  GitHub Actions workflows (ADR 0037).
+
+## Tech stack
+
+| Component        | Technology                                          |
+| ---------------- | --------------------------------------------------- |
+| Backend          | Spring Boot 4.0.2, Java 21                          |
+| Frontend         | Angular 21.2, Angular Material (M3), Transloco      |
+| Database         | H2 (dev), PostgreSQL (prod)                         |
+| Real-time        | WebSocket + STOMP, GTFS-Realtime protobuf           |
+| Authentication   | JWT                                                 |
+| Tests            | JUnit 5, Vitest, Playwright (E2E smoke)             |
+| Benchmarks       | JMH (micro + Spring full-stack)                     |
+| Observability    | Spring Actuator + Micrometer + Prometheus + Grafana |
+| Validation       | [MobilityData gtfs-validator][validator] 8.0.0      |
+
+## Access and credentials
+
+| URL                                       | Audience          |
+| ----------------------------------------- | ----------------- |
+| <http://localhost:4200>                   | Admin sign-in     |
+| <http://localhost:4200/map>               | Network schematic |
+| <http://localhost:4200/map/list>          | Tabular alternative (a11y) |
+| <http://localhost:4200/display/{stopId}>  | Public kiosk      |
+| <http://localhost:8080/swagger-ui.html>   | OpenAPI explorer  |
+| <http://localhost:8080/actuator/prometheus> | Metrics scrape  |
 
 | Username | Password | Role          |
 | -------- | -------- | ------------- |
 | admin    | admin123 | Administrator |
 | agent    | agent123 | Agent         |
 
-## Project Structure
+> Change them via `/admin/users` before exposing the install to
+> a public network.
+
+## Project structure
 
 ```text
 transit-display-hub/
-+-- backend/                 # Spring Boot API
-|   +-- src/main/java/
-|   |   +-- com/transit/hub/
-|   |       +-- domain/      # Entities, enums, events
-|   |       +-- application/ # Services, DTOs, exceptions
-|   |       +-- infrastructure/ # Security, WebSocket
-|   |       +-- api/         # REST Controllers
-|   +-- build.gradle.kts
-+-- frontend/                # Angular Application
-|   +-- src/app/
-|   |   +-- core/           # Services, auth, WebSocket
-|   |   +-- shared/         # Models, components
-|   |   +-- features/       # Admin, display, map
-|   |   +-- layouts/        # Admin/display layouts
-|   +-- package.json
-+-- ops/                     # Operations artifacts
-|   +-- grafana/            # Dashboard JSON + provisioning notes
-+-- docs/                    # Documentation
-|   +-- adr/                # Architecture Decision Records (37)
+├── backend/                 # Spring Boot API (Java 21)
+│   ├── src/main/java/com/transit/hub/
+│   │   ├── domain/          # Entities, enums, events
+│   │   ├── application/     # Services, DTOs, validators
+│   │   ├── infrastructure/  # Security, WebSocket, GTFS import
+│   │   └── api/             # REST controllers
+│   └── build.gradle.kts
+├── frontend/                # Angular 21 application
+│   └── src/app/
+│       ├── core/            # Services, auth, WebSocket, i18n
+│       ├── shared/          # Models, components
+│       ├── features/        # Admin, display, map
+│       └── layouts/         # Admin / display layouts
+├── ops/
+│   ├── grafana/             # Dashboard JSON + provisioning
+│   └── kiosk/               # docker-compose + install.sh
+└── docs/
+    ├── adr/                 # Architecture Decision Records (38)
+    ├── installation.md
+    ├── developer-guide.md
+    ├── deployment.md
+    ├── user-guide.md
+    ├── api.md
+    ├── kiosk-raspberry-pi.md
+    └── screenshots/         # PNG/GIF assets referenced by the README
 ```
 
 ## Documentation
 
-- [Installation Guide](docs/installation.md) -
-  Set up the development environment
-- [API Documentation](docs/api.md) -
-  Complete REST API reference
-- [Developer Guide](docs/developer-guide.md) -
-  Architecture and best practices
-- [Deployment Guide](docs/deployment.md) -
-  Production deployment
-- [User Guide](docs/user-guide.md) -
-  Admin interface usage
-- [Architecture Decision Records](docs/adr/README.md) -
-  37 ADRs documenting non-obvious choices
-- [Grafana provisioning](ops/grafana/README.md) -
-  Importing the bundled dashboard
-- [Changelog](CHANGELOG.md) - Version history
-- [Contributing](CONTRIBUTING.md) - Contribution guide
+- [Installation guide](docs/installation.md) — dev setup
+- [Developer guide](docs/developer-guide.md) — architecture, conventions
+- [API documentation](docs/api.md) — REST endpoints
+- [User guide](docs/user-guide.md) — admin interface walkthrough
+- [Deployment guide](docs/deployment.md) — production hosting
+- [Kiosk on a Raspberry Pi](docs/kiosk-raspberry-pi.md)
+- [Architecture Decision Records](docs/adr/README.md) — 38 ADRs
+- [Changelog](CHANGELOG.md) — version history
+- [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Security](SECURITY.md)
 
 ## License
 
-Proprietary - All rights reserved
+Proprietary — all rights reserved.
