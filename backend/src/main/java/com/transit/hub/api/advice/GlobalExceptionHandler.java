@@ -39,34 +39,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(EntityNotFoundException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Entity not found: {}", ex.getMessage());
-        }
+        log.warn("Entity not found: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), null, request);
     }
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiError> handleValidation(ValidationException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Validation error: {}", ex.getMessage());
-        }
+        log.warn("Validation error: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Illegal argument: {}", ex.getMessage());
-        }
+        log.warn("Illegal argument: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,
                                                        WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Missing required request parameter: {}", ex.getParameterName());
-        }
+        log.warn("Missing required request parameter: {}", ex.getParameterName());
         String message = "Required request parameter '" + ex.getParameterName() + "' is missing";
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
     }
@@ -74,9 +66,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
                                                        WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Type mismatch on request parameter '{}': {}", ex.getName(), ex.getMessage());
-        }
+        log.warn("Type mismatch on request parameter '{}': {}", ex.getName(), ex.getMessage());
         String message = "Invalid value for parameter '" + ex.getName() + "'";
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
     }
@@ -99,17 +89,13 @@ public class GlobalExceptionHandler {
                 })
                 .toList();
 
-        if (log.isWarnEnabled()) {
-            log.warn("Validation failed: {} errors", fieldErrors.size());
-        }
+        log.warn("Validation failed: {} errors", fieldErrors.size());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", fieldErrors, request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Data integrity violation: {}", ex.getMessage());
-        }
+        log.warn("Data integrity violation: {}", ex.getMessage());
         String message = "Data conflict: a record with this value already exists";
         Throwable cause = ex.getMostSpecificCause();
         String causeMessage = cause.getMessage();
@@ -126,9 +112,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<ApiError> handleOptimisticLock(OptimisticLockingFailureException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Optimistic lock conflict: {}", ex.getMessage());
-        }
+        log.warn("Optimistic lock conflict: {}", ex.getMessage());
         return buildErrorResponse(
                 HttpStatus.CONFLICT,
                 "This record was modified by someone else. Reload to see the latest version and try again.",
@@ -138,17 +122,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Access denied: {}", ex.getMessage());
-        }
+        log.warn("Access denied: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions", null, request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, WebRequest request) {
-        if (log.isWarnEnabled()) {
-            log.warn("Authentication failed: {}", ex.getMessage());
-        }
+        log.warn("Authentication failed: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials", null, request);
     }
 

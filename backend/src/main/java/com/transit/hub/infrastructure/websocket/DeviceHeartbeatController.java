@@ -25,9 +25,7 @@ public class DeviceHeartbeatController {
         try {
             deviceService.recordHeartbeat(message.deviceId());
         } catch (EntityNotFoundException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Heartbeat received for unknown device {}", message.deviceId());
-            }
+            log.debug("Heartbeat received for unknown device {}", message.deviceId());
         }
     }
 

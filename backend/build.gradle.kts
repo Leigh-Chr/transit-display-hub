@@ -147,6 +147,10 @@ dependencies {
 // …). Gradle 9 deprecated that notation and Gradle 10 will reject it.
 // Tracking https://github.com/google/protobuf-gradle-plugin/issues/762
 // upstream — nothing we can do from this build script.
+springBoot {
+    buildInfo()
+}
+
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.25.6"

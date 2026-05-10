@@ -1193,9 +1193,7 @@ public class GtfsImportService {
                         scheduleRepository.saveAll(batch);
                         total += batch.size();
                         batch.clear();
-                        if (log.isDebugEnabled()) {
-                            log.debug("GTFS import: {} schedules persisted so far", total);
-                        }
+                        log.debug("GTFS import: {} schedules persisted so far", total);
                     }
                     continue;
                 }
@@ -1244,9 +1242,7 @@ public class GtfsImportService {
                             scheduleRepository.saveAll(batch);
                             total += batch.size();
                             batch.clear();
-                            if (log.isDebugEnabled()) {
-                                log.debug("GTFS import: {} schedules persisted so far", total);
-                            }
+                            log.debug("GTFS import: {} schedules persisted so far", total);
                         }
                     }
                 }

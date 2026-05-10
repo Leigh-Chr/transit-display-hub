@@ -336,9 +336,7 @@ public class NetworkMapService {
             evictCache("networkMap");
             evictCache("networkAlerts");
         } catch (Exception e) {
-            if (log.isWarnEnabled()) {
-                log.warn("Failed to evict cache on network change: {}", e.getMessage());
-            }
+            log.warn("Failed to evict cache on network change: {}", e.getMessage());
         }
         pushNetworkMapUpdate();
     }
@@ -348,9 +346,7 @@ public class NetworkMapService {
         try {
             evictCache("networkAlerts");
         } catch (Exception e) {
-            if (log.isWarnEnabled()) {
-                log.warn("Failed to evict cache on message change: {}", e.getMessage());
-            }
+            log.warn("Failed to evict cache on message change: {}", e.getMessage());
         }
         pushAlertsUpdate();
     }

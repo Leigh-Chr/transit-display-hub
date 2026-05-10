@@ -18,7 +18,6 @@ import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -39,22 +38,22 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class GtfsCoverageMetrics {
 
-    @Autowired private MeterRegistry registry;
-    @Autowired private TranslationRepository translationRepository;
-    @Autowired private AttributionRepository attributionRepository;
-    @Autowired private PathwayRepository pathwayRepository;
-    @Autowired private StationLevelRepository stationLevelRepository;
-    @Autowired private FlexStopTimeRepository flexStopTimeRepository;
-    @Autowired private LocationRepository locationRepository;
-    @Autowired private LocationGroupRepository locationGroupRepository;
-    @Autowired private BookingRuleRepository bookingRuleRepository;
-    @Autowired private AreaRepository areaRepository;
-    @Autowired private NetworkRepository networkRepository;
-    @Autowired private TimeframeRepository timeframeRepository;
-    @Autowired private FareLegRuleRepository fareLegRuleRepository;
-    @Autowired private FareTransferRuleRepository fareTransferRuleRepository;
-    @Autowired private FareLegJoinRuleRepository fareLegJoinRuleRepository;
-    @Autowired private RiderCategoryRepository riderCategoryRepository;
+    private final MeterRegistry registry;
+    private final TranslationRepository translationRepository;
+    private final AttributionRepository attributionRepository;
+    private final PathwayRepository pathwayRepository;
+    private final StationLevelRepository stationLevelRepository;
+    private final FlexStopTimeRepository flexStopTimeRepository;
+    private final LocationRepository locationRepository;
+    private final LocationGroupRepository locationGroupRepository;
+    private final BookingRuleRepository bookingRuleRepository;
+    private final AreaRepository areaRepository;
+    private final NetworkRepository networkRepository;
+    private final TimeframeRepository timeframeRepository;
+    private final FareLegRuleRepository fareLegRuleRepository;
+    private final FareTransferRuleRepository fareTransferRuleRepository;
+    private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
+    private final RiderCategoryRepository riderCategoryRepository;
 
     /** Bind one gauge per entity family at startup. {@code @EventListener}
      *  on {@code ApplicationReadyEvent} runs after Flyway migrations + the

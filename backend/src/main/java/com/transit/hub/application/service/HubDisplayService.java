@@ -41,9 +41,7 @@ public class HubDisplayService {
         List<DisplayState> stopStates = new ArrayList<>(stopIds.size());
         for (UUID stopId : stopIds) {
             if (!stopRepository.existsById(stopId)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Hub '{}' references unknown stop {}, skipping", hubName, stopId);
-                }
+                log.debug("Hub '{}' references unknown stop {}, skipping", hubName, stopId);
                 continue;
             }
             stopStates.add(displayStateCalculator.calculateForStop(stopId));

@@ -39,13 +39,9 @@ public class DisplayStateService {
             DisplayState state = displayStateCalculator.calculateForStop(stopId);
             String destination = "/topic/display/" + stopId;
             messagingTemplate.convertAndSend(destination, state);
-            if (log.isDebugEnabled()) {
-                log.debug("Pushed DisplayState to {}, version {}", destination, state.version());
-            }
+            log.debug("Pushed DisplayState to {}, version {}", destination, state.version());
         } catch (Exception e) {
-            if (log.isErrorEnabled()) {
-                log.error("Failed to push DisplayState for stop {}", stopId, e);
-            }
+            log.error("Failed to push DisplayState for stop {}", stopId, e);
         }
     }
 
@@ -64,25 +60,19 @@ public class DisplayStateService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onScheduleChanged(ScheduleChangedEvent event) {
-        if (log.isInfoEnabled()) {
-            log.info("Schedule changed for stop {}", event.getStopId());
-        }
+        log.info("Schedule changed for stop {}", event.getStopId());
         recalculateAndPush(event.getStopId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMessageChanged(MessageChangedEvent event) {
-        if (log.isInfoEnabled()) {
-            log.info("Message changed, affecting {} stops", event.getAffectedStopIds().size());
-        }
+        log.info("Message changed, affecting {} stops", event.getAffectedStopIds().size());
         recalculateAndPushAll(event.getAffectedStopIds());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onStopDeleted(StopDeletedEvent event) {
-        if (log.isInfoEnabled()) {
-            log.info("Stop {} deleted, notifying subscribed kiosks", event.getStopId());
-        }
+        log.info("Stop {} deleted, notifying subscribed kiosks", event.getStopId());
         // The stop row is gone, so calculateForStop would throw. Push a final
         // state with a clear CRITICAL message so kiosks subscribed to the topic
         // surface the change instead of silently freezing on stale data.
@@ -103,17 +93,13 @@ public class DisplayStateService {
         try {
             messagingTemplate.convertAndSend("/topic/display/" + event.getStopId(), farewell);
         } catch (Exception e) {
-            if (log.isErrorEnabled()) {
-                log.error("Failed to push stop-deleted notice for {}", event.getStopId(), e);
-            }
+            log.error("Failed to push stop-deleted notice for {}", event.getStopId(), e);
         }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onNetworkChanged(NetworkChangedEvent event) {
-        if (log.isInfoEnabled()) {
-            log.info("Network changed, affecting {} stops", event.getAffectedStopIds().size());
-        }
+        log.info("Network changed, affecting {} stops", event.getAffectedStopIds().size());
         recalculateAndPushAll(event.getAffectedStopIds());
     }
 
@@ -121,9 +107,7 @@ public class DisplayStateService {
     public void refreshActiveDisplays() {
         Set<UUID> activeStopIds = activeDisplayTracker.getActiveStopIds();
         if (!activeStopIds.isEmpty()) {
-            if (log.isDebugEnabled()) {
-                log.debug("Refreshing {} active displays", activeStopIds.size());
-            }
+            log.debug("Refreshing {} active displays", activeStopIds.size());
             recalculateAndPushAll(activeStopIds);
         }
     }

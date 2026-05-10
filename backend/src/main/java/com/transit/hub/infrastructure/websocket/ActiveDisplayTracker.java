@@ -56,21 +56,15 @@ public class ActiveDisplayTracker {
                         .computeIfAbsent(sessionId, k -> new ConcurrentHashMap<>())
                         .put(subscriptionId, stopId);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Client {} subscribed to stop {}", sessionId, stopId);
-                }
+                log.debug("Client {} subscribed to stop {}", sessionId, stopId);
             } else if (NETWORK_MAP_TOPIC.equals(destination)) {
                 networkMapSubscriptions
                         .computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
                         .add(subscriptionId);
-                if (log.isDebugEnabled()) {
-                    log.debug("Client {} subscribed to network map", sessionId);
-                }
+                log.debug("Client {} subscribed to network map", sessionId);
             }
         } catch (Exception e) {
-            if (log.isWarnEnabled()) {
-                log.warn("Error handling subscribe event: {}", e.getMessage());
-            }
+            log.warn("Error handling subscribe event: {}", e.getMessage());
         }
     }
 
@@ -90,9 +84,7 @@ public class ActiveDisplayTracker {
                 UUID stopId = subscriptions.remove(subscriptionId);
                 if (stopId != null) {
                     removeSubscription(stopId, sessionId);
-                    if (log.isDebugEnabled()) {
-                        log.debug("Client {} unsubscribed from stop {}", sessionId, stopId);
-                    }
+                    log.debug("Client {} unsubscribed from stop {}", sessionId, stopId);
                 }
             }
 
@@ -101,9 +93,7 @@ public class ActiveDisplayTracker {
                 networkMapSubscriptions.remove(sessionId);
             }
         } catch (Exception e) {
-            if (log.isWarnEnabled()) {
-                log.warn("Error handling unsubscribe event: {}", e.getMessage());
-            }
+            log.warn("Error handling unsubscribe event: {}", e.getMessage());
         }
     }
 
@@ -122,15 +112,11 @@ public class ActiveDisplayTracker {
                 for (UUID stopId : subscriptions.values()) {
                     removeSubscription(stopId, sessionId);
                 }
-                if (log.isDebugEnabled()) {
-                    log.debug("Client {} disconnected, removed {} subscriptions", sessionId, subscriptions.size());
-                }
+                log.debug("Client {} disconnected, removed {} subscriptions", sessionId, subscriptions.size());
             }
             networkMapSubscriptions.remove(sessionId);
         } catch (Exception e) {
-            if (log.isWarnEnabled()) {
-                log.warn("Error handling disconnect event: {}", e.getMessage());
-            }
+            log.warn("Error handling disconnect event: {}", e.getMessage());
         }
     }
 

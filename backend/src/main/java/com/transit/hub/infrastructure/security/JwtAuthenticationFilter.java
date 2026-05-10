@@ -67,9 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         "Bearer error=\"invalid_token\", error_description=\"Token expired or invalid\"");
             }
         } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("JWT authentication failed: {}", e.getMessage());
-            }
+            log.debug("JWT authentication failed: {}", e.getMessage());
             response.setHeader(
                     "WWW-Authenticate",
                     "Bearer error=\"invalid_token\", error_description=\"Token rejected\"");
