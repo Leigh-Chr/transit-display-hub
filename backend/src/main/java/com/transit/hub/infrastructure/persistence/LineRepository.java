@@ -55,5 +55,6 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
            "LOWER(l.name) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<Line> findBySearch(String search, Pageable pageable);
 
+    @Override
     Page<Line> findAll(Pageable pageable);
 }

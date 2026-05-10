@@ -31,6 +31,7 @@ public interface BroadcastMessageRepository extends JpaRepository<BroadcastMessa
 
     void deleteByScopeTypeAndScopeId(MessageScope scopeType, UUID scopeId);
 
+    @Override
     Page<BroadcastMessage> findAll(Pageable pageable);
 
     @Query("SELECT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now")
