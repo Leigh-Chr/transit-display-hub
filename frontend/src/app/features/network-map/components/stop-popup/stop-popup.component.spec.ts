@@ -415,17 +415,20 @@ describe('StopPopupComponent', () => {
       await fixture.whenStable();
 
       expect(mockFlexStopTimes.getWindowsForLocation).toHaveBeenCalledWith('FLEX_NORTH');
-      // Both are after midnight 00:00 — first one should be picked.
-      // (We don't pin the system clock; if "now" is past 23:59 the
-      //  test still passes because both windows are filtered out and
-      //  nextFlexWindow stays null. We check both branches.)
+      // Without pinning the system clock, the result depends on "now":
+      //   now < 23:30 → both windows future, first (23:30 "Late") wins.
+      //   23:30 ≤ now < 23:45 → only the second (23:45 "Even later") survives.
+      //   now ≥ 23:59 → both filtered out, nextFlexWindow is null.
       const window = component.nextFlexWindow();
-      if (window !== null) {
-        expect(window.startPickupDropOffWindow).toBe('23:30:00');
+      if (window === null) {
+        expect(component.nextFlexLabel()).toBeNull();
+      } else if (window.startPickupDropOffWindow === '23:30:00') {
         expect(component.nextFlexLabel()).toBe('23:30 → 23:59');
         expect(component.nextFlexHeadsign()).toBe('Late');
       } else {
-        expect(component.nextFlexLabel()).toBeNull();
+        expect(window.startPickupDropOffWindow).toBe('23:45:00');
+        expect(component.nextFlexLabel()).toBe('23:45 → 23:59');
+        expect(component.nextFlexHeadsign()).toBe('Even later');
       }
     });
 
