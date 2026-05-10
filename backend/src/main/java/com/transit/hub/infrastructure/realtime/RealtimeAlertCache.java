@@ -76,6 +76,12 @@ public class RealtimeAlertCache {
     private final AtomicReference<List<AlertSnapshot>> snapshot =
             new AtomicReference<>(List.of());
 
+    /** Header metadata captured on the most recent successful refresh.
+     *  Reset to {@link FeedHeaderInfo#empty()} on construction so a
+     *  caller never has to null-check the reference itself. */
+    private final AtomicReference<FeedHeaderInfo> headerRef =
+            new AtomicReference<>(FeedHeaderInfo.empty());
+
     @Value("${app.gtfs-rt.alerts-url:}")
     private String alertsUrl = "";
 
@@ -107,6 +113,13 @@ public class RealtimeAlertCache {
         return alertsUrl != null && !alertsUrl.isBlank();
     }
 
+    /** Header captured on the last successful refresh. Returns
+     *  {@link FeedHeaderInfo#empty()} when no refresh has succeeded
+     *  yet, so consumers always get a non-null record. */
+    public FeedHeaderInfo currentHeader() {
+        return headerRef.get();
+    }
+
     /**
      * Fetches the alerts feed and replaces the cached snapshot.
      * Logs a warning on any error and leaves the previous snapshot
@@ -133,6 +146,7 @@ public class RealtimeAlertCache {
                 GtfsRealtime.FeedMessage feed = GtfsRealtime.FeedMessage.parseFrom(in);
                 List<AlertSnapshot> alerts = parseAlerts(feed);
                 snapshot.set(alerts);
+                headerRef.set(parseHeader(feed));
                 log.info("GTFS-RT alerts: refreshed snapshot with {} alerts", alerts.size());
             }
         } catch (IOException | InterruptedException e) {
@@ -192,5 +206,18 @@ public class RealtimeAlertCache {
             return null;
         }
         return translated.getTranslation(0).getText();
+    }
+
+    static FeedHeaderInfo parseHeader(GtfsRealtime.FeedMessage feed) {
+        if (!feed.hasHeader()) {
+            return FeedHeaderInfo.empty();
+        }
+        GtfsRealtime.FeedHeader header = feed.getHeader();
+        Long timestamp = header.hasTimestamp() ? header.getTimestamp() : null;
+        String incrementality = header.hasIncrementality()
+                ? header.getIncrementality().name() : null;
+        String version = header.hasGtfsRealtimeVersion()
+                ? header.getGtfsRealtimeVersion() : null;
+        return new FeedHeaderInfo(timestamp, incrementality, version);
     }
 }

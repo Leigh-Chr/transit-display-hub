@@ -57,6 +57,7 @@ message FeedEntity {
 message TripUpdate {
     optional TripDescriptor trip = 1;
     repeated StopTimeUpdate stop_time_update = 2;
+    optional VehicleDescriptor vehicle = 3;
     optional uint64 timestamp = 4;
     optional int32 delay = 5;
 

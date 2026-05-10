@@ -56,15 +56,32 @@ public class RealtimeTripUpdateCache {
      * Per-trip set of adjustments. The trip-level {@code delay}
      * (when set) is the default applied to every stop the
      * stop_time_update list doesn't override.
+     *
+     * <p>{@code vehicleId} / {@code vehicleLabel} carry the
+     * {@code TripUpdate.vehicle} VehicleDescriptor — the operator's
+     * fleet identifier (id) and the human-readable label (line code
+     * on the windscreen) for cross-referencing with a vehicle
+     * positions feed. {@code timestampEpochSeconds} carries
+     * {@code TripUpdate.timestamp}, the moment the producer measured
+     * the trip's adjusted state. All three are nullable when the
+     * producer omits them.
      */
     public record TripAdjustment(
             String tripId,
             Integer tripLevelDelaySeconds,
+            String vehicleId,
+            String vehicleLabel,
+            Long timestampEpochSeconds,
             Map<String, StopAdjustment> byStopExternalId
     ) {}
 
     private final AtomicReference<Map<String, TripAdjustment>> snapshot =
             new AtomicReference<>(Map.of());
+
+    /** Header metadata captured on the most recent successful refresh.
+     *  Reset to {@link FeedHeaderInfo#empty()} on construction. */
+    private final AtomicReference<FeedHeaderInfo> headerRef =
+            new AtomicReference<>(FeedHeaderInfo.empty());
 
     @Value("${app.gtfs-rt.trip-updates-url:}")
     private String tripUpdatesUrl = "";
@@ -84,6 +101,13 @@ public class RealtimeTripUpdateCache {
      *  data-overview dashboard. */
     public int snapshotSize() {
         return snapshot.get().size();
+    }
+
+    /** Header captured on the last successful refresh. Returns
+     *  {@link FeedHeaderInfo#empty()} when no refresh has succeeded
+     *  yet, so consumers always get a non-null record. */
+    public FeedHeaderInfo currentHeader() {
+        return headerRef.get();
     }
 
     public Optional<TripAdjustment> findUpdate(String tripExternalId) {
@@ -118,6 +142,7 @@ public class RealtimeTripUpdateCache {
                 GtfsRealtime.FeedMessage feed = GtfsRealtime.FeedMessage.parseFrom(in);
                 Map<String, TripAdjustment> indexed = parseTripUpdates(feed);
                 snapshot.set(indexed);
+                headerRef.set(RealtimeAlertCache.parseHeader(feed));
                 log.info("GTFS-RT trip updates: refreshed snapshot with {} trips", indexed.size());
             }
         } catch (IOException | InterruptedException e) {
@@ -140,6 +165,11 @@ public class RealtimeTripUpdateCache {
             }
             String tripId = update.getTrip().getTripId();
             Integer tripLevelDelay = update.hasDelay() ? update.getDelay() : null;
+            String vehicleId = update.hasVehicle() && update.getVehicle().hasId()
+                    ? update.getVehicle().getId() : null;
+            String vehicleLabel = update.hasVehicle() && update.getVehicle().hasLabel()
+                    ? update.getVehicle().getLabel() : null;
+            Long updateTimestamp = update.hasTimestamp() ? update.getTimestamp() : null;
             Map<String, StopAdjustment> byStop = new HashMap<>();
             for (GtfsRealtime.TripUpdate.StopTimeUpdate stu : update.getStopTimeUpdateList()) {
                 if (!stu.hasStopId()) {
@@ -161,7 +191,9 @@ public class RealtimeTripUpdateCache {
                 byStop.put(stu.getStopId(), new StopAdjustment(
                         stu.getStopId(), arrDelay, depDelay, arrTime, depTime, skipped));
             }
-            out.put(tripId, new TripAdjustment(tripId, tripLevelDelay, Map.copyOf(byStop)));
+            out.put(tripId, new TripAdjustment(
+                    tripId, tripLevelDelay, vehicleId, vehicleLabel, updateTimestamp,
+                    Map.copyOf(byStop)));
         }
         return Map.copyOf(out);
     }

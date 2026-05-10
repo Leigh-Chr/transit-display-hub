@@ -58,6 +58,11 @@ public class RealtimeVehiclePositionCache {
     private final AtomicReference<List<VehicleSnapshot>> snapshot =
             new AtomicReference<>(List.of());
 
+    /** Header metadata captured on the most recent successful refresh.
+     *  Reset to {@link FeedHeaderInfo#empty()} on construction. */
+    private final AtomicReference<FeedHeaderInfo> headerRef =
+            new AtomicReference<>(FeedHeaderInfo.empty());
+
     @Value("${app.gtfs-rt.vehicle-positions-url:}")
     private String vehiclePositionsUrl = "";
 
@@ -76,6 +81,13 @@ public class RealtimeVehiclePositionCache {
      *  for stable admin browsing. The list is unmodifiable. */
     public List<VehicleSnapshot> currentSnapshot() {
         return snapshot.get();
+    }
+
+    /** Header captured on the last successful refresh. Returns
+     *  {@link FeedHeaderInfo#empty()} when no refresh has succeeded
+     *  yet, so consumers always get a non-null record. */
+    public FeedHeaderInfo currentHeader() {
+        return headerRef.get();
     }
 
     public void refresh() {
@@ -98,6 +110,7 @@ public class RealtimeVehiclePositionCache {
                 GtfsRealtime.FeedMessage feed = GtfsRealtime.FeedMessage.parseFrom(in);
                 List<VehicleSnapshot> parsed = parseVehicles(feed);
                 snapshot.set(parsed);
+                headerRef.set(RealtimeAlertCache.parseHeader(feed));
                 log.info("GTFS-RT vehicle positions: refreshed snapshot with {} vehicles", parsed.size());
             }
         } catch (IOException | InterruptedException e) {
