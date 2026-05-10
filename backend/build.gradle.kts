@@ -136,6 +136,14 @@ dependencies {
 // Protobuf code generation for gtfs-realtime.proto. The plugin
 // downloads the protoc binary from Maven Central as a Maven artefact;
 // no system-wide protoc install required.
+//
+// Known issue: the protobuf-gradle-plugin (0.9.5) builds the protoc
+// dependency internally with the multi-string Map notation
+// `(group, name, version, classifier, ext)` so it can append the
+// platform-specific classifier ("linux-x86_64@exe", "osx-aarch_64@exe",
+// …). Gradle 9 deprecated that notation and Gradle 10 will reject it.
+// Tracking https://github.com/google/protobuf-gradle-plugin/issues/762
+// upstream — nothing we can do from this build script.
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.25.6"
