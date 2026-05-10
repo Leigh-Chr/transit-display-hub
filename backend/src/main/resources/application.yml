@@ -77,7 +77,7 @@ spring:
 
 app:
   data-loader:
-    source: ${DATA_LOADER_SOURCE:gtfs}    # synthetic | gtfs | (omitted to disable)
+    source: ${DATA_LOADER_SOURCE:gtfs}    # gtfs | (omitted to disable)
     # GTFS feeds tested for layout-engine generality. Override with
     # DATA_LOADER_GTFS_URL / DATA_LOADER_GTFS_NETWORK_NAME env vars.
     #   Grenoble (M Réso)    https://data.mobilites-m.fr/api/gtfs/SEM
