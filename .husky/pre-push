@@ -10,14 +10,14 @@ PIDS=""
 EXIT_CODE=0
 
 if [ "$FRONTEND_CHANGED" -gt 0 ]; then
-  echo "  -> Running frontend tests..."
-  (cd frontend && npm test) &
+  echo "  -> Running frontend lint + knip + tests..."
+  (cd frontend && npm run lint && npm run knip && npm test) &
   PIDS="$PIDS $!"
 fi
 
 if [ "$BACKEND_CHANGED" -gt 0 ]; then
-  echo "  -> Running backend tests..."
-  (cd backend && ./gradlew test --no-daemon -q) &
+  echo "  -> Running backend check (test + jacoco + spotbugs + pmd)..."
+  (cd backend && ./gradlew check --no-daemon -q) &
   PIDS="$PIDS $!"
 fi
 
