@@ -80,7 +80,7 @@ dependencies {
     // OpenAPI / Swagger UI — exposes /swagger-ui.html and /v3/api-docs
     // for admins and frontend devs. Keeps the bundled Swagger UI rather
     // than hosting an external one so the docs travel with the binary.
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
     // GTFS-Realtime — Protobuf bindings generated from the official
     // gtfs-realtime.proto file in src/main/proto/. Used by the
