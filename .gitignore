@@ -47,3 +47,6 @@ coverage/
 
 # Local working artifacts (drafts, plans, scratch)
 .planning/
+
+# jscpd output
+.jscpd-report/

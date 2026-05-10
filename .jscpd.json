@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/packages/jscpd/schema.json",
+  "minLines": 5,
+  "minTokens": 50,
+  "reporters": ["console", "html"],
+  "output": "./.jscpd-report",
+  "ignore": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/test-results/**",
+    "**/.playwright-mcp/**",
+    "**/.planning/**",
+    "**/playwright-report/**",
+    "**/.gradle/**",
+    "**/generated/**",
+    "**/*.min.js",
+    "**/*.lock",
+    "**/package-lock.json",
+    "**/CHANGELOG.md"
+  ]
+}
