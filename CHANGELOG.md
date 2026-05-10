@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-05-10
+
 Post-1.0 hardening and cleanup: three security fixes, several
 correctness fixes identified by static analysis (SpotBugs, PMD)
 and coverage enforcement, toolchain bumps, and a dead-weight
