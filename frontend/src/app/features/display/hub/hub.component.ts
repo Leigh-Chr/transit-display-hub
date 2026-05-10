@@ -7,6 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -27,14 +28,14 @@ import { formatLocaleDate } from '@shared/utils/locale-date.utils';
 @Component({
   selector: 'app-hub',
   standalone: true,
-  imports: [MatIconModule, MatProgressSpinnerModule, TranslocoPipe],
+  imports: [NgOptimizedImage, MatIconModule, MatProgressSpinnerModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="kiosk">
       @if (hubState()) {
         <!-- Header: Hub name with line badges + Current time -->
         <header class="header">
-          <img src="assets/logo.png" alt="" class="header-logo">
+          <img ngSrc="assets/logo.png" width="40" height="40" alt="" class="header-logo" priority>
           <div class="stop-info">
             <h1 class="stop-name">{{ hubState()!.hubName }}</h1>
             <div class="header-lines">

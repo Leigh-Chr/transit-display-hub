@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, computed, effect, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgOptimizedImage } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -31,6 +32,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
   selector: 'app-network-map',
   standalone: true,
   imports: [
+    NgOptimizedImage,
     ReactiveFormsModule,
     RouterLink,
     MatAutocompleteModule,
@@ -50,7 +52,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
     <div class="network-map-page">
       <header class="page-header">
         <div class="title-row">
-          <img src="assets/logo.png" alt="Transit Display Hub" class="header-logo">
+          <img ngSrc="assets/logo.png" width="32" height="32" alt="Transit Display Hub" class="header-logo" priority>
           <h1>Network Map</h1>
         </div>
         <p class="subtitle">{{ subtitle() }}</p>

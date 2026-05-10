@@ -7,6 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -25,6 +26,7 @@ import { formatLocaleDate } from '@shared/utils/locale-date.utils';
   selector: 'app-kiosk',
   standalone: true,
   imports: [
+    NgOptimizedImage,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
@@ -37,7 +39,7 @@ import { formatLocaleDate } from '@shared/utils/locale-date.utils';
       @if (displayState()) {
         <!-- Header: Stop name with line badges + Current time -->
         <header class="header">
-          <img src="assets/logo.png" alt="" class="header-logo">
+          <img ngSrc="assets/logo.png" width="40" height="40" alt="" class="header-logo" priority>
           <div class="stop-info">
             <h1 class="stop-name">
               {{ displayState()!.stopName }}

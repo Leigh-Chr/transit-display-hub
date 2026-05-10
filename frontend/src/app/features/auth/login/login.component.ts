@@ -7,12 +7,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '@core/auth/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
+    NgOptimizedImage,
     FormsModule,
     MatCardModule,
     MatFormFieldModule,
@@ -27,7 +29,7 @@ import { AuthService } from '@core/auth/auth.service';
       <mat-card class="login-card">
         <mat-card-header>
           <div class="login-brand">
-            <img src="assets/logo.png" alt="Transit Display Hub logo" class="brand-logo">
+            <img ngSrc="assets/logo.png" width="72" height="72" alt="Transit Display Hub logo" class="brand-logo" priority>
             <h1 class="login-title">Transit Display Hub</h1>
           </div>
         </mat-card-header>

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,11 +8,11 @@ import { TranslocoPipe } from '@jsverse/transloco';
 @Component({
   selector: 'app-not-found',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule, TranslocoPipe],
+  imports: [NgOptimizedImage, RouterLink, MatButtonModule, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="not-found" role="main">
-      <img src="assets/logo.png" alt="" class="not-found-logo" aria-hidden="true">
+      <img ngSrc="assets/logo.png" width="72" height="72" alt="" class="not-found-logo" aria-hidden="true">
       <h1>{{ 'notFound.title' | transloco }}</h1>
       <p>{{ 'notFound.description' | transloco }}</p>
       <div class="actions">

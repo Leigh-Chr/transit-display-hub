@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { NgOptimizedImage } from '@angular/common';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
@@ -22,6 +23,7 @@ import {
   selector: 'app-admin-layout',
   standalone: true,
   imports: [
+    NgOptimizedImage,
     RouterModule,
     RouterLink,
     RouterLinkActive,
@@ -48,7 +50,7 @@ import {
         [attr.aria-label]="t('admin.navigation.dashboard')"
       >
         <div class="sidenav-header">
-          <img src="assets/logo.png" alt="" class="sidenav-logo">
+          <img ngSrc="assets/logo.png" width="36" height="36" alt="" class="sidenav-logo">
           <span class="brand-name">Transit Display Hub</span>
         </div>
 
