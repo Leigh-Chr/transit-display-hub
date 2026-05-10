@@ -42,6 +42,7 @@ should think twice before reverting.
 | [0034](0034-mobilitydata-validator-integration.md) | MobilityData gtfs-validator integration and 100 % spec coverage |
 | [0035](0035-accessibility-foundations.md) | Accessibility foundations: high-contrast, large-text, vocal kiosk, tabular map |
 | [0036](0036-i18n-via-transloco.md) | Runtime i18n via Transloco (vs. @angular/localize) |
+| [0037](0037-quality-gates-and-ci.md) | Quality gates and continuous integration (JaCoCo, Vitest cov, Playwright, GH Actions) |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

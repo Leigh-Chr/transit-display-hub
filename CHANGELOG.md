@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — 0.12.0 milestone : Quality gates and CI (May 2026)
+
+Wires automated quality signals around the project so a
+regression below the current baseline is caught without manual
+inspection.
+
+- **Backend coverage**: JaCoCo plugin enabled in
+  `backend/build.gradle.kts`. `check` depends on
+  `jacocoTestReport`. Minimum bundle-level instruction ratio
+  pinned at 0.55. Generated GtfsRealtime protobuf code is
+  excluded from the denominator.
+- **Frontend coverage**: `@vitest/coverage-v8` added; new
+  `npm run test:coverage` script. Default `npm test` left
+  unchanged so the watch-mode feedback loop is preserved.
+- **E2E smoke suite**: Playwright (1.59) reintroduced with a
+  Chromium-only project and three scenarios (network map,
+  tabular alt, login form keyboard navigation).
+- **CI**: two GitHub Actions workflows (`backend.yml`,
+  `frontend.yml`) gated on path filters, official `actions/*`
+  steps only, JaCoCo and Vitest coverage uploaded as 7-day
+  artifacts.
+- **ADR 0037** documents the choices: minimum coverage
+  threshold, Chromium-only Playwright, no webServer block,
+  no Codecov badge.
+
 ### Added — 0.11.0 milestone : Runtime i18n via Transloco (May 2026)
 
 Lays down the runtime translation infrastructure with French as
