@@ -142,22 +142,23 @@ describe('StopsComponent', () => {
 
       component.ngOnInit();
 
-      expect(component.page).toBe(2);
-      expect(component.size).toBe(25);
-      expect(component.sortBy).toBe('scheduleCount');
-      expect(component.sortDir).toBe('desc');
-      expect(component.search).toBe('central');
+      expect(component.tableState.page).toBe(2);
+      expect(component.tableState.size).toBe(25);
+      expect(component.tableState.sortBy).toBe('scheduleCount');
+      expect(component.tableState.sortDir).toBe('desc');
+      expect(component.tableState.search).toBe('central');
       expect(component.lineId).toBe('l1');
     });
   });
 
   describe('loadStops', () => {
     it('should call getAllPaginated with correct params', () => {
-      component.page = 1;
-      component.size = 25;
-      component.sortBy = 'scheduleCount';
-      component.sortDir = 'desc';
-      component.search = 'central';
+      component.ngOnInit();
+      component.tableState.page = 1;
+      component.tableState.size = 25;
+      component.tableState.sortBy = 'scheduleCount';
+      component.tableState.sortDir = 'desc';
+      component.tableState.search = 'central';
       component.lineId = 'l1';
 
       component.loadStops();
@@ -173,11 +174,7 @@ describe('StopsComponent', () => {
     });
 
     it('should pass undefined for empty search and lineId', () => {
-      component.page = 0;
-      component.size = 10;
-      component.sortBy = 'name';
-      component.sortDir = 'asc';
-      component.search = '';
+      component.ngOnInit();
       component.lineId = '';
 
       component.loadStops();
@@ -231,55 +228,14 @@ describe('StopsComponent', () => {
 
   describe('onLineChange', () => {
     it('should set lineId and reset page to 0', () => {
-      component.page = 3;
+      component.ngOnInit();
+      component.tableState.page = 3;
       component.lineId = '';
 
       component.onLineChange('l1');
 
       expect(component.lineId).toBe('l1');
-      expect(component.page).toBe(0);
-    });
-  });
-
-  describe('onSearchChange', () => {
-    it('should set search and reset page to 0', () => {
-      component.page = 5;
-
-      component.onSearchChange('central');
-
-      expect(component.search).toBe('central');
-      expect(component.page).toBe(0);
-    });
-  });
-
-  describe('onSortChange', () => {
-    it('should update sortBy, sortDir and reset page to 0', () => {
-      component.page = 2;
-
-      component.onSortChange({ active: 'scheduleCount', direction: 'desc' });
-
-      expect(component.sortBy).toBe('scheduleCount');
-      expect(component.sortDir).toBe('desc');
-      expect(component.page).toBe(0);
-    });
-
-    it('should default to asc when direction is empty', () => {
-      component.onSortChange({ active: 'name', direction: '' });
-
-      expect(component.sortDir).toBe('asc');
-    });
-  });
-
-  describe('onPageChange', () => {
-    it('should update page and size', () => {
-      component.onPageChange({
-        pageIndex: 3,
-        pageSize: 25,
-        length: 100,
-      });
-
-      expect(component.page).toBe(3);
-      expect(component.size).toBe(25);
+      expect(component.tableState.page).toBe(0);
     });
   });
 

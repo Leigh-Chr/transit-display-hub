@@ -126,22 +126,22 @@ describe('ItinerariesComponent', () => {
       });
       fixture.detectChanges();
 
-      expect(component.page).toBe(2);
-      expect(component.size).toBe(25);
-      expect(component.sortBy).toBe('terminusName');
-      expect(component.sortDir).toBe('desc');
-      expect(component.search).toBe('north');
+      expect(component.tableState.page).toBe(2);
+      expect(component.tableState.size).toBe(25);
+      expect(component.tableState.sortBy).toBe('terminusName');
+      expect(component.tableState.sortDir).toBe('desc');
+      expect(component.tableState.search).toBe('north');
       expect(component.lineId).toBe('l1');
     });
 
     it('should use defaults when query params are empty', () => {
       fixture.detectChanges();
 
-      expect(component.page).toBe(0);
-      expect(component.size).toBe(10);
-      expect(component.sortBy).toBe('name');
-      expect(component.sortDir).toBe('asc');
-      expect(component.search).toBe('');
+      expect(component.tableState.page).toBe(0);
+      expect(component.tableState.size).toBe(10);
+      expect(component.tableState.sortBy).toBe('name');
+      expect(component.tableState.sortDir).toBe('asc');
+      expect(component.tableState.search).toBe('');
       expect(component.lineId).toBe('');
     });
   });
@@ -217,62 +217,28 @@ describe('ItinerariesComponent', () => {
     });
   });
 
-  describe('onPageChange', () => {
-    it('should update page and size then navigate', () => {
+  describe('tableState delegation', () => {
+    it('writes lineId from the extras supplier on URL updates', () => {
       fixture.detectChanges();
+      component.lineId = 'l1';
 
-      component.onPageChange({ pageIndex: 3, pageSize: 25, length: 100 });
+      component.tableState.updateUrl();
 
-      expect(component.page).toBe(3);
-      expect(component.size).toBe(25);
-      expect(router.navigate).toHaveBeenCalled();
-    });
-  });
-
-  describe('onSearchChange', () => {
-    it('should reset page to 0 and set search', () => {
-      fixture.detectChanges();
-      component.page = 5;
-
-      component.onSearchChange('terminal');
-
-      expect(component.search).toBe('terminal');
-      expect(component.page).toBe(0);
-      expect(router.navigate).toHaveBeenCalled();
-    });
-  });
-
-  describe('onSortChange', () => {
-    it('should update sortBy, sortDir and reset page to 0', () => {
-      fixture.detectChanges();
-      component.page = 3;
-
-      component.onSortChange({ active: 'terminusName', direction: 'desc' });
-
-      expect(component.sortBy).toBe('terminusName');
-      expect(component.sortDir).toBe('desc');
-      expect(component.page).toBe(0);
-      expect(router.navigate).toHaveBeenCalled();
-    });
-
-    it('should default to asc when direction is empty', () => {
-      fixture.detectChanges();
-
-      component.onSortChange({ active: 'name', direction: '' });
-
-      expect(component.sortDir).toBe('asc');
+      const last = (router.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1);
+      const args = last as [unknown, { queryParams: Record<string, unknown> }] | undefined;
+      expect(args?.[1].queryParams).toEqual(expect.objectContaining({ lineId: 'l1' }));
     });
   });
 
   describe('onLineChange', () => {
     it('should set lineId and reset page to 0', () => {
       fixture.detectChanges();
-      component.page = 2;
+      component.tableState.page = 2;
 
       component.onLineChange('l1');
 
       expect(component.lineId).toBe('l1');
-      expect(component.page).toBe(0);
+      expect(component.tableState.page).toBe(0);
       expect(router.navigate).toHaveBeenCalled();
     });
 

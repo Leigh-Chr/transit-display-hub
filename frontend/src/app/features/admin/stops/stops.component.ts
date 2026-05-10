@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,8 +10,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSortModule, MatSort, Sort } from '@angular/material/sort';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { Subject, takeUntil } from 'rxjs';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
@@ -27,6 +27,7 @@ import {
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
+import { AdminTableState } from '@shared/admin/admin-table-state.service';
 
 @Component({
   selector: 'app-stops',
@@ -47,6 +48,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     SearchInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AdminTableState],
   template: `
     <div class="stops-page">
       <div class="page-header">
@@ -77,8 +79,8 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
         <app-search-input
           placeholder="Search stops..."
-          [initialValue]="search"
-          (searchChange)="onSearchChange($event)"
+          [initialValue]="tableState.search"
+          (searchChange)="tableState.onSearchChange($event)"
         />
 
         <button
@@ -102,7 +104,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
             { width: '80px' }
           ]"
         />
-      } @else if (dataSource.data.length === 0 && !search && !lineId) {
+      } @else if (dataSource.data.length === 0 && !tableState.search && !lineId) {
         <mat-card animate.enter="fade-in">
           @if (lines().length === 0) {
             <app-empty-state
@@ -132,7 +134,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
-          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width">
+          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
               <th mat-header-cell *matHeaderCellDef>Lines</th>
               <td mat-cell *matCellDef="let stop">
@@ -213,10 +215,10 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
           <mat-paginator
             [length]="totalElements"
-            [pageIndex]="page"
-            [pageSize]="size"
+            [pageIndex]="tableState.page"
+            [pageSize]="tableState.size"
             [pageSizeOptions]="[5, 10, 25, 50]"
-            (page)="onPageChange($event)"
+            (page)="tableState.onPageChange($event)"
             showFirstLastButtons
           />
         </mat-card>
@@ -380,33 +382,28 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly stopService = inject(StopService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroy$ = new Subject<void>();
 
+  readonly tableState = inject(AdminTableState);
   readonly sort = viewChild(MatSort);
   loading = signal(true);
   lines = signal<Line[]>([]);
   dataSource = new MatTableDataSource<Stop>([]);
   displayedColumns = ['line', 'name', 'schedules', 'device', 'actions'];
 
-  // Pagination state
-  page = 0;
-  size = 10;
-  sortBy = 'name';
-  sortDir: 'asc' | 'desc' = 'asc';
-  search = '';
   lineId = '';
   totalElements = 0;
 
   ngOnInit(): void {
+    this.tableState.init({
+      sortBy: 'name',
+      extras: () => ({ lineId: this.lineId }),
+    });
+
     this.loadLines();
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      this.page = params['page'] ? +params['page'] : 0;
-      this.size = params['size'] ? +params['size'] : 10;
-      this.sortBy = (params['sortBy'] as string | undefined) ?? 'name';
-      this.sortDir = params['sortDir'] === 'desc' ? 'desc' : 'asc';
-      this.search = (params['search'] as string | undefined) ?? '';
+      this.tableState.syncFromQueryParams(params);
       this.lineId = (params['lineId'] as string | undefined) ?? '';
       this.loadStops();
     });
@@ -415,8 +412,8 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const sortRef = this.sort();
     if (sortRef) {
-      sortRef.active = this.sortBy;
-      sortRef.direction = this.sortDir;
+      sortRef.active = this.tableState.sortBy;
+      sortRef.direction = this.tableState.sortDir;
     }
   }
 
@@ -436,20 +433,20 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loading.set(true);
     this.stopService
       .getAllPaginated({
-        page: this.page,
-        size: this.size,
-        sortBy: this.sortBy,
-        sortDir: this.sortDir,
-        search: this.search || undefined,
+        page: this.tableState.page,
+        size: this.tableState.size,
+        sortBy: this.tableState.sortBy,
+        sortDir: this.tableState.sortDir,
+        search: this.tableState.search || undefined,
         lineId: this.lineId || undefined,
       })
       .subscribe({
         next: (response: PageResponse<Stop>) => {
           // After a delete on the last item of a page > 0, the server returns
           // an empty page. Step back instead of showing a blank screen.
-          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
-            this.page = Math.max(0, response.totalPages - 1);
-            this.updateUrl();
+          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
+            this.tableState.page = Math.max(0, response.totalPages - 1);
+            this.tableState.updateUrl();
             this.loadStops();
             return;
           }
@@ -466,45 +463,9 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  updateUrl(): void {
-    const queryParams: Record<string, string | number> = {};
-    if (this.page > 0) {queryParams['page'] = this.page;}
-    if (this.size !== 10) {queryParams['size'] = this.size;}
-    if (this.sortBy !== 'name') {queryParams['sortBy'] = this.sortBy;}
-    if (this.sortDir !== 'asc') {queryParams['sortDir'] = this.sortDir;}
-    if (this.search) {queryParams['search'] = this.search;}
-    if (this.lineId) {queryParams['lineId'] = this.lineId;}
-
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      replaceUrl: true,
-    });
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.page = event.pageIndex;
-    this.size = event.pageSize;
-    this.updateUrl();
-  }
-
-  onSortChange(event: Sort): void {
-    this.sortBy = event.active;
-    this.sortDir = event.direction === 'desc' ? 'desc' : 'asc';
-    this.page = 0;
-    this.updateUrl();
-  }
-
-  onSearchChange(search: string): void {
-    this.search = search;
-    this.page = 0;
-    this.updateUrl();
-  }
-
   onLineChange(lineId: string): void {
     this.lineId = lineId;
-    this.page = 0;
-    this.updateUrl();
+    this.tableState.resetToFirstPage();
   }
 
   openCreateDialog(): void {
@@ -521,8 +482,7 @@ export class StopsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (result) {
         this.stopService.create(result as CreateStopRequest).subscribe({
           next: () => {
-            this.page = 0;
-            this.updateUrl();
+            this.tableState.resetToFirstPage();
             this.loadStops();
             this.snackBar.open('Stop created', 'Close', {
               duration: 3000,

@@ -142,11 +142,11 @@ describe('UsersComponent', () => {
       queryParams$.next({ page: '2', size: '25', sortBy: 'role', sortDir: 'desc', search: 'test' });
       component.ngOnInit();
 
-      expect(component.page).toBe(2);
-      expect(component.size).toBe(25);
-      expect(component.sortBy).toBe('role');
-      expect(component.sortDir).toBe('desc');
-      expect(component.search).toBe('test');
+      expect(component.tableState.page).toBe(2);
+      expect(component.tableState.size).toBe(25);
+      expect(component.tableState.sortBy).toBe('role');
+      expect(component.tableState.sortDir).toBe('desc');
+      expect(component.tableState.search).toBe('test');
       expect(mockUserService.getAllPaginated).toHaveBeenCalledWith({
         page: 2,
         size: 25,
@@ -172,47 +172,6 @@ describe('UsersComponent', () => {
       component.ngOnInit();
 
       expect(mockSnackBar.open).toHaveBeenCalledWith('Failed to load users', 'Close', { duration: 5000 });
-    });
-  });
-
-  describe('onPageChange', () => {
-    it('should update page and size then call updateUrl', () => {
-      component.onPageChange({ pageIndex: 3, pageSize: 25, length: 100 });
-
-      expect(component.page).toBe(3);
-      expect(component.size).toBe(25);
-      expect(mockRouter.navigate).toHaveBeenCalled();
-    });
-  });
-
-  describe('onSearchChange', () => {
-    it('should set search, reset page to 0, and call updateUrl', () => {
-      component.page = 5;
-
-      component.onSearchChange('admin');
-
-      expect(component.search).toBe('admin');
-      expect(component.page).toBe(0);
-      expect(mockRouter.navigate).toHaveBeenCalled();
-    });
-  });
-
-  describe('onSortChange', () => {
-    it('should update sortBy and sortDir, reset page, and call updateUrl', () => {
-      component.page = 3;
-
-      component.onSortChange({ active: 'role', direction: 'desc' });
-
-      expect(component.sortBy).toBe('role');
-      expect(component.sortDir).toBe('desc');
-      expect(component.page).toBe(0);
-      expect(mockRouter.navigate).toHaveBeenCalled();
-    });
-
-    it('should default sortDir to asc when direction is empty', () => {
-      component.onSortChange({ active: 'username', direction: '' });
-
-      expect(component.sortDir).toBe('asc');
     });
   });
 
@@ -326,40 +285,6 @@ describe('UsersComponent', () => {
     });
   });
 
-  describe('updateUrl', () => {
-    it('should include only non-default params in query', () => {
-      component.page = 2;
-      component.size = 25;
-      component.sortBy = 'role';
-      component.sortDir = 'desc';
-      component.search = 'admin';
-
-      component.updateUrl();
-
-      expect(mockRouter.navigate).toHaveBeenCalledWith([], {
-        relativeTo: expect.anything(),
-        queryParams: { page: 2, size: 25, sortBy: 'role', sortDir: 'desc', search: 'admin' },
-        replaceUrl: true,
-      });
-    });
-
-    it('should omit default values from query params', () => {
-      component.page = 0;
-      component.size = 10;
-      component.sortBy = 'username';
-      component.sortDir = 'asc';
-      component.search = '';
-
-      component.updateUrl();
-
-      expect(mockRouter.navigate).toHaveBeenCalledWith([], {
-        relativeTo: expect.anything(),
-        queryParams: {},
-        replaceUrl: true,
-      });
-    });
-  });
-
   describe('search triggers reload', () => {
     it('should reload users with search param when query params change', () => {
       component.ngOnInit();
@@ -367,7 +292,7 @@ describe('UsersComponent', () => {
 
       queryParams$.next({ search: 'agent' });
 
-      expect(component.search).toBe('agent');
+      expect(component.tableState.search).toBe('agent');
       expect(mockUserService.getAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ search: 'agent' }),
       );
@@ -381,8 +306,8 @@ describe('UsersComponent', () => {
 
       queryParams$.next({ page: '2', size: '25' });
 
-      expect(component.page).toBe(2);
-      expect(component.size).toBe(25);
+      expect(component.tableState.page).toBe(2);
+      expect(component.tableState.size).toBe(25);
       expect(mockUserService.getAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ page: 2, size: 25 }),
       );

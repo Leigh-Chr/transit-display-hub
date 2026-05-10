@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,8 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSortModule, MatSort, Sort } from '@angular/material/sort';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, takeUntil } from 'rxjs';
@@ -26,6 +26,7 @@ import {
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
+import { AdminTableState } from '@shared/admin/admin-table-state.service';
 
 @Component({
   selector: 'app-itineraries',
@@ -47,6 +48,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
     SearchInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AdminTableState],
   template: `
     <div class="itineraries-page">
       <div class="page-header">
@@ -79,8 +81,8 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
         <app-search-input
           placeholder="Search itineraries..."
-          [initialValue]="search"
-          (searchChange)="onSearchChange($event)"
+          [initialValue]="tableState.search"
+          (searchChange)="tableState.onSearchChange($event)"
         />
       </div>
 
@@ -98,7 +100,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
             description="Create lines first before adding itineraries."
           />
         </mat-card>
-      } @else if (dataSource.data.length === 0 && !search && !lineId) {
+      } @else if (dataSource.data.length === 0 && !tableState.search && !lineId) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="route"
@@ -120,7 +122,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
-          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width">
+          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Line</th>
               <td mat-cell *matCellDef="let itinerary">
@@ -194,10 +196,10 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 
           <mat-paginator
             [length]="totalElements"
-            [pageIndex]="page"
-            [pageSize]="size"
+            [pageIndex]="tableState.page"
+            [pageSize]="tableState.size"
             [pageSizeOptions]="[5, 10, 25, 50]"
-            (page)="onPageChange($event)"
+            (page)="tableState.onPageChange($event)"
             showFirstLastButtons
           />
         </mat-card>
@@ -307,23 +309,17 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroy$ = new Subject<void>();
 
   readonly isAdmin = this.authService.isAdmin;
+  readonly tableState = inject(AdminTableState);
 
   readonly sort = viewChild(MatSort);
   loading = signal(true);
   lines = signal<Line[]>([]);
   dataSource = new MatTableDataSource<Itinerary>([]);
 
-  // Pagination state
-  page = 0;
-  size = 10;
-  sortBy = 'name';
-  sortDir: 'asc' | 'desc' = 'asc';
-  search = '';
   lineId = '';
   totalElements = 0;
 
@@ -336,17 +332,18 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.tableState.init({
+      sortBy: 'name',
+      extras: () => ({ lineId: this.lineId }),
+    });
+
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
       error: () => this.snackBar.open('Failed to load lines', 'Close', { duration: 5000, panelClass: 'error-snackbar' }),
     });
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      this.page = params['page'] ? +params['page'] : 0;
-      this.size = params['size'] ? +params['size'] : 10;
-      this.sortBy = (params['sortBy'] as string | undefined) ?? 'name';
-      this.sortDir = params['sortDir'] === 'desc' ? 'desc' : 'asc';
-      this.search = (params['search'] as string | undefined) ?? '';
+      this.tableState.syncFromQueryParams(params);
       this.lineId = (params['lineId'] as string | undefined) ?? '';
       this.loadItineraries();
     });
@@ -355,8 +352,8 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const sortRef = this.sort();
     if (sortRef) {
-      sortRef.active = this.sortBy;
-      sortRef.direction = this.sortDir;
+      sortRef.active = this.tableState.sortBy;
+      sortRef.direction = this.tableState.sortDir;
     }
   }
 
@@ -369,18 +366,18 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loading.set(true);
     this.itineraryService
       .getAllPaginated({
-        page: this.page,
-        size: this.size,
-        sortBy: this.sortBy,
-        sortDir: this.sortDir,
-        search: this.search || undefined,
+        page: this.tableState.page,
+        size: this.tableState.size,
+        sortBy: this.tableState.sortBy,
+        sortDir: this.tableState.sortDir,
+        search: this.tableState.search || undefined,
         lineId: this.lineId || undefined,
       })
       .subscribe({
         next: (response: PageResponse<Itinerary>) => {
-          if (response.content.length === 0 && this.page > 0 && response.totalElements > 0) {
-            this.page = Math.max(0, response.totalPages - 1);
-            this.updateUrl();
+          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
+            this.tableState.page = Math.max(0, response.totalPages - 1);
+            this.tableState.updateUrl();
             this.loadItineraries();
             return;
           }
@@ -397,45 +394,9 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  updateUrl(): void {
-    const queryParams: Record<string, string | number> = {};
-    if (this.page > 0) {queryParams['page'] = this.page;}
-    if (this.size !== 10) {queryParams['size'] = this.size;}
-    if (this.sortBy !== 'name') {queryParams['sortBy'] = this.sortBy;}
-    if (this.sortDir !== 'asc') {queryParams['sortDir'] = this.sortDir;}
-    if (this.search) {queryParams['search'] = this.search;}
-    if (this.lineId) {queryParams['lineId'] = this.lineId;}
-
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      replaceUrl: true,
-    });
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.page = event.pageIndex;
-    this.size = event.pageSize;
-    this.updateUrl();
-  }
-
-  onSortChange(event: Sort): void {
-    this.sortBy = event.active;
-    this.sortDir = event.direction === 'desc' ? 'desc' : 'asc';
-    this.page = 0;
-    this.updateUrl();
-  }
-
-  onSearchChange(search: string): void {
-    this.search = search;
-    this.page = 0;
-    this.updateUrl();
-  }
-
   onLineChange(lineId: string): void {
     this.lineId = lineId;
-    this.page = 0;
-    this.updateUrl();
+    this.tableState.resetToFirstPage();
   }
 
   openCreateDialog(): void {
@@ -449,8 +410,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit, OnDestroy {
       if (result) {
         this.itineraryService.create(result as CreateItineraryRequest).subscribe({
           next: () => {
-            this.page = 0;
-            this.updateUrl();
+            this.tableState.resetToFirstPage();
             this.loadItineraries();
             this.snackBar.open('Itinerary created', 'Close', {
               duration: 3000,
