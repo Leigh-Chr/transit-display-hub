@@ -1,9 +1,22 @@
 plugins {
     java
     jacoco
+    pmd
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.protobuf") version "0.9.5"
+    // Static analysis. SpotBugs catches bytecode-level bugs (NPE,
+    // EI_EXPOSE_REP, default-encoding traps); PMD covers style and
+    // best-practice patterns. Both gate `check` so a regression
+    // surfaces in CI rather than at review time.
+    id("com.github.spotbugs") version "6.0.26"
+    // Lists outdated dependencies — manual `./gradlew dependencyUpdates`,
+    // not part of `check` (informational, not a gate).
+    id("com.github.ben-manes.versions") version "0.52.0"
+    // OWASP dependency-check. Runs out-of-band (`./gradlew dependencyCheckAnalyze`)
+    // because the first NVD download takes minutes and a CI cache must
+    // be primed; the actual gating is in a dedicated workflow.
+    id("org.owasp.dependencycheck") version "11.1.1"
     // Official JMH plugin — provides the `jmh` source set, the
     // {@code jmh} verification task, annotation-processor wiring for
     // the @Benchmark indexer, and a sensible default fork / warmup
@@ -189,6 +202,52 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 tasks.named("check") {
     dependsOn(tasks.named("jacocoTestReport"))
     dependsOn(tasks.named("jacocoTestCoverageVerification"))
+    dependsOn(tasks.named("spotbugsMain"))
+    dependsOn(tasks.named("pmdMain"))
+}
+
+spotbugs {
+    ignoreFailures.set(false)
+    effort.set(com.github.spotbugs.snom.Effort.MORE)
+    reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
+    excludeFilter.set(file("config/spotbugs/exclude.xml"))
+}
+
+tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
+    reports.create("html") { required.set(true) }
+    reports.create("xml") { required.set(true) }
+}
+
+// SpotBugs / PMD on test code is too noisy to be useful (mocks, builders,
+// throw-away helpers). Skip the test source set; keep main analysed.
+tasks.named("spotbugsTest") { enabled = false }
+tasks.named("pmdTest") { enabled = false }
+tasks.named("spotbugsJmh") { enabled = false }
+tasks.named("pmdJmh") { enabled = false }
+
+pmd {
+    isIgnoreFailures = false
+    toolVersion = "7.7.0"
+    ruleSetConfig = resources.text.fromFile("config/pmd/ruleset.xml")
+    // The ruleset config is the source of truth — ruleSets must be empty
+    // so PMD doesn't merge in its built-in defaults.
+    ruleSets = listOf()
+    isConsoleOutput = false
+}
+
+tasks.withType<Pmd>().configureEach {
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
+    exclude("com/google/transit/realtime/**")
+}
+
+dependencyCheck {
+    failBuildOnCVSS = 7.0f
+    formats = listOf("HTML", "JSON", "SARIF")
+    nvd.apiKey = System.getenv("NVD_API_KEY") ?: ""
+    analyzers.assemblyEnabled = false
 }
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {

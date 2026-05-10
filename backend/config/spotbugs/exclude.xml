@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclude filter for transit-display-hub.
+
+  EI_EXPOSE_REP / EI_EXPOSE_REP2 / MS_EXPOSE_REP fire on Lombok @Getter
+  output for JPA entities, DTOs, Spring controllers and services.
+  Defensive copies don't make sense for managed entities (Hibernate
+  keeps the same instance), Spring beans (the DI graph already
+  controls aliasing), or JSON-bound DTOs (Jackson re-allocates on
+  serialize). Filter is project-wide for these patterns since the
+  whole codebase relies on Lombok and Spring conventions.
+
+  SING_SINGLETON_IMPLEMENTS_SERIALIZABLE: Spring beans implementing
+  Serializable for HTTP-session caching. Not the GoF singleton pattern.
+
+  NM_CLASS_NOT_EXCEPTION: ServiceCalendarException is the GTFS
+  calendar_dates concept (see its Javadoc), not a Throwable. Renaming
+  would break the published SQL table service_calendar_exceptions.
+
+  com.google.transit.realtime.*: protobuf-generated GtfsRealtime.java
+  (~19k LoC), out of our control.
+-->
+<FindBugsFilter>
+    <!-- Skip generated protobuf entirely -->
+    <Match>
+        <Class name="~com\.google\.transit\.realtime\..*"/>
+    </Match>
+
+    <!-- Lombok @Getter / @Setter exposing internal references -->
+    <Match>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+            <Bug pattern="MS_EXPOSE_REP"/>
+        </Or>
+        <Class name="~com\.transit\.hub\..*"/>
+    </Match>
+
+    <!-- Spring beans implementing Serializable for session caching -->
+    <Match>
+        <Bug pattern="SING_SINGLETON_IMPLEMENTS_SERIALIZABLE"/>
+        <Class name="~com\.transit\.hub\..*"/>
+    </Match>
+
+    <!-- ServiceCalendarException is the GTFS domain term, not a Throwable -->
+    <Match>
+        <Bug pattern="NM_CLASS_NOT_EXCEPTION"/>
+        <Class name="com.transit.hub.domain.model.ServiceCalendarException"/>
+    </Match>
+</FindBugsFilter>

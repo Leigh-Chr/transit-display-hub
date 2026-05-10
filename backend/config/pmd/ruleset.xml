@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="transit-hub"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Curated PMD ruleset for transit-display-hub. Built on the
+        bestpractices / errorprone / performance / multithreading
+        categories with the noisiest rules excluded — see the inline
+        notes for the rationale. Aim is to surface real bugs (resource
+        leaks, locale-dependent case folding, missing @Override) without
+        drowning the report under stylistic chatter.
+    </description>
+
+    <rule ref="category/java/bestpractices.xml">
+        <!-- SLF4J parameterized logging is already lazy (no string concat unless enabled). -->
+        <exclude name="GuardLogStatement"/>
+        <!-- EnumSet exposed as field type is intentional for JPA snapshots. -->
+        <exclude name="LooseCoupling"/>
+        <!-- Single-private-method varargs candidates aren't worth the @SafeVarargs noise. -->
+        <exclude name="UseVarargs"/>
+        <!-- A trailing 'continue' / 'break' is sometimes the clearest exit. -->
+        <exclude name="AvoidReassigningParameters"/>
+        <exclude name="ForLoopVariableCount"/>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml">
+        <!-- Tags / domain literals (route_id, "Direction") are clearer inline than as constants. -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <exclude name="AvoidDuplicateLiterals"/>
+        <!-- Field name matching method name is normal for getters in domain models. -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <exclude name="AvoidFieldNameMatchingTypeName"/>
+        <!-- 'while ((line = reader.read()) != null)' is the canonical Java loop. -->
+        <exclude name="AssignmentInOperand"/>
+        <exclude name="AvoidBranchingStatementAsLastInLoop"/>
+    </rule>
+
+    <rule ref="category/java/performance.xml">
+        <!-- GTFS importer parses millions of rows; per-row allocations are unavoidable. -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+        <!-- Explicit '= null' / '= 0' on JPA-managed fields aids readability of @Builder.Default. -->
+        <exclude name="RedundantFieldInitializer"/>
+        <!-- StringBuilder default capacity (16) is fine for short labels. -->
+        <exclude name="InsufficientStringBufferDeclaration"/>
+    </rule>
+
+    <rule ref="category/java/multithreading.xml">
+        <!-- DoNotUseThreads catches Thread.currentThread().interrupt(), the recommended
+             interrupt-propagation idiom. Excluded since we do not spin raw new Thread() anywhere. -->
+        <exclude name="DoNotUseThreads"/>
+        <!-- Per-row CSV maps and per-request response maps don't need ConcurrentHashMap. -->
+        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+</ruleset>
