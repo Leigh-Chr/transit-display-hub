@@ -403,7 +403,6 @@ src/app/
 |       +-- utils/
 +-- layouts/
     +-- admin-layout/
-    +-- display-layout/
 ```
 
 ### Routes
