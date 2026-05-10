@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public class MessageChangedEvent extends ApplicationEvent {
+    private static final long serialVersionUID = 1L;
+
     private final Set<UUID> affectedStopIds;
 
     public MessageChangedEvent(Object source, Set<UUID> affectedStopIds) {

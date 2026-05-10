@@ -10,6 +10,8 @@ import java.util.UUID;
  * subscribed to /topic/display/{stopId} that their stop no longer exists).
  */
 public class StopDeletedEvent extends ApplicationEvent {
+    private static final long serialVersionUID = 1L;
+
     private final UUID stopId;
     private final String stopName;
 

@@ -27,6 +27,13 @@ import java.util.UUID;
  * Mirrors a single row of GTFS {@code calendar_dates.txt}. Either adds
  * or removes a date from its parent {@link ServiceCalendar}'s weekly
  * pattern. The (calendar, date) pair is unique by GTFS rule.
+ * <p>
+ * The {@code Exception} suffix is the GTFS domain term (a service-pattern
+ * exception like "closed on Christmas"), <em>not</em> a Java
+ * {@link Throwable}. SpotBugs reports {@code NM_CLASS_NOT_EXCEPTION} on
+ * this name; the rule is suppressed via the project filter because
+ * renaming would break the published SQL table {@code service_calendar_exceptions}
+ * and downstream Flyway migrations.
  */
 @Entity
 @Table(name = "service_calendar_exceptions",
