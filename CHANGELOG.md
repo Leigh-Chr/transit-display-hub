@@ -5,6 +5,39 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] — 2026-05-10
+
+### Headline
+
+First stable release. Transit Display Hub now ships with 100 %
+GTFS spec coverage validated by the canonical
+MobilityData runner, WCAG 2.2 AA accessibility on every persona
+(kiosk, admin, map), runtime FR/EN switching, automated quality
+gates (JaCoCo, Vitest coverage, Playwright smoke E2E, GitHub
+Actions CI) and a turnkey Raspberry-Pi kiosk deployment recipe.
+
+The entries below summarise what landed across milestones 0.9.0
+through 0.15.0. Detailed release notes for each milestone are
+preserved verbatim in the sections that follow.
+
+### Summary of milestones folded into 1.0.0
+
+| Milestone | Theme | Highlights |
+|---|---|---|
+| 0.9.0  | GTFS spec 100 % | mean_duration_*, RT FeedHeader + TripUpdate.vehicle, gtfs-validator integration, ADR 0034 |
+| 0.10.0 | Accessibility WCAG 2.2 AA | High-contrast palette, large-text mode, Web Speech API, /map/list tabular alternative, ADR 0035 |
+| 0.11.0 | Runtime i18n (Transloco) | LocaleService, fr.json + en.json, kiosk + map migrated, ADR 0036 |
+| 0.12.0 | Quality gates + CI | JaCoCo, Vitest coverage, Playwright smoke E2E, two GitHub Actions workflows, ADR 0037 |
+| 0.13.0 | Routing voyageur | Already covered by RouteFinderService + ADR 0032 (no new code) |
+| 0.14.0 | Raspberry Pi kiosk | docker-compose.kiosk.yml, install.sh, docs/kiosk-raspberry-pi.md |
+| 0.15.0 | Polish UX | 404 page redesigned with public + admin CTAs, i18n keys |
+
+### Tag
+
+This release is tagged `v1.0.0`.
+
+---
+
 ## [Unreleased]
 
 ### Added — 0.12.0 milestone : Quality gates and CI (May 2026)

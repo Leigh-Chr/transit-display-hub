@@ -1,7 +1,13 @@
 # Transit Display Hub
 
+[![Backend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
+
 Real-time passenger information platform for public
-transport networks.
+transport networks. **Stable 1.0.0** — 100 % GTFS spec coverage,
+WCAG 2.2 AA accessibility, runtime FR/EN, JaCoCo + Vitest +
+Playwright quality gates, and a turnkey Raspberry-Pi kiosk
+deployment.
 
 ## Overview
 
