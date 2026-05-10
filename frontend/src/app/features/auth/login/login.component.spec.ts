@@ -250,6 +250,25 @@ describe('LoginComponent', () => {
     });
   });
 
+  describe('credentials hint visibility', () => {
+    it('shows hint when devMode is true', () => {
+      (component as unknown as { devMode: boolean }).devMode = true;
+      fixture.detectChanges();
+
+      const hint = fixture.nativeElement.querySelector('.hint-text');
+      expect(hint).not.toBeNull();
+      expect(hint?.textContent).toContain('admin / admin123');
+    });
+
+    it('hides hint when devMode is false', () => {
+      (component as unknown as { devMode: boolean }).devMode = false;
+      fixture.detectChanges();
+
+      const hint = fixture.nativeElement.querySelector('.hint-text');
+      expect(hint).toBeNull();
+    });
+  });
+
   describe('loading state UI', () => {
     it('should show spinner when loading', () => {
       component.loading.set(true);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, isDevMode, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -81,9 +81,11 @@ import { AuthService } from '@core/auth/auth.service';
           </form>
         </mat-card-content>
 
-        <mat-card-footer>
-          <p class="hint-text">Default credentials: admin / admin123</p>
-        </mat-card-footer>
+        @if (devMode) {
+          <mat-card-footer>
+            <p class="hint-text">Default credentials: admin / admin123</p>
+          </mat-card-footer>
+        }
       </mat-card>
     </main>
   `,
@@ -183,6 +185,8 @@ import { AuthService } from '@core/auth/auth.service';
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+
+  protected devMode = isDevMode();
 
   username = '';
   password = '';
