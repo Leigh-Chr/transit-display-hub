@@ -1,0 +1,75 @@
+{
+  "common": {
+    "appName": "Transit Display Hub",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "refresh": "Refresh",
+    "language": "Language",
+    "switchToEnglish": "Switch to English",
+    "switchToFrench": "Passer en français"
+  },
+  "kiosk": {
+    "noArrivals": "No upcoming departure",
+    "alertWarning": "Service alert",
+    "speakNext": "Read the next departure aloud",
+    "highContrast": "High-contrast mode",
+    "largeText": "Larger text",
+    "headerLine": "Line",
+    "headerDestination": "Destination",
+    "headerNextDeparture": "Next departure"
+  },
+  "map": {
+    "title": "Network map",
+    "viewList": "List view",
+    "viewListAria": "Accessible tabular view — keyboard / screen reader",
+    "filterAccessible": "Show wheelchair-accessible stops only",
+    "filterOnDemand": "Show on-demand (DRT) stops only",
+    "searchStop": "Filter by stop name",
+    "linesCount": "Lines",
+    "stopsCount": "Stops",
+    "noMatchingStops": "No stop matches the active filters.",
+    "loadingNetwork": "Loading the network…",
+    "loadFailed": "Could not load the network. Please try again later.",
+    "accessibility": {
+      "accessible": "Wheelchair accessible",
+      "notAccessible": "Not accessible",
+      "unknown": "Not declared"
+    }
+  },
+  "admin": {
+    "navigation": {
+      "dashboard": "Dashboard",
+      "lines": "Lines",
+      "stops": "Stops",
+      "schedules": "Schedules",
+      "itineraries": "Itineraries",
+      "messages": "Messages",
+      "devices": "Devices",
+      "users": "Users",
+      "import": "GTFS import",
+      "audit": "Import audit",
+      "realtime": "Realtime",
+      "fares": "Fares",
+      "tadZones": "DRT zones",
+      "translations": "Translations",
+      "pathways": "Pathways",
+      "shapes": "Shapes",
+      "logout": "Sign out"
+    },
+    "auth": {
+      "login": "Sign in",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Sign in"
+    }
+  }
+}

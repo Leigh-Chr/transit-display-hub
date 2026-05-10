@@ -16,6 +16,7 @@ import { NetworkMapDataService } from './services/network-map-data.service';
 import { SchematicLayoutService, LayoutStop } from './services/schematic-layout.service';
 import { RouteFinderService, RouteResult } from './services/route-finder.service';
 import { ThemeService } from '@core/services/theme.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { NetworkMap, NetworkMapAlerts, NetworkLine } from '@shared/models';
 
 // Stub child components to avoid their complex dependencies
@@ -106,6 +107,12 @@ describe('NetworkMapComponent', () => {
       toggleTheme: vi.fn(),
     };
 
+    const mockLocaleService = {
+      current: signal('fr'),
+      setLang: vi.fn(),
+      toggle: vi.fn(),
+    };
+
     TestBed.configureTestingModule({
       imports: [NetworkMapComponent],
       providers: [
@@ -115,6 +122,7 @@ describe('NetworkMapComponent', () => {
         { provide: RouteFinderService, useValue: mockRouteFinder },
         { provide: MatDialog, useValue: mockDialog },
         { provide: ThemeService, useValue: mockThemeService },
+        { provide: LocaleService, useValue: mockLocaleService },
       ],
     }).overrideComponent(NetworkMapComponent, {
       set: {

@@ -1,0 +1,75 @@
+{
+  "common": {
+    "appName": "Transit Display Hub",
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "back": "Retour",
+    "refresh": "Rafraîchir",
+    "language": "Langue",
+    "switchToEnglish": "Switch to English",
+    "switchToFrench": "Passer en français"
+  },
+  "kiosk": {
+    "noArrivals": "Aucun passage prévu",
+    "alertWarning": "Alerte trafic",
+    "speakNext": "Écouter le prochain passage",
+    "highContrast": "Mode contrasté",
+    "largeText": "Texte agrandi",
+    "headerLine": "Ligne",
+    "headerDestination": "Destination",
+    "headerNextDeparture": "Prochain passage"
+  },
+  "map": {
+    "title": "Plan du réseau",
+    "viewList": "Vue liste",
+    "viewListAria": "Vue tabulaire accessible — clavier / lecteur d'écran",
+    "filterAccessible": "Arrêts accessibles PMR uniquement",
+    "filterOnDemand": "Arrêts à la demande (TAD) uniquement",
+    "searchStop": "Filtrer par nom d'arrêt",
+    "linesCount": "Lignes",
+    "stopsCount": "Arrêts",
+    "noMatchingStops": "Aucun arrêt ne correspond aux filtres actifs.",
+    "loadingNetwork": "Chargement du réseau…",
+    "loadFailed": "Impossible de charger le réseau. Réessayez plus tard.",
+    "accessibility": {
+      "accessible": "Accessible PMR",
+      "notAccessible": "Non accessible",
+      "unknown": "Non renseigné"
+    }
+  },
+  "admin": {
+    "navigation": {
+      "dashboard": "Tableau de bord",
+      "lines": "Lignes",
+      "stops": "Arrêts",
+      "schedules": "Horaires",
+      "itineraries": "Itinéraires",
+      "messages": "Messages",
+      "devices": "Appareils",
+      "users": "Utilisateurs",
+      "import": "Import GTFS",
+      "audit": "Audit d'import",
+      "realtime": "Temps réel",
+      "fares": "Tarifs",
+      "tadZones": "Zones TAD",
+      "translations": "Traductions",
+      "pathways": "Cheminements",
+      "shapes": "Tracés",
+      "logout": "Déconnexion"
+    },
+    "auth": {
+      "login": "Connexion",
+      "username": "Nom d'utilisateur",
+      "password": "Mot de passe",
+      "submit": "Se connecter"
+    }
+  }
+}

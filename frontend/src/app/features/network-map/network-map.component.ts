@@ -21,6 +21,7 @@ import { RouteSearchBarComponent } from './components/route-search-bar/route-sea
 import { LineIndexComponent } from './components/line-index/line-index.component';
 import { StopPopupComponent, LineAlertInfo } from './components/stop-popup/stop-popup.component';
 import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
+import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
@@ -56,6 +57,15 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
           <mat-icon aria-hidden="true">view_list</mat-icon>
           <span>Vue liste</span>
         </a>
+        <button
+          class="lang-toggle"
+          type="button"
+          (click)="localeService.toggle()"
+          [attr.aria-label]="localeService.current() === 'fr' ? 'Switch to English' : 'Passer en français'"
+          [title]="localeService.current() === 'fr' ? 'Switch to English' : 'Passer en français'"
+        >
+          {{ localeService.current() === 'fr' ? 'EN' : 'FR' }}
+        </button>
         <button
           class="theme-toggle"
           type="button"
@@ -257,6 +267,27 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
       color: var(--app-map-on-surface-variant);
       text-decoration: none;
       backdrop-filter: blur(8px);
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      margin-left: 8px;
+      border: 1px solid var(--app-map-outline);
+      border-radius: 18px;
+      background: var(--app-map-overlay-bg);
+      color: var(--app-map-on-surface-variant);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .lang-toggle:hover {
+      background: var(--app-map-surface-container-high);
     }
     .list-alt-link:hover {
       background: var(--app-map-surface-container-high);
@@ -587,6 +618,7 @@ export class NetworkMapComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly snackBar = inject(MatSnackBar);
   readonly themeService = inject(ThemeService);
+  readonly localeService = inject(LocaleService);
   private readonly networkMapWs = inject(NetworkMapWebSocketService);
 
   private readonly schematicMap = viewChild(SchematicMapComponent);
