@@ -133,7 +133,7 @@ dependencies {
     // JMH-only — Mockito lets micro-benchmarks stub the Spring Data
     // repositories with constant-time fakes so the measurement stays
     // focused on the service code (not the JPA round-trip).
-    "jmhImplementation"("org.mockito:mockito-core:5.14.2")
+    "jmhImplementation"("org.mockito:mockito-core:5.23.0")
 }
 
 // Protobuf code generation for gtfs-realtime.proto. The plugin
