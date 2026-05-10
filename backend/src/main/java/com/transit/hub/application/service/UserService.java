@@ -74,7 +74,7 @@ public class UserService {
         boolean wasActiveAdmin = user.getRole() == UserRole.ADMIN && user.isEnabled();
         boolean willBeActiveAdmin = request.role() == UserRole.ADMIN && request.enabled();
         if (wasActiveAdmin && !willBeActiveAdmin) {
-            ensureAtLeastOneOtherActiveAdmin(user.getId());
+            ensureAtLeastOneOtherActiveAdmin();
         }
 
         // Update password only if provided
@@ -93,13 +93,13 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User", id));
 
         if (user.getRole() == UserRole.ADMIN && user.isEnabled()) {
-            ensureAtLeastOneOtherActiveAdmin(id);
+            ensureAtLeastOneOtherActiveAdmin();
         }
 
         userRepository.deleteById(id);
     }
 
-    private void ensureAtLeastOneOtherActiveAdmin(UUID excludingId) {
+    private void ensureAtLeastOneOtherActiveAdmin() {
         long activeAdmins = userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN);
         // The caller is still counted at this point — at least 2 are needed
         // for the change to leave someone else as active admin.
