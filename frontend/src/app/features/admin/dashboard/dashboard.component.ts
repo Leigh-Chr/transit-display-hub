@@ -19,7 +19,7 @@ import { DashboardService } from '@core/api/dashboard.service';
 import { Line, BroadcastMessage, Device } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
-import { lineTextColor, readableTextColor } from '@shared/utils/color.utils';
+import { lineTextColor } from '@shared/utils/color.utils';
 import { SNACKBAR_DURATIONS } from '@shared/utils/snackbar.constants';
 import { DataOverviewCardComponent } from './data-overview-card.component';
 import { FeedInfoCardComponent } from './feed-info-card.component';
@@ -954,7 +954,6 @@ export class DashboardComponent implements OnInit {
   topLines = signal<Line[]>([]);
   hasMoreLinesValue = signal(false);
   activeMessages = signal<BroadcastMessage[]>([]);
-  allMessages = signal<BroadcastMessage[]>([]);
   recentMessagesSignal = signal<BroadcastMessage[]>([]);
   offlineDevices = signal<Device[]>([]);
   remainingOfflineCount = signal(0);
@@ -1008,7 +1007,6 @@ export class DashboardComponent implements OnInit {
           this.topLines.set(summary.topLines);
           this.hasMoreLinesValue.set(summary.lineCount > summary.topLines.length);
           this.activeMessages.set(summary.activeMessages);
-          this.allMessages.set(summary.activeMessages);
           this.recentMessagesSignal.set(summary.recentMessages);
           this.totalDevicesCount.set(summary.devices.total);
           this.onlineDevicesCount.set(summary.devices.online);
@@ -1029,7 +1027,6 @@ export class DashboardComponent implements OnInit {
       // Agents only see messages — no need for the admin-gated dashboard endpoint.
       this.messageService.getAll().subscribe({
         next: (allMessages) => {
-          this.allMessages.set(allMessages);
           this.activeMessages.set(allMessages.filter(m => m.active));
           this.recentMessagesSignal.set(allMessages);
           this.loading.set(false);
@@ -1082,10 +1079,6 @@ export class DashboardComponent implements OnInit {
       });
   }
 
-  // Expose the shared color helpers to the template for line-badge contrast.
-  // {@link lineTextColor} preferred (uses server-resolved textColor), with
-  // {@link readableTextColor} kept for cases where only the bg color is known.
-  readableTextColor = readableTextColor;
   lineTextColor = lineTextColor;
 
   getMessageStatus(message: BroadcastMessage): 'active' | 'scheduled' | 'expired' {

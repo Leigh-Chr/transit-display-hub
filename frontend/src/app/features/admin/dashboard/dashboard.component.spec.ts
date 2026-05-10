@@ -288,7 +288,6 @@ describe('DashboardComponent', () => {
 
       expect(component.loading()).toBe(false);
       expect(component.activeMessages()).toEqual(mockActiveMessages);
-      expect(component.allMessages()).toEqual(mockAllMessages);
     });
 
     it('should not display admin-only stat cards for AGENT', async () => {
