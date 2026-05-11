@@ -12,20 +12,16 @@ import com.transit.hub.domain.model.LocationGroup;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
-import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.ShapePoint;
 import com.transit.hub.domain.model.ServiceCalendarException;
-import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Translation;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.model.Transfer;
 import com.transit.hub.domain.model.enums.BookingType;
 import com.transit.hub.domain.model.enums.FarePaymentMethod;
 import com.transit.hub.domain.model.enums.LineType;
-import com.transit.hub.domain.model.enums.PathwayMode;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.domain.model.Area;
@@ -38,10 +34,14 @@ import com.transit.hub.domain.model.Network;
 import com.transit.hub.domain.model.Timeframe;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
+import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.PathwayImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.RouteImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ShapeImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.StopImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.TransferImporter;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
@@ -58,13 +58,10 @@ import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
-import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.ShapeRepository;
-import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
-import com.transit.hub.infrastructure.persistence.TransferRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,6 +119,9 @@ public class GtfsImportService {
     private final AgencyImporter agencyImporter;
     private final RouteImporter routeImporter;
     private final ShapeImporter shapeImporter;
+    private final StopImporter stopImporter;
+    private final PathwayImporter pathwayImporter;
+    private final TransferImporter transferImporter;
     private final StationLevelImporter stationLevelImporter;
 
     private final LineRepository lineRepository;
@@ -130,11 +130,8 @@ public class GtfsImportService {
     private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
     private final AgencyRepository agencyRepository;
-    private final TransferRepository transferRepository;
     private final AttributionRepository attributionRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
-    private final StationLevelRepository stationLevelRepository;
-    private final PathwayRepository pathwayRepository;
     private final TranslationRepository translationRepository;
     private final FareAttributeRepository fareAttributeRepository;
     private final ShapeRepository shapeRepository;
@@ -233,13 +230,13 @@ public class GtfsImportService {
 
             importAttributions(workDir.resolve("attributions.txt"));
 
-            assignSchematicCoordinates(stopImport.stopsByGtfsId.values());
+            assignSchematicCoordinates(stopImport.stopsByGtfsId().values());
 
             validateGlobalIdUniqueness();
 
             return new ImportResult(
                     linesByGtfsId.size(),
-                    stopImport.stopsByGtfsId.size(),
+                    stopImport.stopsByGtfsId().size(),
                     itineraryImport.itineraryCount,
                     itineraryImport.itineraryStopCount,
                     schedules);
@@ -318,133 +315,8 @@ public class GtfsImportService {
     }
 
 
-    /**
-     * Persisted-stop lookup keyed by the GTFS {@code stop_id}. Phase
-     * 1.3 keeps every platform and parent station as its own row, so
-     * downstream consumers (schedules, itineraries, transfers, areas,
-     * pathways) just resolve their {@code stop_id} reference directly
-     * — no parent-collapse walk anymore.
-     */
-    private record StopImport(Map<String, Stop> stopsByGtfsId) {}
-
     private StopImport importStops(Path stopsFile) throws IOException {
-        record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
-                       String shortCode, String ttsName, String timezone, String description, String url,
-                       int wheelchairBoarding, String platformCode, String zoneId,
-                       Short stopAccess) {}
-
-        List<RawStop> raw = new ArrayList<>();
-        try (CSVParser parser = openCsv(stopsFile)) {
-            for (CSVRecord record : parser) {
-                int locationType = parseInt(optional(record, "location_type"), 0);
-                // Phase 1.3: keep platforms (0) and parent stations (1).
-                // Skip entrances/exits (2), generic nodes (3), boarding
-                // areas (4) — none are referenced by stop_times.
-                if (locationType >= 2) {
-                    continue;
-                }
-                raw.add(new RawStop(
-                        record.get("stop_id"),
-                        optional(record, "stop_name"),
-                        parseDoubleOrNull(optional(record, "stop_lat")),
-                        parseDoubleOrNull(optional(record, "stop_lon")),
-                        optional(record, "parent_station"),
-                        locationType,
-                        optional(record, "stop_code"),
-                        optional(record, "tts_stop_name"),
-                        optional(record, "stop_timezone"),
-                        optional(record, "stop_desc"),
-                        optional(record, "stop_url"),
-                        parseInt(optional(record, "wheelchair_boarding"), 0),
-                        optional(record, "platform_code"),
-                        optional(record, "zone_id"),
-                        parseShortOrNull(optional(record, "stop_access"))));
-            }
-        }
-
-        // Pre-load existing stops by external_id so re-imports keep the
-        // same UUID — Devices reference Stop.id directly, and dropping
-        // the row on re-import would unbind every kiosk in the field.
-        // See ADR 0013.
-        Map<String, Stop> existingByExternalId = stopRepository.findAll().stream()
-                .filter(s -> s.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Stop::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
-
-        // Two-pass persistence: parent stations first (so children can
-        // reference them via parentStop FK), then platforms.
-        Map<String, Stop> result = new LinkedHashMap<>();
-        Set<UUID> seenIds = new HashSet<>();
-        java.util.function.BiConsumer<RawStop, Stop> persist = (r, parent) -> {
-            if (isBlank(r.name)) {return;}
-            String externalId = truncate(r.id, 100);
-            Stop stop = existingByExternalId.containsKey(externalId)
-                    ? existingByExternalId.get(externalId)
-                    : new Stop();
-            stop.setExternalId(externalId);
-            stop.setName(truncate(r.name, STOP_NAME_MAX_LENGTH));
-            stop.setLatitude(r.lat);
-            stop.setLongitude(r.lon);
-            stop.setShortCode(truncate(r.shortCode, 50));
-            stop.setTtsName(truncate(r.ttsName, 150));
-            stop.setStopTimezone(truncate(r.timezone, 60));
-            stop.setDescription(truncate(r.description, 500));
-            stop.setUrl(truncate(r.url, 255));
-            stop.setWheelchairBoarding(
-                    com.transit.hub.domain.model.enums.WheelchairAccess.fromGtfs(r.wheelchairBoarding));
-            stop.setPlatformCode(isBlank(r.platformCode) ? null : truncate(r.platformCode, 10));
-            stop.setZoneId(isBlank(r.zoneId) ? null : truncate(r.zoneId, 100));
-            stop.setStopAccess(r.stopAccess);
-            stop.setLocationType((short) r.locationType);
-            stop.setParentStop(parent);
-            // Re-enable on every import: a stop that disappeared in a
-            // previous feed and reappears in the current one should
-            // become live again.
-            stop.setDisabled(false);
-            Stop saved = stopRepository.save(stop);
-            seenIds.add(saved.getId());
-            result.put(r.id, saved);
-        };
-
-        // Pass 1: parent stations. Platforms whose declared parent
-        // isn't in the feed at all (broken reference) are kept as
-        // free-standing in pass 2.
-        for (RawStop r : raw) {
-            if (r.locationType == 1) {persist.accept(r, null);}
-        }
-        // Flush parents before pass 2 so the platform inserts in pass 2
-        // see their FK already in the DB. Without this flush the two
-        // passes' inserts mingle in one action queue and Hibernate's
-        // BatchSorter can't topologically order the self-referential
-        // Stop → Stop FKs (HHH90032022).
-        entityManager.flush();
-        // Pass 2: platforms (location_type=0). The parent FK resolves
-        // against the pass-1 map; missing parents fall through to null.
-        for (RawStop r : raw) {
-            if (r.locationType != 1) {
-                Stop parent = isBlank(r.parent) ? null : result.get(r.parent);
-                persist.accept(r, parent);
-            }
-        }
-        entityManager.flush();
-        // Stops the new feed no longer declares: flag disabled rather
-        // than delete so Devices keep their stop_id FK valid. The kiosk
-        // still gets a clean "stop removed" payload via existing event
-        // handling on disabled toggle (StopService treats disabled as
-        // a soft-delete from the operator's perspective).
-        int disabled = 0;
-        for (Stop old : existingByExternalId.values()) {
-            if (!seenIds.contains(old.getId()) && !old.isDisabled()) {
-                old.setDisabled(true);
-                stopRepository.save(old);
-                disabled++;
-            }
-        }
-        long parents = result.values().stream().filter(s -> s.getLocationType() == 1).count();
-        log.info("GTFS import: {} stops upserted ({} platforms, {} stations, {} flagged disabled)",
-                result.size(), result.size() - parents, parents, disabled);
-        return new StopImport(result);
+        return stopImporter.importStops(stopsFile);
     }
 
 
@@ -567,7 +439,7 @@ public class GtfsImportService {
         // reassigning its stops doesn't leave the previous lines
         // permanently attached. The `stop.getLines()` collection is a
         // Set, so adding stays idempotent below.
-        for (Stop stop : stopImport.stopsByGtfsId.values()) {
+        for (Stop stop : stopImport.stopsByGtfsId().values()) {
             stop.getLines().clear();
         }
 
@@ -648,7 +520,7 @@ public class GtfsImportService {
             int position = 0;
             Set<Stop> seenInItinerary = new HashSet<>();
             for (TimedStop ts : trip) {
-                Stop stop = stopImport.stopsByGtfsId.get(ts.stopId);
+                Stop stop = stopImport.stopsByGtfsId().get(ts.stopId);
                 if (stop == null) {
                     continue;
                 }
@@ -934,7 +806,7 @@ public class GtfsImportService {
                     continue;
                 }
 
-                Stop stop = stopImport.stopsByGtfsId.get(record.get("stop_id"));
+                Stop stop = stopImport.stopsByGtfsId().get(record.get("stop_id"));
                 if (stop == null) {continue;}
 
                 LocalTime arrivalTime = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
@@ -1105,7 +977,7 @@ public class GtfsImportService {
                 (location == null && !isBlank(locationGroupId))
                         ? locationGroups.get(locationGroupId) : null;
         Stop stop = (location == null && locationGroup == null && !isBlank(stopId))
-                ? stopImport.stopsByGtfsId.get(stopId) : null;
+                ? stopImport.stopsByGtfsId().get(stopId) : null;
 
         Short pickupType = parseShortOrNull(optional(record, "pickup_type"));
         Short dropOffType = parseShortOrNull(optional(record, "drop_off_type"));
@@ -1291,55 +1163,8 @@ public class GtfsImportService {
         return active;
     }
 
-    /**
-     * Reads {@code transfers.txt} when present (the file is GTFS-optional).
-     * Resolves both endpoints through the same parent-station collapse the
-     * importer does for stop_times so a transfer declared between quays
-     * still maps to the persisted root stops the kiosks know about.
-     */
     private void importTransfers(Path transfersFile, StopImport stopImport) throws IOException {
-        if (!Files.exists(transfersFile)) {
-            log.info("GTFS import: transfers.txt missing, skipping");
-            return;
-        }
-        List<Transfer> batch = new ArrayList<>();
-        int skippedUnknownStop = 0;
-        try (CSVParser parser = openCsv(transfersFile)) {
-            for (CSVRecord record : parser) {
-                String fromGtfs = optional(record, "from_stop_id");
-                String toGtfs = optional(record, "to_stop_id");
-                if (isBlank(fromGtfs) || isBlank(toGtfs)) {continue;}
-
-                Stop fromStop = resolveStop(fromGtfs, stopImport);
-                Stop toStop = resolveStop(toGtfs, stopImport);
-                if (fromStop == null || toStop == null) {
-                    skippedUnknownStop++;
-                    continue;
-                }
-                // self-transfer rows describe waiting at a station for a
-                // different platform's service; we keep them — the route-
-                // finder ignores zero-length edges anyway.
-
-                short transferType = (short) parseInt(optional(record, "transfer_type"), 0);
-                Integer minTransferTime = parseIntOrNull(optional(record, "min_transfer_time"));
-
-                batch.add(Transfer.builder()
-                        .fromStop(fromStop)
-                        .toStop(toStop)
-                        .transferType(transferType)
-                        .minTransferTime(minTransferTime)
-                        .fromRouteId(truncate(optional(record, "from_route_id"), 100))
-                        .toRouteId(truncate(optional(record, "to_route_id"), 100))
-                        .fromTripId(truncate(optional(record, "from_trip_id"), 100))
-                        .toTripId(truncate(optional(record, "to_trip_id"), 100))
-                        .build());
-            }
-        }
-        if (!batch.isEmpty()) {
-            transferRepository.saveAll(batch);
-        }
-        log.info("GTFS import: {} transfers created ({} rows skipped — unknown stop)",
-                batch.size(), skippedUnknownStop);
+        transferImporter.importTransfers(transfersFile, stopImport);
     }
 
     private Map<String, Shape> importShapes(Path shapesFile) throws IOException {
@@ -1350,70 +1175,8 @@ public class GtfsImportService {
         stationLevelImporter.importStationLevels(levelsFile);
     }
 
-    /**
-     * Reads {@code pathways.txt} when present. Endpoints are resolved
-     * through the same parent-station collapse the schedule importer
-     * uses, so a pathway between two quays of the same station will
-     * end up as a self-transfer at the root stop until Phase 1.3
-     * introduces per-platform Stop rows. Self-transfer rows are still
-     * worth persisting — they expose elevators / escalators that an
-     * accessibility filter can later highlight.
-     */
     private void importPathways(Path pathwaysFile, StopImport stopImport) throws IOException {
-        pathwayRepository.deleteAllInBatch();
-        pathwayRepository.flush();
-
-        if (!Files.exists(pathwaysFile)) {
-            log.info("GTFS import: pathways.txt missing, skipping");
-            return;
-        }
-        List<Pathway> batch = new ArrayList<>();
-        int skippedUnknownStop = 0;
-        int skippedUnknownMode = 0;
-        try (CSVParser parser = openCsv(pathwaysFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "pathway_id");
-                if (isBlank(externalId)) {continue;}
-                String fromGtfs = optional(record, "from_stop_id");
-                String toGtfs = optional(record, "to_stop_id");
-                if (isBlank(fromGtfs) || isBlank(toGtfs)) {continue;}
-
-                Stop fromStop = resolveStop(fromGtfs, stopImport);
-                Stop toStop = resolveStop(toGtfs, stopImport);
-                if (fromStop == null || toStop == null) {
-                    skippedUnknownStop++;
-                    continue;
-                }
-
-                int modeCode = parseInt(optional(record, "pathway_mode"), 0);
-                PathwayMode mode = PathwayMode.fromGtfsCode(modeCode);
-                if (mode == null) {
-                    skippedUnknownMode++;
-                    continue;
-                }
-                boolean bidirectional = "1".equals(optional(record, "is_bidirectional"));
-
-                batch.add(Pathway.builder()
-                        .externalId(truncate(externalId, 100))
-                        .fromStop(fromStop)
-                        .toStop(toStop)
-                        .pathwayMode(mode)
-                        .bidirectional(bidirectional)
-                        .lengthMetres(parseDoubleOrNull(optional(record, "length")))
-                        .traversalTimeSeconds(parseIntOrNull(optional(record, "traversal_time")))
-                        .stairCount(parseIntOrNull(optional(record, "stair_count")))
-                        .maxSlope(parseDoubleOrNull(optional(record, "max_slope")))
-                        .minWidthMetres(parseDoubleOrNull(optional(record, "min_width")))
-                        .signpostedAs(truncate(optional(record, "signposted_as"), 200))
-                        .reversedSignpostedAs(truncate(optional(record, "reversed_signposted_as"), 200))
-                        .build());
-            }
-        }
-        if (!batch.isEmpty()) {
-            pathwayRepository.saveAll(batch);
-        }
-        log.info("GTFS import: {} pathways created ({} skipped unknown stop, {} skipped unknown mode)",
-                batch.size(), skippedUnknownStop, skippedUnknownMode);
+        pathwayImporter.importPathways(pathwaysFile, stopImport);
     }
 
     /**
@@ -1659,8 +1422,8 @@ public class GtfsImportService {
                 String toStopId = optional(record, "to_stop_id");
                 String fromNet = optional(record, "from_network_id");
                 String toNet = optional(record, "to_network_id");
-                Stop fromStop = isBlank(fromStopId) ? null : stopImport.stopsByGtfsId.get(fromStopId);
-                Stop toStop = isBlank(toStopId) ? null : stopImport.stopsByGtfsId.get(toStopId);
+                Stop fromStop = isBlank(fromStopId) ? null : stopImport.stopsByGtfsId().get(fromStopId);
+                Stop toStop = isBlank(toStopId) ? null : stopImport.stopsByGtfsId().get(toStopId);
                 boolean canonical = !isBlank(legGroupId) || legSequence != null;
                 boolean legacy = !isBlank(fromNet) || !isBlank(toNet)
                         || fromStop != null || toStop != null;
@@ -1775,7 +1538,7 @@ public class GtfsImportService {
                     String stopGtfsId = optional(record, "stop_id");
                     Area area = result.get(areaId);
                     if (area == null || isBlank(stopGtfsId)) {continue;}
-                    Stop stop = stopImport.stopsByGtfsId.get(stopGtfsId);
+                    Stop stop = stopImport.stopsByGtfsId().get(stopGtfsId);
                     if (stop != null) {
                         area.getStops().add(stop);
                     }
@@ -2208,7 +1971,7 @@ public class GtfsImportService {
      *  lookup against {@code stopsByGtfsId} is enough — no
      *  parent-walk required. */
     private static Stop resolveStop(String gtfsStopId, StopImport stopImport) {
-        return stopImport.stopsByGtfsId.get(gtfsStopId);
+        return stopImport.stopsByGtfsId().get(gtfsStopId);
     }
 
     private void assignSchematicCoordinates(Collection<Stop> stops) {
