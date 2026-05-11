@@ -6,6 +6,7 @@ import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.infrastructure.security.LoginRateLimitFilter;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,8 +18,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -197,6 +200,147 @@ class AuthControllerIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("drops httpOnly ACCESS_TOKEN + REFRESH_TOKEN cookies on success")
+        void setsAuthCookies() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+
+            MvcResult result = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            Cookie access = result.getResponse().getCookie("ACCESS_TOKEN");
+            Cookie refresh = result.getResponse().getCookie("REFRESH_TOKEN");
+            assertThat(access).isNotNull();
+            assertThat(access.isHttpOnly()).isTrue();
+            assertThat(access.getValue()).isNotBlank();
+            assertThat(access.getPath()).isEqualTo("/");
+            assertThat(refresh).isNotNull();
+            assertThat(refresh.isHttpOnly()).isTrue();
+            assertThat(refresh.getValue()).isNotBlank();
+            assertThat(refresh.getPath()).isEqualTo("/api/auth");
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/auth/refresh")
+    class Refresh {
+
+        @Test
+        @DisplayName("returns 401 when refresh cookie is missing")
+        void noCookie_Returns401() throws Exception {
+            mockMvc.perform(post("/api/auth/refresh"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("rotates the refresh cookie and mints a new access token")
+        void withCookie_Returns200AndRotates() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            Cookie initialRefresh = login.getResponse().getCookie("REFRESH_TOKEN");
+            assertThat(initialRefresh).isNotNull();
+
+            MvcResult refresh = mockMvc.perform(post("/api/auth/refresh").cookie(initialRefresh))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.token", notNullValue()))
+                    .andExpect(jsonPath("$.role", is("ADMIN")))
+                    .andReturn();
+
+            Cookie newAccess = refresh.getResponse().getCookie("ACCESS_TOKEN");
+            Cookie newRefresh = refresh.getResponse().getCookie("REFRESH_TOKEN");
+            assertThat(newAccess).isNotNull();
+            assertThat(newRefresh).isNotNull();
+            assertThat(newRefresh.getValue()).isNotEqualTo(initialRefresh.getValue());
+        }
+
+        @Test
+        @DisplayName("rejects a refresh cookie that has already been rotated")
+        void reusedCookie_Returns401() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn();
+            Cookie firstRefresh = login.getResponse().getCookie("REFRESH_TOKEN");
+
+            mockMvc.perform(post("/api/auth/refresh").cookie(firstRefresh))
+                    .andExpect(status().isOk());
+
+            // Replaying the now-rotated cookie must fail loud.
+            mockMvc.perform(post("/api/auth/refresh").cookie(firstRefresh))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/auth/logout")
+    class Logout {
+
+        @Test
+        @DisplayName("clears both auth cookies and returns 204")
+        void clearsCookies() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn();
+            Cookie refresh = login.getResponse().getCookie("REFRESH_TOKEN");
+
+            MvcResult logout = mockMvc.perform(post("/api/auth/logout").cookie(refresh))
+                    .andExpect(status().isNoContent())
+                    .andReturn();
+
+            Cookie clearedAccess = logout.getResponse().getCookie("ACCESS_TOKEN");
+            Cookie clearedRefresh = logout.getResponse().getCookie("REFRESH_TOKEN");
+            assertThat(clearedAccess).isNotNull();
+            assertThat(clearedAccess.getMaxAge()).isZero();
+            assertThat(clearedRefresh).isNotNull();
+            assertThat(clearedRefresh.getMaxAge()).isZero();
+        }
+
+        @Test
+        @DisplayName("is idempotent when called without a refresh cookie")
+        void noCookie_Returns204() throws Exception {
+            mockMvc.perform(post("/api/auth/logout"))
+                    .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/auth/me")
+    class Me {
+
+        @Test
+        @DisplayName("returns 401 without authentication")
+        void unauthenticated_Returns401() throws Exception {
+            mockMvc.perform(get("/api/auth/me"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("returns user identity for an authenticated caller")
+        void authenticated_ReturnsUser() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn();
+            String body = login.getResponse().getContentAsString();
+            String token = objectMapper.readTree(body).get("token").asString();
+
+            mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.username", is("admin")))
+                    .andExpect(jsonPath("$.role", is("ADMIN")));
         }
     }
 }

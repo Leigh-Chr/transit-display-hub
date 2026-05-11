@@ -20,6 +20,16 @@ app:
   # Operator-facing local time used for schedule comparisons. Override via
   # APP_TIMEZONE on networks running outside Europe/Paris.
   timezone: ${APP_TIMEZONE:Europe/Paris}
+  auth:
+    # HttpOnly cookies dropped at /api/auth/login. The Secure flag must
+    # flip to true behind any HTTPS-terminating proxy (override via
+    # AUTH_COOKIE_SECURE). SameSite stays Strict so a cross-site form
+    # post cannot piggyback on an existing session.
+    access-cookie-name: ${AUTH_ACCESS_COOKIE_NAME:ACCESS_TOKEN}
+    refresh-cookie-name: ${AUTH_REFRESH_COOKIE_NAME:REFRESH_TOKEN}
+    cookie-secure: ${AUTH_COOKIE_SECURE:false}
+    cookie-same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
+    cookie-domain: ${AUTH_COOKIE_DOMAIN:}
 
 management:
   endpoints:

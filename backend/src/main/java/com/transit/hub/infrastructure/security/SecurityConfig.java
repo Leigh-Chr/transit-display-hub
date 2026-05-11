@@ -51,8 +51,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Public auth endpoints (login + refresh + logout). /me is left
+                        // off the allowlist on purpose so an anonymous caller gets 401
+                        // instead of an empty body — the controller is the only thing
+                        // that can introspect the SecurityContext.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login",
+                                "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         .requestMatchers("/api/display/**").permitAll()  // Public for kiosk displays
                         .requestMatchers("/api/network-map/**").permitAll()  // Public for network map
                         .requestMatchers(HttpMethod.GET, "/api/attributions").permitAll()  // Public credit block

@@ -1,11 +1,14 @@
 package com.transit.hub.application.service;
 
+import com.transit.hub.application.dto.LoginBundle;
 import com.transit.hub.application.dto.request.LoginRequest;
 import com.transit.hub.application.dto.response.LoginResponse;
+import com.transit.hub.domain.model.RefreshToken;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.infrastructure.security.JwtService;
+import com.transit.hub.infrastructure.security.RefreshTokenService;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,11 +21,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +45,11 @@ class AuthServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
+    private final Clock clock = Clock.fixed(Instant.parse("2026-05-11T10:00:00Z"), ZoneOffset.UTC);
+
     @InjectMocks
     private AuthService authService;
 
@@ -47,6 +59,10 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Plug the fixed clock into the @InjectMocks-built instance so the
+        // refresh-token TTL computation is deterministic in these tests.
+        authService = new AuthService(userRepository, passwordEncoder, jwtService,
+                refreshTokenService, clock);
         testUser = TestDataFactory.createUserWithPassword("testuser", "encoded_password", UserRole.ADMIN);
     }
 
@@ -262,6 +278,105 @@ class AuthServiceTest {
             assertThat(response1.token()).isNotEqualTo(response2.token());
 
             verify(jwtService, times(2)).generateToken(testUser);
+        }
+    }
+
+    @Nested
+    @DisplayName("loginWithRefresh")
+    class LoginWithRefresh {
+
+        @Test
+        @DisplayName("returns bundle with access token, refresh raw and remaining TTL")
+        void returnsBundle() {
+            Instant refreshExpiresAt = Instant.parse("2026-05-25T10:00:00Z");
+            LoginRequest request = new LoginRequest("testuser", "password");
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches("password", "encoded_password")).thenReturn(true);
+            when(jwtService.generateToken(testUser)).thenReturn(TEST_TOKEN);
+            when(jwtService.extractExpiration(TEST_TOKEN)).thenReturn(TEST_EXPIRATION);
+            RefreshToken refreshEntity = RefreshToken.builder()
+                    .user(testUser)
+                    .expiresAt(refreshExpiresAt)
+                    .build();
+            when(refreshTokenService.issue(testUser, "UA", "1.2.3.4"))
+                    .thenReturn(new RefreshTokenService.Issued("raw-refresh", refreshEntity));
+
+            LoginBundle bundle = authService.loginWithRefresh(request, "UA", "1.2.3.4");
+
+            assertThat(bundle.loginResponse().token()).isEqualTo(TEST_TOKEN);
+            assertThat(bundle.loginResponse().role()).isEqualTo(UserRole.ADMIN);
+            assertThat(bundle.refreshTokenRaw()).isEqualTo("raw-refresh");
+            // 14 days between fixed clock (2026-05-11T10:00:00Z) and refreshExpiresAt
+            assertThat(bundle.refreshTokenTtl()).isEqualTo(java.time.Duration.ofDays(14));
+        }
+
+        @Test
+        @DisplayName("propagates BadCredentialsException without touching refresh service")
+        void invalidCredentialsDoesNotMintRefresh() {
+            LoginRequest request = new LoginRequest("unknown", "password");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.loginWithRefresh(request, "UA", "1.2.3.4"))
+                    .isInstanceOf(BadCredentialsException.class);
+
+            verifyNoInteractions(refreshTokenService);
+        }
+    }
+
+    @Nested
+    @DisplayName("refresh")
+    class Refresh {
+
+        @Test
+        @DisplayName("rotates the refresh token and mints a new access bundle")
+        void rotatesAndIssues() {
+            Instant newRefreshExpiresAt = Instant.parse("2026-05-25T10:00:00Z");
+            RefreshToken rotatedEntity = RefreshToken.builder()
+                    .user(testUser)
+                    .expiresAt(newRefreshExpiresAt)
+                    .build();
+            when(refreshTokenService.rotate("incoming-raw", "UA", "1.2.3.4"))
+                    .thenReturn(new RefreshTokenService.Issued("new-raw", rotatedEntity));
+            when(jwtService.generateToken(testUser)).thenReturn(TEST_TOKEN);
+            when(jwtService.extractExpiration(TEST_TOKEN)).thenReturn(TEST_EXPIRATION);
+
+            LoginBundle bundle = authService.refresh("incoming-raw", "UA", "1.2.3.4");
+
+            assertThat(bundle.loginResponse().token()).isEqualTo(TEST_TOKEN);
+            assertThat(bundle.refreshTokenRaw()).isEqualTo("new-raw");
+            assertThat(bundle.refreshTokenTtl()).isEqualTo(java.time.Duration.ofDays(14));
+        }
+
+        @Test
+        @DisplayName("propagates BadCredentialsException from rotate")
+        void propagatesRotateFailure() {
+            when(refreshTokenService.rotate(any(), any(), any()))
+                    .thenThrow(new BadCredentialsException("Refresh token revoked"));
+
+            assertThatThrownBy(() -> authService.refresh("raw", "UA", "1.2.3.4"))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessageContaining("revoked");
+        }
+    }
+
+    @Nested
+    @DisplayName("logout")
+    class Logout {
+
+        @Test
+        @DisplayName("delegates to refresh service when token is present")
+        void revokesPresentToken() {
+            authService.logout("raw-token");
+            verify(refreshTokenService).revoke("raw-token");
+        }
+
+        @Test
+        @DisplayName("is a no-op when raw is null or blank")
+        void noopForBlank() {
+            authService.logout(null);
+            authService.logout("");
+            authService.logout("   ");
+            verifyNoInteractions(refreshTokenService);
         }
     }
 }
