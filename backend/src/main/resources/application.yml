@@ -104,6 +104,7 @@ app:
     expiration-hours: 8
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
+    refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
 
 ---
 spring:
@@ -149,6 +150,7 @@ app:
     expiration-hours: 8
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
+    refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
 
 ---
 # Kiosk profile — same posture as prod (PostgreSQL, validate-only DDL,
@@ -194,3 +196,4 @@ app:
     expiration-hours: 8
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
+    refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
