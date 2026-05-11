@@ -1,8 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Minimal Playwright config: a single browser project (Chromium),
- * tests under {@code e2e/}, screenshots and traces only on failure.
+ * Playwright configuration.
+ *
+ * - Three browser projects: Chromium, Firefox, Mobile Chrome.
+ * - Single global-setup run that logs in and persists storage state so
+ *   auth fixtures can reuse the session without re-authenticating.
+ * - Visual regression tolerance of 100 px to absorb font-rendering
+ *   differences between platforms and CI runners.
+ * - {@code webServer.timeout} raised to 300 s to accommodate Angular's
+ *   cold-start compilation on the first CI run.
  *
  * In CI, set {@code E2E_BACKEND_RUNNING=1} once Spring Boot is up so
  * Playwright skips its own webServer for the backend and only spawns
@@ -12,8 +19,12 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
-  expect: { timeout: 5_000 },
+  expect: {
+    timeout: 5_000,
+    toHaveScreenshot: { maxDiffPixels: 100 },
+  },
   fullyParallel: true,
+  globalSetup: './e2e/global-setup',
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',
@@ -25,12 +36,20 @@ export default defineConfig({
     command: 'npm start',
     url: 'http://localhost:4200',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 300_000,
   },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
     },
   ],
 });
