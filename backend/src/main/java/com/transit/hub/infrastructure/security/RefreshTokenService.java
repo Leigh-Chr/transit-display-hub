@@ -2,10 +2,10 @@ package com.transit.hub.infrastructure.security;
 
 import com.transit.hub.domain.model.RefreshToken;
 import com.transit.hub.domain.model.User;
+import com.transit.hub.infrastructure.config.JwtProperties;
 import com.transit.hub.infrastructure.persistence.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +40,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository repository;
     private final Clock clock;
-
-    @Value("${app.jwt.refresh-expiration-days:14}")
-    private int refreshExpirationDays;
+    private final JwtProperties jwtProperties;
 
     /**
      * Mints a brand new refresh token for the given user (e.g. at login).
@@ -114,7 +112,7 @@ public class RefreshTokenService {
     }
 
     public Duration ttl() {
-        return Duration.ofDays(refreshExpirationDays);
+        return Duration.ofDays(jwtProperties.refreshExpirationDays());
     }
 
     private Issued mint(User user, String userAgent, String ipAddress) {
@@ -127,7 +125,7 @@ public class RefreshTokenService {
                 .user(user)
                 .tokenHash(hash(rawToken))
                 .issuedAt(now)
-                .expiresAt(now.plus(Duration.ofDays(refreshExpirationDays)))
+                .expiresAt(now.plus(Duration.ofDays(jwtProperties.refreshExpirationDays())))
                 .userAgent(userAgent)
                 .ipAddress(ipAddress)
                 .build();

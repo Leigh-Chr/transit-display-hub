@@ -2,11 +2,12 @@ package com.transit.hub.infrastructure.security;
 
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
+import com.transit.hub.infrastructure.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -17,19 +18,10 @@ import java.util.Date;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
-    @Value("${app.jwt.secret}")
-    private String secret;
-
-    @Value("${app.jwt.expiration-hours}")
-    private int expirationHours;
-
-    @Value("${app.jwt.issuer:transit-display-hub}")
-    private String issuer;
-
-    @Value("${app.jwt.audience:transit-display-hub-admin}")
-    private String audience;
+    private final JwtProperties props;
 
     /**
      * HS-family JWT keys must be at least 256 bits (32 bytes) for HS256.
@@ -38,7 +30,7 @@ public class JwtService {
      */
     @PostConstruct
     void validateSecretLength() {
-        int bytes = secret.getBytes(StandardCharsets.UTF_8).length;
+        int bytes = props.secret().getBytes(StandardCharsets.UTF_8).length;
         if (bytes < 32) {
             throw new IllegalStateException(
                     "app.jwt.secret is too short: " + bytes
@@ -48,12 +40,12 @@ public class JwtService {
 
     public String generateToken(User user) {
         Instant now = Instant.now();
-        Instant expiration = now.plus(expirationHours, ChronoUnit.HOURS);
+        Instant expiration = now.plus(props.expirationHours(), ChronoUnit.HOURS);
 
         return Jwts.builder()
                 .subject(user.getUsername())
-                .issuer(issuer)
-                .audience().add(audience).and()
+                .issuer(props.issuer())
+                .audience().add(props.audience()).and()
                 .claim("role", user.getRole().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
@@ -113,8 +105,8 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .clockSkewSeconds(CLOCK_SKEW_SECONDS)
-                .requireIssuer(issuer)
-                .requireAudience(audience)
+                .requireIssuer(props.issuer())
+                .requireAudience(props.audience())
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
@@ -122,7 +114,7 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes = props.secret().getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.security;
 
 import com.transit.hub.domain.model.enums.UserRole;
+import com.transit.hub.infrastructure.config.AuthProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -9,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,9 +26,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-
-    @Value("${app.auth.access-cookie-name:ACCESS_TOKEN}")
-    private String accessCookieName;
+    private final AuthProperties authProperties;
 
     @Override
     protected void doFilterInternal(
@@ -94,7 +92,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (accessCookieName.equals(cookie.getName())) {
+                if (authProperties.accessCookieName().equals(cookie.getName())) {
                     String value = cookie.getValue();
                     if (value != null && !value.isBlank()) {
                         return new TokenSource(value, false);

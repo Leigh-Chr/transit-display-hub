@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -17,7 +16,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.util.ReflectionTestUtils;
+import com.transit.hub.infrastructure.config.AuthProperties;
 import jakarta.servlet.http.Cookie;
 
 import java.io.IOException;
@@ -36,15 +35,14 @@ class JwtAuthenticationFilterTest {
     @Mock
     private FilterChain filterChain;
 
-    @InjectMocks
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(jwtAuthenticationFilter, "accessCookieName", "ACCESS_TOKEN");
+        AuthProperties authProps = new AuthProperties("ACCESS_TOKEN", "REFRESH_TOKEN", false, "Strict", "");
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, authProps);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         SecurityContextHolder.clearContext();

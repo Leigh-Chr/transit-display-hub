@@ -13,7 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -46,8 +45,10 @@ class RefreshTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RefreshTokenService(repository, Clock.fixed(FIXED_NOW, ZoneOffset.UTC));
-        ReflectionTestUtils.setField(service, "refreshExpirationDays", 14);
+        var jwtProps = new com.transit.hub.infrastructure.config.JwtProperties(
+                "secret-only-validated-by-JwtService-not-this-test-but-must-be-32-chars",
+                1, "transit-display-hub", "transit-display-hub-admin", 14);
+        service = new RefreshTokenService(repository, Clock.fixed(FIXED_NOW, ZoneOffset.UTC), jwtProps);
         user = TestDataFactory.createAdmin("alice");
     }
 

@@ -1,7 +1,7 @@
 package com.transit.hub.infrastructure.security;
 
-import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
+import com.transit.hub.infrastructure.config.AuthProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
@@ -19,44 +19,39 @@ import java.time.Duration;
  * leaks.
  */
 @Component
-@Getter
+@RequiredArgsConstructor
 public class AuthCookieFactory {
 
-    @Value("${app.auth.access-cookie-name:ACCESS_TOKEN}")
-    private String accessCookieName;
+    private final AuthProperties props;
 
-    @Value("${app.auth.refresh-cookie-name:REFRESH_TOKEN}")
-    private String refreshCookieName;
+    public String getAccessCookieName() {
+        return props.accessCookieName();
+    }
 
-    @Value("${app.auth.cookie-secure:false}")
-    private boolean secure;
-
-    @Value("${app.auth.cookie-same-site:Strict}")
-    private String sameSite;
-
-    @Value("${app.auth.cookie-domain:}")
-    private String domain;
+    public String getRefreshCookieName() {
+        return props.refreshCookieName();
+    }
 
     public ResponseCookie buildAccessCookie(String value, Duration maxAge) {
-        return baseBuilder(accessCookieName, value, "/")
+        return baseBuilder(props.accessCookieName(), value, "/")
                 .maxAge(maxAge)
                 .build();
     }
 
     public ResponseCookie buildRefreshCookie(String value, Duration maxAge) {
-        return baseBuilder(refreshCookieName, value, "/api/auth")
+        return baseBuilder(props.refreshCookieName(), value, "/api/auth")
                 .maxAge(maxAge)
                 .build();
     }
 
     public ResponseCookie clearAccessCookie() {
-        return baseBuilder(accessCookieName, "", "/")
+        return baseBuilder(props.accessCookieName(), "", "/")
                 .maxAge(0)
                 .build();
     }
 
     public ResponseCookie clearRefreshCookie() {
-        return baseBuilder(refreshCookieName, "", "/api/auth")
+        return baseBuilder(props.refreshCookieName(), "", "/api/auth")
                 .maxAge(0)
                 .build();
     }
@@ -64,11 +59,11 @@ public class AuthCookieFactory {
     private ResponseCookie.ResponseCookieBuilder baseBuilder(String name, String value, String path) {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(secure)
+                .secure(props.cookieSecure())
                 .path(path)
-                .sameSite(sameSite);
-        if (!domain.isEmpty()) {
-            builder.domain(domain);
+                .sameSite(props.cookieSameSite());
+        if (!props.cookieDomain().isEmpty()) {
+            builder.domain(props.cookieDomain());
         }
         return builder;
     }

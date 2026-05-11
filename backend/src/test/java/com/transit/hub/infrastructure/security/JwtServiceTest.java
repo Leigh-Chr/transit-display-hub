@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.test.util.ReflectionTestUtils;
-
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -32,11 +30,8 @@ class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService();
-        ReflectionTestUtils.setField(jwtService, "secret", TEST_SECRET);
-        ReflectionTestUtils.setField(jwtService, "expirationHours", EXPIRATION_HOURS);
-        ReflectionTestUtils.setField(jwtService, "issuer", TEST_ISSUER);
-        ReflectionTestUtils.setField(jwtService, "audience", TEST_AUDIENCE);
+        jwtService = new JwtService(new com.transit.hub.infrastructure.config.JwtProperties(
+                TEST_SECRET, EXPIRATION_HOURS, TEST_ISSUER, TEST_AUDIENCE, 14));
     }
 
     @Nested
@@ -321,9 +316,8 @@ class JwtServiceTest {
         @Test
         @DisplayName("fails fast if secret is shorter than 32 bytes")
         void failsForShortSecret() {
-            JwtService svc = new JwtService();
-            ReflectionTestUtils.setField(svc, "secret", "too-short-secret");
-            ReflectionTestUtils.setField(svc, "expirationHours", 1);
+            JwtService svc = new JwtService(new com.transit.hub.infrastructure.config.JwtProperties(
+                    "too-short-secret", 1, TEST_ISSUER, TEST_AUDIENCE, 14));
 
             assertThatThrownBy(svc::validateSecretLength)
                     .isInstanceOf(IllegalStateException.class)
@@ -333,10 +327,9 @@ class JwtServiceTest {
         @Test
         @DisplayName("accepts a secret of exactly 32 bytes")
         void acceptsMinimumSecret() {
-            JwtService svc = new JwtService();
             String exactly32 = "12345678901234567890123456789012"; // 32 chars / 32 bytes ASCII
-            ReflectionTestUtils.setField(svc, "secret", exactly32);
-            ReflectionTestUtils.setField(svc, "expirationHours", 1);
+            JwtService svc = new JwtService(new com.transit.hub.infrastructure.config.JwtProperties(
+                    exactly32, 1, TEST_ISSUER, TEST_AUDIENCE, 14));
 
             assertThatNoException().isThrownBy(svc::validateSecretLength);
         }
