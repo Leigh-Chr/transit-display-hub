@@ -61,7 +61,7 @@ import { AuthService } from '@core/auth/auth.service';
             </mat-form-field>
 
             @if (error()) {
-              <div class="error-message">
+              <div class="error-message" role="alert" aria-live="assertive">
                 <mat-icon>error</mat-icon>
                 {{ error() }}
               </div>

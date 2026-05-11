@@ -137,11 +137,16 @@ interface NetworkStopLabel {
           <span class="empty-selection-text">Select a line to display it on the map</span>
         </div>
       } @else {
-      <!-- Diagram with zoom/pan -->
+      <!-- Diagram with zoom/pan.
+           The wrapper is a plain interactive surface (no ARIA role) that owns
+           the keyboard and pointer handlers. role="application" was too broad
+           — it suppresses virtual-cursor navigation for the whole subtree.
+           The SVG uses role="img" so screen-readers expose it as a static
+           diagram. Keyboard users can still pan/zoom via the focusable wrapper;
+           the long-form instructions in aria-label remain available. -->
       <div
         class="line-diagram-wrapper"
         tabindex="0"
-        role="application"
         aria-label="Network schematic. Drag or scroll to pan. Hold Ctrl and scroll, or pinch, to zoom. Arrow keys pan; plus and minus zoom; 0 resets the view."
         (wheel)="onWheel($event)"
         (keydown)="onKeyDown($event)"
@@ -159,6 +164,8 @@ interface NetworkStopLabel {
           [attr.viewBox]="currentViewBox()"
           preserveAspectRatio="xMidYMid meet"
           class="line-diagram network-diagram"
+          role="img"
+          aria-label="Network schematic diagram — see /map/list for the accessible text alternative"
         >
           <!-- Interchange connectors (gently curved dashed paths) — multi-line
                only. vector-effect keeps the dashed stroke at constant screen
