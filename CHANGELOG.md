@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-05-11
+
+Refonte du flow d'authentification : passage à une session basée sur des
+cookies httpOnly avec rotation de refresh tokens et protection CSRF.
+Sprint 4 chantier E livré (le dernier de l'audit du 2026-05-10). Aucune
+migration manuelle pour les utilisateurs : le prochain login pose les
+cookies automatiquement. Une nouvelle migration Flyway (`V50__refresh_tokens.sql`)
+crée la table de stockage des refresh tokens (digests SHA-256).
+
+### Added
+
+- **Refresh tokens persistés avec rotation** : `RefreshTokenService` mint un
+  jeton aléatoire de 256 bits, stocke uniquement le digest SHA-256, et
+  invalide la chaîne entière si un jeton déjà tourné est rejoué. TTL
+  configurable via `JWT_REFRESH_EXPIRATION_DAYS` (défaut 14 jours).
+- **Endpoints `/api/auth/refresh`, `/api/auth/logout`, `/api/auth/me`** :
+  le contrôleur d'auth pose deux cookies httpOnly (`ACCESS_TOKEN` sur `/`
+  et `REFRESH_TOKEN` sur `/api/auth`) en plus du body legacy ; `/me`
+  permet au front de reconstruire son état après un rechargement.
+- **Filtre JWT — fallback cookie** : `JwtAuthenticationFilter` lit le
+  cookie `ACCESS_TOKEN` quand aucun header Bearer n'est présent, ce qui
+  ouvre la voie au mode 100 % cookie côté navigateur tout en conservant
+  Swagger UI.
+- **Protection CSRF** : Spring Security émet désormais un cookie
+  `XSRF-TOKEN` lisible par le JavaScript, et exige `X-XSRF-TOKEN` sur
+  chaque mutation. Les appels Bearer historiques sont exemptés via un
+  `RequestMatcher` dédié.
+- **Frontend — provider XSRF + initialisation au boot** : Angular mappe
+  désormais `XSRF-TOKEN` ↔ `X-XSRF-TOKEN` automatiquement
+  (`withXsrfConfiguration`), et un `provideAppInitializer` appelle
+  `/api/auth/me` avant la première route pour reconstruire la session
+  depuis le cookie.
+
+### Changed
+
+- **AuthService Angular** : le JWT n'est plus persisté dans localStorage.
+  L'état utilisateur (`username`, `role`) vient de `/api/auth/me` et le
+  token en mémoire est rafraîchi en arrière-plan pour les WebSockets,
+  qui continuent à authentifier via un header STOMP Bearer.
+- **Auth interceptor Angular** : ajoute `withCredentials: true` à chaque
+  requête, et sur un 401 hors `/api/auth/*` tente automatiquement
+  `/api/auth/refresh` avant de retenter la requête originale.
+- **Tests d'intégration** : 19 tests mutants no-auth récoltent
+  `.with(csrf())` pour traverser le filtre CSRF et atteindre
+  réellement le filtre d'auth.
+
+### Removed
+
+- Dépendance frontend `jwt-decode` (le client ne décode plus le JWT
+  lui-même — l'identité vient de l'endpoint dédié `/api/auth/me`).
+
+### Security
+
+- Le JWT n'est plus exposé au JavaScript par défaut, ce qui ferme la
+  porte aux exfiltrations via XSS.
+- Rotation systématique du refresh token : tout rejeu d'un jeton déjà
+  tourné est interprété comme un vol et révoque l'ensemble des refresh
+  tokens actifs de l'utilisateur.
+- Origin/audience claims + minimum 32 octets de clé JWT déjà appliqués
+  en v1.2.0 restent en place ; ces protections s'ajoutent à la nouvelle
+  posture cookie + CSRF.
+
 ## [1.3.0] — 2026-05-11
 
 Sprint 4 : refactoring structurel backend (décomposition GtfsImportService),
