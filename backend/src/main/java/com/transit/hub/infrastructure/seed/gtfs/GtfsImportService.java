@@ -2,21 +2,18 @@ package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.FeedInfo;
-import com.transit.hub.domain.model.FlexStopTime;
-import com.transit.hub.domain.model.Itinerary;
-import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
-import com.transit.hub.domain.model.Schedule;
-import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Shape;
-import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.model.enums.ServiceExceptionType;
+import com.transit.hub.infrastructure.seed.gtfs.model.FrequencyWindow;
+import com.transit.hub.infrastructure.seed.gtfs.model.ItineraryImport;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AttributionImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.FareV1Importer;
 import com.transit.hub.infrastructure.seed.gtfs.sections.FareV2Importer;
+import com.transit.hub.infrastructure.seed.gtfs.sections.ItineraryImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.ScheduleImporter;
 import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.LocationGroup;
@@ -30,13 +27,9 @@ import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StopImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TransferImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TranslationImporter;
-import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
 import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
 import com.transit.hub.infrastructure.persistence.LocationRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
-import com.transit.hub.infrastructure.persistence.ItineraryRepository;
-import com.transit.hub.infrastructure.persistence.ScheduleRepository;
-import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,28 +45,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.zip.ZipFile;
 
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.firstNonBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDirectionId;
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDoubleOrNull;
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseIntOrNull;
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseShortOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
 
 /**
@@ -101,15 +79,13 @@ public class GtfsImportService {
     private final FareV1Importer fareV1Importer;
     private final FareV2Importer fareV2Importer;
     private final BookingRuleImporter bookingRuleImporter;
+    private final ItineraryImporter itineraryImporter;
+    private final ScheduleImporter scheduleImporter;
     private final LocationImporter locationImporter;
     private final LocationGroupImporter locationGroupImporter;
 
     private final StopRepository stopRepository;
-    private final ItineraryRepository itineraryRepository;
-    private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
-    private final ServiceCalendarRepository serviceCalendarRepository;
-    private final FlexStopTimeRepository flexStopTimeRepository;
     private final LocationGroupRepository locationGroupRepository;
     private final LocationRepository locationRepository;
 
@@ -201,8 +177,8 @@ public class GtfsImportService {
             return new ImportResult(
                     linesByGtfsId.size(),
                     stopImport.stopsByGtfsId().size(),
-                    itineraryImport.itineraryCount,
-                    itineraryImport.itineraryStopCount,
+                    itineraryImport.itineraryCount(),
+                    itineraryImport.itineraryStopCount(),
                     schedules);
         } finally {
             deleteRecursively(workDir);
@@ -284,855 +260,33 @@ public class GtfsImportService {
     }
 
 
-    private record ItineraryImport(
-            int itineraryCount,
-            int itineraryStopCount,
-            Map<String, TripInfo> tripInfos,
-            Map<RouteDirKey, Itinerary> itinerariesByRouteDir) {}
-
-    private record TripInfo(String routeId, String directionId, String serviceId, String headsign,
-                            int wheelchairAccessible, int bikesAllowed, int carsAllowed,
-                            Double safeDurationFactor, Double safeDurationOffset,
-                            Double meanDurationFactor, Double meanDurationOffset,
-                            String blockId, String shapeId) {}
-
-    /** A single frequency window from frequencies.txt, opening from
-     *  {@code start} (inclusive) to {@code end} (exclusive) with a
-     *  recurring trip every {@code headwaySeconds}. {@code exactTimes}
-     *  follows the GTFS convention: 1 = schedule-based replication,
-     *  0/null = headway-based (passenger expectation tracks "every X
-     *  min"). Times are GTFS wall-clock so a window crossing midnight
-     *  (start &gt; end after mod-24 folding) is normalised by the
-     *  iterator below. */
-    private record FrequencyWindow(LocalTime start, LocalTime end,
-                                   int headwaySeconds, Boolean exactTimes) {}
-
-    private record RouteDirKey(String routeId, String directionId) {}
-
     private ItineraryImport importItineraries(
             Path tripsFile,
             Path stopTimesFile,
             Map<String, Line> linesByGtfsId,
             StopImport stopImport,
             Map<String, Shape> shapesByGtfsId) throws IOException {
-
-        // 1. Read trips into memory
-        Map<String, TripInfo> tripInfos = new HashMap<>();
-        try (CSVParser parser = openCsv(tripsFile)) {
-            for (CSVRecord record : parser) {
-                String rawBlockId = optional(record, "block_id");
-                String rawShapeId = optional(record, "shape_id");
-                tripInfos.put(record.get("trip_id"), new TripInfo(
-                        record.get("route_id"),
-                        firstNonBlank(optional(record, "direction_id"), "0"),
-                        optional(record, "service_id"),
-                        optional(record, "trip_headsign"),
-                        parseInt(optional(record, "wheelchair_accessible"), 0),
-                        parseInt(optional(record, "bikes_allowed"), 0),
-                        parseInt(optional(record, "cars_allowed"), 0),
-                        parseDoubleOrNull(optional(record, "safe_duration_factor")),
-                        parseDoubleOrNull(optional(record, "safe_duration_offset")),
-                        parseDoubleOrNull(optional(record, "mean_duration_factor")),
-                        parseDoubleOrNull(optional(record, "mean_duration_offset")),
-                        isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40),
-                        isBlank(rawShapeId) ? null : rawShapeId.trim()));
-            }
-        }
-        log.info("GTFS import: {} trips loaded", tripInfos.size());
-
-        // 2. Pass 1 over stop_times: count stops per trip
-        Map<String, Integer> stopsPerTrip = new HashMap<>();
-        try (CSVParser parser = openCsv(stopTimesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                stopsPerTrip.merge(tripId, 1, Integer::sum);
-            }
-        }
-
-        // 3. Select representative trip per (route_id, direction_id): the one with the most stops
-        Map<RouteDirKey, String> bestTrip = new HashMap<>();
-        Map<RouteDirKey, Integer> bestCount = new HashMap<>();
-        for (Map.Entry<String, TripInfo> entry : tripInfos.entrySet()) {
-            String tripId = entry.getKey();
-            TripInfo info = entry.getValue();
-            if (!linesByGtfsId.containsKey(info.routeId)) {
-                continue;
-            }
-            int count = stopsPerTrip.getOrDefault(tripId, 0);
-            if (count == 0) {
-                continue;
-            }
-            RouteDirKey key = new RouteDirKey(info.routeId, info.directionId);
-            if (count > bestCount.getOrDefault(key, 0)) {
-                bestCount.put(key, count);
-                bestTrip.put(key, tripId);
-            }
-        }
-        Set<String> selectedTripIds = new HashSet<>(bestTrip.values());
-        log.info("GTFS import: {} representative trips selected", selectedTripIds.size());
-
-        // 4. Pass 2 over stop_times: collect (tripId -> ordered list of stops with their per-stop headsign)
-        record TimedStop(String stopId, int sequence, String headsign) {}
-        Map<String, List<TimedStop>> stopsByTrip = new HashMap<>();
-        try (CSVParser parser = openCsv(stopTimesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                if (!selectedTripIds.contains(tripId)) {
-                    continue;
-                }
-                int sequence = parseInt(record.get("stop_sequence"), 0);
-                String stopId = record.get("stop_id");
-                String headsign = optional(record, "stop_headsign");
-                stopsByTrip.computeIfAbsent(tripId, k -> new ArrayList<>())
-                        .add(new TimedStop(stopId, sequence, isBlank(headsign) ? null : headsign.trim()));
-            }
-        }
-
-        // Pre-load existing itineraries by external_id so re-imports
-        // refresh a stable UUID. The representative trip_id can shift
-        // between feeds (a longer variant becomes the most-stops one),
-        // in which case the old itinerary becomes orphan and gets
-        // dropped at the end of this method. See ADR 0013.
-        Map<String, Itinerary> existingItinerariesByExternalId = itineraryRepository.findAll().stream()
-                .filter(i -> i.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Itinerary::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
-
-        // Clear stop ↔ line membership before rebuilding so a route
-        // reassigning its stops doesn't leave the previous lines
-        // permanently attached. The `stop.getLines()` collection is a
-        // Set, so adding stays idempotent below.
-        for (Stop stop : stopImport.stopsByGtfsId().values()) {
-            stop.getLines().clear();
-        }
-
-        // 5. Build itineraries
-        int itineraryCount = 0;
-        int itineraryStopCount = 0;
-        Set<Stop> stopsTouched = new HashSet<>();
-        Map<RouteDirKey, Itinerary> itinerariesByRouteDir = new HashMap<>();
-        Set<UUID> seenItineraryIds = new HashSet<>();
-
-        for (Map.Entry<RouteDirKey, String> entry : bestTrip.entrySet()) {
-            RouteDirKey key = entry.getKey();
-            String tripId = entry.getValue();
-            Line line = linesByGtfsId.get(key.routeId);
-            TripInfo info = tripInfos.get(tripId);
-            List<TimedStop> trip = stopsByTrip.get(tripId);
-            if (trip == null || trip.isEmpty()) {
-                continue;
-            }
-            trip.sort((a, b) -> Integer.compare(a.sequence, b.sequence));
-
-            String itineraryName = buildItineraryName(info.headsign, key.directionId);
-            // Majority vote on wheelchair_accessible across every trip
-            // matching this (route, direction). The representative trip
-            // alone would underestimate accessibility on networks where
-            // the longest variant happens to be the non-accessible one.
-            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault =
-                    majorityWheelchair(tripInfos, key);
-            com.transit.hub.domain.model.enums.BikesAllowed bikesDefault =
-                    majorityBikes(tripInfos, key);
-            com.transit.hub.domain.model.enums.CarsAllowed carsDefault =
-                    majorityCars(tripInfos, key);
-
-            // Resolve the geographic shape from the representative
-            // trip's shape_id. Null = the feed didn't ship a shape for
-            // this trip (or shapes.txt was missing entirely), in which
-            // case the future map view falls back to stop-to-stop lines.
-            Shape shape = (info.shapeId == null) ? null : shapesByGtfsId.get(info.shapeId);
-
-            Short directionId = parseDirectionId(key.directionId);
-            String externalId = truncate(tripId, 100);
-            Itinerary itinerary = existingItinerariesByExternalId.get(externalId);
-            if (itinerary == null) {
-                itinerary = Itinerary.builder()
-                        .externalId(externalId)
-                        .line(line)
-                        .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
-                        .directionId(directionId)
-                        .wheelchairDefault(wheelchairDefault)
-                        .bikesAllowedDefault(bikesDefault)
-                        .carsAllowedDefault(carsDefault)
-                        .safeDurationFactor(info.safeDurationFactor)
-                        .safeDurationOffset(info.safeDurationOffset)
-                        .meanDurationFactor(info.meanDurationFactor)
-                        .meanDurationOffset(info.meanDurationOffset)
-                        .shape(shape)
-                        .itineraryStops(new ArrayList<>())
-                        .build();
-            } else {
-                itinerary.setExternalId(externalId);
-                itinerary.setLine(line);
-                itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
-                itinerary.setDirectionId(directionId);
-                itinerary.setWheelchairDefault(wheelchairDefault);
-                itinerary.setCarsAllowedDefault(carsDefault);
-                itinerary.setSafeDurationFactor(info.safeDurationFactor);
-                itinerary.setSafeDurationOffset(info.safeDurationOffset);
-                itinerary.setMeanDurationFactor(info.meanDurationFactor);
-                itinerary.setMeanDurationOffset(info.meanDurationOffset);
-                itinerary.setBikesAllowedDefault(bikesDefault);
-                itinerary.setShape(shape);
-                // orphanRemoval=true on the OneToMany picks up the
-                // cleared rows when we save the parent again below.
-                itinerary.getItineraryStops().clear();
-            }
-            itinerary = itineraryRepository.save(itinerary);
-
-            int position = 0;
-            Set<Stop> seenInItinerary = new HashSet<>();
-            for (TimedStop ts : trip) {
-                Stop stop = stopImport.stopsByGtfsId().get(ts.stopId);
-                if (stop == null) {
-                    continue;
-                }
-                // Dedupe within itinerary (uk_itinerary_stop)
-                if (!seenInItinerary.add(stop)) {
-                    continue;
-                }
-                ItineraryStop is = ItineraryStop.builder()
-                        .itinerary(itinerary)
-                        .stop(stop)
-                        .position(position++)
-                        .stopHeadsign(truncate(ts.headsign, 100))
-                        .build();
-                itinerary.getItineraryStops().add(is);
-                stop.getLines().add(line);
-                stopsTouched.add(stop);
-                itineraryStopCount++;
-            }
-            itineraryRepository.save(itinerary);
-            itinerariesByRouteDir.put(key, itinerary);
-            seenItineraryIds.add(itinerary.getId());
-            itineraryCount++;
-        }
-
-        // Persist stop ↔ line associations
-        stopRepository.saveAll(stopsTouched);
-
-        // Drop itineraries the new feed no longer declares. No FK is
-        // semantically attached from outside the import scope (no
-        // BroadcastMessage scope=ITINERARY exists), so a hard delete
-        // is safe.
-        int orphans = 0;
-        for (Itinerary old : existingItinerariesByExternalId.values()) {
-            if (!seenItineraryIds.contains(old.getId())) {
-                itineraryRepository.delete(old);
-                orphans++;
-            }
-        }
-        if (orphans > 0) {
-            log.info("GTFS import: {} obsolete itineraries removed", orphans);
-        }
-
-        log.info("GTFS import: {} itineraries upserted / {} itinerary stops created",
-                itineraryCount, itineraryStopCount);
-        return new ItineraryImport(itineraryCount, itineraryStopCount, tripInfos, itinerariesByRouteDir);
+        return itineraryImporter.importItineraries(tripsFile, stopTimesFile,
+                linesByGtfsId, stopImport, shapesByGtfsId);
     }
 
-    /**
-     * In-memory parsing buffer. Persisted later as a {@link ServiceCalendar}
-     * entity once we know which {@code service_id}s are referenced by trips.
-     */
-    private record ServiceCalendarSnapshot(
-            LocalDate startDate,
-            LocalDate endDate,
-            Set<DayOfWeek> daysOfWeek,
-            Set<LocalDate> addedDates,
-            Set<LocalDate> removedDates) {
-        boolean isActiveOn(LocalDate date) {
-            if (removedDates.contains(date)) {return false;}
-            if (addedDates.contains(date)) {return true;}
-            if (startDate == null || endDate == null || daysOfWeek.isEmpty()) {return false;}
-            if (date.isBefore(startDate) || date.isAfter(endDate)) {return false;}
-            return daysOfWeek.contains(date.getDayOfWeek());
-        }
-    }
-
-    private static final class ServiceCalendarSnapshotBuilder {
-        private LocalDate startDate;
-        private LocalDate endDate;
-        private Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
-        private final Set<LocalDate> added = new HashSet<>();
-        private final Set<LocalDate> removed = new HashSet<>();
-
-        void withWeekly(LocalDate start, LocalDate end, Set<DayOfWeek> daysOfWeek) {
-            this.startDate = start;
-            this.endDate = end;
-            this.days = daysOfWeek;
-        }
-
-        void added(LocalDate date) {added.add(date);}
-        void removed(LocalDate date) {removed.add(date);}
-
-        ServiceCalendarSnapshot build() {
-            return new ServiceCalendarSnapshot(startDate, endDate, days, added, removed);
-        }
-    }
-
-    private static final int MAX_SCHEDULE_BATCH = 5_000;
-    private static final long DAY_SECONDS = 24L * 3600L;
-
-    /**
-     * Reads {@code frequencies.txt} into a {@code tripId -> List<FrequencyWindow>}
-     * map. Each row becomes a separate window so a trip declared for
-     * peak / off-peak / late hours fans out into the right number of
-     * synthetic departures during the schedule import. Absent file or
-     * missing required fields yield an empty list for that trip (which
-     * the importer treats as "fixed timetable").
-     */
     private Map<String, List<FrequencyWindow>> loadFrequencies(Path frequenciesFile) throws IOException {
-        Map<String, List<FrequencyWindow>> result = new HashMap<>();
-        if (!Files.exists(frequenciesFile)) {
-            return result;
-        }
-        try (CSVParser parser = openCsv(frequenciesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                int headway = parseInt(optional(record, "headway_secs"), 0);
-                LocalTime start = GtfsParse.parseGtfsTime(optional(record, "start_time"));
-                LocalTime end = GtfsParse.parseGtfsTime(optional(record, "end_time"));
-                if (isBlank(tripId) || headway <= 0 || start == null || end == null) {continue;}
-                String exactRaw = optional(record, "exact_times");
-                Boolean exact = isBlank(exactRaw) ? null : "1".equals(exactRaw.trim());
-                result.computeIfAbsent(tripId, k -> new ArrayList<>())
-                        .add(new FrequencyWindow(start, end, headway, exact));
-            }
-        }
-        int totalWindows = result.values().stream().mapToInt(List::size).sum();
-        log.info("GTFS import: {} trips carry frequency annotations across {} window(s)",
-                result.size(), totalWindows);
-        return result;
-    }
-
-    /**
-     * Reads {@code stop_times.txt} once and returns the earliest wall-clock
-     * time per trip, restricted to {@code targetTrips} (typically the trips
-     * that have at least one frequency window). The result is the offset
-     * anchor for fan-out: every stop_time of a frequency-mode trip is
-     * persisted at {@code windowStart + (stopTime - tripStart)}.
-     */
-    private Map<String, LocalTime> loadTripStartTimes(Path stopTimesFile, Set<String> targetTrips)
-            throws IOException {
-        Map<String, LocalTime> result = new HashMap<>();
-        if (targetTrips.isEmpty() || !Files.exists(stopTimesFile)) {
-            return result;
-        }
-        try (CSVParser parser = openCsv(stopTimesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                if (!targetTrips.contains(tripId)) {continue;}
-                LocalTime time = GtfsParse.parseGtfsTime(firstNonBlank(
-                        optional(record, "departure_time"),
-                        optional(record, "arrival_time")));
-                if (time == null) {continue;}
-                LocalTime current = result.get(tripId);
-                if (current == null || time.isBefore(current)) {
-                    result.put(tripId, time);
-                }
-            }
-        }
-        return result;
+        return scheduleImporter.loadFrequencies(frequenciesFile);
     }
 
     private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport,
                                 Map<String, List<FrequencyWindow>> frequencies,
-                                Map<String, BookingRule> bookingRules)
-            throws IOException {
-        Path stopTimesFile = workDir.resolve("stop_times.txt");
-        if (!Files.exists(stopTimesFile)) {
-            log.warn("GTFS import: stop_times.txt missing, skipping schedule import");
-            return 0;
-        }
-
-        // Wipe schedules before re-importing. Phase 0.5c made Lines /
-        // Stops / Itineraries idempotent (UUIDs preserved across
-        // reimports), and the persisted-calendar refactor of Phase 1.4
-        // introduced FK SET NULL on calendar deletion — together those
-        // changes meant repeating an import would otherwise pile new
-        // schedules on top of orphaned ones with `service_calendar_id`
-        // nulled out. Schedules carry no external_id and no Device /
-        // BroadcastMessage references, so a clean slate is safe; the
-        // boot loader skip-when-seeded guard means installs without
-        // GTFS aren't affected. See ADR 0013.
-        scheduleRepository.deleteAllInBatch();
-        scheduleRepository.flush();
-
-        // Fan-out anchor: every stop_time of a frequency-mode trip is replicated
-        // for every (window, k) departure as windowStart + (stopTime - tripStart).
-        // We only fetch start times for trips that actually have frequency
-        // windows so feeds without frequencies.txt pay zero overhead.
-        Map<String, LocalTime> tripStartTimes = loadTripStartTimes(
-                workDir.resolve("stop_times.txt"), frequencies.keySet());
-
-        Map<String, ServiceCalendarSnapshot> snapshots = loadServiceCalendars(workDir);
-        if (snapshots.isEmpty()) {
-            log.warn("GTFS import: no service calendars found, skipping schedule import");
-            return 0;
-        }
-        Map<String, ServiceCalendar> services = persistServiceCalendars(snapshots);
-        // Log the "representative day" for ops-grade visibility. The value
-        // no longer drives import filtering — every active service is now
-        // persisted — but it stays useful when debugging "is the feed
-        // current?" complaints.
-        logReferenceDate(snapshots);
-
-        Map<String, TripInfo> tripInfos = itineraryImport.tripInfos;
-        Map<RouteDirKey, Itinerary> itineraries = itineraryImport.itinerariesByRouteDir;
-
-        // (stopId, itineraryId, time, serviceCalendarId) dedupe key matches
-        // uk_schedule_stop_itinerary_time_calendar; lets two services share a
-        // {stop, itinerary, time} triple as long as their calendar differs.
-        record ScheduleKey(java.util.UUID stopId, java.util.UUID itineraryId,
-                           LocalTime time, java.util.UUID calendarId) {}
-        Set<ScheduleKey> seen = new HashSet<>();
-        List<Schedule> batch = new ArrayList<>(MAX_SCHEDULE_BATCH);
-        List<FlexStopTime> flexBatch = new ArrayList<>(MAX_SCHEDULE_BATCH);
-        // Wipe flex_stop_times on every reimport for the same reason
-        // schedules get wiped: rows carry no external_id and any orphan
-        // would point at a now-stale itinerary FK.
-        flexStopTimeRepository.deleteAllInBatch();
-        flexStopTimeRepository.flush();
-        Map<String, com.transit.hub.domain.model.Location> locationsByExternalId =
-                locationRepository.findAll().stream()
-                        .filter(l -> l.getExternalId() != null)
-                        .collect(java.util.stream.Collectors.toMap(
-                                com.transit.hub.domain.model.Location::getExternalId,
-                                java.util.function.Function.identity(),
-                                (a, b) -> a));
-        Map<String, com.transit.hub.domain.model.LocationGroup> locationGroupsByExternalId =
-                locationGroupRepository.findAll().stream()
-                        .filter(l -> l.getExternalId() != null)
-                        .collect(java.util.stream.Collectors.toMap(
-                                com.transit.hub.domain.model.LocationGroup::getExternalId,
-                                java.util.function.Function.identity(),
-                                (a, b) -> a));
-        int total = 0;
-        int flexTotal = 0;
-        int skippedNoCalendar = 0;
-
-        try (CSVParser parser = openCsv(stopTimesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                TripInfo trip = tripInfos.get(tripId);
-                if (trip == null) {continue;}
-                ServiceCalendar calendar = services.get(trip.serviceId);
-                if (calendar == null) {
-                    // Trip references a service_id that wasn't declared in
-                    // calendar.txt or calendar_dates.txt: the spec calls it
-                    // a feed bug; we drop the row rather than persist a
-                    // schedule we can never decide whether to display.
-                    skippedNoCalendar++;
-                    continue;
-                }
-
-                Itinerary itinerary = itineraries.get(new RouteDirKey(trip.routeId, trip.directionId));
-                if (itinerary == null) {continue;}
-
-                // GTFS-flex: the row addresses a polygon (location_id) or a
-                // group of stops (location_group_id) instead of a fixed
-                // stop, with a pickup/drop-off time window in place of
-                // arrival_time. Route those rows to flex_stop_times rather
-                // than schedules — they describe on-demand availability,
-                // not a concrete arrival. See ADR 0030.
-                String flexLocationId = optional(record, "location_id");
-                String flexLocationGroupId = optional(record, "location_group_id");
-                String flexStopId = optional(record, "stop_id");
-                LocalTime flexStartWindow = GtfsParse.parseGtfsTime(
-                        optional(record, "start_pickup_drop_off_window"));
-                LocalTime flexEndWindow = GtfsParse.parseGtfsTime(
-                        optional(record, "end_pickup_drop_off_window"));
-                LocalTime flexArrival = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
-                // A row is a flex window when it carries a window AND
-                // either targets a polygon (location_id) / a group of
-                // stops (location_group_id), OR targets a fixed stop
-                // (stop_id) without any concrete arrival time. The
-                // last variant covers feeds that surface a "you can
-                // be picked up here on request between 17h and 18h30"
-                // entry on a regular stop — the spec allows it and
-                // {@code TAD_LANDMARK} in the bundled rich fixture
-                // exercises this code path.
-                boolean isFlexRow = flexStartWindow != null && flexEndWindow != null
-                        && (!isBlank(flexLocationId)
-                            || !isBlank(flexLocationGroupId)
-                            || (!isBlank(flexStopId) && flexArrival == null));
-                if (isFlexRow) {
-                    flexBatch.add(buildFlexStopTime(record, itinerary, calendar,
-                            stopImport, locationsByExternalId, locationGroupsByExternalId,
-                            bookingRules, flexStartWindow, flexEndWindow));
-                    if (flexBatch.size() >= MAX_SCHEDULE_BATCH) {
-                        flexStopTimeRepository.saveAll(flexBatch);
-                        flexTotal += flexBatch.size();
-                        flexBatch.clear();
-                    }
-                    continue;
-                }
-
-                Stop stop = stopImport.stopsByGtfsId().get(record.get("stop_id"));
-                if (stop == null) {continue;}
-
-                LocalTime arrivalTime = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
-                LocalTime departureTime = GtfsParse.parseGtfsTime(optional(record, "departure_time"));
-                // The spec lets a feed declare only one of the two: the
-                // missing field implicitly equals the present one. Pick
-                // arrival as the display "time" and persist departure
-                // separately only when the feed actually distinguishes
-                // them.
-                LocalTime time = arrivalTime != null ? arrivalTime : departureTime;
-                if (time == null) {continue;}
-                LocalTime distinctDeparture =
-                        (departureTime != null && !departureTime.equals(time)) ? departureTime : null;
-
-                short pickupType = (short) parseInt(optional(record, "pickup_type"), 0);
-                short dropOffType = (short) parseInt(optional(record, "drop_off_type"), 0);
-                // (1, 1) means "no service at this stop_time" per the GTFS spec.
-                // Filter so the row never shows up on a kiosk as a phantom arrival.
-                if (pickupType == 1 && dropOffType == 1) {continue;}
-
-                Short continuousPickup = parseShortOrNull(optional(record, "continuous_pickup"));
-                Short continuousDropOff = parseShortOrNull(optional(record, "continuous_drop_off"));
-                Double shapeDistTraveled = parseDoubleOrNull(optional(record, "shape_dist_traveled"));
-
-                // Wheelchair / bikes overrides: only stored when the trip's
-                // value diverges from the itinerary's majority default. Saves
-                // ~2 bytes × millions of rows on most feeds.
-                Boolean wheelchairOverride = computeWheelchairOverride(trip.wheelchairAccessible,
-                        itinerary.getWheelchairDefault()).orElse(null);
-                Boolean bikesOverride = computeBikesOverride(trip.bikesAllowed,
-                        itinerary.getBikesAllowedDefault()).orElse(null);
-                // GTFS timepoint defaults to "exact" when omitted; only an
-                // explicit 0 means the time is approximate.
-                String timepointRaw = optional(record, "timepoint");
-                boolean timepoint = isBlank(timepointRaw) || !"0".equals(timepointRaw.trim());
-
-                // TAD bookings: stop_times.pickup_booking_rule_id /
-                // drop_off_booking_rule_id reference booking_rules.txt by id.
-                // Looked up against the map populated upstream so the FK is
-                // set in the same insert as the schedule row.
-                BookingRule pickupBooking = bookingRules.get(optional(record, "pickup_booking_rule_id"));
-                BookingRule dropOffBooking = bookingRules.get(optional(record, "drop_off_booking_rule_id"));
-
-                List<FrequencyWindow> windows = frequencies.get(tripId);
-
-                if (windows == null || windows.isEmpty()) {
-                    // Fixed timetable: persist the stop_time as-is.
-                    ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time, calendar.getId());
-                    if (!seen.add(key)) {continue;}
-                    batch.add(Schedule.builder()
-                            .time(time)
-                            .departureTime(distinctDeparture)
-                            .stop(stop)
-                            .itinerary(itinerary)
-                            .pickupType(pickupType)
-                            .dropOffType(dropOffType)
-                            .wheelchairOverride(wheelchairOverride)
-                            .bikesAllowedOverride(bikesOverride)
-                            .timepoint(timepoint)
-                            .frequencyHeadwaySeconds(null)
-                            .frequencyExactTimes(null)
-                            .blockId(trip.blockId)
-                            .serviceCalendar(calendar)
-                            .pickupBookingRule(pickupBooking)
-                            .dropOffBookingRule(dropOffBooking)
-                            .continuousPickup(continuousPickup)
-                            .continuousDropOff(continuousDropOff)
-                            .shapeDistTraveled(shapeDistTraveled)
-                            .build());
-                    if (batch.size() >= MAX_SCHEDULE_BATCH) {
-                        scheduleRepository.saveAll(batch);
-                        total += batch.size();
-                        batch.clear();
-                        log.debug("GTFS import: {} schedules persisted so far", total);
-                    }
-                    continue;
-                }
-
-                // Fan-out: replicate the stop_time across every frequency window
-                // as windowStart + (stopTime - tripStart). The dedupe set absorbs
-                // collisions between overlapping windows on the same trip.
-                LocalTime tripStart = tripStartTimes.get(tripId);
-                if (tripStart == null) {continue;}
-                long deltaSeconds = ((long) time.toSecondOfDay() - tripStart.toSecondOfDay() + DAY_SECONDS)
-                        % DAY_SECONDS;
-
-                for (FrequencyWindow window : windows) {
-                    long winStart = window.start.toSecondOfDay();
-                    long winEnd = window.end.toSecondOfDay();
-                    // Window crossing midnight: end falls earlier than start
-                    // because parseGtfsTime folds hours mod 24. Shift end up
-                    // by a full day so the iterator emits the right count.
-                    if (winEnd <= winStart) {winEnd += DAY_SECONDS;}
-
-                    for (long ts = winStart; ts < winEnd; ts += window.headwaySeconds) {
-                        LocalTime stopTime = LocalTime.ofSecondOfDay((ts + deltaSeconds) % DAY_SECONDS);
-                        ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(),
-                                stopTime, calendar.getId());
-                        if (!seen.add(key)) {continue;}
-                        batch.add(Schedule.builder()
-                                .time(stopTime)
-                                .stop(stop)
-                                .itinerary(itinerary)
-                                .pickupType(pickupType)
-                                .dropOffType(dropOffType)
-                                .wheelchairOverride(wheelchairOverride)
-                                .bikesAllowedOverride(bikesOverride)
-                                .timepoint(timepoint)
-                                .frequencyHeadwaySeconds(window.headwaySeconds)
-                                .frequencyExactTimes(window.exactTimes)
-                                .blockId(trip.blockId)
-                                .serviceCalendar(calendar)
-                                .pickupBookingRule(pickupBooking)
-                                .dropOffBookingRule(dropOffBooking)
-                                .continuousPickup(continuousPickup)
-                                .continuousDropOff(continuousDropOff)
-                                .shapeDistTraveled(shapeDistTraveled)
-                                .build());
-                        if (batch.size() >= MAX_SCHEDULE_BATCH) {
-                            scheduleRepository.saveAll(batch);
-                            total += batch.size();
-                            batch.clear();
-                            log.debug("GTFS import: {} schedules persisted so far", total);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!batch.isEmpty()) {
-            scheduleRepository.saveAll(batch);
-            total += batch.size();
-        }
-        if (!flexBatch.isEmpty()) {
-            flexStopTimeRepository.saveAll(flexBatch);
-            flexTotal += flexBatch.size();
-        }
-
-        if (skippedNoCalendar > 0) {
-            log.warn("GTFS import: skipped {} stop_times rows whose trip references an unknown service_id",
-                    skippedNoCalendar);
-        }
-        log.info("GTFS import: {} schedules + {} flex stop_times created across {} service calendars",
-                total, flexTotal, services.size());
-        return total;
-    }
-
-    /** Builds a {@link FlexStopTime} from a stop_times.txt row whose
-     *  pickup/drop-off applies over a polygon (location_id) or a group
-     *  of stops (location_group_id). Spec dictates the three target
-     *  refs (stop_id, location_id, location_group_id) are mutually
-     *  exclusive — we honour location_id over location_group_id over
-     *  stop_id when more than one is set, but log nothing because
-     *  feeds in the wild occasionally tag both for redundancy. */
-    private FlexStopTime buildFlexStopTime(CSVRecord record, Itinerary itinerary,
-                                           ServiceCalendar calendar,
-                                           StopImport stopImport,
-                                           Map<String, com.transit.hub.domain.model.Location> locations,
-                                           Map<String, com.transit.hub.domain.model.LocationGroup> locationGroups,
-                                           Map<String, BookingRule> bookingRules,
-                                           LocalTime startWindow, LocalTime endWindow) {
-        String locationId = optional(record, "location_id");
-        String locationGroupId = optional(record, "location_group_id");
-        String stopId = optional(record, "stop_id");
-        com.transit.hub.domain.model.Location location =
-                isBlank(locationId) ? null : locations.get(locationId);
-        com.transit.hub.domain.model.LocationGroup locationGroup =
-                (location == null && !isBlank(locationGroupId))
-                        ? locationGroups.get(locationGroupId) : null;
-        Stop stop = (location == null && locationGroup == null && !isBlank(stopId))
-                ? stopImport.stopsByGtfsId().get(stopId) : null;
-
-        Short pickupType = parseShortOrNull(optional(record, "pickup_type"));
-        Short dropOffType = parseShortOrNull(optional(record, "drop_off_type"));
-        BookingRule pickupBooking = bookingRules.get(optional(record, "pickup_booking_rule_id"));
-        BookingRule dropOffBooking = bookingRules.get(optional(record, "drop_off_booking_rule_id"));
-        Integer sequence = parseIntOrNull(optional(record, "stop_sequence"));
-
-        return FlexStopTime.builder()
-                .itinerary(itinerary)
-                .stopSequence(sequence == null ? Integer.valueOf(0) : sequence)
-                .stop(stop)
-                .location(location)
-                .locationGroup(locationGroup)
-                .startPickupDropOffWindow(startWindow)
-                .endPickupDropOffWindow(endWindow)
-                .pickupType(pickupType)
-                .dropOffType(dropOffType)
-                .pickupBookingRule(pickupBooking)
-                .dropOffBookingRule(dropOffBooking)
-                .serviceCalendar(calendar)
-                .stopHeadsign(truncate(optional(record, "stop_headsign"), 100))
-                .build();
-    }
-
-    /**
-     * Persists each {@link ServiceCalendarSnapshot} as a {@link ServiceCalendar}
-     * row plus its {@link ServiceCalendarException}s. Wipes the existing
-     * calendar tables first so re-imports start from a clean slate; the
-     * {@code ON DELETE SET NULL} on {@code schedules.service_calendar_id}
-     * keeps any stale schedule rows displayable as "always active" until
-     * they get refreshed by the rest of the import.
-     */
-    private Map<String, ServiceCalendar> persistServiceCalendars(Map<String, ServiceCalendarSnapshot> snapshots) {
-        serviceCalendarRepository.deleteAllInBatch();
-        serviceCalendarRepository.flush();
-
-        Map<String, ServiceCalendar> result = new HashMap<>();
-        for (Map.Entry<String, ServiceCalendarSnapshot> e : snapshots.entrySet()) {
-            String externalId = e.getKey();
-            ServiceCalendarSnapshot snap = e.getValue();
-            ServiceCalendar entity = ServiceCalendar.builder()
-                    .externalId(truncate(externalId, 100))
-                    .startDate(snap.startDate())
-                    .endDate(snap.endDate())
-                    .build();
-            entity.setDaysOfWeek(snap.daysOfWeek());
-            // Build exceptions before save so the cascade picks them up.
-            for (LocalDate d : snap.addedDates()) {
-                entity.getExceptions().add(ServiceCalendarException.builder()
-                        .serviceCalendar(entity)
-                        .date(d)
-                        .exceptionType(ServiceExceptionType.ADDED)
-                        .build());
-            }
-            for (LocalDate d : snap.removedDates()) {
-                entity.getExceptions().add(ServiceCalendarException.builder()
-                        .serviceCalendar(entity)
-                        .date(d)
-                        .exceptionType(ServiceExceptionType.REMOVED)
-                        .build());
-            }
-            ServiceCalendar saved = serviceCalendarRepository.save(entity);
-            result.put(externalId, saved);
-        }
-        log.info("GTFS import: {} service calendars persisted (with {} exceptions)",
-                result.size(),
-                result.values().stream().mapToInt(c -> c.getExceptions().size()).sum());
-        return result;
-    }
-
-    private void logReferenceDate(Map<String, ServiceCalendarSnapshot> snapshots) {
-        Set<String> active = pickActiveServices(snapshots);
-        if (active.isEmpty()) {
-            log.info("GTFS import: no service is active anywhere in the next 30 days; feed may be stale");
-        }
-    }
-
-    private Map<String, ServiceCalendarSnapshot> loadServiceCalendars(Path workDir) throws IOException {
-        Map<String, ServiceCalendarSnapshotBuilder> builders = new HashMap<>();
-
-        Path calendar = workDir.resolve("calendar.txt");
-        if (Files.exists(calendar)) {
-            try (CSVParser parser = openCsv(calendar)) {
-                for (CSVRecord record : parser) {
-                    String serviceId = record.get("service_id");
-                    Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
-                    if ("1".equals(optional(record, "monday"))) {days.add(DayOfWeek.MONDAY);}
-                    if ("1".equals(optional(record, "tuesday"))) {days.add(DayOfWeek.TUESDAY);}
-                    if ("1".equals(optional(record, "wednesday"))) {days.add(DayOfWeek.WEDNESDAY);}
-                    if ("1".equals(optional(record, "thursday"))) {days.add(DayOfWeek.THURSDAY);}
-                    if ("1".equals(optional(record, "friday"))) {days.add(DayOfWeek.FRIDAY);}
-                    if ("1".equals(optional(record, "saturday"))) {days.add(DayOfWeek.SATURDAY);}
-                    if ("1".equals(optional(record, "sunday"))) {days.add(DayOfWeek.SUNDAY);}
-                    LocalDate start = GtfsParse.parseGtfsDate(optional(record, "start_date"));
-                    LocalDate end = GtfsParse.parseGtfsDate(optional(record, "end_date"));
-                    builders.computeIfAbsent(serviceId, id -> new ServiceCalendarSnapshotBuilder())
-                            .withWeekly(start, end, days);
-                }
-            }
-        }
-
-        Path calendarDates = workDir.resolve("calendar_dates.txt");
-        if (Files.exists(calendarDates)) {
-            try (CSVParser parser = openCsv(calendarDates)) {
-                for (CSVRecord record : parser) {
-                    String serviceId = record.get("service_id");
-                    LocalDate date = GtfsParse.parseGtfsDate(record.get("date"));
-                    if (date == null) {continue;}
-                    int exceptionType = parseInt(record.get("exception_type"), 0);
-                    ServiceCalendarSnapshotBuilder b = builders.computeIfAbsent(serviceId, id -> new ServiceCalendarSnapshotBuilder());
-                    if (exceptionType == 1) {b.added(date);}
-                    else if (exceptionType == 2) {b.removed(date);}
-                }
-            }
-        }
-
-        Map<String, ServiceCalendarSnapshot> result = new HashMap<>();
-        for (Map.Entry<String, ServiceCalendarSnapshotBuilder> e : builders.entrySet()) {
-            result.put(e.getKey(), e.getValue().build());
-        }
-        return result;
-    }
-
-    /**
-     * Pick the set of service IDs running on the most representative day available.
-     * Prefers today, falls back to scanning ±30 days, then to the busiest day in the
-     * combined feed range. Returns empty when no services are defined at all.
-     * <p>
-     * Used only for ops logging now — the importer no longer filters schedules by
-     * a single representative day, see {@link #importSchedules}.
-     */
-    private Set<String> pickActiveServices(Map<String, ServiceCalendarSnapshot> services) {
-        if (services.isEmpty()) {return Set.of();}
-
-        LocalDate today = LocalDate.now();
-        for (int offset = 0; offset <= 30; offset++) {
-            for (int sign : new int[]{1, -1}) {
-                if (offset == 0 && sign == -1) {continue;}
-                LocalDate candidate = today.plusDays(offset * (long) sign);
-                Set<String> active = activeOn(services, candidate);
-                if (!active.isEmpty()) {
-                    log.info("GTFS import: schedule reference date is {} ({} active services)",
-                            candidate, active.size());
-                    return active;
-                }
-            }
-        }
-
-        // Last-resort: pick the date with the most active services across the union of
-        // all calendar ranges. Bounded to 365 candidates to keep the search cheap.
-        LocalDate scanStart = services.values().stream()
-                .map(ServiceCalendarSnapshot::startDate)
-                .filter(d -> d != null)
-                .min(LocalDate::compareTo)
-                .orElse(today);
-        LocalDate scanEnd = services.values().stream()
-                .map(ServiceCalendarSnapshot::endDate)
-                .filter(d -> d != null)
-                .max(LocalDate::compareTo)
-                .orElse(today);
-
-        Set<String> best = Set.of();
-        LocalDate bestDate = null;
-        for (LocalDate d = scanStart; !d.isAfter(scanEnd) && d.isBefore(scanStart.plusDays(365)); d = d.plusDays(1)) {
-            Set<String> active = activeOn(services, d);
-            if (active.size() > best.size()) {
-                best = active;
-                bestDate = d;
-            }
-        }
-        if (!best.isEmpty()) {
-            log.info("GTFS import: schedule reference date is {} ({} active services, fallback scan)",
-                    bestDate, best.size());
-        }
-        return best;
-    }
-
-    private Set<String> activeOn(Map<String, ServiceCalendarSnapshot> services, LocalDate date) {
-        Set<String> active = new HashSet<>();
-        for (Map.Entry<String, ServiceCalendarSnapshot> e : services.entrySet()) {
-            if (e.getValue().isActiveOn(date)) {active.add(e.getKey());}
-        }
-        return active;
-    }
-
-    private void importTransfers(Path transfersFile, StopImport stopImport) throws IOException {
-        transferImporter.importTransfers(transfersFile, stopImport);
+                                Map<String, BookingRule> bookingRules) throws IOException {
+        return scheduleImporter.importSchedules(workDir, itineraryImport, stopImport,
+                frequencies, bookingRules);
     }
 
     private Map<String, Shape> importShapes(Path shapesFile) throws IOException {
         return shapeImporter.importShapes(shapesFile);
+    }
+
+    private void importTransfers(Path transfersFile, StopImport stopImport) throws IOException {
+        transferImporter.importTransfers(transfersFile, stopImport);
     }
 
     private void importStationLevels(Path levelsFile) throws IOException {
@@ -1157,12 +311,6 @@ public class GtfsImportService {
         fareV2Importer.importFaresV2(workDir, stopImport, linesByGtfsId);
     }
 
-
-    /**
-     * Reads {@code location_groups.txt} + {@code location_group_stops.txt}.
-     * Wipes both before re-inserting; cascade on the join table picks
-     * up the stop memberships when we delete the parent.
-     */
     private void importLocationGroups(Path workDir, StopImport stopImport) throws IOException {
         locationGroupImporter.importLocationGroups(workDir, stopImport);
     }
@@ -1179,12 +327,7 @@ public class GtfsImportService {
         attributionImporter.importAttributions(attributionsFile);
     }
 
-    /** Resolves a GTFS stop_id to its persisted Stop. Phase 1.3 keeps
-     *  every platform and station as a separate row, so a direct
-     *  lookup against {@code stopsByGtfsId} is enough — no
-     *  parent-walk required. */
-
-    private void assignSchematicCoordinates(Collection<Stop> stops) {
+    private void assignSchematicCoordinates(java.util.Collection<Stop> stops) {
         double minLat = Double.POSITIVE_INFINITY;
         double maxLat = Double.NEGATIVE_INFINITY;
         double minLon = Double.POSITIVE_INFINITY;
@@ -1209,7 +352,7 @@ public class GtfsImportService {
         double latRange = maxLat - minLat;
         double lonRange = maxLon - minLon;
         double usable = SCHEMATIC_SIZE - 2 * SCHEMATIC_MARGIN;
-        List<Stop> dirty = new ArrayList<>(stops.size());
+        java.util.List<Stop> dirty = new java.util.ArrayList<>(stops.size());
         for (Stop s : stops) {
             if (s.getLatitude() == null || s.getLongitude() == null) {
                 continue;
@@ -1223,144 +366,6 @@ public class GtfsImportService {
         }
         stopRepository.saveAll(dirty);
         log.info("GTFS import: schematic coordinates assigned to {} stops", dirty.size());
-    }
-
-    // ---------- helpers ----------
-
-    private CSVParser openCsv(Path file) throws IOException {
-        return CSVFormat.DEFAULT.builder()
-                .setHeader()
-                .setSkipHeaderRecord(true)
-                .setIgnoreSurroundingSpaces(true)
-                .setIgnoreEmptyLines(true)
-                .build()
-                .parse(Files.newBufferedReader(file, StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Computes the per-schedule wheelchair override. Returns null when the
-     * trip's value matches the itinerary's default (the common case, so
-     * the schedule row stores nothing). Returns true/false only when the
-     * trip explicitly diverges.
-     */
-    private static Optional<Boolean> computeWheelchairOverride(int tripWheelchair,
-            com.transit.hub.domain.model.enums.WheelchairAccess itineraryDefault) {
-        if (tripWheelchair == 1) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE
-                    ? Optional.empty() : Optional.of(Boolean.TRUE);
-        }
-        if (tripWheelchair == 2) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE
-                    ? Optional.empty() : Optional.of(Boolean.FALSE);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Computes the per-schedule bikes override following the same
-     * empty-means-inherit rule as {@link #computeWheelchairOverride}.
-     */
-    private static Optional<Boolean> computeBikesOverride(int tripBikes,
-            com.transit.hub.domain.model.enums.BikesAllowed itineraryDefault) {
-        if (tripBikes == 1) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED
-                    ? Optional.empty() : Optional.of(Boolean.TRUE);
-        }
-        if (tripBikes == 2) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED
-                    ? Optional.empty() : Optional.of(Boolean.FALSE);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Majority vote on {@code bikes_allowed} mirroring {@link #majorityWheelchair}.
-     */
-    private static com.transit.hub.domain.model.enums.BikesAllowed majorityBikes(
-            Map<String, TripInfo> tripInfos, RouteDirKey key) {
-        int yes = 0;
-        int no = 0;
-        for (TripInfo info : tripInfos.values()) {
-            if (!info.routeId.equals(key.routeId)) {continue;}
-            if (!info.directionId.equals(key.directionId)) {continue;}
-            if (info.bikesAllowed == 1) { yes++; }
-            else if (info.bikesAllowed == 2) { no++; }
-        }
-        if (yes == 0 && no == 0) {
-            return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
-        }
-        if (yes > no) {
-            return com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED;
-        }
-        if (no > yes) {
-            return com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED;
-        }
-        return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
-    }
-
-    /**
-     * Majority vote on {@code cars_allowed} (post-2023 trips.txt
-     * extension), mirroring {@link #majorityBikes}.
-     */
-    private static com.transit.hub.domain.model.enums.CarsAllowed majorityCars(
-            Map<String, TripInfo> tripInfos, RouteDirKey key) {
-        int yes = 0;
-        int no = 0;
-        for (TripInfo info : tripInfos.values()) {
-            if (!info.routeId.equals(key.routeId)) {continue;}
-            if (!info.directionId.equals(key.directionId)) {continue;}
-            if (info.carsAllowed == 1) { yes++; }
-            else if (info.carsAllowed == 2) { no++; }
-        }
-        if (yes == 0 && no == 0) {
-            return com.transit.hub.domain.model.enums.CarsAllowed.UNKNOWN;
-        }
-        if (yes > no) {
-            return com.transit.hub.domain.model.enums.CarsAllowed.ALLOWED;
-        }
-        if (no > yes) {
-            return com.transit.hub.domain.model.enums.CarsAllowed.NOT_ALLOWED;
-        }
-        return com.transit.hub.domain.model.enums.CarsAllowed.UNKNOWN;
-    }
-
-    /**
-     * Picks the dominant {@code wheelchair_accessible} value among the trips
-     * of a given (route, direction). Counts {@code 1} (accessible) vs
-     * {@code 2} (not accessible); ignores {@code 0} (unknown). Falls back
-     * to {@code UNKNOWN} when every trip is unspecified or evenly split.
-     */
-    private static com.transit.hub.domain.model.enums.WheelchairAccess majorityWheelchair(
-            Map<String, TripInfo> tripInfos, RouteDirKey key) {
-        int yes = 0;
-        int no = 0;
-        for (TripInfo info : tripInfos.values()) {
-            if (!info.routeId.equals(key.routeId)) {continue;}
-            if (!info.directionId.equals(key.directionId)) {continue;}
-            if (info.wheelchairAccessible == 1) { yes++; }
-            else if (info.wheelchairAccessible == 2) { no++; }
-        }
-        if (yes == 0 && no == 0) {
-            return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
-        }
-        if (yes > no) {
-            return com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE;
-        }
-        if (no > yes) {
-            return com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE;
-        }
-        return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
-    }
-
-    private static String buildItineraryName(String headsign, String directionId) {
-        if (!isBlank(headsign)) {
-            return "→ " + headsign.trim();
-        }
-        return "Direction " + ("0".equals(directionId) ? "0" : "1");
-    }
-
-    private static String optional(CSVRecord record, String column) {
-        return record.isMapped(column) ? record.get(column) : "";
     }
 
     /** GTFS spec invariant: a single id namespace covers stops.stop_id,
@@ -1399,6 +404,20 @@ public class GtfsImportService {
                         + "namespace (stop∩location={}, stop∩group={}, location∩group={}). "
                         + "stop_times references may be ambiguous.",
                 total, stopVsLocation.size(), stopVsGroup.size(), locationVsGroup.size());
+    }
+
+    private CSVParser openCsv(Path file) throws IOException {
+        return CSVFormat.DEFAULT.builder()
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .setIgnoreSurroundingSpaces(true)
+                .setIgnoreEmptyLines(true)
+                .build()
+                .parse(Files.newBufferedReader(file, StandardCharsets.UTF_8));
+    }
+
+    private static String optional(CSVRecord record, String column) {
+        return record.isMapped(column) ? record.get(column) : "";
     }
 
     private static void deleteRecursively(Path path) {
