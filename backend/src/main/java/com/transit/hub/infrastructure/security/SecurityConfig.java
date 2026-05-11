@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,6 +37,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final LoginRateLimitFilter loginRateLimitFilter;
+    private final Environment environment;
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsCsv;
@@ -60,18 +64,19 @@ public class SecurityConfig {
                         // Production deployments should fence this off
                         // at the reverse-proxy / network layer.
                         .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator/metrics", "/actuator/info").hasRole("ADMIN")
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        // OpenAPI / Swagger UI — Springdoc serves the spec
-                        // and the UI on these paths. Both are read-only and
-                        // describe only the endpoint shape, not the data,
-                        // so leaving them open keeps the docs reachable
-                        // for external dev tooling. Production deployments
-                        // can fence them off via reverse-proxy rules if
-                        // desired.
-                        .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/swagger-ui.html").permitAll()
+                        // OpenAPI / Springdoc UI — open in dev for browsing,
+                        // ADMIN-only otherwise so the endpoint catalogue is
+                        // not freely enumerable from a public deployment.
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                                .access((authn, ctx) -> new org.springframework.security.authorization.AuthorizationDecision(
+                                        environment.acceptsProfiles(Profiles.of("dev"))
+                                                || (authn.get().isAuthenticated()
+                                                        && authn.get().getAuthorities().stream()
+                                                                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())))
+                                ))
 
                         // Read-only public access to itineraries (for schedule dialog)
                         .requestMatchers(HttpMethod.GET, "/api/itineraries/**").permitAll()
@@ -123,8 +128,24 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                // For H2 console
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+                .headers(headers -> headers
+                        // sameOrigin needed for the H2 console iframe in dev;
+                        // CSP frame-ancestors below pins the same constraint.
+                        .frameOptions(frame -> frame.sameOrigin())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; "
+                                        + "script-src 'self'; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "connect-src 'self' ws: wss:; "
+                                        + "img-src 'self' data:; "
+                                        + "frame-ancestors 'self'; "
+                                        + "base-uri 'self'"))
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(63072000L))
+                        .referrerPolicy(rp -> rp.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                );
 
         return http.build();
     }
