@@ -13,11 +13,14 @@ import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.persistence.MessageSpecifications;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,6 +44,7 @@ public class MessageService {
     private final StopRepository stopRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final MessageScopeResolver scopeResolver;
+    private final ActiveDisplayTracker activeDisplayTracker;
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getAllMessages() {
@@ -54,30 +58,26 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public PageResponse<MessageResponse> getAllMessages(Boolean active, MessageSeverity severity, String search, Pageable pageable) {
-        Page<BroadcastMessage> page;
         Instant now = Instant.now();
-        boolean hasActive = active != null && active;
-        boolean hasSeverity = severity != null;
         boolean hasSearch = search != null && !search.isBlank();
         String trimmedSearch = hasSearch ? search.trim() : null;
 
-        if (hasActive && hasSeverity && hasSearch) {
-            page = messageRepository.findActiveBySeverityAndSearch(now, severity, trimmedSearch, pageable);
-        } else if (hasActive && hasSeverity) {
-            page = messageRepository.findActiveBySeverity(now, severity, pageable);
-        } else if (hasActive && hasSearch) {
-            page = messageRepository.findActiveBySearch(now, trimmedSearch, pageable);
-        } else if (hasActive) {
-            page = messageRepository.findActiveMessages(now, pageable);
-        } else if (hasSeverity && hasSearch) {
-            page = messageRepository.findBySeverityAndSearch(severity, trimmedSearch, pageable);
-        } else if (hasSeverity) {
-            page = messageRepository.findBySeverity(severity, pageable);
-        } else if (hasSearch) {
-            page = messageRepository.findBySearch(trimmedSearch, pageable);
-        } else {
-            page = messageRepository.findAll(pageable);
+        // Build a composite specification; (root, q, cb) -> null is the JPA
+        // "match everything" predicate and avoids the Specification.where(null)
+        // method-reference ambiguity introduced by JpaSpecificationExecutor's
+        // sibling interfaces in recent Spring Data versions.
+        Specification<BroadcastMessage> spec = (root, query, cb) -> null;
+        if (Boolean.TRUE.equals(active)) {
+            spec = spec.and(MessageSpecifications.active(now));
         }
+        if (severity != null) {
+            spec = spec.and(MessageSpecifications.hasSeverity(severity));
+        }
+        if (hasSearch) {
+            spec = spec.and(MessageSpecifications.textMatches(trimmedSearch));
+        }
+
+        Page<BroadcastMessage> page = messageRepository.findAll(spec, pageable);
         // Pre-load scope names in two bulk queries (one for lines, one for stops)
         // so the per-message scope lookup in toResponse no longer adds N round-trips.
         Map<UUID, String> lineNames = scopeResolver.bulkLineNames(page.getContent());
@@ -222,7 +222,11 @@ public class MessageService {
 
     private Set<UUID> getAffectedStopIds(BroadcastMessage message) {
         return switch (message.getScopeType()) {
-            case NETWORK -> stopRepository.findAllIds();
+            // For a network-wide message only the kiosks that are currently
+            // connected will consume the push; pre-intersecting here avoids
+            // the full findAllIds() call and the downstream fan-out over
+            // every stop in the database.
+            case NETWORK -> activeDisplayTracker.getActiveStopIds();
             case LINE -> stopRepository.findByLineId(message.getScopeId()).stream()
                     .map(Stop::getId)
                     .collect(Collectors.toSet());

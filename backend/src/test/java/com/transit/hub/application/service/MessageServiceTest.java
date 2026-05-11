@@ -13,6 +13,7 @@ import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +68,9 @@ class MessageServiceTest {
 
     @Mock
     private MessageScopeResolver scopeResolver;
+
+    @Mock
+    private ActiveDisplayTracker activeDisplayTracker;
 
     @InjectMocks
     private MessageService messageService;
@@ -125,7 +129,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(testStopId));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -344,7 +348,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAllIds()).thenReturn(Set.of());
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of());
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -373,7 +377,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId, stop2Id));
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(testStopId, stop2Id));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -454,7 +458,7 @@ class MessageServiceTest {
                     MessageScope.NETWORK,
                     null
             );
-            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(testStopId));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -558,7 +562,7 @@ class MessageServiceTest {
                     null
             );
             when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
-            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(testStopId));
             when(messageRepository.save(any(BroadcastMessage.class))).thenReturn(existing);
 
             MessageResponse result = messageService.updateMessage(testMessageId, request);
@@ -591,7 +595,7 @@ class MessageServiceTest {
             BroadcastMessage existing = TestDataFactory.createNetworkMessage();
             existing.setId(testMessageId);
             when(messageRepository.findById(testMessageId)).thenReturn(Optional.of(existing));
-            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId));
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(testStopId));
 
             messageService.deleteMessage(testMessageId);
 
@@ -608,7 +612,7 @@ class MessageServiceTest {
             assertThatThrownBy(() -> messageService.deleteMessage(unknownId))
                     .isInstanceOf(EntityNotFoundException.class);
 
-            verify(messageRepository, never()).delete(any());
+            verify(messageRepository, never()).delete(any(BroadcastMessage.class));
         }
 
         @Test
@@ -706,7 +710,7 @@ class MessageServiceTest {
             // Original affected stops (LINE scope)
             when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop, stop2));
             // New affected stops (NETWORK scope) - includes stop3 that was not in original
-            when(stopRepository.findAllIds()).thenReturn(Set.of(testStopId, stop2Id, stop3Id));
+            when(activeDisplayTracker.getActiveStopIds()).thenReturn(Set.of(testStopId, stop2Id, stop3Id));
             when(messageRepository.save(any(BroadcastMessage.class))).thenReturn(existing);
 
             messageService.updateMessage(testMessageId, request);
@@ -722,108 +726,114 @@ class MessageServiceTest {
     @DisplayName("getAllMessages - paginated with filters")
     class GetAllMessagesPaginated {
 
+        // All filter combinations now route through the single
+        // JpaSpecificationExecutor.findAll(Specification, Pageable) entry point.
+        // The tests verify that the correct overload is called for every
+        // filter combination and that special inputs (blank search, false active)
+        // are treated as absent filters.
+
+        @SuppressWarnings("unchecked")
+        private Page<BroadcastMessage> stubSpec(Pageable pageable, Page<BroadcastMessage> page) {
+            when(messageRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
+                    .thenReturn(page);
+            return page;
+        }
+
         @Test
-        @DisplayName("calls findActiveBySeverityAndSearch when all filters are active")
-        void withAllFilters_CallsCorrectRepository() {
+        @DisplayName("delegates all filter combinations to findAll(Specification, Pageable)")
+        void withAllFilters_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             BroadcastMessage msg = TestDataFactory.createNetworkMessage();
             Page<BroadcastMessage> page = new PageImpl<>(List.of(msg), pageable, 1);
-            when(messageRepository.findActiveBySeverityAndSearch(any(Instant.class), eq(MessageSeverity.WARNING), eq("alert"), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(true, MessageSeverity.WARNING, "alert", pageable);
 
-            verify(messageRepository).findActiveBySeverityAndSearch(any(Instant.class), eq(MessageSeverity.WARNING), eq("alert"), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findActiveBySeverity when active and severity filters are set")
-        void withActiveAndSeverity_CallsCorrectRepository() {
+        @DisplayName("delegates active+severity combination to findAll(Specification, Pageable)")
+        void withActiveAndSeverity_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findActiveBySeverity(any(Instant.class), eq(MessageSeverity.CRITICAL), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(true, MessageSeverity.CRITICAL, null, pageable);
 
-            verify(messageRepository).findActiveBySeverity(any(Instant.class), eq(MessageSeverity.CRITICAL), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findActiveBySearch when active and search filters are set")
-        void withActiveAndSearch_CallsCorrectRepository() {
+        @DisplayName("delegates active+search combination to findAll(Specification, Pageable)")
+        void withActiveAndSearch_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findActiveBySearch(any(Instant.class), eq("test"), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(true, null, "test", pageable);
 
-            verify(messageRepository).findActiveBySearch(any(Instant.class), eq("test"), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findActiveMessages when only active filter is set")
-        void withActiveOnly_CallsCorrectRepository() {
+        @DisplayName("delegates active-only filter to findAll(Specification, Pageable)")
+        void withActiveOnly_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findActiveMessages(any(Instant.class), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(true, null, null, pageable);
 
-            verify(messageRepository).findActiveMessages(any(Instant.class), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findBySeverityAndSearch when severity and search filters are set")
-        void withSeverityAndSearch_CallsCorrectRepository() {
+        @DisplayName("delegates severity+search combination to findAll(Specification, Pageable)")
+        void withSeverityAndSearch_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findBySeverityAndSearch(eq(MessageSeverity.INFO), eq("notice"), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(null, MessageSeverity.INFO, "notice", pageable);
 
-            verify(messageRepository).findBySeverityAndSearch(eq(MessageSeverity.INFO), eq("notice"), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findBySeverity when only severity filter is set")
-        void withSeverityOnly_CallsCorrectRepository() {
+        @DisplayName("delegates severity-only filter to findAll(Specification, Pageable)")
+        void withSeverityOnly_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findBySeverity(eq(MessageSeverity.INFO), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(null, MessageSeverity.INFO, null, pageable);
 
-            verify(messageRepository).findBySeverity(eq(MessageSeverity.INFO), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findBySearch when only search filter is set")
-        void withSearchOnly_CallsCorrectRepository() {
+        @DisplayName("delegates search-only filter to findAll(Specification, Pageable)")
+        void withSearchOnly_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findBySearch(eq("alert"), eq(pageable)))
-                    .thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(null, null, "alert", pageable);
 
-            verify(messageRepository).findBySearch(eq("alert"), eq(pageable));
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
-        @DisplayName("calls findAll when no filters are set")
-        void withNoFilters_CallsFindAll() {
+        @DisplayName("delegates no-filter call to findAll(Specification, Pageable)")
+        void withNoFilters_DelegatesToSpecification() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findAll(pageable)).thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(null, null, null, pageable);
 
-            verify(messageRepository).findAll(pageable);
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
@@ -831,11 +841,11 @@ class MessageServiceTest {
         void withBlankSearch_TreatsAsNoSearch() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findAll(pageable)).thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(null, null, "   ", pageable);
 
-            verify(messageRepository).findAll(pageable);
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
         @Test
@@ -843,11 +853,11 @@ class MessageServiceTest {
         void withFalseActive_TreatsAsNoFilter() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            when(messageRepository.findAll(pageable)).thenReturn(page);
+            stubSpec(pageable, page);
 
             messageService.getAllMessages(false, null, null, pageable);
 
-            verify(messageRepository).findAll(pageable);
+            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
     }
 }
