@@ -50,3 +50,19 @@ coverage/
 
 # jscpd output
 .jscpd-report/
+
+# AI tool config (intentionally not versioned)
+.claude/
+CLAUDE.md
+.mcp.json
+GEMINI.md
+AGENTS.md
+.codex/
+.cursor/
+.cursorrules
+.continue/
+.cline*
+.aider*
+.windsurf*
+.aiexclude
+.aiignore
