@@ -16,13 +16,40 @@ and request / response schemas, prefer the Swagger explorer.
 
 ## Authentication
 
-The API uses JWT (JSON Web Token) authentication. The token
-must be included in the `Authorization` header on every
-protected request:
+Since v1.4.0 the API supports two transports for the same JWT
+identity, and ships a server-side refresh-token flow with rotation.
+The full architectural rationale lives in
+[ADR 0039](adr/0039-cookie-based-auth-with-refresh-tokens.md).
 
-```text
-Authorization: Bearer <token>
-```
+### Transports
+
+- **Cookie-based session** (default for browser callers). On
+  successful login the backend sets two `HttpOnly` cookies:
+  - `ACCESS_TOKEN` (path `/`, short TTL aligned on
+    `app.jwt.expiration-hours`).
+  - `REFRESH_TOKEN` (path `/api/auth`, long TTL governed by
+    `app.jwt.refresh-expiration-days`, default 14 days).
+  Browser callers also receive a non-`HttpOnly` `XSRF-TOKEN` cookie
+  and must mirror its value into the `X-XSRF-TOKEN` header on
+  mutating requests.
+- **Bearer header** (Swagger UI, CLI, STOMP CONNECT, integrators).
+  Pass the JWT returned in the JSON body verbatim:
+
+  ```text
+  Authorization: Bearer <token>
+  ```
+
+  Bearer callers are exempt from CSRF protection — browsers never
+  attach that header automatically.
+
+### Endpoints
+
+| Method | Endpoint               | Purpose                                                                        |
+| ------ | ---------------------- | ------------------------------------------------------------------------------ |
+| `POST` | `/api/auth/login`      | Validate credentials, set cookies, return the JWT in the body for compat       |
+| `POST` | `/api/auth/refresh`    | Consume the refresh cookie, rotate it, mint a fresh access token + cookies     |
+| `POST` | `/api/auth/logout`     | Revoke the refresh token server-side and clear both cookies                    |
+| `GET`  | `/api/auth/me`         | Return `{ username, role }` rebuilt from the current `SecurityContext`         |
 
 ### Login
 
@@ -36,7 +63,12 @@ Content-Type: application/json
 }
 ```
 
-**Response** (200 OK):
+**Response** (200 OK, headers + body):
+
+```text
+Set-Cookie: ACCESS_TOKEN=eyJhbGciOiJIUzI1NiI...; Path=/; HttpOnly; SameSite=Strict
+Set-Cookie: REFRESH_TOKEN=opaque-256-bit-value; Path=/api/auth; HttpOnly; SameSite=Strict
+```
 
 ```json
 {
@@ -47,11 +79,34 @@ Content-Type: application/json
 }
 ```
 
+### Refresh
+
+```http
+POST /api/auth/refresh
+Cookie: REFRESH_TOKEN=<the value the browser is holding>
+```
+
+Returns the same `LoginResponse` shape as `/login` plus rotated
+cookies. The previous refresh token is revoked and any subsequent
+replay attempt burns the user's active refresh chain — interpreted
+as token theft.
+
+### Logout
+
+```http
+POST /api/auth/logout
+Cookie: REFRESH_TOKEN=…
+```
+
+Returns `204 No Content` with two clearing `Set-Cookie` headers.
+Idempotent — calling without a cookie is a no-op.
+
 ### Endpoint Permissions
 
 | Endpoint                                   | Access       |
 | ------------------------------------------ | ------------ |
-| `/api/auth/**`                             | Public       |
+| `POST /api/auth/{login,refresh,logout}`    | Public       |
+| `GET /api/auth/me`                         | Authenticated |
 | `/api/display/**`                          | Public       |
 | `/api/network-map/**`                      | Public       |
 | `GET /api/itineraries/**`                  | Public       |
@@ -67,14 +122,14 @@ Content-Type: application/json
 
 ## Errors
 
-| Code | Description                                    |
-| ---- | ---------------------------------------------- |
-| 400  | Bad Request — invalid data                     |
-| 401  | Unauthorized — missing or invalid token        |
-| 403  | Forbidden — insufficient permissions           |
-| 404  | Not Found — resource does not exist            |
-| 409  | Conflict — uniqueness or referential violation |
-| 500  | Internal Server Error                          |
+| Code | Description                                                                |
+| ---- | -------------------------------------------------------------------------- |
+| 400  | Bad Request — invalid data                                                 |
+| 401  | Unauthorized — missing or invalid token / refresh token revoked or expired |
+| 403  | Forbidden — insufficient permissions, or missing / mismatched X-XSRF-TOKEN |
+| 404  | Not Found — resource does not exist                                        |
+| 409  | Conflict — uniqueness or referential violation                             |
+| 500  | Internal Server Error                                                      |
 
 All errors (including 401 and 403) return a structured JSON
 response:

@@ -4,7 +4,7 @@
 [![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![ADRs](https://img.shields.io/badge/ADRs-38-informational)](docs/adr/README.md)
-[![Version](https://img.shields.io/badge/version-1.3.0-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.1-success)](CHANGELOG.md)
 
 > **The only open-source transit back-office that combines GTFS
 > Schedule, Fares v2, GTFS-flex and GTFS-Realtime in a single
@@ -116,7 +116,7 @@ GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
 | Frontend         | Angular 21.2, Angular Material (M3), Transloco      |
 | Database         | H2 (dev), PostgreSQL (prod)                         |
 | Real-time        | WebSocket + STOMP, GTFS-Realtime protobuf           |
-| Authentication   | JWT                                                 |
+| Authentication   | JWT — HttpOnly cookies + rotating refresh tokens (ADR 0039) |
 | Tests            | JUnit 5, Vitest, Playwright (E2E smoke)             |
 | Benchmarks       | JMH (micro + Spring full-stack)                     |
 | Observability    | Spring Actuator + Micrometer + Prometheus + Grafana |

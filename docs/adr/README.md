@@ -44,6 +44,7 @@ should think twice before reverting.
 | [0036](0036-i18n-via-transloco.md) | Runtime i18n via Transloco (vs. @angular/localize) |
 | [0037](0037-quality-gates-and-ci.md) | Quality gates and continuous integration (JaCoCo, Vitest cov, Playwright, GH Actions) |
 | [0038](0038-recognition-strategy.md) | Recognition strategy: README-only entry point, channel-specific drafts |
+| [0039](0039-cookie-based-auth-with-refresh-tokens.md) | Cookie-based auth with refresh token rotation + CSRF, Bearer kept for Swagger / STOMP |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark

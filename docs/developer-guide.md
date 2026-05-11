@@ -309,36 +309,66 @@ public class DisplayStateService {
 }
 ```
 
-### JWT Security
+### JWT + cookie-based session
+
+Identity is carried on the wire by a HS256-signed JWT. Two transport
+modes coexist (full rationale in
+[ADR 0039](adr/0039-cookie-based-auth-with-refresh-tokens.md)):
+
+- **Cookie session** for the browser SPA. `/api/auth/login` drops
+  two `HttpOnly` cookies — `ACCESS_TOKEN` (path `/`) and
+  `REFRESH_TOKEN` (path `/api/auth`) — and the same JWT in the JSON
+  body for backwards compatibility. `/api/auth/refresh` rotates the
+  refresh token (revokes the previous row, mints a successor,
+  detects replay of an already-rotated value). `/api/auth/logout`
+  revokes the refresh row server-side and clears both cookies.
+  `/api/auth/me` rebuilds identity from the `SecurityContext` so the
+  SPA can resume after a reload.
+- **Bearer header** for Swagger UI, CLI consumers and STOMP CONNECT
+  frames. `JwtAuthenticationFilter` reads `Authorization: Bearer …`
+  first and falls back to the `ACCESS_TOKEN` cookie when the header
+  is absent.
+
+`@ConfigurationProperties` records (`JwtProperties`,
+`AuthProperties`) centralise the configuration surface — the
+`@NotBlank` constraint on `app.jwt.secret` makes the boot crash
+loudly when the secret is missing.
 
 ```java
-@Component
+@Service
+@RequiredArgsConstructor
 public class JwtService {
 
+    private final JwtProperties props;
+
     public String generateToken(User user) {
+        Instant now = Instant.now();
         return Jwts.builder()
             .subject(user.getUsername())
+            .issuer(props.issuer())
+            .audience().add(props.audience()).and()
             .claim("role", user.getRole().name())
-            .issuedAt(new Date())
-            .expiration(new Date(
-                System.currentTimeMillis() + expiration))
+            .issuedAt(Date.from(now))
+            .expiration(Date.from(
+                now.plus(props.expirationHours(), ChronoUnit.HOURS)))
             .signWith(getSigningKey())
             .compact();
     }
-
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token);
-            return true;
-        } catch (JwtException e) {
-            return false;
-        }
-    }
 }
 ```
+
+`RefreshTokenService` stores only the SHA-256 digest of each issued
+refresh token in the `refresh_tokens` table (migration V50) and
+walks the `replaced_by_id` chain on every rotation — replay of a
+token that already minted a successor is interpreted as theft and
+revokes every active row for that user.
+
+CSRF is **enabled** with `CookieCsrfTokenRepository.withHttpOnlyFalse()`
+so Angular can mirror the `XSRF-TOKEN` cookie into the
+`X-XSRF-TOKEN` header. A custom `RequestMatcher` exempts Bearer
+callers (no browser auto-attach) and the `/api/auth/**` endpoints
+(login has no XSRF cookie yet; refresh + logout are gated by their
+own refresh-token cookie).
 
 ---
 
@@ -353,10 +383,10 @@ src/app/
 +-- app.routes.ts                 # Route definitions
 +-- core/
 |   +-- auth/
-|   |   +-- auth.service.ts       # Authentication management
+|   |   +-- auth.service.ts       # /me hydration + login/logout/refresh
 |   |   +-- auth.guard.ts         # Route protection
 |   |   +-- role.guard.ts         # Role-based authorization
-|   |   +-- auth.interceptor.ts   # JWT token injection
+|   |   +-- auth.interceptor.ts   # withCredentials + 401 → /refresh retry
 |   +-- api/
 |   |   +-- line.service.ts
 |   |   +-- stop.service.ts

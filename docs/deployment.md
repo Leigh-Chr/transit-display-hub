@@ -78,10 +78,20 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8
+    refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
+  auth:
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
+    cookie-same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
 
 server:
   port: 8080
 ```
+
+> **HTTPS is mandatory in prod.** `AUTH_COOKIE_SECURE=true` (the
+> default once the prod profile is active) means the cookies will
+> not ride over plain HTTP. The Nginx block below terminates TLS
+> and proxies plain HTTP to the backend on the loopback interface,
+> which is the supported topology.
 
 ### 5. Systemd Service
 
@@ -105,6 +115,9 @@ Environment=DATABASE_URL=jdbc:postgresql://localhost:5432/transitdb
 Environment=DATABASE_USER=transit
 Environment=DATABASE_PASSWORD=your-secure-password
 Environment=JWT_SECRET=your-256-bit-secret-key-minimum-32-characters
+Environment=JWT_REFRESH_EXPIRATION_DAYS=14
+Environment=AUTH_COOKIE_SECURE=true
+Environment=AUTH_COOKIE_SAME_SITE=Strict
 
 [Install]
 WantedBy=multi-user.target
@@ -159,7 +172,9 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # API Backend
+    # API Backend — preserves cookies (Set-Cookie + Cookie headers)
+    # and the X-XSRF-TOKEN header round-trip needed by the
+    # cookie-based session (ADR 0039).
     location /api/ {
         proxy_pass http://localhost:8080;
         proxy_set_header Host $host;
@@ -318,7 +333,8 @@ backend/src/main/resources/db/migration/
 │                                        #   stop_access, rider categories, fare_transfer
 │                                        #   boarding times, translation sub-id)
 ├── V48__add_itinerary_mean_duration.sql # GTFS-flex 2024 mean_duration_* fields
-└── V49__add_import_audit_validation.sql # MobilityData validator outcome on the audit row
+├── V49__add_import_audit_validation.sql # MobilityData validator outcome on the audit row
+└── V50__refresh_tokens.sql               # Refresh tokens for cookie-based auth (ADR 0039)
 ```
 
 The full per-migration story lives in the

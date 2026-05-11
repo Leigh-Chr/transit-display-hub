@@ -91,6 +91,19 @@ The configuration file is located at
   Default: `transit`
 - `JWT_SECRET`: JWT secret key (min 256 bits).
   Required in prod
+- `JWT_ISSUER` / `JWT_AUDIENCE`: claims pinned on every issued JWT
+  (defaults `transit-display-hub` / `transit-display-hub-admin`).
+- `JWT_REFRESH_EXPIRATION_DAYS`: refresh token TTL (default 14).
+  Drives the `REFRESH_TOKEN` cookie max-age.
+- `AUTH_COOKIE_SECURE`: `true` behind HTTPS, `false` for plain
+  localhost dev. Default `false` so a fresh checkout boots without
+  TLS plumbing.
+- `AUTH_COOKIE_SAME_SITE`: `Strict` (default), `Lax` or `None`.
+- `AUTH_COOKIE_DOMAIN`: cookie domain attribute, leave empty for
+  same-host deployments.
+- `AUTH_ACCESS_COOKIE_NAME` / `AUTH_REFRESH_COOKIE_NAME`: cookie
+  names (defaults `ACCESS_TOKEN` / `REFRESH_TOKEN`). Match these in
+  any reverse-proxy ACL.
 - `APP_TIMEZONE`: operator local timezone for schedule
   comparisons. Default: `Europe/Paris`
 
@@ -155,13 +168,18 @@ app:
   jwt:
     secret: dev-secret-key-...
     expiration-hours: 8
+    refresh-expiration-days: 14
+  auth:
+    cookie-secure: false        # set to true behind HTTPS
+    cookie-same-site: Strict
 ```
 
 > **⚠️ Dev secret only** — the literal `dev-secret-key-...` is rejected
 > by the prod and kiosk profiles (which require an explicit `JWT_SECRET`
 > env var ≥ 32 bytes). Generate one for any non-localhost run with
 > `openssl rand -base64 48`. Since v1.2.0 the backend fails fast at boot
-> if the secret is too short.
+> if the secret is too short, and v1.4.1 enforces `@NotBlank` on the
+> property record.
 
 H2 console accessible at <http://localhost:8080/h2-console>
 
@@ -185,6 +203,10 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8
+    refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
+  auth:
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
+    cookie-same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
 ```
 
 ### Frontend - proxy.conf.json
@@ -279,9 +301,10 @@ nvm use 20
 
 #### 401 Unauthorized Error
 
-- The JWT token has expired (validity: 8 hours)
-- The token is missing or invalid
-- Log in again to get a new token
+- The access token (cookie or Bearer header) has expired or was rejected
+- The refresh token cookie is missing or already rotated — the
+  interceptor will try `/api/auth/refresh` once before bouncing the
+  user to `/login`
 - The API returns a structured JSON response (not HTML)
 
 #### 403 Forbidden Error
@@ -289,4 +312,8 @@ nvm use 20
 - Insufficient permissions to access the endpoint
 - The user does not have the required role
   (e.g., ADMIN endpoint for an AGENT)
+- Missing or mismatched `X-XSRF-TOKEN` header on a mutating request
+  from a cookie-bearing browser (Bearer callers are exempt). Angular
+  copies the `XSRF-TOKEN` cookie into the header automatically via
+  `withXsrfConfiguration` — see ADR 0039.
 - A notification is displayed in the frontend
