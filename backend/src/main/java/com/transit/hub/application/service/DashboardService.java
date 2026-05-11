@@ -6,9 +6,7 @@ import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.dto.response.MessageResponse;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
-import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.DeviceStatus;
-import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
@@ -22,10 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,6 +43,7 @@ public class DashboardService {
     private final ItineraryRepository itineraryRepository;
     private final BroadcastMessageRepository messageRepository;
     private final DeviceRepository deviceRepository;
+    private final MessageScopeResolver scopeResolver;
 
     @Transactional(readOnly = true)
     public DashboardResponse getSummary() {
@@ -72,18 +69,18 @@ public class DashboardService {
 
         Instant now = Instant.now();
         List<BroadcastMessage> activeRaw = messageRepository.findActiveMessages(now);
-        Map<UUID, String> lineNames = bulkLineNames(activeRaw);
-        Map<UUID, String> stopNames = bulkStopNames(activeRaw);
+        Map<UUID, String> lineNames = scopeResolver.bulkLineNames(activeRaw);
+        Map<UUID, String> stopNames = scopeResolver.bulkStopNames(activeRaw);
         List<MessageResponse> activeMessages = activeRaw.stream()
-                .map(m -> withScope(m, lineNames, stopNames))
+                .map(m -> scopeResolver.toResponse(m, lineNames, stopNames))
                 .toList();
 
         var recentPage = messageRepository.findAll(
                 PageRequest.of(0, RECENT_MESSAGES, Sort.by(Sort.Direction.DESC, "startTime")));
-        Map<UUID, String> recentLineNames = bulkLineNames(recentPage.getContent());
-        Map<UUID, String> recentStopNames = bulkStopNames(recentPage.getContent());
+        Map<UUID, String> recentLineNames = scopeResolver.bulkLineNames(recentPage.getContent());
+        Map<UUID, String> recentStopNames = scopeResolver.bulkStopNames(recentPage.getContent());
         List<MessageResponse> recentMessages = recentPage.getContent().stream()
-                .map(m -> withScope(m, recentLineNames, recentStopNames))
+                .map(m -> scopeResolver.toResponse(m, recentLineNames, recentStopNames))
                 .toList();
 
         long deviceTotal = deviceRepository.count();
@@ -106,53 +103,4 @@ public class DashboardService {
         );
     }
 
-    private MessageResponse withScope(
-            BroadcastMessage message,
-            Map<UUID, String> lineNames,
-            Map<UUID, String> stopNames
-    ) {
-        MessageResponse.ScopeInfo scope = null;
-        UUID id = message.getScopeId();
-        if (id != null) {
-            String name = switch (message.getScopeType()) {
-                case LINE -> lineNames.get(id);
-                case STOP -> stopNames.get(id);
-                default -> null;
-            };
-            if (name != null) {
-                scope = new MessageResponse.ScopeInfo(name);
-            }
-        }
-        return MessageResponse.from(message, scope);
-    }
-
-    private Map<UUID, String> bulkLineNames(List<BroadcastMessage> messages) {
-        Set<UUID> ids = messages.stream()
-                .filter(m -> m.getScopeType() == MessageScope.LINE && m.getScopeId() != null)
-                .map(BroadcastMessage::getScopeId)
-                .collect(Collectors.toSet());
-        if (ids.isEmpty()) {
-            return Map.of();
-        }
-        Map<UUID, String> names = new HashMap<>();
-        for (Line line : lineRepository.findAllById(ids)) {
-            names.put(line.getId(), line.getName());
-        }
-        return names;
-    }
-
-    private Map<UUID, String> bulkStopNames(List<BroadcastMessage> messages) {
-        Set<UUID> ids = messages.stream()
-                .filter(m -> m.getScopeType() == MessageScope.STOP && m.getScopeId() != null)
-                .map(BroadcastMessage::getScopeId)
-                .collect(Collectors.toSet());
-        if (ids.isEmpty()) {
-            return Map.of();
-        }
-        Map<UUID, String> names = new HashMap<>();
-        for (Stop stop : stopRepository.findAllById(ids)) {
-            names.put(stop.getId(), stop.getName());
-        }
-        return names;
-    }
 }

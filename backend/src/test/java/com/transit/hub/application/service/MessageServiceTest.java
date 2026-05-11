@@ -37,12 +37,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -61,6 +64,9 @@ class MessageServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private MessageScopeResolver scopeResolver;
 
     @InjectMocks
     private MessageService messageService;
@@ -87,6 +93,15 @@ class MessageServiceTest {
         // happy path. Per-test overrides remain free to clear or replace it.
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken("admin", null, "ROLE_ADMIN"));
+
+        // Default stubs for the scope resolver so tests that don't care about
+        // scope resolution don't need to set up the resolver themselves.
+        // lenient() avoids UnnecessaryStubbingException in tests that never
+        // call the list/paginated query paths.
+        lenient().when(scopeResolver.bulkLineNames(anyList())).thenReturn(Map.of());
+        lenient().when(scopeResolver.bulkStopNames(anyList())).thenReturn(Map.of());
+        lenient().when(scopeResolver.toResponse(any(BroadcastMessage.class), anyMap(), anyMap()))
+                .thenAnswer(inv -> MessageResponse.from(inv.getArgument(0)));
     }
 
     @AfterEach

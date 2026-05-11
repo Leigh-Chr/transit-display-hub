@@ -104,7 +104,89 @@ final class GtfsParse {
         };
     }
 
-    private static boolean isBlank(String s) {
+    // ------------------------------------------------------------------ //
+    // General string / number helpers shared with GtfsImportService       //
+    // ------------------------------------------------------------------ //
+
+    static boolean isBlank(String s) {
         return s == null || s.isBlank();
+    }
+
+    static String firstNonBlank(String... values) {
+        for (String v : values) {
+            if (!isBlank(v)) {
+                return v.trim();
+            }
+        }
+        return "";
+    }
+
+    static String truncate(String s, int max) {
+        if (s == null) {
+            return "";
+        }
+        return s.length() <= max ? s : s.substring(0, max);
+    }
+
+    static int parseInt(String s, int defaultValue) {
+        if (isBlank(s)) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    static Integer parseIntOrNull(String s) {
+        if (isBlank(s)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    static Double parseDoubleOrNull(String s) {
+        if (isBlank(s)) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    static Short parseShortOrNull(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        try {
+            return Short.parseShort(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * GTFS {@code trips.direction_id} is "0" / "1" / blank. We materialise
+     * itineraries by (route, direction) so the in-memory key already
+     * carries the value as a String — this just narrows it to the
+     * short the column expects, leaving null for feeds that don't
+     * declare a direction.
+     */
+    static Short parseDirectionId(String raw) {
+        if (isBlank(raw)) {
+            return null;
+        }
+        try {
+            return Short.parseShort(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

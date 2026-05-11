@@ -92,6 +92,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipFile;
 
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.firstNonBlank;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDirectionId;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDoubleOrNull;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseIntOrNull;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseShortOrNull;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
+
 /**
  * Imports a standard GTFS feed into the application's domain model.
  * Network-agnostic: works with any GTFS-compliant feed.
@@ -2214,11 +2223,6 @@ public class GtfsImportService {
         log.info("GTFS import: {} fare transfer rules persisted", batch.size());
     }
 
-    private static Short parseShortOrNull(String s) {
-        if (s == null || s.isBlank()) {return null;}
-        try {return Short.parseShort(s.trim());} catch (NumberFormatException e) {return null;}
-    }
-
     /**
      * Reads {@code location_groups.txt} + {@code location_group_stops.txt}.
      * Wipes both before re-inserting; cascade on the join table picks
@@ -2767,59 +2771,6 @@ public class GtfsImportService {
         return record.isMapped(column) ? record.get(column) : "";
     }
 
-    private static String firstNonBlank(String... values) {
-        for (String v : values) {
-            if (!isBlank(v)) {
-                return v.trim();
-            }
-        }
-        return "";
-    }
-
-    private static boolean isBlank(String s) {
-        return s == null || s.isBlank();
-    }
-
-    private static String truncate(String s, int max) {
-        if (s == null) {
-            return "";
-        }
-        return s.length() <= max ? s : s.substring(0, max);
-    }
-
-    private static int parseInt(String s, int defaultValue) {
-        if (isBlank(s)) {
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(s.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
-    }
-
-    private static Integer parseIntOrNull(String s) {
-        if (isBlank(s)) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(s.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static Double parseDoubleOrNull(String s) {
-        if (isBlank(s)) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(s.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
     /** GTFS spec invariant: a single id namespace covers stops.stop_id,
      *  location_groups.location_group_id and locations.geojson Feature.id.
      *  A feed that reuses the same id across these three buckets makes
@@ -2856,22 +2807,6 @@ public class GtfsImportService {
                         + "namespace (stop∩location={}, stop∩group={}, location∩group={}). "
                         + "stop_times references may be ambiguous.",
                 total, stopVsLocation.size(), stopVsGroup.size(), locationVsGroup.size());
-    }
-
-    /** GTFS {@code trips.direction_id} is "0" / "1" / blank. We materialise
-     *  itineraries by (route, direction) so the in-memory key already
-     *  carries the value as a String — this just narrows it to the
-     *  short the column expects, leaving null for feeds that don't
-     *  declare a direction. */
-    private static Short parseDirectionId(String raw) {
-        if (isBlank(raw)) {
-            return null;
-        }
-        try {
-            return Short.parseShort(raw.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     private static void deleteRecursively(Path path) {
