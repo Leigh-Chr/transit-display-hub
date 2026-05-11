@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +22,11 @@ class LoginRateLimitFilterTest {
     @BeforeEach
     void setUp() {
         filter = new LoginRateLimitFilter();
+        // The properties are normally bound from app.security.login-rate-limit.*
+        // via @Value at Spring boot; in a pure-unit test we wire the defaults
+        // ourselves so the bucket builds.
+        ReflectionTestUtils.setField(filter, "maxAttempts", 5);
+        ReflectionTestUtils.setField(filter, "windowMinutes", 5);
         chain = mock(FilterChain.class);
     }
 
