@@ -152,7 +152,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // pinned cost — revisit every 24 months as hardware speeds up.
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean

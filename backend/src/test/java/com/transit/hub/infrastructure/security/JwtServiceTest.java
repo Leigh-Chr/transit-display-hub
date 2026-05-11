@@ -25,12 +25,16 @@ class JwtServiceTest {
     private JwtService jwtService;
     private static final String TEST_SECRET = "this-is-a-very-long-secret-key-for-testing-jwt-minimum-256-bits-required";
     private static final int EXPIRATION_HOURS = 24;
+    private static final String TEST_ISSUER = "transit-display-hub";
+    private static final String TEST_AUDIENCE = "transit-display-hub-admin";
 
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
         ReflectionTestUtils.setField(jwtService, "secret", TEST_SECRET);
         ReflectionTestUtils.setField(jwtService, "expirationHours", EXPIRATION_HOURS);
+        ReflectionTestUtils.setField(jwtService, "issuer", TEST_ISSUER);
+        ReflectionTestUtils.setField(jwtService, "audience", TEST_AUDIENCE);
     }
 
     @Nested
@@ -274,10 +278,79 @@ class JwtServiceTest {
 
         return Jwts.builder()
                 .subject(username)
+                .issuer(TEST_ISSUER)
+                .audience().add(TEST_AUDIENCE).and()
                 .claim("role", UserRole.ADMIN.name())
                 .issuedAt(Date.from(pastTime.minus(1, ChronoUnit.HOURS)))
                 .expiration(Date.from(pastTime))
                 .signWith(key)
                 .compact();
+    }
+
+    @Nested
+    @DisplayName("issuer / audience validation")
+    class IssuerAudience {
+
+        @Test
+        @DisplayName("rejects token minted with a different issuer")
+        void rejectsWrongIssuer() {
+            SecretKey key = Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8));
+            String foreignToken = Jwts.builder()
+                    .subject("testuser")
+                    .issuer("some-other-app")
+                    .audience().add(TEST_AUDIENCE).and()
+                    .claim("role", UserRole.ADMIN.name())
+                    .issuedAt(Date.from(Instant.now()))
+                    .expiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+                    .signWith(key)
+                    .compact();
+
+            assertThat(jwtService.isValidToken(foreignToken)).isFalse();
+        }
+
+        @Test
+        @DisplayName("rejects token minted with a different audience")
+        void rejectsWrongAudience() {
+            SecretKey key = Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8));
+            String foreignToken = Jwts.builder()
+                    .subject("testuser")
+                    .issuer(TEST_ISSUER)
+                    .audience().add("some-other-app").and()
+                    .claim("role", UserRole.ADMIN.name())
+                    .issuedAt(Date.from(Instant.now()))
+                    .expiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+                    .signWith(key)
+                    .compact();
+
+            assertThat(jwtService.isValidToken(foreignToken)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("secret length validation at boot")
+    class SecretLengthValidation {
+
+        @Test
+        @DisplayName("fails fast if secret is shorter than 32 bytes")
+        void failsForShortSecret() {
+            JwtService svc = new JwtService();
+            ReflectionTestUtils.setField(svc, "secret", "too-short-secret");
+            ReflectionTestUtils.setField(svc, "expirationHours", 1);
+
+            assertThatThrownBy(svc::validateSecretLength)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("app.jwt.secret is too short");
+        }
+
+        @Test
+        @DisplayName("accepts a secret of exactly 32 bytes")
+        void acceptsMinimumSecret() {
+            JwtService svc = new JwtService();
+            String exactly32 = "12345678901234567890123456789012"; // 32 chars / 32 bytes ASCII
+            ReflectionTestUtils.setField(svc, "secret", exactly32);
+            ReflectionTestUtils.setField(svc, "expirationHours", 1);
+
+            assertThatNoException().isThrownBy(svc::validateSecretLength);
+        }
     }
 }

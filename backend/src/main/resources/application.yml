@@ -102,6 +102,8 @@ app:
     # explicit JWT_SECRET env var.
     secret: ${JWT_SECRET:dev-secret-key-for-jwt-token-generation-must-be-at-least-256-bits-long}
     expiration-hours: 8
+    issuer: ${JWT_ISSUER:transit-display-hub}
+    audience: ${JWT_AUDIENCE:transit-display-hub-admin}
 
 ---
 spring:
@@ -145,6 +147,8 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8
+    issuer: ${JWT_ISSUER:transit-display-hub}
+    audience: ${JWT_AUDIENCE:transit-display-hub-admin}
 
 ---
 # Kiosk profile — same posture as prod (PostgreSQL, validate-only DDL,
@@ -188,3 +192,5 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-hours: 8
+    issuer: ${JWT_ISSUER:transit-display-hub}
+    audience: ${JWT_AUDIENCE:transit-display-hub-admin}
