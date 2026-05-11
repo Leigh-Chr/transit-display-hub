@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -91,7 +92,7 @@ class RealtimeAlertControllerIntegrationTest {
     @Test
     @DisplayName("POST /refresh requires authentication")
     void refreshRequiresAuth() throws Exception {
-        mockMvc.perform(post("/api/admin/realtime/alerts/refresh"))
+        mockMvc.perform(post("/api/admin/realtime/alerts/refresh").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
 }

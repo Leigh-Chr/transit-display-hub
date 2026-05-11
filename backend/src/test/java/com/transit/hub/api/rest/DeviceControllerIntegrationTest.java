@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -220,7 +221,7 @@ class DeviceControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             RegisterDeviceRequest request = new RegisterDeviceRequest(testStop.getId());
 
-            mockMvc.perform(post("/api/devices")
+            mockMvc.perform(post("/api/devices").with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -326,7 +327,7 @@ class DeviceControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            mockMvc.perform(delete("/api/devices/" + testDevice.getId()))
+            mockMvc.perform(delete("/api/devices/" + testDevice.getId()).with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
 

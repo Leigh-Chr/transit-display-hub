@@ -32,6 +32,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -378,7 +379,7 @@ class MessageControllerIntegrationTest {
                     "Alert", "Content", MessageSeverity.INFO, now, futureTime, MessageScope.NETWORK, null
             );
 
-            mockMvc.perform(post("/api/messages")
+            mockMvc.perform(post("/api/messages").with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());

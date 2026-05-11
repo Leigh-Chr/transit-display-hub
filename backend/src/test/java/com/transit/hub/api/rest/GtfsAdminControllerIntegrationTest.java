@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -71,7 +72,7 @@ class GtfsAdminControllerIntegrationTest {
     @Test
     @DisplayName("anonymous gets 401")
     void requiresAuth() throws Exception {
-        mockMvc.perform(post("/api/admin/gtfs/reimport"))
+        mockMvc.perform(post("/api/admin/gtfs/reimport").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
 

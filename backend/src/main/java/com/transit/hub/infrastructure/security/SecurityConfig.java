@@ -20,7 +20,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -46,8 +49,23 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
+        csrfHandler.setCsrfRequestAttributeName(null);
+
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(csrfHandler)
+                        // While the cookie-based session is rolling out, callers still
+                        // arriving with an Authorization: Bearer header keep the
+                        // stateless contract — browsers never attach that header
+                        // automatically, so CSRF protection is unnecessary for them.
+                        // /api/auth/** is also exempt: /login has no XSRF cookie yet,
+                        // and /refresh + /logout are already gated by their own
+                        // refresh-token cookie. Once Bearer support is dropped the
+                        // matcher reduces to the default mutating-request rule.
+                        .requireCsrfProtectionMatcher(csrfProtectionMatcher())
+                )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -153,6 +171,22 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    private static RequestMatcher csrfProtectionMatcher() {
+        return request -> {
+            String method = request.getMethod();
+            if ("GET".equals(method) || "HEAD".equals(method)
+                    || "OPTIONS".equals(method) || "TRACE".equals(method)) {
+                return false;
+            }
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                return false;
+            }
+            String path = request.getRequestURI();
+            return path == null || !path.startsWith("/api/auth/");
+        };
     }
 
     @Bean

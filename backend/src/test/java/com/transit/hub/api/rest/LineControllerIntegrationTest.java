@@ -36,6 +36,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -241,7 +242,7 @@ class LineControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateLineRequest request = new CreateLineRequest("L2", "New Line", "#00FF00", LineType.METRO);
 
-            mockMvc.perform(post("/api/lines")
+            mockMvc.perform(post("/api/lines").with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -404,7 +405,7 @@ class LineControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            mockMvc.perform(delete("/api/lines/" + testLine.getId()))
+            mockMvc.perform(delete("/api/lines/" + testLine.getId()).with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
 

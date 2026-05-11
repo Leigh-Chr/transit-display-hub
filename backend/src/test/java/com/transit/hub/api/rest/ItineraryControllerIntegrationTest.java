@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -161,7 +162,7 @@ class ItineraryControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateItineraryRequest request = new CreateItineraryRequest(testLine.getId(), "Direction South", null);
 
-            mockMvc.perform(post("/api/itineraries")
+            mockMvc.perform(post("/api/itineraries").with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -214,7 +215,7 @@ class ItineraryControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateItineraryRequest request = new CreateItineraryRequest(testLine.getId(), "Name", null);
 
-            mockMvc.perform(put("/api/itineraries/" + testItinerary.getId())
+            mockMvc.perform(put("/api/itineraries/" + testItinerary.getId()).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -244,7 +245,7 @@ class ItineraryControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId()))
+            mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId()).with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
     }
@@ -331,7 +332,7 @@ class ItineraryControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             AddItineraryStopRequest request = new AddItineraryStopRequest(testStop.getId(), null);
 
-            mockMvc.perform(post("/api/itineraries/" + testItinerary.getId() + "/stops")
+            mockMvc.perform(post("/api/itineraries/" + testItinerary.getId() + "/stops").with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -399,7 +400,7 @@ class ItineraryControllerIntegrationTest {
             testItinerary.addStop(testStop, 0);
             itineraryRepository.save(testItinerary);
 
-            mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId() + "/stops/" + testStop.getId()))
+            mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId() + "/stops/" + testStop.getId()).with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
     }

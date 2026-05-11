@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -128,7 +129,7 @@ class ScheduleControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("14:30", testItinerary.getId());
 
-            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules")
+            mockMvc.perform(post("/api/stops/" + testStop.getId() + "/schedules").with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -252,7 +253,7 @@ class ScheduleControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             CreateScheduleRequest request = new CreateScheduleRequest("16:00", testItinerary.getId());
 
-            mockMvc.perform(put("/api/schedules/" + testSchedule.getId())
+            mockMvc.perform(put("/api/schedules/" + testSchedule.getId()).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -300,7 +301,7 @@ class ScheduleControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            mockMvc.perform(delete("/api/schedules/" + testSchedule.getId()))
+            mockMvc.perform(delete("/api/schedules/" + testSchedule.getId()).with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
     }

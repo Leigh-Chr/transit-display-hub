@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -305,7 +306,7 @@ class UserControllerIntegrationTest {
         void withoutAuth_Returns401() throws Exception {
             UpdateUserRequest request = new UpdateUserRequest(null, UserRole.ADMIN, true);
 
-            mockMvc.perform(put("/api/users/" + testAgent.getId())
+            mockMvc.perform(put("/api/users/" + testAgent.getId()).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
@@ -335,7 +336,7 @@ class UserControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            mockMvc.perform(delete("/api/users/" + testAgent.getId()))
+            mockMvc.perform(delete("/api/users/" + testAgent.getId()).with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
 
