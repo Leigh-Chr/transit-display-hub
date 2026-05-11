@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-05-12
+
+Patch interne sans changement fonctionnel. Consolide les properties Spring
+liées à l'authentification et met à jour l'attribution du Code of Conduct
+pour refléter la version 2.1 du Contributor Covenant.
+
+### Changed
+
+- **`JwtProperties` et `AuthProperties` typés** : les `@Value("${app.jwt.*}")`
+  et `@Value("${app.auth.*}")` dispersés dans `JwtService`,
+  `RefreshTokenService`, `JwtAuthenticationFilter` et `AuthCookieFactory`
+  sont remplacés par deux records `@ConfigurationProperties`. La
+  validation `@NotBlank` sur `app.jwt.secret` fait échouer le boot
+  immédiatement si le secret est manquant.
+- **`CODE_OF_CONDUCT.md`** : attribution mise à jour vers Contributor
+  Covenant v2.1 (lien officiel + FAQ + traductions).
+
 ## [1.4.0] — 2026-05-11
 
 Refonte du flow d'authentification : passage à une session basée sur des
