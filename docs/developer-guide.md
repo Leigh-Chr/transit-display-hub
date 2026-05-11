@@ -60,12 +60,16 @@ com.transit.hub/
 |   |   +-- BroadcastMessage.java
 |   |   +-- Device.java
 |   |   +-- User.java
-|   |   +-- enums/
-|   |       +-- LineType.java            # METRO, BUS, TRAM, TRAIN
-|   |       +-- MessageSeverity.java     # INFO, WARNING, CRITICAL
-|   |       +-- MessageScope.java        # NETWORK, LINE, STOP
-|   |       +-- DeviceStatus.java        # ONLINE, OFFLINE
-|   |       +-- UserRole.java            # ADMIN, AGENT
+|   |   +-- ...                         # 50+ entities total as of v1.2.0:
+|   |                                   # GTFS-flex (FlexStopTime, Location,
+|   |                                   # LocationGroup, BookingRule),
+|   |                                   # Fares v2 (Area, Timeframe, FareProduct,
+|   |                                   # FareLegRule, FareTransferRule,
+|   |                                   # RiderCategory), Pathway, Shape,
+|   |                                   # Translation, Attribution, etc.
+|   |   +-- enums/                      # 10+ enums covering accessibility,
+|   |                                   # transfer types, pickup/drop-off,
+|   |                                   # occupancy, congestion levels…
 |   +-- event/                           # Domain events
 |   |   +-- ScheduleChangedEvent.java
 |   |   +-- MessageChangedEvent.java
@@ -573,8 +577,12 @@ export class WebSocketService {
   connect(
     stopId: string
   ): Observable<DisplayState> {
+    // Native WebSocket since v1.0.x cleanup (sockjs-client removed).
+    // brokerURL is derived from window.location so the same code runs
+    // behind any reverse-proxy without environment-specific config.
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     this.client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
+      brokerURL: `${wsProtocol}//${window.location.host}/ws`,
       reconnectDelay: 5000,
       onConnect: () => {
         this.connectionStateSignal.set(

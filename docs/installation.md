@@ -157,6 +157,12 @@ app:
     expiration-hours: 8
 ```
 
+> **⚠️ Dev secret only** — the literal `dev-secret-key-...` is rejected
+> by the prod and kiosk profiles (which require an explicit `JWT_SECRET`
+> env var ≥ 32 bytes). Generate one for any non-localhost run with
+> `openssl rand -base64 48`. Since v1.2.0 the backend fails fast at boot
+> if the secret is too short.
+
 H2 console accessible at <http://localhost:8080/h2-console>
 
 #### Production Profile

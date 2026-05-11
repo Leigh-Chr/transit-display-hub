@@ -395,8 +395,18 @@ docker compose logs -f backend
 
 Available Actuator endpoints:
 
-- `/actuator/health` - Health status
-- `/actuator/info` - Application information
+- `/actuator/health` — public, used by load balancer probes
+- `/actuator/info` — **ADMIN-only since v1.2.0**; exposes the build version + git commit when `springBoot { buildInfo() }` is active
+- `/actuator/metrics` — **ADMIN-only since v1.2.0**; raw Micrometer metrics
+- `/actuator/prometheus` — Prometheus scrape format; left open so a local Prometheus can pull without service-account credentials. **Production must fence this at the reverse-proxy / network layer** — example nginx ACL:
+
+```nginx
+location /actuator/prometheus {
+    allow 10.0.0.0/8;     # internal Prometheus only
+    deny all;
+    proxy_pass http://backend:8080;
+}
+```
 
 ---
 

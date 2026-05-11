@@ -69,5 +69,5 @@ Le seuil est bas : ajouter un tag plus tard est trois lignes.
   (le nom de classe décapitalisé) reste lisible.
 - **Pas de localisation des descriptions.** Les descriptions sont
   écrites en français, alignées sur les conventions internes du
-  projet (CLAUDE.md). Un dev anglophone navigue par chemin URL et
+  projet. Un dev anglophone navigue par chemin URL et
   par operationId, donc le coût est faible.
