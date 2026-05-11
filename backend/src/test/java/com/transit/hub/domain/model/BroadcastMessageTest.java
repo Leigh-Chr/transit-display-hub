@@ -5,6 +5,8 @@ import com.transit.hub.domain.model.enums.MessageSeverity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -13,6 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("BroadcastMessage")
 class BroadcastMessageTest {
+
+    private static final Instant WINDOW_START = Instant.parse("2025-01-01T10:00:00Z");
+    private static final Instant WINDOW_END   = Instant.parse("2025-01-01T18:00:00Z");
 
     private BroadcastMessage buildMessage(Instant start, Instant end) {
         return BroadcastMessage.builder()
@@ -26,7 +31,7 @@ class BroadcastMessageTest {
     }
 
     @Nested
-    @DisplayName("isActive")
+    @DisplayName("isActive — wall-clock based")
     class IsActive {
 
         @Test
@@ -69,7 +74,6 @@ class BroadcastMessageTest {
         @DisplayName("returns false when start time is slightly in the future")
         void startTimeSlightlyInFuture_ReturnsFalse() {
             Instant now = Instant.now();
-            // Start 10 seconds from now -- current time is before start
             BroadcastMessage message = buildMessage(
                     now.plus(10, ChronoUnit.SECONDS),
                     now.plus(1, ChronoUnit.HOURS)
@@ -82,7 +86,6 @@ class BroadcastMessageTest {
         @DisplayName("returns false when end time is slightly in the past")
         void endTimeSlightlyInPast_ReturnsFalse() {
             Instant now = Instant.now();
-            // End 10 seconds ago -- current time is after end
             BroadcastMessage message = buildMessage(
                     now.minus(1, ChronoUnit.HOURS),
                     now.minus(10, ChronoUnit.SECONDS)
@@ -93,83 +96,41 @@ class BroadcastMessageTest {
     }
 
     @Nested
-    @DisplayName("isActiveAt")
+    @DisplayName("isActiveAt — deterministic boundary checks")
     class IsActiveAt {
 
-        @Test
-        @DisplayName("returns true when queried time is between start and end")
-        void withinRange_ReturnsTrue() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            Instant queryTime = Instant.parse("2025-01-01T14:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
+        // Window: [10:00, 18:00)
 
-            assertThat(message.isActiveAt(queryTime)).isTrue();
-        }
+        @ParameterizedTest(name = "[{index}] {0} → {2}")
+        @CsvSource({
+            "mid-window,           2025-01-01T14:00:00Z, true",
+            "before-start,         2025-01-01T08:00:00Z, false",
+            "after-end,            2025-01-01T20:00:00Z, false",
+            "at-exact-start,       2025-01-01T10:00:00Z, true",
+            "at-exact-end,         2025-01-01T18:00:00Z, false",
+        })
+        @DisplayName("returns the expected result for each timestamp against a fixed window")
+        void boundaryCheck(String label, String queryIso, boolean expected) {
+            Instant query = Instant.parse(queryIso);
+            BroadcastMessage message = buildMessage(WINDOW_START, WINDOW_END);
 
-        @Test
-        @DisplayName("returns false when queried time is before start")
-        void beforeStart_ReturnsFalse() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            Instant queryTime = Instant.parse("2025-01-01T08:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
-
-            assertThat(message.isActiveAt(queryTime)).isFalse();
-        }
-
-        @Test
-        @DisplayName("returns false when queried time is after end")
-        void afterEnd_ReturnsFalse() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            Instant queryTime = Instant.parse("2025-01-01T20:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
-
-            assertThat(message.isActiveAt(queryTime)).isFalse();
-        }
-
-        @Test
-        @DisplayName("returns true when queried time equals start time (inclusive)")
-        void atExactStart_ReturnsTrue() {
-            // Half-open [start, end): the message becomes active at the very
-            // first instant of its window so the kiosk reflects start-exact
-            // events without a one-nanosecond hole.
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
-
-            assertThat(message.isActiveAt(start)).isTrue();
-        }
-
-        @Test
-        @DisplayName("returns false when queried time equals end time (exclusive)")
-        void atExactEnd_ReturnsFalse() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
-
-            assertThat(message.isActiveAt(end)).isFalse();
+            assertThat(message.isActiveAt(query)).isEqualTo(expected);
         }
 
         @Test
         @DisplayName("returns true one nanosecond after start")
         void oneNanoAfterStart_ReturnsTrue() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
+            BroadcastMessage message = buildMessage(WINDOW_START, WINDOW_END);
 
-            assertThat(message.isActiveAt(start.plusNanos(1))).isTrue();
+            assertThat(message.isActiveAt(WINDOW_START.plusNanos(1))).isTrue();
         }
 
         @Test
         @DisplayName("returns true one nanosecond before end")
         void oneNanoBeforeEnd_ReturnsTrue() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
+            BroadcastMessage message = buildMessage(WINDOW_START, WINDOW_END);
 
-            assertThat(message.isActiveAt(end.minusNanos(1))).isTrue();
+            assertThat(message.isActiveAt(WINDOW_END.minusNanos(1))).isTrue();
         }
     }
 
@@ -177,33 +138,18 @@ class BroadcastMessageTest {
     @DisplayName("isValidTimeRange")
     class IsValidTimeRange {
 
-        @Test
-        @DisplayName("returns true when end is after start")
-        void validRange_ReturnsTrue() {
-            Instant start = Instant.parse("2025-01-01T10:00:00Z");
-            Instant end = Instant.parse("2025-01-01T18:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
+        @ParameterizedTest(name = "[{index}] {0} → {3}")
+        @CsvSource({
+            "valid-range,        2025-01-01T10:00:00Z, 2025-01-01T18:00:00Z, true",
+            "end-before-start,   2025-01-01T18:00:00Z, 2025-01-01T10:00:00Z, false",
+            "equal-times,        2025-01-01T10:00:00Z, 2025-01-01T10:00:00Z, false",
+        })
+        @DisplayName("validates that start is strictly before end")
+        void rangeCheck(String label, String startIso, String endIso, boolean expected) {
+            BroadcastMessage message = buildMessage(
+                    Instant.parse(startIso), Instant.parse(endIso));
 
-            assertThat(message.isValidTimeRange()).isTrue();
-        }
-
-        @Test
-        @DisplayName("returns false when end is before start")
-        void endBeforeStart_ReturnsFalse() {
-            Instant start = Instant.parse("2025-01-01T18:00:00Z");
-            Instant end = Instant.parse("2025-01-01T10:00:00Z");
-            BroadcastMessage message = buildMessage(start, end);
-
-            assertThat(message.isValidTimeRange()).isFalse();
-        }
-
-        @Test
-        @DisplayName("returns false when start equals end")
-        void equalTimes_ReturnsFalse() {
-            Instant time = Instant.parse("2025-01-01T10:00:00Z");
-            BroadcastMessage message = buildMessage(time, time);
-
-            assertThat(message.isValidTimeRange()).isFalse();
+            assertThat(message.isValidTimeRange()).isEqualTo(expected);
         }
 
         @Test

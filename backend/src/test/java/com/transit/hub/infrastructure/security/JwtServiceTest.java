@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.crypto.SecretKey;
@@ -166,49 +168,37 @@ class JwtServiceTest {
             User user = TestDataFactory.createAdmin("testuser");
             String token = jwtService.generateToken(user);
 
-            boolean isValid = jwtService.isValidToken(token);
-
-            assertThat(isValid).isTrue();
+            assertThat(jwtService.isValidToken(token)).isTrue();
         }
 
-        @Test
-        @DisplayName("returns false for expired token")
-        void returnsFalseForExpiredToken() {
-            String expiredToken = createExpiredToken("testuser");
-
-            boolean isValid = jwtService.isValidToken(expiredToken);
-
-            assertThat(isValid).isFalse();
-        }
-
-        @Test
-        @DisplayName("returns false for malformed token")
-        void returnsFalseForMalformedToken() {
-            boolean isValid = jwtService.isValidToken("this.is.not.valid");
-
-            assertThat(isValid).isFalse();
+        @ParameterizedTest(name = "[{index}] token=''{0}''")
+        @ValueSource(strings = {
+            "this.is.not.valid",
+            "not-a-jwt-at-all",
+            "",
+            "a.b",
+            "x.y.z.w.v",
+        })
+        @DisplayName("returns false for malformed / structurally invalid tokens")
+        void returnsFalseForMalformedTokens(String malformed) {
+            assertThat(jwtService.isValidToken(malformed)).isFalse();
         }
 
         @Test
         @DisplayName("returns false for null token")
         void returnsFalseForNullToken() {
-            boolean isValid = jwtService.isValidToken(null);
-
-            assertThat(isValid).isFalse();
+            assertThat(jwtService.isValidToken(null)).isFalse();
         }
 
         @Test
-        @DisplayName("returns false for empty token")
-        void returnsFalseForEmptyToken() {
-            boolean isValid = jwtService.isValidToken("");
-
-            assertThat(isValid).isFalse();
+        @DisplayName("returns false for expired token")
+        void returnsFalseForExpiredToken() {
+            assertThat(jwtService.isValidToken(createExpiredToken("testuser"))).isFalse();
         }
 
         @Test
         @DisplayName("returns false for token signed with different key")
         void returnsFalseForWrongSignature() {
-            // Create token with a different secret
             String differentSecret = "another-very-long-secret-key-that-is-different-from-the-original-one";
             SecretKey differentKey = Keys.hmacShaKeyFor(differentSecret.getBytes(StandardCharsets.UTF_8));
 
@@ -219,9 +209,7 @@ class JwtServiceTest {
                     .signWith(differentKey)
                     .compact();
 
-            boolean isValid = jwtService.isValidToken(tokenWithDifferentKey);
-
-            assertThat(isValid).isFalse();
+            assertThat(jwtService.isValidToken(tokenWithDifferentKey)).isFalse();
         }
     }
 
