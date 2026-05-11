@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, EMPTY } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -157,7 +158,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
         </div>
 
         <mat-paginator
-          [length]="totalElements"
+          [length]="totalElements()"
           [pageIndex]="tableState.page"
           [pageSize]="tableState.size"
           [pageSizeOptions]="pageSizeOptions"
@@ -311,62 +312,72 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
     /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
-export class LinesComponent implements OnInit {
+export class LinesComponent {
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
-  loading = signal(true);
-  lines = signal<Line[]>([]);
-  totalElements = 0;
 
-  ngOnInit(): void {
+  // Convert the route's query params Observable to a Signal so rxResource
+  // can track them reactively and re-fire the loader on navigation changes.
+  // tableState.init() is called first so default sort/size are set before
+  // the first emission of queryParams is processed.
+  private readonly queryParams = (() => {
     this.tableState.init({ sortBy: 'code', size: 12 });
+    return toSignal(this.route.queryParams, { initialValue: {} });
+  })();
 
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+  private readonly linesResource = rxResource<PageResponse<Line>, ReturnType<typeof this.queryParams>>({
+    params: () => {
+      const params = this.queryParams();
       this.tableState.syncFromQueryParams(params);
-      this.loadLines();
-    });
-  }
-
-  loadLines(): void {
-    this.loading.set(true);
-    const [field, direction] = this.tableState.sortBy.includes(':')
-      ? this.tableState.sortBy.split(':')
-      : [this.tableState.sortBy, 'asc'];
-
-    this.lineService
-      .getAllPaginated({
+      return params;
+    },
+    stream: () => {
+      const [field, direction] = this.tableState.sortBy.includes(':')
+        ? this.tableState.sortBy.split(':')
+        : [this.tableState.sortBy, 'asc'];
+      return this.lineService.getAllPaginated({
         page: this.tableState.page,
         size: this.tableState.size,
         sortBy: field,
         sortDir: direction as 'asc' | 'desc',
         search: this.tableState.search || undefined,
-      })
-      .subscribe({
-        next: (response: PageResponse<Line>) => {
-          // After a delete on the last item of a page > 0, the server returns
-          // an empty page. Step back instead of showing a blank screen.
-          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
-            this.tableState.page = Math.max(0, response.totalPages - 1);
-            this.tableState.updateUrl();
-            this.loadLines();
-            return;
-          }
-          this.lines.set(response.content);
-          this.totalElements = response.totalElements;
-          this.loading.set(false);
-        },
-        error: (err: unknown) => {
-          this.loading.set(false);
+      }).pipe(
+        catchError((err: unknown) => {
           this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.loadFailed')));
-        },
-      });
+          return EMPTY;
+        }),
+      );
+    },
+  });
+
+  readonly loading = computed(() => this.linesResource.isLoading());
+
+  readonly lines = computed((): Line[] => {
+    const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
+    if (!page) { return []; }
+    // After a delete on the last item of a page > 0, the server returns an
+    // empty page. Step back via URL update so the params signal re-fires.
+    if (page.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
+      this.tableState.page = Math.max(0, page.totalPages - 1);
+      this.tableState.updateUrl();
+      return [];
+    }
+    return page.content;
+  });
+
+  readonly totalElements = computed((): number => {
+    const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
+    return page?.totalElements ?? 0;
+  });
+
+  loadLines(): void {
+    this.linesResource.reload();
   }
 
   onSortChange(): void {

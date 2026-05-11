@@ -9,6 +9,11 @@ import { Line, PageResponse } from '@shared/models';
 import { LinesComponent } from './lines.component';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
+async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
+  f.detectChanges();
+  await f.whenStable();
+}
+
 const en = {
   common: { delete: 'Delete' },
   admin: {
@@ -96,21 +101,23 @@ describe('LinesComponent', () => {
   });
 
   describe('loading state', () => {
-    it('should start with loading true', () => {
+    it('should be loading after detectChanges (resource initiated)', () => {
+      fixture.detectChanges();
+      // rxResource enters loading state synchronously on first detectChanges.
       expect(component.loading()).toBe(true);
     });
 
-    it('should set loading to false after lines are loaded', () => {
-      fixture.detectChanges();
+    it('should set loading to false after lines are loaded', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
     });
   });
 
   describe('queryParams initialization', () => {
-    it('should initialize state from query params', () => {
+    it('should initialize state from query params', async () => {
       queryParams$.next({ page: '2', size: '24', sortBy: 'name:desc', search: 'metro' });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.tableState.page).toBe(2);
       expect(component.tableState.size).toBe(24);
@@ -118,8 +125,8 @@ describe('LinesComponent', () => {
       expect(component.tableState.search).toBe('metro');
     });
 
-    it('should use defaults when query params are empty', () => {
-      fixture.detectChanges();
+    it('should use defaults when query params are empty', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.tableState.page).toBe(0);
       expect(component.tableState.size).toBe(12);
@@ -129,8 +136,8 @@ describe('LinesComponent', () => {
   });
 
   describe('loadLines', () => {
-    it('should call getAllPaginated with correct params', () => {
-      fixture.detectChanges();
+    it('should call getAllPaginated with correct params', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockLineService.getAllPaginated).toHaveBeenCalledWith({
         page: 0,
@@ -141,44 +148,44 @@ describe('LinesComponent', () => {
       });
     });
 
-    it('should parse sort direction from sortBy containing colon', () => {
+    it('should parse sort direction from sortBy containing colon', async () => {
       queryParams$.next({ sortBy: 'name:desc' });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(mockLineService.getAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ sortBy: 'name', sortDir: 'desc' }),
       );
     });
 
-    it('should pass search term when present', () => {
+    it('should pass search term when present', async () => {
       queryParams$.next({ search: 'metro' });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(mockLineService.getAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ search: 'metro' }),
       );
     });
 
-    it('should populate lines signal and totalElements on success', () => {
-      fixture.detectChanges();
+    it('should populate lines and totalElements on success', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.lines()).toEqual(mockPageResponse.content);
-      expect(component.totalElements).toBe(1);
+      expect(component.totalElements()).toBe(1);
     });
 
-    it('should handle error and show snackbar', () => {
+    it('should handle error and show snackbar', async () => {
       mockLineService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
       expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
-    it('should show fallback error message when error has no message', () => {
+    it('should show fallback error message when error has no message', async () => {
       mockLineService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(mockNotify.error).toHaveBeenCalledWith('Failed to load lines');
     });
@@ -269,13 +276,14 @@ describe('LinesComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should call create and reload on success', () => {
+    it('should call create and reload on success', async () => {
       const dialogResult = { code: 'L2', name: 'New', color: '#00F' };
       mockDialog.open.mockReturnValue({ afterClosed: () => of(dialogResult) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockLineService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockLineService.create).toHaveBeenCalledWith(dialogResult);
@@ -306,13 +314,14 @@ describe('LinesComponent', () => {
   describe('openEditDialog', () => {
     const existingLine: Line = { id: '1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 };
 
-    it('should call update and reload on success', () => {
+    it('should call update and reload on success', async () => {
       const editResult = { code: 'L1', name: 'Updated', color: '#0F0' };
       mockDialog.open.mockReturnValue({ afterClosed: () => of(editResult) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockLineService.getAllPaginated.mockClear();
 
       component.openEditDialog(existingLine);
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
@@ -346,12 +355,13 @@ describe('LinesComponent', () => {
   describe('deleteLine', () => {
     const lineToDelete: Line = { id: '1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 };
 
-    it('should call delete and show snackbar when confirmed', () => {
+    it('should call delete and show snackbar when confirmed', async () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(true) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockLineService.getAllPaginated.mockClear();
 
       component.deleteLine(lineToDelete);
+      await fixture.whenStable();
 
       expect(mockLineService.delete).toHaveBeenCalledWith('1');
       expect(mockLineService.getAllPaginated).toHaveBeenCalled();
@@ -389,12 +399,14 @@ describe('LinesComponent', () => {
   });
 
   describe('onPageChange triggers reload', () => {
-    it('should trigger loadLines via updateUrl which updates query params', () => {
-      fixture.detectChanges();
+    it('should trigger loadLines via updateUrl which updates query params', async () => {
+      await detectAndFlush(fixture);
       mockLineService.getAllPaginated.mockClear();
 
-      // Update query params simulating navigation
+      // Update query params simulating navigation — toSignal picks up the new
+      // BehaviorSubject emission, params() re-runs, stream() fires again.
       queryParams$.next({ page: '1', size: '24' });
+      await fixture.whenStable();
 
       expect(mockLineService.getAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, size: 24 }),
