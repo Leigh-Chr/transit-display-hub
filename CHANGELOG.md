@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-05-11
+
+Sprint 4 : refactoring structurel backend (décomposition GtfsImportService),
+migration rxResource frontend, expansion E2E Playwright, et améliorations
+d'accessibilité. Aucun changement cassant, aucune modification de schéma de
+base de données. Le chantier E (refactoring auth httpOnly + refresh tokens)
+est reporté à v1.4.0.
+
+### Added
+
+- **Axe-core a11y smoke sur les pages publiques** : test E2E automatisé
+  vérifiant l'absence de violations d'accessibilité critiques sur les pages
+  kiosk et hub via `@axe-core/playwright`.
+- **E2E — Page Object Model + fixture d'authentification** : refactorisation
+  de la suite Playwright en objets de page réutilisables ; fixture `auth`
+  partagée évitant les re-logins entre tests.
+- **E2E — extension multi-navigateurs** : suite passée de 4 à 31 tests,
+  couvrant Chromium, Firefox et WebKit ; flows admin (lignes, arrêts,
+  messages, utilisateurs, appareils, horaires), carte réseau, kiosk et hub.
+- **E2E — régression visuelle** : captures de référence et assertions
+  pixel-perfect intégrées dans la suite Playwright.
+- **`AdminTokenDialogComponent`** : révélation du token d'appareil migrée
+  vers un `MatDialog` dédié, remplaçant l'inline toggle ; standardisation des
+  options de paginateur sur toutes les listes admin.
+
+### Changed
+
+- **`GtfsImportService` décomposé en 17 `*Importer`** : orchestrateur réduit
+  de 2829 à 440 LoC ; chaque section GTFS (agences, arrêts, routes, formes,
+  voyages, horaires, transferts, cheminements, niveaux, traductions,
+  attributions, règles de réservation, zones, groupes de zones, tarifs V1 et
+  V2, itinéraires) isolée dans un composant Spring testable
+  individuellement.
+- **Dashboard / Lignes / Arrêts migrés vers `rxResource`** : chargement des
+  données en syntaxe signal déclarative, supprimant les `BehaviorSubject` et
+  les souscriptions manuelles.
+- **`role=alertdialog` sur `ConfirmDialogComponent`** : boîte de dialogue
+  destructrice conforme WAI-ARIA pour les lecteurs d'écran.
+- **`role=alert` sur l'erreur de connexion** : message d'erreur du formulaire
+  de login annoncé immédiatement par les technologies d'assistance.
+- **`role=application` restreint sur le schéma** : portée de la région
+  interactive resserrée au seul conteneur SVG du schéma réseau, limitant
+  l'interférence avec la navigation clavier globale.
+- **Kiosque — remplacement du défilement continu** : sous
+  `prefers-reduced-motion`, le carrousel kiosk bascule d'un scroll continu
+  vers des sauts de page discrets.
+- **Standardisation du paginateur** : toutes les listes admin partagent
+  désormais les mêmes options `[5, 10, 25]` et le même composant `MatPaginator`.
+- **Guide développeur allégé** : suppression du snippet SockJS (remplacé par
+  le client WebSocket natif), retrait de la carte de packages obsolètes.
+
+### Internal
+
+- **`@WebMvcTest` sur les contrôleurs en lecture seule** : tranches de test
+  légères pilotant `NetworkMapController`, `FeedInfoController` et
+  `StopController` sans contexte applicatif complet.
+- **`@ParameterizedTest` sur les suites de validation** : couverture des
+  variantes d'entrée invalides et du mapping d'exceptions via JUnit 5
+  paramétré.
+- **Refactorisation des tests structurels** : réorganisation des specs de
+  structure de packages et d'architecture pour coller à la nouvelle
+  décomposition en `*Importer`.
+- **`@axe-core/playwright` en devDependency** : bibliothèque d'audit
+  d'accessibilité automatisé ajoutée uniquement à l'environnement de
+  développement/CI.
+
 ## [1.2.0] — 2026-05-11
 
 Sprint 3: défense en profondeur (sécurité HTTP, JWT, WebSocket), déduplication
