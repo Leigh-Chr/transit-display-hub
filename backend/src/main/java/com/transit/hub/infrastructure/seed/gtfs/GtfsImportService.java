@@ -1,7 +1,6 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.Agency;
-import com.transit.hub.domain.model.Attribution;
 import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.FareAttribute;
@@ -17,7 +16,6 @@ import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.ShapePoint;
 import com.transit.hub.domain.model.ServiceCalendarException;
-import com.transit.hub.domain.model.Translation;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.BookingType;
 import com.transit.hub.domain.model.enums.FarePaymentMethod;
@@ -36,13 +34,14 @@ import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.AttributionImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.PathwayImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.RouteImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ShapeImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StopImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TransferImporter;
-import com.transit.hub.infrastructure.persistence.AttributionRepository;
+import com.transit.hub.infrastructure.seed.gtfs.sections.TranslationImporter;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
 import com.transit.hub.infrastructure.persistence.FareLegJoinRuleRepository;
@@ -62,7 +61,6 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.ShapeRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
-import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -123,6 +121,8 @@ public class GtfsImportService {
     private final PathwayImporter pathwayImporter;
     private final TransferImporter transferImporter;
     private final StationLevelImporter stationLevelImporter;
+    private final TranslationImporter translationImporter;
+    private final AttributionImporter attributionImporter;
 
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
@@ -130,9 +130,7 @@ public class GtfsImportService {
     private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
     private final AgencyRepository agencyRepository;
-    private final AttributionRepository attributionRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
-    private final TranslationRepository translationRepository;
     private final FareAttributeRepository fareAttributeRepository;
     private final ShapeRepository shapeRepository;
     private final LocationGroupRepository locationGroupRepository;
@@ -1179,67 +1177,8 @@ public class GtfsImportService {
         pathwayImporter.importPathways(pathwaysFile, stopImport);
     }
 
-    /**
-     * Reads {@code translations.txt} when present. The spec requires
-     * {@code (table_name, record_id, field_name, language)} or
-     * {@code (table_name, field_value, field_name, language)} as the
-     * row identifier. We persist both halves and let the runtime
-     * lookup pick the record-id form first; the field-value form is
-     * usable for future deduplication scenarios.
-     */
     private void importTranslations(Path translationsFile) throws IOException {
-        translationRepository.deleteAllInBatch();
-        translationRepository.flush();
-
-        if (!Files.exists(translationsFile)) {
-            log.info("GTFS import: translations.txt missing, skipping");
-            return;
-        }
-        List<Translation> batch = new ArrayList<>();
-        // (table, record_id|field_value, field, lang) seen-set so feeds with
-        // duplicate translation rows don't blow up the unique constraint.
-        Set<String> seen = new HashSet<>();
-        int skippedDuplicates = 0;
-        try (CSVParser parser = openCsv(translationsFile)) {
-            for (CSVRecord record : parser) {
-                String tableName = optional(record, "table_name");
-                String fieldName = optional(record, "field_name");
-                String language = optional(record, "language");
-                String translationValue = optional(record, "translation");
-                if (isBlank(tableName) || isBlank(fieldName) || isBlank(language) || isBlank(translationValue)) {
-                    continue;
-                }
-                String recordId = optional(record, "record_id");
-                String fieldValue = optional(record, "field_value");
-                if (isBlank(recordId) && isBlank(fieldValue)) {
-                    continue;
-                }
-                String recordSubId = optional(record, "record_sub_id");
-                String languageContext = optional(record, "language_context");
-                String dedupeKey = tableName + "|" + (isBlank(recordId) ? fieldValue : recordId)
-                        + "|" + (recordSubId == null ? "" : recordSubId)
-                        + "|" + fieldName + "|" + language;
-                if (!seen.add(dedupeKey)) {
-                    skippedDuplicates++;
-                    continue;
-                }
-                batch.add(Translation.builder()
-                        .tableName(truncate(tableName, 60))
-                        .recordId(isBlank(recordId) ? null : truncate(recordId.trim(), 100))
-                        .fieldValue(isBlank(fieldValue) ? null : truncate(fieldValue.trim(), 200))
-                        .recordSubId(isBlank(recordSubId) ? null : truncate(recordSubId.trim(), 100))
-                        .languageContext(isBlank(languageContext) ? null : truncate(languageContext.trim(), 100))
-                        .fieldName(truncate(fieldName, 60))
-                        .language(truncate(language.trim(), 20))
-                        .translation(translationValue)
-                        .build());
-            }
-        }
-        if (!batch.isEmpty()) {
-            translationRepository.saveAll(batch);
-        }
-        log.info("GTFS import: {} translations created ({} duplicates skipped)",
-                batch.size(), skippedDuplicates);
+        translationImporter.importTranslations(translationsFile);
     }
 
     /**
@@ -1926,44 +1865,8 @@ public class GtfsImportService {
         return result;
     }
 
-    /**
-     * Reads {@code attributions.txt} when present. Replaces the table
-     * (rather than upserting) on every import so credits never linger
-     * after the operator drops a line. The file is GTFS-optional —
-     * we silently skip when missing.
-     */
     private void importAttributions(Path attributionsFile) throws IOException {
-        attributionRepository.deleteAllInBatch();
-        attributionRepository.flush();
-
-        if (!Files.exists(attributionsFile)) {
-            log.info("GTFS import: attributions.txt missing, skipping");
-            return;
-        }
-        List<Attribution> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(attributionsFile)) {
-            for (CSVRecord record : parser) {
-                String name = optional(record, "organization_name");
-                if (isBlank(name)) {continue;}
-                batch.add(Attribution.builder()
-                        .externalId(truncate(optional(record, "attribution_id"), 100))
-                        .organizationName(truncate(name, 200))
-                        .producer("1".equals(optional(record, "is_producer")))
-                        .operator("1".equals(optional(record, "is_operator")))
-                        .authority("1".equals(optional(record, "is_authority")))
-                        .agencyExternalId(truncate(optional(record, "agency_id"), 100))
-                        .routeExternalId(truncate(optional(record, "route_id"), 100))
-                        .tripExternalId(truncate(optional(record, "trip_id"), 100))
-                        .url(truncate(optional(record, "attribution_url"), 500))
-                        .email(truncate(optional(record, "attribution_email"), 100))
-                        .phone(truncate(optional(record, "attribution_phone"), 30))
-                        .build());
-            }
-        }
-        if (!batch.isEmpty()) {
-            attributionRepository.saveAll(batch);
-        }
-        log.info("GTFS import: {} attributions created", batch.size());
+        attributionImporter.importAttributions(attributionsFile);
     }
 
     /** Resolves a GTFS stop_id to its persisted Stop. Phase 1.3 keeps
