@@ -1,5 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { of, throwError, Subject, BehaviorSubject } from 'rxjs';
@@ -9,6 +9,11 @@ import { StopService } from '@core/api/stop.service';
 import { Line, Stop, PageResponse } from '@shared/models';
 import { StopsComponent } from './stops.component';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+
+async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
+  f.detectChanges();
+  await f.whenStable();
+}
 
 const en = {
   common: { delete: 'Delete' },
@@ -62,6 +67,7 @@ describe('StopsComponent', () => {
   let component: StopsComponent;
   let fixture: ComponentFixture<StopsComponent>;
   let queryParams$: BehaviorSubject<Record<string, string>>;
+  let router: Router;
 
   let mockLineService: {
     getAll: ReturnType<typeof vi.fn>;
@@ -72,7 +78,6 @@ describe('StopsComponent', () => {
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
-    getAll: ReturnType<typeof vi.fn>;
   };
 
   let mockDialog: {
@@ -80,10 +85,6 @@ describe('StopsComponent', () => {
   };
 
   let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
-
-  let mockRoute: {
-    queryParams: BehaviorSubject<Record<string, string>>;
-  };
 
   beforeEach(() => {
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
@@ -97,7 +98,6 @@ describe('StopsComponent', () => {
       create: vi.fn().mockReturnValue(of(mockStop)),
       update: vi.fn().mockReturnValue(of(mockStop)),
       delete: vi.fn().mockReturnValue(of(void 0)),
-      getAll: vi.fn().mockReturnValue(of([mockStop])),
     };
 
     mockDialog = {
@@ -105,10 +105,6 @@ describe('StopsComponent', () => {
     };
 
     mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
-
-    mockRoute = {
-      queryParams: queryParams$,
-    };
 
     TestBed.configureTestingModule({
       imports: [
@@ -125,81 +121,72 @@ describe('StopsComponent', () => {
         { provide: StopService, useValue: mockStopService },
         { provide: MatDialog, useValue: mockDialog },
         { provide: NotifyService, useValue: mockNotify },
-        { provide: ActivatedRoute, useValue: mockRoute },
+        { provide: ActivatedRoute, useValue: { queryParams: queryParams$ } },
       ],
     });
 
     fixture = TestBed.createComponent(StopsComponent);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngOnInit', () => {
-    it('should load lines on init', () => {
-      component.ngOnInit();
+  describe('loading state', () => {
+    it('should be loading after detectChanges (resource initiated)', () => {
+      fixture.detectChanges();
+      expect(component.loading()).toBe(true);
+    });
 
+    it('should set loading to false after stops are loaded', async () => {
+      await detectAndFlush(fixture);
+      expect(component.loading()).toBe(false);
+    });
+  });
+
+  describe('lines resource', () => {
+    it('should load lines on init', async () => {
+      await detectAndFlush(fixture);
       expect(mockLineService.getAll).toHaveBeenCalled();
       expect(component.lines()).toEqual([mockLine]);
     });
 
-    it('should subscribe to queryParams and load stops', () => {
-      component.ngOnInit();
-
-      expect(mockStopService.getAllPaginated).toHaveBeenCalled();
-      expect(component.loading()).toBe(false);
+    it('should show error when lines fail to load', async () => {
+      mockLineService.getAll.mockReturnValue(throwError(() => new Error('network')));
+      await detectAndFlush(fixture);
+      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load lines');
     });
+  });
 
-    it('should parse queryParams into component state', () => {
-      queryParams$.next({
-        page: '2',
-        size: '25',
-        sortBy: 'scheduleCount',
-        sortDir: 'desc',
-        search: 'central',
-        lineId: 'l1',
-      });
-
-      component.ngOnInit();
+  describe('queryParams initialization', () => {
+    it('should initialize state from query params', async () => {
+      queryParams$.next({ page: '2', size: '25', sortBy: 'scheduleCount', sortDir: 'desc', search: 'central', lineId: 'l1' });
+      await detectAndFlush(fixture);
 
       expect(component.tableState.page).toBe(2);
       expect(component.tableState.size).toBe(25);
       expect(component.tableState.sortBy).toBe('scheduleCount');
       expect(component.tableState.sortDir).toBe('desc');
       expect(component.tableState.search).toBe('central');
-      expect(component.lineId).toBe('l1');
+      expect(component.lineId()).toBe('l1');
+    });
+
+    it('should use defaults when query params are empty', async () => {
+      await detectAndFlush(fixture);
+
+      expect(component.tableState.page).toBe(0);
+      expect(component.tableState.size).toBe(10);
+      expect(component.tableState.sortBy).toBe('name');
+      expect(component.lineId()).toBe('');
     });
   });
 
   describe('loadStops', () => {
-    it('should call getAllPaginated with correct params', () => {
-      component.ngOnInit();
-      component.tableState.page = 1;
-      component.tableState.size = 25;
-      component.tableState.sortBy = 'scheduleCount';
-      component.tableState.sortDir = 'desc';
-      component.tableState.search = 'central';
-      component.lineId = 'l1';
-
-      component.loadStops();
-
-      expect(mockStopService.getAllPaginated).toHaveBeenCalledWith({
-        page: 1,
-        size: 25,
-        sortBy: 'scheduleCount',
-        sortDir: 'desc',
-        search: 'central',
-        lineId: 'l1',
-      });
-    });
-
-    it('should pass undefined for empty search and lineId', () => {
-      component.ngOnInit();
-      component.lineId = '';
-
-      component.loadStops();
+    it('should call getAllPaginated with correct params', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockStopService.getAllPaginated).toHaveBeenCalledWith({
         page: 0,
@@ -211,57 +198,69 @@ describe('StopsComponent', () => {
       });
     });
 
-    it('should update dataSource and totalElements on success', () => {
-      component.loadStops();
+    it('should pass lineId when set via query params', async () => {
+      queryParams$.next({ lineId: 'l1' });
+      await detectAndFlush(fixture);
 
-      expect(component.dataSource.data).toEqual([mockStop]);
-      expect(component.totalElements).toBe(1);
-      expect(component.loading()).toBe(false);
+      expect(mockStopService.getAllPaginated).toHaveBeenCalledWith(
+        expect.objectContaining({ lineId: 'l1' }),
+      );
     });
 
-    it('should handle error and show snackbar', () => {
-      mockStopService.getAllPaginated.mockReturnValue(
-        throwError(() => ({ error: { message: 'Server error' } }))
-      );
+    it('should pass search term when present', async () => {
+      queryParams$.next({ search: 'central' });
+      await detectAndFlush(fixture);
 
-      component.loadStops();
+      expect(mockStopService.getAllPaginated).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'central' }),
+      );
+    });
+
+    it('should populate stops and totalElements on success', async () => {
+      await detectAndFlush(fixture);
+
+      expect(component.stops()).toEqual([mockStop]);
+      expect(component.totalElements()).toBe(1);
+    });
+
+    it('should handle error and show snackbar', async () => {
+      mockStopService.getAllPaginated.mockReturnValue(
+        throwError(() => ({ error: { message: 'Server error' } })),
+      );
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
       expect(mockNotify.error).toHaveBeenCalledWith('Server error');
     });
 
-    it('should show fallback message when error has no message', () => {
-      mockStopService.getAllPaginated.mockReturnValue(
-        throwError(() => ({ error: {} }))
-      );
-
-      component.loadStops();
+    it('should show fallback error message when error has no message', async () => {
+      mockStopService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
+      await detectAndFlush(fixture);
 
       expect(mockNotify.error).toHaveBeenCalledWith('Failed to load stops');
     });
   });
 
   describe('onLineChange', () => {
-    it('should set lineId and reset page to 0', () => {
-      component.ngOnInit();
+    it('should set lineId signal and reset page to 0', () => {
+      fixture.detectChanges();
       component.tableState.page = 3;
-      component.lineId = '';
 
       component.onLineChange('l1');
 
-      expect(component.lineId).toBe('l1');
+      expect(component.lineId()).toBe('l1');
       expect(component.tableState.page).toBe(0);
+      expect(router.navigate).toHaveBeenCalled();
     });
   });
 
   describe('openCreateDialog', () => {
-    it('should pass lines and selectedLineId in dialog data', () => {
+    it('should pass lines and selectedLineId in dialog data', async () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
 
-      component.lines.set([mockLine]);
-      component.lineId = 'l1';
-
+      component.lineId.set('l1');
       component.openCreateDialog();
 
       expect(mockDialog.open).toHaveBeenCalledWith(
@@ -273,18 +272,20 @@ describe('StopsComponent', () => {
           },
           width: '450px',
           ariaLabel: 'New Stop',
-        })
+        }),
       );
     });
 
-    it('should create stop and reload on dialog success', () => {
+    it('should create stop and reload on dialog success', async () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
+      mockStopService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
-
       const createRequest = { name: 'New Stop', lineIds: ['l1'] };
       afterClosed$.next(createRequest);
+      await fixture.whenStable();
 
       expect(mockStopService.create).toHaveBeenCalledWith(createRequest);
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
@@ -294,9 +295,9 @@ describe('StopsComponent', () => {
     it('should do nothing when dialog is cancelled', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
 
       component.openCreateDialog();
-
       afterClosed$.next(undefined);
 
       expect(mockStopService.create).not.toHaveBeenCalled();
@@ -304,11 +305,12 @@ describe('StopsComponent', () => {
   });
 
   describe('openEditDialog', () => {
-    it('should update stop and reload on dialog success', () => {
+    it('should update stop and reload on dialog success', async () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
+      mockStopService.getAllPaginated.mockClear();
 
-      component.lines.set([mockLine]);
       component.openEditDialog(mockStop);
 
       expect(mockDialog.open).toHaveBeenCalledWith(
@@ -320,26 +322,40 @@ describe('StopsComponent', () => {
           },
           width: '450px',
           ariaLabel: 'Edit Stop',
-        })
+        }),
       );
 
       const updateRequest = { name: 'Updated Stop', lineIds: ['l1'] };
       afterClosed$.next(updateRequest);
+      await fixture.whenStable();
 
       expect(mockStopService.update).toHaveBeenCalledWith('s1', updateRequest);
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Stop updated');
     });
+
+    it('should not call update when dialog is cancelled', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockStop);
+      afterClosed$.next(undefined);
+
+      expect(mockStopService.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('deleteStop', () => {
-    it('should delete stop and reload when confirmed', () => {
+    it('should delete stop and reload when confirmed', async () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
+      mockStopService.getAllPaginated.mockClear();
 
       component.deleteStop(mockStop);
-
       afterClosed$.next(true);
+      await fixture.whenStable();
 
       expect(mockStopService.delete).toHaveBeenCalledWith('s1');
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
@@ -349,12 +365,38 @@ describe('StopsComponent', () => {
     it('should skip deletion when cancelled', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
 
       component.deleteStop(mockStop);
-
       afterClosed$.next(false);
 
       expect(mockStopService.delete).not.toHaveBeenCalled();
+    });
+
+    it('should show error snackbar when delete fails', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      mockStopService.delete.mockReturnValue(throwError(() => ({ error: { message: 'Cannot delete' } })));
+      fixture.detectChanges();
+
+      component.deleteStop(mockStop);
+      afterClosed$.next(true);
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Cannot delete');
+    });
+  });
+
+  describe('onPageChange triggers reload', () => {
+    it('should trigger loadStops when query params change', async () => {
+      await detectAndFlush(fixture);
+      mockStopService.getAllPaginated.mockClear();
+
+      queryParams$.next({ page: '1', size: '25' });
+      await fixture.whenStable();
+
+      expect(mockStopService.getAllPaginated).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, size: 25 }),
+      );
     });
   });
 

@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject, computed, signal, untracked } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, EMPTY } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
@@ -11,7 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
-import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatSortModule } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
@@ -72,7 +73,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       <div class="toolbar">
         <mat-form-field appearance="outline" class="line-filter">
           <mat-label>{{ t('admin.stops.filterByLine') }}</mat-label>
-          <mat-select [value]="lineId" (selectionChange)="onLineChange($event.value)">
+          <mat-select [value]="lineId()" (selectionChange)="onLineChange($event.value)">
             <mat-option value="">{{ t('admin.stops.allLines') }}</mat-option>
             @for (line of lines(); track line.id) {
               <mat-option [value]="line.id">
@@ -109,7 +110,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             { width: '80px' }
           ]"
         />
-      } @else if (dataSource.data.length === 0 && !tableState.search && !lineId) {
+      } @else if (stops().length === 0 && !tableState.search && !lineId()) {
         <mat-card animate.enter="fade-in">
           @if (lines().length === 0) {
             <app-empty-state
@@ -129,7 +130,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             />
           }
         </mat-card>
-      } @else if (dataSource.data.length === 0) {
+      } @else if (stops().length === 0) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
@@ -139,7 +140,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
-          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
+          <table mat-table matSort [dataSource]="stops()" (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
               <th mat-header-cell *matHeaderCellDef>{{ t('admin.stops.colLines') }}</th>
               <td mat-cell *matCellDef="let stop">
@@ -219,7 +220,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
           </table>
 
           <mat-paginator
-            [length]="totalElements"
+            [length]="totalElements()"
             [pageIndex]="tableState.page"
             [pageSize]="tableState.size"
             [pageSizeOptions]="pageSizeOptions"
@@ -369,7 +370,6 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       font-style: italic;
     }
 
-    /* Enter animations */
     /* Enter animations defined globally — see styles.scss section 13a */
 
     @media (max-width: 600px) {
@@ -383,91 +383,104 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
   `,
 })
-export class StopsComponent implements OnInit, AfterViewInit {
+export class StopsComponent {
   private readonly lineService = inject(LineService);
   private readonly stopService = inject(StopService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly tableState = inject(AdminTableState);
-  readonly sort = viewChild(MatSort);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
-  loading = signal(true);
-  lines = signal<Line[]>([]);
-  dataSource = new MatTableDataSource<Stop>([]);
-  displayedColumns = ['line', 'name', 'schedules', 'device', 'actions'];
+  readonly displayedColumns = ['line', 'name', 'schedules', 'device', 'actions'];
 
-  lineId = '';
-  totalElements = 0;
+  // lineId is a writable signal so onLineChange() can update it reactively and
+  // the stopsResource params() function picks up the change automatically.
+  readonly lineId = signal('');
 
-  ngOnInit(): void {
+  // Convert queryParams Observable to a Signal. tableState.init() runs first
+  // so defaults are applied before the first emission is processed.
+  private readonly queryParams = (() => {
     this.tableState.init({
       sortBy: 'name',
-      extras: () => ({ lineId: this.lineId }),
+      extras: () => ({ lineId: this.lineId() }),
     });
+    return toSignal(this.route.queryParams, { initialValue: {} });
+  })();
 
-    this.loadLines();
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+  // Lines are loaded once and do not depend on pagination state.
+  private readonly linesResource = rxResource<Line[], undefined>({
+    stream: () =>
+      this.lineService.getAll().pipe(
+        catchError(() => {
+          this.notify.error(this.transloco.translate('admin.stops.loadLinesFailed'));
+          return EMPTY;
+        }),
+      ),
+  });
+
+  readonly lines = computed((): Line[] =>
+    this.linesResource.hasValue() ? this.linesResource.value() : [],
+  );
+
+  // Stops reload whenever query params or lineId change.
+  private readonly stopsResource = rxResource<PageResponse<Stop>, ReturnType<typeof this.queryParams>>({
+    params: () => {
+      const params = this.queryParams();
       this.tableState.syncFromQueryParams(params);
-      this.lineId = (params['lineId'] as string | undefined) ?? '';
-      this.loadStops();
-    });
-  }
+      // lineId may arrive via URL (navigation from paginator/sort) or be set
+      // locally by onLineChange before the URL round-trips.
+      const qpLineId = (params as Record<string, string | undefined>)['lineId'] ?? '';
+      if (qpLineId !== untracked(this.lineId)) {
+        untracked(() => this.lineId.set(qpLineId));
+      }
+      return params;
+    },
+    stream: () =>
+      this.stopService
+        .getAllPaginated({
+          page: this.tableState.page,
+          size: this.tableState.size,
+          sortBy: this.tableState.sortBy,
+          sortDir: this.tableState.sortDir,
+          search: this.tableState.search || undefined,
+          lineId: this.lineId() || undefined,
+        })
+        .pipe(
+          catchError((err: unknown) => {
+            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.loadFailed')));
+            return EMPTY;
+          }),
+        ),
+  });
 
-  ngAfterViewInit(): void {
-    const sortRef = this.sort();
-    if (sortRef) {
-      sortRef.active = this.tableState.sortBy;
-      sortRef.direction = this.tableState.sortDir;
+  readonly loading = computed(() => this.stopsResource.isLoading());
+
+  readonly stops = computed((): Stop[] => {
+    const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
+    if (!page) { return []; }
+    // After a delete on the last item of a page > 0, the server returns an
+    // empty page. Step back via URL update so the params signal re-fires.
+    if (page.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
+      this.tableState.page = Math.max(0, page.totalPages - 1);
+      this.tableState.updateUrl();
+      return [];
     }
-  }
+    return page.content;
+  });
 
-
-
-  loadLines(): void {
-    this.lineService.getAll().subscribe({
-      next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error(this.transloco.translate('admin.stops.loadLinesFailed')),
-    });
-  }
+  readonly totalElements = computed((): number => {
+    const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
+    return page?.totalElements ?? 0;
+  });
 
   loadStops(): void {
-    this.loading.set(true);
-    this.stopService
-      .getAllPaginated({
-        page: this.tableState.page,
-        size: this.tableState.size,
-        sortBy: this.tableState.sortBy,
-        sortDir: this.tableState.sortDir,
-        search: this.tableState.search || undefined,
-        lineId: this.lineId || undefined,
-      })
-      .subscribe({
-        next: (response: PageResponse<Stop>) => {
-          // After a delete on the last item of a page > 0, the server returns
-          // an empty page. Step back instead of showing a blank screen.
-          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
-            this.tableState.page = Math.max(0, response.totalPages - 1);
-            this.tableState.updateUrl();
-            this.loadStops();
-            return;
-          }
-          this.dataSource.data = response.content;
-          this.totalElements = response.totalElements;
-          this.loading.set(false);
-        },
-        error: (err: unknown) => {
-          this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.loadFailed')));
-        },
-      });
+    this.stopsResource.reload();
   }
 
   onLineChange(lineId: string): void {
-    this.lineId = lineId;
+    this.lineId.set(lineId);
     this.tableState.resetToFirstPage();
   }
 
@@ -475,7 +488,7 @@ export class StopsComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(StopDialogComponent, {
       data: {
         lines: this.lines(),
-        selectedLineId: this.lineId,
+        selectedLineId: this.lineId(),
       },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.stops.dialog.titleCreate'),
