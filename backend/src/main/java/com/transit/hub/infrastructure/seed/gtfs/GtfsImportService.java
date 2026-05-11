@@ -39,6 +39,8 @@ import com.transit.hub.domain.model.Timeframe;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.RouteImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.ShapeImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
@@ -112,15 +114,14 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
 @Slf4j
 public class GtfsImportService {
 
-    private static final int LINE_CODE_MAX_LENGTH = 30;
     private static final int LINE_NAME_MAX_LENGTH = 100;
-    private static final int LINE_CATEGORY_MAX_LENGTH = 50;
     private static final int STOP_NAME_MAX_LENGTH = 100;
-    private static final String DEFAULT_COLOR = "#888888";
     private static final double SCHEMATIC_SIZE = 1000.0;
     private static final double SCHEMATIC_MARGIN = 50.0;
 
     private final AgencyImporter agencyImporter;
+    private final RouteImporter routeImporter;
+    private final ShapeImporter shapeImporter;
     private final StationLevelImporter stationLevelImporter;
 
     private final LineRepository lineRepository;
@@ -311,147 +312,9 @@ public class GtfsImportService {
         return agencyImporter.importAgencies(agenciesFile);
     }
 
-    private Map<String, Line> importRoutes(Path routesFile, Map<String, Agency> agencies) throws IOException {
-        // Pre-load existing lines by external_id so re-imports keep the
-        // same UUID — both Devices (via Stop → stop_lines) and
-        // BroadcastMessages (scope=LINE) reference it semantically.
-        // See ADR 0013.
-        Map<String, Line> existingByExternalId = lineRepository.findAll().stream()
-                .filter(l -> l.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Line::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
-
-        Map<String, Line> result = new LinkedHashMap<>();
-        Set<UUID> seenIds = new HashSet<>();
-        try (CSVParser parser = openCsv(routesFile)) {
-            for (CSVRecord record : parser) {
-                String routeId = record.get("route_id");
-                String shortName = optional(record, "route_short_name");
-                String longName = optional(record, "route_long_name");
-                String color = optional(record, "route_color");
-                String textColor = optional(record, "route_text_color");
-                int routeType = parseInt(record.get("route_type"), 3);
-                String networkId = optional(record, "network_id");
-                String agencyId = optional(record, "agency_id");
-
-                String code = truncate(firstNonBlank(shortName, longName, routeId), LINE_CODE_MAX_LENGTH);
-                String name = truncate(firstNonBlank(longName, shortName, routeId), LINE_NAME_MAX_LENGTH);
-                LineType type = GtfsParse.mapRouteType(routeType);
-                String category = truncate(deriveCategory(networkId, routeType), LINE_CATEGORY_MAX_LENGTH);
-                String formattedColor = formatColor(color);
-                String formattedTextColor = resolveTextColor(textColor, formattedColor);
-                Agency agency = resolveAgency(agencyId, agencies);
-
-                short continuousPickup = (short) parseInt(optional(record, "continuous_pickup"), 1);
-                short continuousDropOff = (short) parseInt(optional(record, "continuous_drop_off"), 1);
-                String sortOrderRaw = optional(record, "route_sort_order");
-                Integer sortOrder = isBlank(sortOrderRaw) ? null : parseIntOrNull(sortOrderRaw);
-                String routeDesc = truncate(optional(record, "route_desc"), 500);
-                String routeUrl = truncate(optional(record, "route_url"), 255);
-
-                String externalId = truncate(routeId, 100);
-                Line line = existingByExternalId.containsKey(externalId)
-                        ? existingByExternalId.get(externalId)
-                        : new Line();
-                line.setExternalId(externalId);
-                line.setCode(uniqueCode(code, result.values()));
-                line.setName(name);
-                line.setColor(formattedColor);
-                line.setTextColor(formattedTextColor);
-                line.setType(type);
-                line.setCategory(category);
-                line.setAgency(agency);
-                line.setContinuousPickup(continuousPickup);
-                line.setContinuousDropOff(continuousDropOff);
-                line.setSortOrder(sortOrder);
-                line.setDescription(isBlank(routeDesc) ? null : routeDesc);
-                line.setUrl(isBlank(routeUrl) ? null : routeUrl);
-                line.setCemvSupport(parseShortOrNull(optional(record, "cemv_support")));
-
-                Line saved = lineRepository.save(line);
-                seenIds.add(saved.getId());
-                result.put(routeId, saved);
-            }
-        }
-        // Drop lines the new feed no longer declares. Cascade clears
-        // schedules, itineraries, stop_lines automatically; orphan
-        // BroadcastMessages with scope=LINE referencing the dropped UUID
-        // simply stop matching, which is the right behaviour.
-        int orphans = 0;
-        for (Line old : existingByExternalId.values()) {
-            if (!seenIds.contains(old.getId())) {
-                lineRepository.delete(old);
-                orphans++;
-            }
-        }
-        if (orphans > 0) {
-            log.info("GTFS import: {} obsolete lines removed", orphans);
-        }
-        // Collapse to route-type labels when network_id is absent or degenerate (single bucket)
-        long distinctCategories = result.values().stream().map(Line::getCategory).distinct().count();
-        if (distinctCategories <= 1) {
-            for (Line line : result.values()) {
-                line.setCategory(routeTypeLabel(line.getType()));
-                lineRepository.save(line);
-            }
-        }
-        splitOversizedBusCategories(result.values());
-        log.info("GTFS import: {} lines created across {} categories",
-                result.size(),
-                result.values().stream().map(Line::getCategory).distinct().count());
-        return result;
-    }
-
-    /**
-     * When a single category lumps 30+ bus lines together (e.g. Bordeaux),
-     * the line filter and category tab become unwieldy. Group them by the
-     * alphabetic prefix of their short code: significant prefixes (≥ 3 lines)
-     * become "{category} {prefix}" sub-categories; numeric-only and small
-     * prefix groups keep the original category.
-     */
-    private void splitOversizedBusCategories(Collection<Line> lines) {
-        Map<String, List<Line>> byCategory = new LinkedHashMap<>();
-        for (Line line : lines) {
-            byCategory.computeIfAbsent(line.getCategory(), c -> new ArrayList<>()).add(line);
-        }
-        for (Map.Entry<String, List<Line>> entry : byCategory.entrySet()) {
-            applyPrefixSplit(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private void applyPrefixSplit(String category, List<Line> linesInCategory) {
-        if (linesInCategory.size() < 30) {return;}
-        for (Line line : linesInCategory) {
-            if (line.getType() != LineType.BUS) {return;}
-        }
-
-        Map<String, List<Line>> byPrefix = new LinkedHashMap<>();
-        for (Line line : linesInCategory) {
-            byPrefix.computeIfAbsent(GtfsParse.extractAlphaPrefix(line.getCode()), p -> new ArrayList<>()).add(line);
-        }
-
-        Set<String> significant = new HashSet<>();
-        for (Map.Entry<String, List<Line>> entry : byPrefix.entrySet()) {
-            if (!entry.getKey().isEmpty() && entry.getValue().size() >= 3) {
-                significant.add(entry.getKey());
-            }
-        }
-        if (significant.isEmpty()) {return;}
-
-        List<Line> dirty = new ArrayList<>();
-        for (Map.Entry<String, List<Line>> entry : byPrefix.entrySet()) {
-            if (!significant.contains(entry.getKey())) {continue;}
-            String sub = truncate(category + " " + entry.getKey(), LINE_CATEGORY_MAX_LENGTH);
-            for (Line line : entry.getValue()) {
-                line.setCategory(sub);
-                dirty.add(line);
-            }
-        }
-        if (!dirty.isEmpty()) {
-            lineRepository.saveAll(dirty);
-            log.info("GTFS import: split '{}' ({} lines) into sub-categories by prefix", category, linesInCategory.size());
-        }
+    private Map<String, Line> importRoutes(Path routesFile, Map<String, Agency> agencies)
+            throws IOException {
+        return routeImporter.importRoutes(routesFile, agencies);
     }
 
 
@@ -1479,75 +1342,8 @@ public class GtfsImportService {
                 batch.size(), skippedUnknownStop);
     }
 
-    /**
-     * Reads {@code shapes.txt} when present. Each {@code shape_id} maps
-     * to a {@link Shape} entity carrying its ordered list of
-     * {@link ShapePoint} rows. Wipes the tables first because a shape
-     * is fully replaced by its new feed version (no semantic FK
-     * reaches into a Shape from outside the import).
-     * <p>
-     * Returns a {@code Map<String, Shape>} indexed by GTFS
-     * {@code shape_id} so {@link #importItineraries} can wire each
-     * itinerary's representative-trip shape FK.
-     */
     private Map<String, Shape> importShapes(Path shapesFile) throws IOException {
-        // Cascade clears shape_points. Order matters: itineraries.shape_id
-        // is ON DELETE SET NULL so existing itineraries' FKs go null
-        // here, then importItineraries sets them again immediately
-        // after.
-        shapeRepository.deleteAllInBatch();
-        shapeRepository.flush();
-
-        Map<String, Shape> result = new HashMap<>();
-        if (!Files.exists(shapesFile)) {
-            log.info("GTFS import: shapes.txt missing, itineraries will have no geographic polyline");
-            return result;
-        }
-        Map<String, List<ShapePoint>> pointsByShape = new HashMap<>();
-        try (CSVParser parser = openCsv(shapesFile)) {
-            for (CSVRecord record : parser) {
-                String shapeId = optional(record, "shape_id");
-                if (isBlank(shapeId)) {continue;}
-                Double lat = parseDoubleOrNull(optional(record, "shape_pt_lat"));
-                Double lon = parseDoubleOrNull(optional(record, "shape_pt_lon"));
-                Integer sequence = parseIntOrNull(optional(record, "shape_pt_sequence"));
-                if (lat == null || lon == null || sequence == null) {continue;}
-                ShapePoint point = ShapePoint.builder()
-                        .sequence(sequence)
-                        .latitude(lat)
-                        .longitude(lon)
-                        .distTraveled(parseDoubleOrNull(optional(record, "shape_dist_traveled")))
-                        .build();
-                pointsByShape.computeIfAbsent(shapeId, k -> new ArrayList<>()).add(point);
-            }
-        }
-        int totalPoints = 0;
-        for (Map.Entry<String, List<ShapePoint>> entry : pointsByShape.entrySet()) {
-            String shapeId = entry.getKey();
-            List<ShapePoint> points = entry.getValue();
-            // GTFS doesn't guarantee shape_pt_sequence rows arrive in
-            // order — sort defensively before we hand them to the
-            // unique constraint and to OrderBy("sequence ASC").
-            points.sort((a, b) -> Integer.compare(a.getSequence(), b.getSequence()));
-            // Deduplicate consecutive (sequence) values: rare feeds
-            // occasionally repeat a row, which would violate the UK.
-            // Keep the first occurrence only.
-            Set<Integer> seenSeq = new HashSet<>();
-            points.removeIf(p -> !seenSeq.add(p.getSequence()));
-
-            Shape shape = Shape.builder()
-                    .externalId(truncate(shapeId, 100))
-                    .build();
-            for (ShapePoint p : points) {
-                p.setShape(shape);
-                shape.getPoints().add(p);
-            }
-            Shape saved = shapeRepository.save(shape);
-            result.put(shapeId, saved);
-            totalPoints += points.size();
-        }
-        log.info("GTFS import: {} shapes / {} shape points persisted", result.size(), totalPoints);
-        return result;
+        return shapeImporter.importShapes(shapesFile);
     }
 
     private void importStationLevels(Path levelsFile) throws IOException {
@@ -2468,40 +2264,6 @@ public class GtfsImportService {
                 .parse(Files.newBufferedReader(file, StandardCharsets.UTF_8));
     }
 
-    private static String deriveCategory(String networkId, int routeType) {
-        if (!isBlank(networkId)) {
-            return networkId.trim();
-        }
-        return routeTypeLabel(GtfsParse.mapRouteType(routeType));
-    }
-
-    private static String routeTypeLabel(LineType type) {
-        if (type == null) {
-            return "Bus";
-        }
-        return switch (type) {
-            case TRAM -> "Tram";
-            case METRO -> "Metro";
-            case TRAIN -> "Train";
-            case BUS -> "Bus";
-            case FERRY -> "Ferry";
-            case FUNICULAR -> "Funicular";
-            case CABLE_CAR -> "Cable car";
-            case TROLLEYBUS -> "Trolleybus";
-            case MONORAIL -> "Monorail";
-            case OTHER -> "Other";
-        };
-    }
-
-    private static String formatColor(String raw) {
-        if (isBlank(raw)) {
-            return DEFAULT_COLOR;
-        }
-        String trimmed = raw.trim();
-        String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
-        return hex.matches("^#[0-9A-Fa-f]{6}$") ? hex : DEFAULT_COLOR;
-    }
-
     /**
      * Computes the per-schedule wheelchair override. Returns null when the
      * trip's value matches the itinerary's default (the common case, so
@@ -2637,47 +2399,11 @@ public class GtfsImportService {
         return null;
     }
 
-    /**
-     * Resolves the text color for a line: keep the GTFS-provided
-     * {@code route_text_color} when usable, otherwise derive a
-     * contrast-safe value from the background color via the YIQ
-     * luminance formula. Always returns an upper-cased {@code "#RRGGBB"}
-     * literal so the column is uniform regardless of feed quirks.
-     */
-    private static String resolveTextColor(String rawTextColor, String backgroundColor) {
-        if (!isBlank(rawTextColor)) {
-            String trimmed = rawTextColor.trim();
-            String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
-            if (hex.matches("^#[0-9A-Fa-f]{6}$")) {
-                return hex.toUpperCase(java.util.Locale.ROOT);
-            }
-        }
-        return ColorContrast.readableTextColor(backgroundColor);
-    }
-
     private static String buildItineraryName(String headsign, String directionId) {
         if (!isBlank(headsign)) {
             return "→ " + headsign.trim();
         }
         return "Direction " + ("0".equals(directionId) ? "0" : "1");
-    }
-
-    private static String uniqueCode(String preferred, Collection<Line> existing) {
-        Set<String> taken = new HashSet<>();
-        for (Line l : existing) {
-            taken.add(l.getCode());
-        }
-        if (!taken.contains(preferred)) {
-            return preferred;
-        }
-        for (int i = 2; i < 10000; i++) {
-            String candidate = truncate(preferred, LINE_CODE_MAX_LENGTH - String.valueOf(i).length() - 1)
-                    + "-" + i;
-            if (!taken.contains(candidate)) {
-                return candidate;
-            }
-        }
-        throw new IllegalStateException("Cannot generate unique line code for " + preferred);
     }
 
     private static String optional(CSVRecord record, String column) {
