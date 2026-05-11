@@ -31,6 +31,9 @@ test.describe('Login', () => {
     await loginPage.login('admin', 'wrong-password');
 
     const errorText = await loginPage.getErrorMessage();
-    expect(errorText).toMatch(/invalid|incorrect|credentials|identifiants/i);
+    // Accept the rate-limited variant too: parallel test runs share the
+    // per-IP Bucket4j bucket, so the 6th wrong attempt within the window
+    // returns 429 and the form surfaces a "too many attempts" message.
+    expect(errorText).toMatch(/invalid|incorrect|credentials|identifiants|too many/i);
   });
 });

@@ -213,6 +213,8 @@ export class LoginComponent {
           const httpErr = err as { status?: number };
           if (httpErr.status === 401) {
             this.error.set('Invalid credentials');
+          } else if (httpErr.status === 429) {
+            this.error.set('Too many login attempts. Please try again in a few minutes.');
           } else {
             this.error.set('An error occurred. Please try again.');
           }

@@ -25,18 +25,17 @@ test.describe('Locale persistence', () => {
     await page.goto('/map');
     await page.waitForSelector('h1');
 
-    // Read the current locale from localStorage
-    const before = (await page.evaluate(() => localStorage.getItem('lang'))) ?? 'fr';
-
-    // Click the toggle button
+    // The toggle button label is the OTHER language. Read it as the
+    // source of truth for the current active locale — localStorage may
+    // still be null on first visit (we fall back to navigator.language).
     const toggleBtn = page.locator('.lang-toggle');
     await expect(toggleBtn).toBeVisible();
+    const expectedAfter = (await toggleBtn.innerText()).trim().toLowerCase();
+
     await toggleBtn.click();
 
     const after = await page.evaluate(() => localStorage.getItem('lang'));
-    // The locale must have flipped
-    const expected = before === 'fr' ? 'en' : 'fr';
-    expect(after).toBe(expected);
+    expect(after).toBe(expectedAfter);
   });
 
   test('locale survives a page reload', async ({ page }) => {

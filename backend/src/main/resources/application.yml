@@ -115,6 +115,13 @@ app:
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
     refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
+  security:
+    login-rate-limit:
+      # Dev profile is generous so Playwright runs do not exhaust the
+      # bucket between specs. Prod / kiosk profiles inherit the 5 / 5min
+      # default from the filter itself.
+      max-attempts: 100
+      window-minutes: 5
 
 ---
 spring:

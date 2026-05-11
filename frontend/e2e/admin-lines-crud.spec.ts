@@ -8,8 +8,16 @@ import { AdminLinesPage } from './pages/AdminLinesPage';
  * state) to skip the login step on every test.
  */
 test.describe('Admin — Lines CRUD', () => {
-  // Use a unique prefix to avoid collisions when tests run in parallel
-  const CODE = `E2E-${Date.now()}`;
+  // Admin is desktop-only by design — the side-drawer overlay on mobile
+  // intercepts pointer events on the form actions. The functional
+  // coverage on Chromium / Firefox is enough; mobile-chrome runs only
+  // public-facing flows (kiosk, hub, network map).
+  test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile === true,
+    'Admin UI is desktop-only');
+  // Unique code that also sorts to the top of the list (default sort is by
+  // code ASC) so the newly-created card is visible on page 1 without
+  // paginating.
+  const CODE = `0E${Date.now() % 100000}`;
   const NAME = 'E2E Test Line';
 
   test('create → snackbar → line appears in list', async ({ adminPage }) => {

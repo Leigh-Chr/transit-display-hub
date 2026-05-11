@@ -114,10 +114,10 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
                     {{ line.code }}
                   </span>
                   <div class="line-actions">
-                    <button mat-icon-button (click)="openEditDialog(line)" [matTooltip]="t('admin.lines.editTooltip')">
+                    <button mat-icon-button (click)="openEditDialog(line)" [matTooltip]="t('admin.lines.editTooltip')" [attr.aria-label]="t('admin.lines.editTooltip')">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button color="warn" (click)="deleteLine(line)" [matTooltip]="t('admin.lines.deleteTooltip')">
+                    <button mat-icon-button color="warn" (click)="deleteLine(line)" [matTooltip]="t('admin.lines.deleteTooltip')" [attr.aria-label]="t('admin.lines.deleteTooltip')">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>

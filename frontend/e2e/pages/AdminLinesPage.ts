@@ -11,6 +11,13 @@ export class AdminLinesPage {
     await this.page.goto('/admin/lines');
     // Wait for the page title to confirm the component loaded
     await this.page.waitForSelector('h1');
+    // On mobile-chrome the admin sidenav opens as an overlay drawer and
+    // intercepts pointer events on the main content. Close it so the
+    // CRUD buttons below are actually clickable.
+    const scrim = this.page.locator('.mat-drawer-backdrop:visible');
+    if (await scrim.count() > 0) {
+      await scrim.first().click().catch(() => undefined);
+    }
   }
 
   /** Opens the "New line" dialog and fills in the minimum required fields. */
@@ -27,7 +34,11 @@ export class AdminLinesPage {
     await this.page.locator('mat-select[name="type"]').click();
     await this.page.locator(`mat-option`, { hasText: type }).first().click();
 
-    await this.page.getByRole('button', { name: /save|enregistrer/i }).click();
+    // The submit label depends on EN ("Create Line" / "Save Changes")
+    // vs FR ("Créer la ligne" / "Enregistrer") and on create-vs-edit mode,
+    // so we target the primary action in mat-dialog-actions instead of
+    // racing against four possible labels.
+    await this.page.locator('mat-dialog-actions button[color="primary"]').click();
     await this.page.locator('mat-dialog-container').waitFor({ state: 'hidden' });
   }
 

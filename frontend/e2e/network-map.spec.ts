@@ -13,11 +13,15 @@ test.describe('Network map', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
-  test('SVG element is present in the DOM', async ({ page }) => {
+  test('renders either the schematic SVG or the line-index fallback', async ({ page }) => {
     const mapPage = new NetworkMapPage(page);
     await mapPage.goto();
-    // Allow up to 10 s for the network data to load and the SVG to render
-    await expect(page.locator('svg').first()).toBeVisible({ timeout: 10_000 });
+    // The map auto-switches between schematic and line-index views depending
+    // on how many lines are simultaneously visible (default behaviour for
+    // feeds with many routes). Either view counts as "the page rendered".
+    const schematic = page.locator('app-schematic-map svg').first();
+    const lineIndex = page.locator('app-line-index').first();
+    await expect(schematic.or(lineIndex)).toBeVisible({ timeout: 10_000 });
   });
 
   test('accessible list link navigates to /map/list', async ({ page }) => {
