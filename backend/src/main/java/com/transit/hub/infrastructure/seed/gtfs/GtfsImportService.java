@@ -1,11 +1,8 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.Agency;
-import com.transit.hub.domain.model.BookingRule;
-import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.FlexStopTime;
-import com.transit.hub.domain.model.LocationGroup;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
@@ -14,13 +11,18 @@ import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.model.enums.BookingType;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AttributionImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.FareV1Importer;
 import com.transit.hub.infrastructure.seed.gtfs.sections.FareV2Importer;
+import com.transit.hub.domain.model.BookingRule;
+import com.transit.hub.domain.model.Location;
+import com.transit.hub.domain.model.LocationGroup;
+import com.transit.hub.infrastructure.seed.gtfs.sections.BookingRuleImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.LocationImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.LocationGroupImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.PathwayImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.RouteImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ShapeImporter;
@@ -28,10 +30,10 @@ import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StopImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TransferImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TranslationImporter;
-import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
-import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
+import com.transit.hub.infrastructure.persistence.LocationRepository;
+import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
@@ -98,16 +100,18 @@ public class GtfsImportService {
     private final AttributionImporter attributionImporter;
     private final FareV1Importer fareV1Importer;
     private final FareV2Importer fareV2Importer;
+    private final BookingRuleImporter bookingRuleImporter;
+    private final LocationImporter locationImporter;
+    private final LocationGroupImporter locationGroupImporter;
 
     private final StopRepository stopRepository;
     private final ItineraryRepository itineraryRepository;
     private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
-    private final LocationGroupRepository locationGroupRepository;
-    private final com.transit.hub.infrastructure.persistence.LocationRepository locationRepository;
-    private final BookingRuleRepository bookingRuleRepository;
     private final FlexStopTimeRepository flexStopTimeRepository;
+    private final LocationGroupRepository locationGroupRepository;
+    private final LocationRepository locationRepository;
 
     /** Flushed at section boundaries so the persistence context stays
      *  bounded — without periodic flushes, each section's saveAll
@@ -1160,229 +1164,15 @@ public class GtfsImportService {
      * up the stop memberships when we delete the parent.
      */
     private void importLocationGroups(Path workDir, StopImport stopImport) throws IOException {
-        locationGroupRepository.deleteAllInBatch();
-        locationGroupRepository.flush();
-
-        Path groupsFile = workDir.resolve("location_groups.txt");
-        if (!Files.exists(groupsFile)) {
-            log.info("GTFS import: location_groups.txt missing, skipping");
-            return;
-        }
-        Map<String, LocationGroup> groupsByGtfsId = new HashMap<>();
-        try (CSVParser parser = openCsv(groupsFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "location_group_id");
-                if (isBlank(externalId)) {continue;}
-                LocationGroup group = LocationGroup.builder()
-                        .externalId(truncate(externalId.trim(), 100))
-                        .groupName(truncate(optional(record, "location_group_name"), 200))
-                        .build();
-                groupsByGtfsId.put(externalId, locationGroupRepository.save(group));
-            }
-        }
-        log.info("GTFS import: {} location groups persisted", groupsByGtfsId.size());
-
-        Path membershipFile = workDir.resolve("location_group_stops.txt");
-        if (!Files.exists(membershipFile)) {
-            return;
-        }
-        int memberships = 0;
-        int skipped = 0;
-        try (CSVParser parser = openCsv(membershipFile)) {
-            for (CSVRecord record : parser) {
-                String groupId = optional(record, "location_group_id");
-                String gtfsStopId = optional(record, "stop_id");
-                if (isBlank(groupId) || isBlank(gtfsStopId)) {continue;}
-                LocationGroup group = groupsByGtfsId.get(groupId);
-                if (group == null) {
-                    skipped++;
-                    continue;
-                }
-                Stop stop = resolveStop(gtfsStopId, stopImport);
-                if (stop == null) {
-                    skipped++;
-                    continue;
-                }
-                group.getStops().add(stop);
-                memberships++;
-            }
-        }
-        // Saving the parents commits the new join-table rows.
-        locationGroupRepository.saveAll(groupsByGtfsId.values());
-        if (skipped > 0) {
-            log.warn("GTFS import: skipped {} location_group_stops rows referencing unknown group/stop",
-                    skipped);
-        }
-        log.info("GTFS import: {} location group / stop memberships created", memberships);
+        locationGroupImporter.importLocationGroups(workDir, stopImport);
     }
 
-    /**
-     * Reads GTFS-flex {@code locations.geojson}. Each top-level Feature
-     * is one polygonal pickup/dropoff zone; we store the raw geometry
-     * as TEXT alongside a pre-computed bounding box for fast browsing.
-     * Replaces the table on every import (no downstream FK).
-     *
-     * <p>JTS / Hibernate Spatial intentionally avoided — see ADR 0026.
-     */
     private void importLocations(Path locationsFile) throws IOException {
-        locationRepository.deleteAllInBatch();
-        locationRepository.flush();
-
-        if (!Files.exists(locationsFile)) {
-            log.info("GTFS import: locations.geojson missing, skipping");
-            return;
-        }
-
-        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(locationsFile.toFile());
-        com.fasterxml.jackson.databind.JsonNode features = root.get("features");
-        if (features == null || !features.isArray() || features.isEmpty()) {
-            log.info("GTFS import: locations.geojson has no features, skipping");
-            return;
-        }
-
-        int persisted = 0;
-        int skipped = 0;
-        for (com.fasterxml.jackson.databind.JsonNode feature : features) {
-            com.fasterxml.jackson.databind.JsonNode geom = feature.get("geometry");
-            com.fasterxml.jackson.databind.JsonNode props = feature.get("properties");
-            if (geom == null || !geom.has("type") || !geom.has("coordinates")) {
-                skipped++;
-                continue;
-            }
-            String externalId = feature.has("id") ? feature.get("id").asText() :
-                    (props != null && props.has("id") ? props.get("id").asText() : null);
-            if (isBlank(externalId)) {
-                skipped++;
-                continue;
-            }
-            String stopExternalId = props != null && props.has("stop_id")
-                    ? props.get("stop_id").asText() : null;
-            // The current GTFS-flex spec stores the human-readable name
-            // under `properties.name`. Older feeds (and the original
-            // Mobility-Data fixture set) used `stop_name`. Try both so
-            // we work with feeds that haven't yet migrated.
-            String name = null;
-            if (props != null) {
-                if (props.has("name") && !props.get("name").isNull()) {
-                    name = props.get("name").asText();
-                } else if (props.has("stop_name") && !props.get("stop_name").isNull()) {
-                    name = props.get("stop_name").asText();
-                }
-            }
-            String geomType = geom.get("type").asText();
-
-            double[] bbox = computeBoundingBox(geom.get("coordinates"));
-            Location loc = Location.builder()
-                    .externalId(truncate(externalId, 100))
-                    .stopExternalId(truncate(stopExternalId, 100))
-                    .name(truncate(name, 200))
-                    .geometryType(truncate(geomType, 30))
-                    .geometryJson(mapper.writeValueAsString(geom))
-                    .minLatitude(Double.isNaN(bbox[0]) ? null : bbox[0])
-                    .minLongitude(Double.isNaN(bbox[1]) ? null : bbox[1])
-                    .maxLatitude(Double.isNaN(bbox[2]) ? null : bbox[2])
-                    .maxLongitude(Double.isNaN(bbox[3]) ? null : bbox[3])
-                    .build();
-            locationRepository.save(loc);
-            persisted++;
-        }
-        if (skipped > 0) {
-            log.warn("GTFS import: skipped {} locations.geojson features (missing id or geometry)", skipped);
-        }
-        log.info("GTFS import: {} locations.geojson features persisted", persisted);
+        locationImporter.importLocations(locationsFile);
     }
 
-    /** Walks any GeoJSON coordinates array (Polygon, MultiPolygon, …)
-     *  recursively and returns {@code [minLat, minLon, maxLat, maxLon]}.
-     *  GeoJSON convention is {@code [longitude, latitude]} per coordinate
-     *  pair. Returns nulls (encoded as four NaN slots collapsed to null
-     *  by the entity setters) if the structure is malformed. */
-    private double[] computeBoundingBox(com.fasterxml.jackson.databind.JsonNode coordinates) {
-        double[] box = {Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE};
-        walkCoordinates(coordinates, box);
-        if (box[0] == Double.MAX_VALUE) {
-            return new double[]{Double.NaN, Double.NaN, Double.NaN, Double.NaN};
-        }
-        return box;
-    }
-
-    private void walkCoordinates(com.fasterxml.jackson.databind.JsonNode node, double[] box) {
-        if (node == null || !node.isArray() || node.isEmpty()) {return;}
-        com.fasterxml.jackson.databind.JsonNode head = node.get(0);
-        if (head != null && head.isNumber() && node.size() >= 2) {
-            // Leaf coordinate pair: [lon, lat] (GeoJSON convention).
-            double lon = node.get(0).asDouble();
-            double lat = node.get(1).asDouble();
-            box[0] = Math.min(box[0], lat);
-            box[1] = Math.min(box[1], lon);
-            box[2] = Math.max(box[2], lat);
-            box[3] = Math.max(box[3], lon);
-            return;
-        }
-        for (com.fasterxml.jackson.databind.JsonNode child : node) {
-            walkCoordinates(child, box);
-        }
-    }
-
-    /**
-     * Reads {@code booking_rules.txt}. Replaces the table on every
-     * import — the stop_times FKs that would reference a deleted rule
-     * fall to "no booking info" rather than dangle, which is what we
-     * want until a passenger surface justifies the FKs.
-     */
     private Map<String, BookingRule> importBookingRules(Path bookingRulesFile) throws IOException {
-        bookingRuleRepository.deleteAllInBatch();
-        bookingRuleRepository.flush();
-
-        Map<String, BookingRule> result = new HashMap<>();
-        if (!Files.exists(bookingRulesFile)) {
-            log.info("GTFS import: booking_rules.txt missing, skipping");
-            return result;
-        }
-        int skippedBadType = 0;
-        try (CSVParser parser = openCsv(bookingRulesFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "booking_rule_id");
-                if (isBlank(externalId)) {continue;}
-                Integer typeCode = parseIntOrNull(optional(record, "booking_type"));
-                if (typeCode == null) {
-                    skippedBadType++;
-                    continue;
-                }
-                BookingType bookingType = BookingType.fromGtfsCode(typeCode);
-                if (bookingType == null) {
-                    skippedBadType++;
-                    continue;
-                }
-                LocalTime cutoff = GtfsParse.parseGtfsTime(optional(record, "prior_notice_last_time"));
-
-                String trimmed = externalId.trim();
-                BookingRule rule = BookingRule.builder()
-                        .externalId(truncate(trimmed, 100))
-                        .bookingType(bookingType)
-                        .priorNoticeDurationMin(parseIntOrNull(optional(record, "prior_notice_duration_min")))
-                        .priorNoticeDurationMax(parseIntOrNull(optional(record, "prior_notice_duration_max")))
-                        .priorNoticeLastDay(parseIntOrNull(optional(record, "prior_notice_last_day")))
-                        .priorNoticeLastTime(cutoff)
-                        .priorNoticeStartDay(parseIntOrNull(optional(record, "prior_notice_start_day")))
-                        .phone(truncate(optional(record, "phone_number"), 30))
-                        .bookingUrl(truncate(optional(record, "booking_url"), 500))
-                        .infoUrl(truncate(optional(record, "info_url"), 500))
-                        .message(truncate(optional(record, "message"), 1000))
-                        .build();
-                result.put(trimmed, rule);
-            }
-        }
-        if (!result.isEmpty()) {
-            bookingRuleRepository.saveAll(result.values());
-        }
-        if (skippedBadType > 0) {
-            log.warn("GTFS import: skipped {} booking_rules rows with invalid booking_type",
-                    skippedBadType);
-        }
-        log.info("GTFS import: {} booking rules persisted", result.size());
-        return result;
+        return bookingRuleImporter.importBookingRules(bookingRulesFile);
     }
 
     private void importAttributions(Path attributionsFile) throws IOException {
@@ -1393,9 +1183,6 @@ public class GtfsImportService {
      *  every platform and station as a separate row, so a direct
      *  lookup against {@code stopsByGtfsId} is enough — no
      *  parent-walk required. */
-    private static Stop resolveStop(String gtfsStopId, StopImport stopImport) {
-        return stopImport.stopsByGtfsId().get(gtfsStopId);
-    }
 
     private void assignSchematicCoordinates(Collection<Stop> stops) {
         double minLat = Double.POSITIVE_INFINITY;
