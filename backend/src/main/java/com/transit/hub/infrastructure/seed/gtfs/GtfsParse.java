@@ -11,7 +11,7 @@ import java.util.Locale;
  * Pure parsing helpers for GTFS text fields. Extracted from {@link GtfsImportService}
  * so the value-only logic can be unit-tested without booting the importer.
  */
-final class GtfsParse {
+public final class GtfsParse {
 
     private static final DateTimeFormatter GTFS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -23,7 +23,7 @@ final class GtfsParse {
      * represent natively, so the hour component is folded back into the
      * {@code 0..23} range. Acceptable loss of date information for kiosk display.
      */
-    static LocalTime parseGtfsTime(String s) {
+    public static LocalTime parseGtfsTime(String s) {
         if (isBlank(s)) {return null;}
         String[] parts = s.trim().split(":");
         if (parts.length < 2) {return null;}
@@ -38,7 +38,7 @@ final class GtfsParse {
     }
 
     /** Parses a GTFS yyyyMMdd date, returning null on blank or invalid input. */
-    static LocalDate parseGtfsDate(String s) {
+    public static LocalDate parseGtfsDate(String s) {
         if (isBlank(s)) {return null;}
         try {return LocalDate.parse(s.trim(), GTFS_DATE);} catch (Exception e) {return null;}
     }
@@ -48,7 +48,7 @@ final class GtfsParse {
      * stopping at the first non-letter. Used to bucket bus lines whose code
      * follows a "{prefix}{number}" convention (e.g. "C1", "BR12", "N5").
      */
-    static String extractAlphaPrefix(String code) {
+    public static String extractAlphaPrefix(String code) {
         if (isBlank(code)) {return "";}
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < code.length(); i++) {
@@ -67,7 +67,7 @@ final class GtfsParse {
      * European TPEG-PTI standard and listed as informational extensions
      * in the GTFS reference.
      */
-    static LineType mapRouteType(int routeType) {
+    public static LineType mapRouteType(int routeType) {
         switch (routeType) {
             case 0: return LineType.TRAM;          // Tram, Streetcar, Light rail
             case 1: return LineType.METRO;         // Subway, Metro
@@ -108,11 +108,11 @@ final class GtfsParse {
     // General string / number helpers shared with GtfsImportService       //
     // ------------------------------------------------------------------ //
 
-    static boolean isBlank(String s) {
+    public static boolean isBlank(String s) {
         return s == null || s.isBlank();
     }
 
-    static String firstNonBlank(String... values) {
+    public static String firstNonBlank(String... values) {
         for (String v : values) {
             if (!isBlank(v)) {
                 return v.trim();
@@ -121,14 +121,14 @@ final class GtfsParse {
         return "";
     }
 
-    static String truncate(String s, int max) {
+    public static String truncate(String s, int max) {
         if (s == null) {
             return "";
         }
         return s.length() <= max ? s : s.substring(0, max);
     }
 
-    static int parseInt(String s, int defaultValue) {
+    public static int parseInt(String s, int defaultValue) {
         if (isBlank(s)) {
             return defaultValue;
         }
@@ -139,7 +139,7 @@ final class GtfsParse {
         }
     }
 
-    static Integer parseIntOrNull(String s) {
+    public static Integer parseIntOrNull(String s) {
         if (isBlank(s)) {
             return null;
         }
@@ -150,7 +150,7 @@ final class GtfsParse {
         }
     }
 
-    static Double parseDoubleOrNull(String s) {
+    public static Double parseDoubleOrNull(String s) {
         if (isBlank(s)) {
             return null;
         }
@@ -161,7 +161,7 @@ final class GtfsParse {
         }
     }
 
-    static Short parseShortOrNull(String s) {
+    public static Short parseShortOrNull(String s) {
         if (s == null || s.isBlank()) {
             return null;
         }
@@ -179,7 +179,7 @@ final class GtfsParse {
      * short the column expects, leaving null for feeds that don't
      * declare a direction.
      */
-    static Short parseDirectionId(String raw) {
+    public static Short parseDirectionId(String raw) {
         if (isBlank(raw)) {
             return null;
         }

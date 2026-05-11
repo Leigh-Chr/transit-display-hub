@@ -38,6 +38,8 @@ import com.transit.hub.domain.model.Network;
 import com.transit.hub.domain.model.Timeframe;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
+import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
@@ -117,6 +119,9 @@ public class GtfsImportService {
     private static final String DEFAULT_COLOR = "#888888";
     private static final double SCHEMATIC_SIZE = 1000.0;
     private static final double SCHEMATIC_MARGIN = 50.0;
+
+    private final AgencyImporter agencyImporter;
+    private final StationLevelImporter stationLevelImporter;
 
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
@@ -302,70 +307,8 @@ public class GtfsImportService {
         }
     }
 
-    /**
-     * Reads {@code agency.txt} when present. The file is GTFS-required when
-     * the feed declares more than one agency but technically optional in
-     * single-agency feeds. We always make sure at least one row exists so
-     * the timezone resolution path can rely on a non-null reference.
-     */
     private Map<String, Agency> importAgencies(Path agenciesFile) throws IOException {
-        // Index pre-existing agencies by external_id so a re-import keeps
-        // the same UUID — Lines reference it via FK and we don't want to
-        // bounce that reference on every refresh. See ADR 0013.
-        Map<String, Agency> existingByExternalId = agencyRepository.findAll().stream()
-                .filter(a -> a.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Agency::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
-
-        Map<String, Agency> result = new LinkedHashMap<>();
-        Set<UUID> seenIds = new HashSet<>();
-        if (!Files.exists(agenciesFile)) {
-            log.info("GTFS import: agency.txt missing, no agencies persisted");
-            return result;
-        }
-        try (CSVParser parser = openCsv(agenciesFile)) {
-            for (CSVRecord record : parser) {
-                String agencyId = optional(record, "agency_id");
-                String name = truncate(optional(record, "agency_name"), 200);
-                if (isBlank(name)) {
-                    // GTFS allows agency_name to be empty when there is exactly
-                    // one agency, but we need *something* to render in the UI.
-                    name = "Unnamed agency";
-                }
-                String externalId = isBlank(agencyId) ? null : truncate(agencyId.trim(), 100);
-
-                Agency agency = (externalId != null && existingByExternalId.containsKey(externalId))
-                        ? existingByExternalId.get(externalId)
-                        : new Agency();
-                agency.setExternalId(externalId);
-                agency.setName(name);
-                agency.setUrl(truncate(optional(record, "agency_url"), 500));
-                agency.setTimezone(truncate(optional(record, "agency_timezone"), 60));
-                agency.setLang(truncate(optional(record, "agency_lang"), 10));
-                agency.setPhone(truncate(optional(record, "agency_phone"), 30));
-                agency.setFareUrl(truncate(optional(record, "agency_fare_url"), 500));
-                agency.setEmail(truncate(optional(record, "agency_email"), 100));
-                agency.setCemvSupport(parseShortOrNull(optional(record, "cemv_support")));
-
-                Agency saved = agencyRepository.save(agency);
-                seenIds.add(saved.getId());
-                // Index both by the GTFS agency_id (when present) and by the
-                // empty string so single-agency feeds can resolve to it.
-                result.put(isBlank(agencyId) ? "" : agencyId, saved);
-            }
-        }
-        // Drop agencies the new feed no longer declares. Lines that used
-        // to reference them have been or will be re-bound by importRoutes.
-        int orphans = 0;
-        for (Agency old : existingByExternalId.values()) {
-            if (!seenIds.contains(old.getId())) {
-                agencyRepository.delete(old);
-                orphans++;
-            }
-        }
-        log.info("GTFS import: {} agencies upserted ({} orphans removed)", result.size(), orphans);
-        return result;
+        return agencyImporter.importAgencies(agenciesFile);
     }
 
     private Map<String, Line> importRoutes(Path routesFile, Map<String, Agency> agencies) throws IOException {
@@ -1607,38 +1550,8 @@ public class GtfsImportService {
         return result;
     }
 
-    /**
-     * Reads {@code levels.txt} when present. Wipes the table first so
-     * each import starts from a clean slate; pathways referencing a
-     * level that has been dropped will simply find no row, which the
-     * admin endpoint handles via a null check.
-     */
     private void importStationLevels(Path levelsFile) throws IOException {
-        stationLevelRepository.deleteAllInBatch();
-        stationLevelRepository.flush();
-
-        if (!Files.exists(levelsFile)) {
-            log.info("GTFS import: levels.txt missing, skipping");
-            return;
-        }
-        List<StationLevel> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(levelsFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "level_id");
-                if (isBlank(externalId)) {continue;}
-                Double levelIndex = parseDoubleOrNull(optional(record, "level_index"));
-                if (levelIndex == null) {continue;}
-                batch.add(StationLevel.builder()
-                        .externalId(truncate(externalId, 100))
-                        .levelIndex(levelIndex)
-                        .levelName(truncate(optional(record, "level_name"), 100))
-                        .build());
-            }
-        }
-        if (!batch.isEmpty()) {
-            stationLevelRepository.saveAll(batch);
-        }
-        log.info("GTFS import: {} station levels created", batch.size());
+        stationLevelImporter.importStationLevels(levelsFile);
     }
 
     /**
