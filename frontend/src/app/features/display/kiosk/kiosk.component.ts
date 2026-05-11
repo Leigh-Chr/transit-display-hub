@@ -6,6 +6,7 @@ import {
   signal,
   computed,
   inject,
+  effect,
 } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -143,9 +144,10 @@ import { formatLocaleDate } from '@shared/utils/locale-date.utils';
           <div class="departures-viewport">
             <div class="departures-track"
                  [class.scrolling]="needsScrolling()"
+                 [class.reduced-motion]="reducedMotion()"
                  [style.animationDuration]="scrollDuration()">
               <div class="departures-list">
-                @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
+                @for (arrival of visibleArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
                   <div class="departure-row">
                     <span
                       class="line-badge"
@@ -212,8 +214,10 @@ import { formatLocaleDate } from '@shared/utils/locale-date.utils';
                   </div>
                 }
               </div>
-              <!-- Duplicate for seamless loop when scrolling -->
-              @if (needsScrolling()) {
+              <!-- Duplicate for seamless loop when scrolling.
+                   Hidden under prefers-reduced-motion — the paginated view
+                   replaces continuous scroll and requires no clone. -->
+              @if (needsScrolling() && !reducedMotion()) {
                 <div class="list-divider"></div>
                 <div class="departures-list">
                   @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
@@ -739,6 +743,19 @@ import { formatLocaleDate } from '@shared/utils/locale-date.utils';
       100% { transform: translateY(-50%); }
     }
 
+    /* prefers-reduced-motion: replace continuous scroll with discrete page-swaps.
+       The .reduced-motion class is applied by the component when the media query
+       matches. The global reduced-motion override (styles.scss §13b) sets
+       animation-duration to 0.01ms which would stop scrolling, but the viewport
+       would show only the first row because the track stays at translateY(0) and
+       content below is overflow:hidden. We disable the animation explicitly here
+       and let the paginated visibleArrivals() signal rotate the rows instead. */
+    @media (prefers-reduced-motion: reduce) {
+      .departures-track.scrolling {
+        animation: none;
+      }
+    }
+
     .departures-list {
       display: flex;
       flex-direction: column;
@@ -1080,6 +1097,43 @@ export class KioskComponent implements OnInit, OnDestroy {
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
   }
 
+  constructor() {
+    // Initialise the reducedMotion signal from the media query. A change
+    // listener keeps the signal in sync if the user toggles the OS setting
+    // while the kiosk is running (e.g. on a shared-use accessibility kiosk).
+    const mql = typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+    this.reducedMotion = signal(mql?.matches ?? false);
+    if (mql) {
+      mql.addEventListener('change', (e) => {
+        this.reducedMotion.set(e.matches);
+      });
+    }
+
+    // When reduced-motion is active, advance the page index at a fixed interval
+    // so arrivals that scroll off in normal mode are still reachable.
+    effect(() => {
+      if (this.reducedMotion()) {
+        this.startPageSwap();
+      } else {
+        this.stopPageSwap();
+        this.pageIndex.set(0);
+      }
+    });
+
+    // Reset page index when the arrival list changes (stop switch, WS update)
+    // so we don't land on an empty page.
+    effect(() => {
+      const total = this.allArrivals().length;
+      const pageSize = KioskComponent.MAX_VISIBLE_ARRIVALS;
+      const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+      if (this.pageIndex() > maxPage) {
+        this.pageIndex.set(0);
+      }
+    });
+  }
+
   private token: string | null = null;
   private stopId: string | null = null;
   private deviceId: string | null = null;
@@ -1116,6 +1170,20 @@ export class KioskComponent implements OnInit, OnDestroy {
   // in motion a comfortable beat to scan line + destination + time without
   // feeling chased by the next row.
   private static readonly SECONDS_PER_ARRIVAL = 4;
+  // Seconds between page-swaps in reduced-motion mode. 8s per page gives a
+  // passenger enough time to read all rows before the next set appears.
+  private static readonly REDUCED_MOTION_PAGE_DWELL_MS = 8000;
+
+  /** True when the OS/browser signals that animations should be minimised.
+   *  Reactive: updated via a MediaQueryList change event so the signal stays
+   *  in sync even if the user toggles the system preference mid-session. */
+  reducedMotion: ReturnType<typeof signal<boolean>>;
+
+  /** Current page index for the paginated view used under reduced-motion. */
+  private readonly pageIndex = signal(0);
+
+  /** Page-swap interval reference — held so we can clear it on destroy. */
+  private pageInterval: ReturnType<typeof setInterval> | null = null;
 
   // All arrivals from display state, filtered to exclude past departures
   allArrivals = computed(() => {
@@ -1139,8 +1207,22 @@ export class KioskComponent implements OnInit, OnDestroy {
     });
   });
 
-  // Whether we need vertical scrolling (more arrivals than fit on screen)
+  /** Arrivals shown in the template. Under normal motion shows all arrivals
+   *  (the CSS scroll animation handles overflow). Under reduced-motion, shows
+   *  a page-sized slice that rotates every REDUCED_MOTION_PAGE_DWELL_MS so
+   *  content that would scroll off is still reachable. */
+  visibleArrivals = computed(() => {
+    const all = this.allArrivals();
+    if (!this.reducedMotion()) { return all; }
+    const pageSize = KioskComponent.MAX_VISIBLE_ARRIVALS;
+    const start = this.pageIndex() * pageSize;
+    return all.slice(start, start + pageSize);
+  });
+
+  // Whether we need vertical scrolling (more arrivals than fit on screen).
+  // Always false under reduced-motion — pagination replaces continuous scroll.
   needsScrolling = computed(() => {
+    if (this.reducedMotion()) { return false; }
     const arrivals = this.allArrivals();
     const criticalCount = this.criticalMessages().length;
     const hasInfoMessages = this.infoMessages().length > 0;
@@ -1238,11 +1320,29 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopClock();
+    this.stopPageSwap();
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
     }
     this.wsService.disconnect();
+  }
+
+  private startPageSwap(): void {
+    if (this.pageInterval !== null) { return; }
+    this.pageInterval = setInterval(() => {
+      const total = this.allArrivals().length;
+      const pageSize = KioskComponent.MAX_VISIBLE_ARRIVALS;
+      const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+      this.pageIndex.set(this.pageIndex() < maxPage ? this.pageIndex() + 1 : 0);
+    }, KioskComponent.REDUCED_MOTION_PAGE_DWELL_MS);
+  }
+
+  private stopPageSwap(): void {
+    if (this.pageInterval !== null) {
+      clearInterval(this.pageInterval);
+      this.pageInterval = null;
+    }
   }
 
   private startClock(): void {
