@@ -5,20 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * In-memory cache of GTFS-Realtime {@code ServiceAlert}s. A single
@@ -33,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Component
 @Slf4j
-public class RealtimeAlertCache {
+public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeAlertCache.AlertSnapshot>> {
 
     /**
      * Public-facing snapshot of an active service alert, distilled
@@ -73,24 +65,41 @@ public class RealtimeAlertCache {
         }
     }
 
-    private final AtomicReference<List<AlertSnapshot>> snapshot =
-            new AtomicReference<>(List.of());
-
-    /** Header metadata captured on the most recent successful refresh.
-     *  Reset to {@link FeedHeaderInfo#empty()} on construction so a
-     *  caller never has to null-check the reference itself. */
-    private final AtomicReference<FeedHeaderInfo> headerRef =
-            new AtomicReference<>(FeedHeaderInfo.empty());
-
     @Value("${app.gtfs-rt.alerts-url:}")
     private String alertsUrl = "";
 
     @Value("${app.gtfs-rt.timeout-seconds:10}")
     private int timeoutSeconds = 10;
 
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    @Override
+    protected String feedUrl() {
+        return alertsUrl;
+    }
+
+    @Override
+    protected int timeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    @Override
+    protected String kindLabel() {
+        return "alerts";
+    }
+
+    @Override
+    protected List<AlertSnapshot> parseSnapshot(GtfsRealtime.FeedMessage feed) {
+        return parseAlerts(feed);
+    }
+
+    @Override
+    protected List<AlertSnapshot> emptySnapshot() {
+        return List.of();
+    }
+
+    @Override
+    protected int countEntries(List<AlertSnapshot> snap) {
+        return snap.size();
+    }
 
     /** Returns every alert currently in the cache that is active at
      *  {@code now}. The kiosk filters further by route / stop. */
@@ -106,55 +115,6 @@ public class RealtimeAlertCache {
             }
         }
         return active;
-    }
-
-    /** Returns true when the cache is configured to receive a feed. */
-    public boolean isEnabled() {
-        return alertsUrl != null && !alertsUrl.isBlank();
-    }
-
-    /** Header captured on the last successful refresh. Returns
-     *  {@link FeedHeaderInfo#empty()} when no refresh has succeeded
-     *  yet, so consumers always get a non-null record. */
-    public FeedHeaderInfo currentHeader() {
-        return headerRef.get();
-    }
-
-    /**
-     * Fetches the alerts feed and replaces the cached snapshot.
-     * Logs a warning on any error and leaves the previous snapshot
-     * in place — the kiosk continues to render the last known state
-     * rather than silently dropping all alerts on a single hiccup.
-     */
-    public void refresh() {
-        if (!isEnabled()) {
-            return;
-        }
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(alertsUrl))
-                    .timeout(Duration.ofSeconds(timeoutSeconds))
-                    .header("Accept", "application/x-protobuf, application/octet-stream")
-                    .GET()
-                    .build();
-            HttpResponse<InputStream> response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() != 200) {
-                log.warn("GTFS-RT alerts: HTTP {} from {}", response.statusCode(), alertsUrl);
-                return;
-            }
-            try (InputStream in = response.body()) {
-                GtfsRealtime.FeedMessage feed = GtfsRealtime.FeedMessage.parseFrom(in);
-                List<AlertSnapshot> alerts = parseAlerts(feed);
-                snapshot.set(alerts);
-                headerRef.set(parseHeader(feed));
-                log.info("GTFS-RT alerts: refreshed snapshot with {} alerts", alerts.size());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("GTFS-RT alerts: refresh interrupted: {}", e.getMessage());
-        } catch (IOException e) {
-            log.warn("GTFS-RT alerts: refresh failed: {}", e.getMessage());
-        }
     }
 
     static List<AlertSnapshot> parseAlerts(GtfsRealtime.FeedMessage feed) {

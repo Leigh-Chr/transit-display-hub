@@ -5,17 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * In-memory cache of GTFS-Realtime {@code VehiclePosition}s. The
@@ -28,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Component
 @Slf4j
-public class RealtimeVehiclePositionCache {
+public class RealtimeVehiclePositionCache extends AbstractRealtimeFeedCache<List<RealtimeVehiclePositionCache.VehicleSnapshot>> {
 
     /**
      * Flat snapshot of one vehicle's position. We keep raw GTFS-RT
@@ -55,70 +47,46 @@ public class RealtimeVehiclePositionCache {
             Long timestampEpochSeconds
     ) {}
 
-    private final AtomicReference<List<VehicleSnapshot>> snapshot =
-            new AtomicReference<>(List.of());
-
-    /** Header metadata captured on the most recent successful refresh.
-     *  Reset to {@link FeedHeaderInfo#empty()} on construction. */
-    private final AtomicReference<FeedHeaderInfo> headerRef =
-            new AtomicReference<>(FeedHeaderInfo.empty());
-
     @Value("${app.gtfs-rt.vehicle-positions-url:}")
     private String vehiclePositionsUrl = "";
 
     @Value("${app.gtfs-rt.timeout-seconds:10}")
     private int timeoutSeconds = 10;
 
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    @Override
+    protected String feedUrl() {
+        return vehiclePositionsUrl;
+    }
 
-    public boolean isEnabled() {
-        return vehiclePositionsUrl != null && !vehiclePositionsUrl.isBlank();
+    @Override
+    protected int timeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    @Override
+    protected String kindLabel() {
+        return "vehicle positions";
+    }
+
+    @Override
+    protected List<VehicleSnapshot> parseSnapshot(GtfsRealtime.FeedMessage feed) {
+        return parseVehicles(feed);
+    }
+
+    @Override
+    protected List<VehicleSnapshot> emptySnapshot() {
+        return List.of();
+    }
+
+    @Override
+    protected int countEntries(List<VehicleSnapshot> snap) {
+        return snap.size();
     }
 
     /** Returns the current snapshot, ordered by route then by vehicle id
      *  for stable admin browsing. The list is unmodifiable. */
     public List<VehicleSnapshot> currentSnapshot() {
         return snapshot.get();
-    }
-
-    /** Header captured on the last successful refresh. Returns
-     *  {@link FeedHeaderInfo#empty()} when no refresh has succeeded
-     *  yet, so consumers always get a non-null record. */
-    public FeedHeaderInfo currentHeader() {
-        return headerRef.get();
-    }
-
-    public void refresh() {
-        if (!isEnabled()) {
-            return;
-        }
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(vehiclePositionsUrl))
-                    .timeout(Duration.ofSeconds(timeoutSeconds))
-                    .header("Accept", "application/x-protobuf, application/octet-stream")
-                    .GET()
-                    .build();
-            HttpResponse<InputStream> response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() != 200) {
-                log.warn("GTFS-RT vehicle positions: HTTP {} from {}", response.statusCode(), vehiclePositionsUrl);
-                return;
-            }
-            try (InputStream in = response.body()) {
-                GtfsRealtime.FeedMessage feed = GtfsRealtime.FeedMessage.parseFrom(in);
-                List<VehicleSnapshot> parsed = parseVehicles(feed);
-                snapshot.set(parsed);
-                headerRef.set(RealtimeAlertCache.parseHeader(feed));
-                log.info("GTFS-RT vehicle positions: refreshed snapshot with {} vehicles", parsed.size());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("GTFS-RT vehicle positions: refresh interrupted: {}", e.getMessage());
-        } catch (IOException e) {
-            log.warn("GTFS-RT vehicle positions: refresh failed: {}", e.getMessage());
-        }
     }
 
     static List<VehicleSnapshot> parseVehicles(GtfsRealtime.FeedMessage feed) {

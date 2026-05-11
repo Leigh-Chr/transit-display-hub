@@ -5,17 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * In-memory cache of GTFS-Realtime {@code TripUpdate}s. Indexes the
@@ -29,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Component
 @Slf4j
-public class RealtimeTripUpdateCache {
+public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<String, RealtimeTripUpdateCache.TripAdjustment>> {
 
     /**
      * Per-stop adjustment carried by a {@link GtfsRealtime.TripUpdate.StopTimeUpdate}.
@@ -75,26 +67,40 @@ public class RealtimeTripUpdateCache {
             Map<String, StopAdjustment> byStopExternalId
     ) {}
 
-    private final AtomicReference<Map<String, TripAdjustment>> snapshot =
-            new AtomicReference<>(Map.of());
-
-    /** Header metadata captured on the most recent successful refresh.
-     *  Reset to {@link FeedHeaderInfo#empty()} on construction. */
-    private final AtomicReference<FeedHeaderInfo> headerRef =
-            new AtomicReference<>(FeedHeaderInfo.empty());
-
     @Value("${app.gtfs-rt.trip-updates-url:}")
     private String tripUpdatesUrl = "";
 
     @Value("${app.gtfs-rt.timeout-seconds:10}")
     private int timeoutSeconds = 10;
 
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    @Override
+    protected String feedUrl() {
+        return tripUpdatesUrl;
+    }
 
-    public boolean isEnabled() {
-        return tripUpdatesUrl != null && !tripUpdatesUrl.isBlank();
+    @Override
+    protected int timeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    @Override
+    protected String kindLabel() {
+        return "trip updates";
+    }
+
+    @Override
+    protected Map<String, TripAdjustment> parseSnapshot(GtfsRealtime.FeedMessage feed) {
+        return parseTripUpdates(feed);
+    }
+
+    @Override
+    protected Map<String, TripAdjustment> emptySnapshot() {
+        return Map.of();
+    }
+
+    @Override
+    protected int countEntries(Map<String, TripAdjustment> snap) {
+        return snap.size();
     }
 
     /** Number of trips currently in the cache. Used by the
@@ -103,54 +109,10 @@ public class RealtimeTripUpdateCache {
         return snapshot.get().size();
     }
 
-    /** Header captured on the last successful refresh. Returns
-     *  {@link FeedHeaderInfo#empty()} when no refresh has succeeded
-     *  yet, so consumers always get a non-null record. */
-    public FeedHeaderInfo currentHeader() {
-        return headerRef.get();
-    }
-
     public Optional<TripAdjustment> findUpdate(String tripExternalId) {
         if (tripExternalId == null) {return Optional.empty();}
         TripAdjustment hit = snapshot.get().get(tripExternalId);
         return Optional.ofNullable(hit);
-    }
-
-    /**
-     * Fetches the trip updates feed and atomically replaces the cached
-     * snapshot. Failures leave the previous snapshot in place — the
-     * kiosk falls back to scheduled times rather than dropping all
-     * realtime data on a single hiccup.
-     */
-    public void refresh() {
-        if (!isEnabled()) {
-            return;
-        }
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(tripUpdatesUrl))
-                    .timeout(Duration.ofSeconds(timeoutSeconds))
-                    .header("Accept", "application/x-protobuf, application/octet-stream")
-                    .GET()
-                    .build();
-            HttpResponse<InputStream> response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() != 200) {
-                log.warn("GTFS-RT trip updates: HTTP {} from {}", response.statusCode(), tripUpdatesUrl);
-                return;
-            }
-            try (InputStream in = response.body()) {
-                GtfsRealtime.FeedMessage feed = GtfsRealtime.FeedMessage.parseFrom(in);
-                Map<String, TripAdjustment> indexed = parseTripUpdates(feed);
-                snapshot.set(indexed);
-                headerRef.set(RealtimeAlertCache.parseHeader(feed));
-                log.info("GTFS-RT trip updates: refreshed snapshot with {} trips", indexed.size());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("GTFS-RT trip updates: refresh interrupted: {}", e.getMessage());
-        } catch (IOException e) {
-            log.warn("GTFS-RT trip updates: refresh failed: {}", e.getMessage());
-        }
     }
 
     static Map<String, TripAdjustment> parseTripUpdates(GtfsRealtime.FeedMessage feed) {
