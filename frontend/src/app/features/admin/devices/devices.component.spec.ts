@@ -19,9 +19,11 @@ const translocoLang = {
       removeFailed: 'Failed to remove device',
       tokenCopied: 'Token copied to clipboard',
       tokenCopyFailed: 'Failed to copy token',
+      tokenTitle: 'Device Registered',
+      dialog: { title: 'Register New Device' },
       confirm: { removeTitle: 'Remove Device', removeMessage: 'Remove device?' },
     },
-    common: { remove: 'Remove' },
+    common: { remove: 'Remove', done: 'Done' },
     navigation: {},
   },
   common: { delete: 'Delete' },
@@ -166,15 +168,17 @@ describe('DevicesComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should set newDeviceToken and reload on success', () => {
+    it('should open token dialog and reload on registration success', () => {
       const afterClosed$ = new Subject<unknown>();
+      // First open() call = DeviceDialogComponent; second = DeviceTokenDialogComponent
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
 
       component.openCreateDialog();
       afterClosed$.next({ stopId: 's1' });
 
       expect(mockDeviceService.register).toHaveBeenCalledWith({ stopId: 's1' });
-      expect(component.newDeviceToken()).toBe('jwt-token-123');
+      // Token dialog opened with the token from the registration response
+      expect(mockDialog.open).toHaveBeenCalledTimes(2);
       expect(mockDeviceService.getAll).toHaveBeenCalled();
     });
 
@@ -209,40 +213,6 @@ describe('DevicesComponent', () => {
       afterClosed$.next({ stopId: 's1' });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Failed to register device');
-    });
-  });
-
-  describe('closeTokenModal', () => {
-    it('should clear newDeviceToken', () => {
-      component.newDeviceToken.set('some-token');
-
-      component.closeTokenModal();
-
-      expect(component.newDeviceToken()).toBeNull();
-    });
-  });
-
-  describe('copyToken', () => {
-    it('should call clipboard.writeText with the token', async () => {
-      const writeText = vi.fn().mockResolvedValue(undefined);
-      Object.assign(navigator, { clipboard: { writeText } });
-      component.newDeviceToken.set('jwt-token-123');
-
-      component.copyToken();
-      await writeText.mock.results[0]!.value;
-
-      expect(writeText).toHaveBeenCalledWith('jwt-token-123');
-      expect(mockNotify.success).toHaveBeenCalledWith('Token copied to clipboard');
-    });
-
-    it('should not call clipboard when token is null', () => {
-      const writeText = vi.fn().mockResolvedValue(undefined);
-      Object.assign(navigator, { clipboard: { writeText } });
-      component.newDeviceToken.set(null);
-
-      component.copyToken();
-
-      expect(writeText).not.toHaveBeenCalled();
     });
   });
 

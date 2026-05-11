@@ -24,6 +24,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
@@ -191,7 +192,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
           [length]="totalElements"
           [pageIndex]="tableState.page"
           [pageSize]="tableState.size"
-          [pageSizeOptions]="[5, 10, 25, 50]"
+          [pageSizeOptions]="pageSizeOptions"
           (page)="tableState.onPageChange($event)"
           showFirstLastButtons
         />
@@ -410,6 +411,7 @@ export class MessagesComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly tableState = inject(AdminTableState);
+  protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
   loading = signal(true);
   messages = signal<BroadcastMessage[]>([]);
   lines = signal<Line[]>([]);

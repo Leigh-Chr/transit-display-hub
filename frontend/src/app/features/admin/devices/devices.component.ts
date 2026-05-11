@@ -13,6 +13,7 @@ import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
 import { Line, Device, DeviceStatus, RegisterDeviceRequest } from '@shared/models';
 import { DeviceDialogComponent } from './device-dialog.component';
+import { DeviceTokenDialogComponent } from './device-token-dialog.component';
 import {
   ConfirmDialogComponent,
 } from '@shared/components/confirm-dialog/confirm-dialog.component';
@@ -129,37 +130,6 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       }
     </div>
 
-    @if (newDeviceToken()) {
-      <div class="token-overlay">
-        <mat-card class="token-card">
-          <mat-card-header>
-            <mat-card-title>{{ t('admin.devices.tokenTitle') }}</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <p class="token-instructions">
-              {{ t('admin.devices.tokenInstructions') }}
-            </p>
-            <div class="token-display">
-              {{ newDeviceToken() }}
-            </div>
-            <button
-              mat-flat-button
-              color="primary"
-              class="full-width"
-              (click)="copyToken()"
-            >
-              <mat-icon>content_copy</mat-icon>
-              {{ t('admin.devices.copyToken') }}
-            </button>
-          </mat-card-content>
-          <mat-card-actions>
-            <button mat-stroked-button class="full-width" (click)="closeTokenModal()">
-              {{ t('admin.common.done') }}
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      </div>
-    }
     </ng-container>
   `,
   styles: `
@@ -270,46 +240,6 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       font-weight: 600;
     }
 
-    .token-overlay {
-      position: fixed;
-      inset: 0;
-      background-color: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      backdrop-filter: blur(4px);
-    }
-
-    .token-card {
-      width: 100%;
-      max-width: 480px;
-      margin: 16px;
-      border-radius: var(--app-radius-lg);
-    }
-
-    .token-instructions {
-      color: var(--app-on-surface-variant);
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .token-display {
-      font-family: 'SF Mono', 'Consolas', monospace;
-      font-size: 13px;
-      background-color: var(--app-surface-variant);
-      padding: 16px;
-      border-radius: var(--app-radius-sm);
-      word-break: break-all;
-      margin-bottom: 20px;
-      user-select: all;
-      border: 1px solid var(--app-outline);
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
     /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
@@ -324,7 +254,6 @@ export class DevicesComponent implements OnInit {
   loading = signal(true);
   devices = signal<Device[]>([]);
   lines = signal<Line[]>([]);
-  newDeviceToken = signal<string | null>(null);
   statusFilter: DeviceStatus | '' = '';
 
   ngOnInit(): void {
@@ -354,15 +283,20 @@ export class DevicesComponent implements OnInit {
     const dialogRef = this.dialog.open(DeviceDialogComponent, {
       data: { lines: this.lines() },
       width: '450px',
-      ariaLabel: 'Register new device',
+      ariaLabel: this.transloco.translate('admin.devices.dialog.title'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.deviceService.register(result as RegisterDeviceRequest).subscribe({
           next: (registration) => {
-            this.newDeviceToken.set(registration.token);
             this.loadDevices();
+            this.dialog.open(DeviceTokenDialogComponent, {
+              data: { token: registration.token },
+              disableClose: false,
+              autoFocus: '[data-copy-button]',
+              ariaLabel: this.transloco.translate('admin.devices.tokenTitle'),
+            });
           },
           error: (err: unknown) => {
             this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.registerFailed')));
@@ -370,24 +304,6 @@ export class DevicesComponent implements OnInit {
         });
       }
     });
-  }
-
-  closeTokenModal(): void {
-    this.newDeviceToken.set(null);
-  }
-
-  copyToken(): void {
-    const token = this.newDeviceToken();
-    if (token) {
-      navigator.clipboard.writeText(token).then(
-        () => {
-          this.notify.success(this.transloco.translate('admin.devices.tokenCopied'));
-        },
-        () => {
-          this.notify.error(this.transloco.translate('admin.devices.tokenCopyFailed'));
-        }
-      );
-    }
   }
 
   deleteDevice(device: Device): void {
