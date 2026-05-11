@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -15,14 +16,30 @@ import {
 import { AuthService } from '@core/auth/auth.service';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
-import { DashboardService } from '@core/api/dashboard.service';
-import { Line, BroadcastMessage, Device } from '@shared/models';
+import { DashboardService, DashboardSummary } from '@core/api/dashboard.service';
+import { Line, BroadcastMessage } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { DataOverviewCardComponent } from './data-overview-card.component';
 import { FeedInfoCardComponent } from './feed-info-card.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { map } from 'rxjs';
+
+/** Shape returned by the resource when the user is an AGENT (non-admin).
+ *  Structured the same way as DashboardSummary so computed() derivations
+ *  stay uniform regardless of the authenticated role. */
+interface AgentView {
+  lineCount: 0;
+  stopCount: 0;
+  itineraryCount: 0;
+  topLines: [];
+  activeMessages: BroadcastMessage[];
+  recentMessages: BroadcastMessage[];
+  devices: { total: 0; online: 0; offline: 0; offlinePreview: [] };
+}
+
+type DashboardData = DashboardSummary | AgentView;
 
 @Component({
   selector: 'app-dashboard',
@@ -935,7 +952,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
   `,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   private readonly authService = inject(AuthService);
   private readonly lineService = inject(LineService);
   private readonly messageService = inject(MessageService);
@@ -946,100 +963,105 @@ export class DashboardComponent implements OnInit {
 
   readonly isAdmin = this.authService.isAdmin;
 
-  loading = signal(true);
   /** Lines for the hub-display dialog selector. Populated lazily the first
    *  time the user opens the dialog so the initial dashboard load stays small. */
   hubDialogLines = signal<Line[] | null>(null);
-  // Counters returned by /api/admin/dashboard. Default 0 so the cards render
-  // sensibly during the first paint before the response arrives.
-  lineCount = signal(0);
-  stopCount = signal(0);
-  itineraryCount = signal(0);
-  topLines = signal<Line[]>([]);
-  hasMoreLinesValue = signal(false);
-  activeMessages = signal<BroadcastMessage[]>([]);
-  recentMessagesSignal = signal<BroadcastMessage[]>([]);
-  offlineDevices = signal<Device[]>([]);
-  remainingOfflineCount = signal(0);
-  onlineDevicesCount = signal(0);
-  totalDevicesCount = signal(0);
 
-  criticalMessages = computed(() =>
-    this.activeMessages().filter((m) => m.severity === 'CRITICAL')
+  // Single resource that switches between the admin summary endpoint and the
+  // agent message-only endpoint based on the authenticated role.
+  private readonly dashboardResource = rxResource<DashboardData, boolean>({
+    params: () => this.isAdmin(),
+    stream: ({ params: isAdmin }) => {
+      if (isAdmin) {
+        // Single aggregated call — replaces the legacy forkJoin of five
+        // non-paginated GETs that each downloaded the entire domain table.
+        return this.dashboardService.getSummary();
+      }
+      // Agents only see messages — no need for the admin-gated dashboard endpoint.
+      return this.messageService.getAll().pipe(
+        map((allMessages): AgentView => ({
+          lineCount: 0,
+          stopCount: 0,
+          itineraryCount: 0,
+          topLines: [],
+          activeMessages: allMessages.filter((m) => m.active),
+          recentMessages: allMessages,
+          devices: { total: 0, online: 0, offline: 0, offlinePreview: [] },
+        })),
+      );
+    },
+  });
+
+  // Expose loading/error state directly from the resource.
+  readonly loading = computed(() => this.dashboardResource.isLoading());
+
+  // Safe accessor — returns undefined when the resource has no value yet or is
+  // in an error state (where calling .value() would throw ResourceValueError).
+  private readonly safeData = computed(() =>
+    this.dashboardResource.hasValue() ? this.dashboardResource.value() : undefined,
   );
 
-  displayedCriticalMessages = computed(() => this.criticalMessages().slice(0, 6));
+  // Computed fields extracted from the resource value — default to safe empty
+  // values while loading or on error so templates render without null guards.
+  readonly lineCount = computed(() => this.safeData()?.lineCount ?? 0);
+  readonly stopCount = computed(() => this.safeData()?.stopCount ?? 0);
+  readonly itineraryCount = computed(() => this.safeData()?.itineraryCount ?? 0);
+  readonly topLines = computed(() => this.safeData()?.topLines ?? []);
+  readonly activeMessages = computed(
+    () => this.safeData()?.activeMessages ?? [],
+  );
+  readonly onlineDevicesCount = computed(
+    () => this.safeData()?.devices.online ?? 0,
+  );
+  readonly totalDevicesCount = computed(
+    () => this.safeData()?.devices.total ?? 0,
+  );
+  readonly offlineDevices = computed(
+    () => this.safeData()?.devices.offlinePreview ?? [],
+  );
+  readonly remainingOfflineCount = computed(() => {
+    const data = this.safeData();
+    if (!data) { return 0; }
+    return Math.max(0, data.devices.offline - data.devices.offlinePreview.length);
+  });
+  readonly hasMoreLinesValue = computed(() => {
+    const data = this.safeData();
+    if (!data) { return false; }
+    return data.lineCount > data.topLines.length;
+  });
 
-  remainingCriticalCount = computed(() =>
-    Math.max(0, this.criticalMessages().length - 6)
+  readonly criticalMessages = computed(() =>
+    this.activeMessages().filter((m) => m.severity === 'CRITICAL'),
   );
 
-  // Renamed for clarity — the dashboard endpoint already trims to the preview.
-  displayedOfflineDevices = computed(() => this.offlineDevices());
+  readonly displayedCriticalMessages = computed(() => this.criticalMessages().slice(0, 6));
 
-  deviceHealthPercent = computed(() => {
+  readonly remainingCriticalCount = computed(() =>
+    Math.max(0, this.criticalMessages().length - 6),
+  );
+
+  // The dashboard endpoint already trims to the preview.
+  readonly displayedOfflineDevices = computed(() => this.offlineDevices());
+
+  readonly deviceHealthPercent = computed(() => {
     const total = this.totalDevicesCount();
     if (total === 0) { return 100; }
     return Math.round((this.onlineDevicesCount() / total) * 100);
   });
 
-  displayedLines = computed(() => this.topLines());
+  readonly displayedLines = computed(() => this.topLines());
 
-  hasMoreLines = computed(() => this.hasMoreLinesValue());
+  readonly hasMoreLines = computed(() => this.hasMoreLinesValue());
 
-  recentMessages = computed(() =>
-    [...this.recentMessagesSignal()]
+  readonly recentMessages = computed(() => {
+    const data = this.safeData();
+    return [...(data?.recentMessages ?? [])]
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-      .slice(0, 5)
-  );
-
-  ngOnInit(): void {
-    this.loadData();
-  }
+      .slice(0, 5);
+  });
 
   loadData(): void {
-    this.loading.set(true);
-
-    if (this.isAdmin()) {
-      // Single aggregated call — replaces the legacy forkJoin of five
-      // non-paginated GETs that each downloaded the entire domain table.
-      this.dashboardService.getSummary().subscribe({
-        next: (summary) => {
-          this.lineCount.set(summary.lineCount);
-          this.stopCount.set(summary.stopCount);
-          this.itineraryCount.set(summary.itineraryCount);
-          this.topLines.set(summary.topLines);
-          this.hasMoreLinesValue.set(summary.lineCount > summary.topLines.length);
-          this.activeMessages.set(summary.activeMessages);
-          this.recentMessagesSignal.set(summary.recentMessages);
-          this.totalDevicesCount.set(summary.devices.total);
-          this.onlineDevicesCount.set(summary.devices.online);
-          this.offlineDevices.set(summary.devices.offlinePreview);
-          this.remainingOfflineCount.set(
-            Math.max(0, summary.devices.offline - summary.devices.offlinePreview.length));
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.notify.errorRetryable(this.transloco.translate('admin.dashboard.loadFailed'))
-            .subscribe(() => this.loadData());
-        },
-      });
-    } else {
-      // Agents only see messages — no need for the admin-gated dashboard endpoint.
-      this.messageService.getAll().subscribe({
-        next: (allMessages) => {
-          this.activeMessages.set(allMessages.filter(m => m.active));
-          this.recentMessagesSignal.set(allMessages);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.notify.errorRetryable(this.transloco.translate('admin.dashboard.loadFailed'))
-            .subscribe(() => this.loadData());
-        },
-      });
-    }
+    this.dashboardResource.reload();
   }
 
   openHubDisplay(): void {

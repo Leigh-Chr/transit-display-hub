@@ -11,6 +11,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Line, BroadcastMessage, Device } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
+/** detectChanges then await whenStable so that rxResource loaders
+ *  (which schedule via microtasks in zoneless mode) resolve before assertions. */
+async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
+  f.detectChanges();
+  await f.whenStable();
+}
+
 const translocoLang = {
   admin: {
     dashboard: {
@@ -127,24 +134,22 @@ describe('DashboardComponent', () => {
   });
 
   describe('loadData (admin)', () => {
-    it('should call the aggregated dashboard endpoint exactly once', () => {
-      fixture.detectChanges();
+    it('should call the aggregated dashboard endpoint exactly once', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockDashboardService.getSummary).toHaveBeenCalledTimes(1);
       expect(mockLineService.getAll).not.toHaveBeenCalled();
       expect(mockMessageService.getAll).not.toHaveBeenCalled();
     });
 
-    it('should set loading to false after data loads', () => {
-      expect(component.loading()).toBe(true);
-
-      fixture.detectChanges();
+    it('should report not loading after data loads synchronously', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
     });
 
-    it('should populate counters and previews from the summary', () => {
-      fixture.detectChanges();
+    it('should populate counters and previews from the summary', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.lineCount()).toBe(2);
       expect(component.stopCount()).toBe(1);
@@ -155,18 +160,18 @@ describe('DashboardComponent', () => {
       expect(component.offlineDevices()).toEqual(mockOfflineDevicePreview);
     });
 
-    it('should set loading to false on error', () => {
+    it('should report not loading on error', async () => {
       mockDashboardService.getSummary = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
 
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
     });
   });
 
   describe('computed signals', () => {
-    beforeEach(() => {
-      fixture.detectChanges();
+    beforeEach(async () => {
+      await detectAndFlush(fixture);
     });
 
     it('should compute criticalMessages', () => {
@@ -183,16 +188,26 @@ describe('DashboardComponent', () => {
       expect(component.deviceHealthPercent()).toBe(50);
     });
 
-    it('should return 100% health when no devices', () => {
-      component.totalDevicesCount.set(0);
-      component.onlineDevicesCount.set(0);
-      expect(component.deviceHealthPercent()).toBe(100);
+    it('should return 100% health when no devices', async () => {
+      // The computed is driven by totalDevicesCount → 0 always returns 100%.
+      // Verify via a fresh component using a zero-device summary.
+      mockDashboardService.getSummary = vi.fn().mockReturnValue(of({
+        ...mockSummary,
+        devices: { total: 0, online: 0, offline: 0, offlinePreview: [] },
+      } satisfies DashboardSummary));
+      const f = TestBed.createComponent(DashboardComponent);
+      await detectAndFlush(f);
+      expect(f.componentInstance.deviceHealthPercent()).toBe(100);
     });
 
-    it('should compute deviceHealthPercent as 75 when 3 of 4 devices are online', () => {
-      component.totalDevicesCount.set(4);
-      component.onlineDevicesCount.set(3);
-      expect(component.deviceHealthPercent()).toBe(75);
+    it('should compute deviceHealthPercent as 75 when 3 of 4 devices are online', async () => {
+      mockDashboardService.getSummary = vi.fn().mockReturnValue(of({
+        ...mockSummary,
+        devices: { total: 4, online: 3, offline: 1, offlinePreview: [] },
+      } satisfies DashboardSummary));
+      const f = TestBed.createComponent(DashboardComponent);
+      await detectAndFlush(f);
+      expect(f.componentInstance.deviceHealthPercent()).toBe(75);
     });
 
     it('should compute remainingOfflineCount from the summary delta', () => {
@@ -200,24 +215,29 @@ describe('DashboardComponent', () => {
       expect(component.remainingOfflineCount()).toBe(0);
     });
 
-    it('should limit displayedCriticalMessages to 6', () => {
+    it('should limit displayedCriticalMessages to 6', async () => {
       const many: BroadcastMessage[] = Array.from({ length: 7 }, (_, i) => ({
         id: String(i),
         title: `C${i}`,
         content: '',
-        severity: 'CRITICAL',
+        severity: 'CRITICAL' as const,
         startTime: pastDate,
         endTime: futureDate,
-        scopeType: 'NETWORK',
+        scopeType: 'NETWORK' as const,
         scopeId: null,
         scopeInfo: null,
         active: true,
       }));
-      component.activeMessages.set(many);
+      mockDashboardService.getSummary = vi.fn().mockReturnValue(of({
+        ...mockSummary,
+        activeMessages: many,
+      } satisfies DashboardSummary));
+      const f = TestBed.createComponent(DashboardComponent);
+      await detectAndFlush(f);
 
-      expect(component.criticalMessages().length).toBe(7);
-      expect(component.displayedCriticalMessages().length).toBe(6);
-      expect(component.remainingCriticalCount()).toBe(1);
+      expect(f.componentInstance.criticalMessages().length).toBe(7);
+      expect(f.componentInstance.displayedCriticalMessages().length).toBe(6);
+      expect(f.componentInstance.remainingCriticalCount()).toBe(1);
     });
 
     it('should compute recentMessages sorted by startTime descending', () => {
@@ -236,15 +256,20 @@ describe('DashboardComponent', () => {
       expect(component.displayedLines().length).toBe(2);
     });
 
-    it('should report hasMoreLines when summary count exceeds topLines', () => {
-      component.lineCount.set(20);
-      component.hasMoreLinesValue.set(true);
-      expect(component.hasMoreLines()).toBe(true);
+    it('should report hasMoreLines when summary count exceeds topLines', async () => {
+      mockDashboardService.getSummary = vi.fn().mockReturnValue(of({
+        ...mockSummary,
+        lineCount: 20,
+        // topLines still has only 2 entries → lineCount (20) > topLines.length (2)
+      } satisfies DashboardSummary));
+      const f = TestBed.createComponent(DashboardComponent);
+      await detectAndFlush(f);
+      expect(f.componentInstance.hasMoreLines()).toBe(true);
     });
   });
 
   describe('empty data handling', () => {
-    it('should handle empty summary gracefully', () => {
+    it('should handle empty summary gracefully', async () => {
       mockDashboardService.getSummary = vi.fn().mockReturnValue(of({
         lineCount: 0,
         stopCount: 0,
@@ -255,7 +280,7 @@ describe('DashboardComponent', () => {
         devices: { total: 0, online: 0, offline: 0, offlinePreview: [] },
       } satisfies DashboardSummary));
 
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.lineCount()).toBe(0);
       expect(component.stopCount()).toBe(0);
@@ -308,24 +333,24 @@ describe('DashboardComponent', () => {
       mockAuthService.isAdmin.set(false);
     });
 
-    it('should only call messageService.getAll for AGENT', () => {
-      fixture.detectChanges();
+    it('should only call messageService.getAll for AGENT', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockMessageService.getAll).toHaveBeenCalled();
       expect(mockDashboardService.getSummary).not.toHaveBeenCalled();
       expect(mockLineService.getAll).not.toHaveBeenCalled();
     });
 
-    it('should set loading to false after AGENT data loads', () => {
-      fixture.detectChanges();
+    it('should set loading to false after AGENT data loads', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
       expect(component.activeMessages()).toEqual(mockActiveMessages);
     });
 
     it('should not display admin-only stat cards for AGENT', async () => {
+      await detectAndFlush(fixture);
       fixture.detectChanges();
-      await fixture.whenStable();
 
       const statLabels = fixture.nativeElement.querySelectorAll('.stat-label');
       const labelTexts = Array.from(statLabels as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
@@ -338,8 +363,8 @@ describe('DashboardComponent', () => {
     });
 
     it('should not display admin-only quick actions for AGENT', async () => {
+      await detectAndFlush(fixture);
       fixture.detectChanges();
-      await fixture.whenStable();
 
       const actionButtons = fixture.nativeElement.querySelectorAll('.action-btn span');
       const actionTexts = Array.from(actionButtons as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
@@ -354,17 +379,17 @@ describe('DashboardComponent', () => {
     });
 
     it('should not display the overview grid for AGENT', async () => {
+      await detectAndFlush(fixture);
       fixture.detectChanges();
-      await fixture.whenStable();
 
       const overviewGrid = fixture.nativeElement.querySelector('.overview-grid');
       expect(overviewGrid).toBeFalsy();
     });
 
-    it('should set loading to false on error for AGENT', () => {
+    it('should set loading to false on error for AGENT', async () => {
       mockMessageService.getAll = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
 
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
     });
