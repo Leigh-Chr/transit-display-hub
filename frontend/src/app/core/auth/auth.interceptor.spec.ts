@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Router } from '@angular/router';
+import { of, throwError } from 'rxjs';
+import { LoginResponse } from '@shared/models';
 import { NotifyService } from '@core/services/notify.service';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
@@ -10,31 +13,40 @@ describe('authInterceptor', () => {
   let httpClient: HttpClient;
   let httpMock: HttpTestingController;
   let authServiceSpy: {
-    getToken: MockedFunction<() => string | null>;
-    logout: MockedFunction<() => void>;
+    refresh: MockedFunction<AuthService['refresh']>;
+    logout: MockedFunction<AuthService['logout']>;
+    setRedirectUrl: MockedFunction<AuthService['setRedirectUrl']>;
   };
-  let notifySpy: {
-    error: MockedFunction<NotifyService['error']>;
-  };
+  let notifySpy: { error: MockedFunction<NotifyService['error']> };
+  let routerSpy: { url: string };
 
-  const testUrl = '/api/test';
+  const protectedUrl = '/api/lines';
   const loginUrl = '/api/auth/login';
+  const refreshUrl = '/api/auth/refresh';
+
+  const refreshedSession: LoginResponse = {
+    token: 'new.jwt.token',
+    expiresAt: '2026-05-12T00:00:00Z',
+    role: 'ADMIN',
+    username: 'admin'
+  };
 
   beforeEach(() => {
     authServiceSpy = {
-      getToken: vi.fn(),
-      logout: vi.fn()
+      refresh: vi.fn(),
+      logout: vi.fn(),
+      setRedirectUrl: vi.fn()
     };
-    notifySpy = {
-      error: vi.fn()
-    };
+    notifySpy = { error: vi.fn() };
+    routerSpy = { url: '/admin/lines' };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: NotifyService, useValue: notifySpy }
+        { provide: NotifyService, useValue: notifySpy },
+        { provide: Router, useValue: routerSpy }
       ]
     });
 
@@ -46,181 +58,120 @@ describe('authInterceptor', () => {
     httpMock.verify();
   });
 
-  describe('Authorization header', () => {
-    it('should add Authorization header when token exists', () => {
-      authServiceSpy.getToken.mockReturnValue('test-token');
+  describe('withCredentials', () => {
+    it('flags every outgoing request with withCredentials so cookies ride along', () => {
+      httpClient.get(protectedUrl).subscribe();
 
-      httpClient.get(testUrl).subscribe();
-
-      const req = httpMock.expectOne(testUrl);
-      expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
-      req.flush({});
-    });
-
-    it('should not add Authorization header when no token exists', () => {
-      authServiceSpy.getToken.mockReturnValue(null);
-
-      httpClient.get(testUrl).subscribe();
-
-      const req = httpMock.expectOne(testUrl);
+      const req = httpMock.expectOne(protectedUrl);
+      expect(req.request.withCredentials).toBe(true);
       expect(req.request.headers.has('Authorization')).toBe(false);
       req.flush({});
     });
+  });
 
-    it('should format token as Bearer token', () => {
-      authServiceSpy.getToken.mockReturnValue('my-jwt-token');
+  describe('401 on a non-auth endpoint', () => {
+    it('triggers /api/auth/refresh and retries the original request on success', () => {
+      authServiceSpy.refresh.mockReturnValue(of(refreshedSession));
 
-      httpClient.get(testUrl).subscribe();
+      const result = vi.fn();
+      httpClient.get(protectedUrl).subscribe(result);
 
-      const req = httpMock.expectOne(testUrl);
-      expect(req.request.headers.get('Authorization')).toBe('Bearer my-jwt-token');
-      req.flush({});
+      const first = httpMock.expectOne(protectedUrl);
+      first.flush({ message: 'expired' }, { status: 401, statusText: 'Unauthorized' });
+
+      expect(authServiceSpy.refresh).toHaveBeenCalledTimes(1);
+
+      const retry = httpMock.expectOne(protectedUrl);
+      retry.flush({ id: 'L1' });
+      expect(result).toHaveBeenCalledWith({ id: 'L1' });
+      expect(authServiceSpy.logout).not.toHaveBeenCalled();
+    });
+
+    it('logs out and stashes the redirect URL when the refresh itself fails', () => {
+      authServiceSpy.refresh.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 401 }))
+      );
+
+      const errored = vi.fn();
+      httpClient.get(protectedUrl).subscribe({ error: errored });
+
+      httpMock.expectOne(protectedUrl)
+        .flush({ message: 'expired' }, { status: 401, statusText: 'Unauthorized' });
+
+      expect(authServiceSpy.refresh).toHaveBeenCalled();
+      expect(authServiceSpy.setRedirectUrl).toHaveBeenCalledWith('/admin/lines');
+      expect(authServiceSpy.logout).toHaveBeenCalled();
+      expect(errored).toHaveBeenCalled();
+    });
+
+    it('does not stash the redirect URL for public-display routes', () => {
+      routerSpy.url = '/display/abc';
+      authServiceSpy.refresh.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 401 }))
+      );
+
+      httpClient.get(protectedUrl).subscribe({ error: () => undefined });
+      httpMock.expectOne(protectedUrl)
+        .flush({ message: 'gone' }, { status: 401, statusText: 'Unauthorized' });
+
+      expect(authServiceSpy.setRedirectUrl).not.toHaveBeenCalled();
+      expect(authServiceSpy.logout).toHaveBeenCalled();
     });
   });
 
-  describe('401 error handling', () => {
-    it('should call logout on 401 error', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: () => {
-          expect(authServiceSpy.logout).toHaveBeenCalled();
-        }
+  describe('401 on an /api/auth/ endpoint', () => {
+    it('does not trigger /refresh — the auth call propagates the error as-is', () => {
+      httpClient.post(loginUrl, { username: 'a', password: 'b' }).subscribe({
+        error: (err: HttpErrorResponse) => expect(err.status).toBe(401)
       });
 
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+      httpMock.expectOne(loginUrl)
+        .flush({ message: 'bad creds' }, { status: 401, statusText: 'Unauthorized' });
+
+      expect(authServiceSpy.refresh).not.toHaveBeenCalled();
+      expect(authServiceSpy.logout).not.toHaveBeenCalled();
     });
 
-    it('should not call logout for 401 on login endpoint', () => {
-      authServiceSpy.getToken.mockReturnValue(null);
+    it('does not loop refresh on /api/auth/refresh 401', () => {
+      httpClient.post(refreshUrl, null).subscribe({ error: () => undefined });
 
-      httpClient.post(loginUrl, {}).subscribe({
-        error: () => {
-          expect(authServiceSpy.logout).not.toHaveBeenCalled();
-        }
-      });
+      httpMock.expectOne(refreshUrl)
+        .flush({ message: 'gone' }, { status: 401, statusText: 'Unauthorized' });
 
-      const req = httpMock.expectOne(loginUrl);
-      req.flush({ message: 'Invalid credentials' }, { status: 401, statusText: 'Unauthorized' });
-    });
-
-    it('should re-throw the error after handling', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: (err: HttpErrorResponse) => {
-          expect(err.status).toBe(401);
-        }
-      });
-
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
-    });
-
-    it('should not call logout for other error statuses', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: () => {
-          expect(authServiceSpy.logout).not.toHaveBeenCalled();
-        }
-      });
-
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Server error' }, { status: 500, statusText: 'Internal Server Error' });
-    });
-
-    it('should not call logout for 403 errors', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: () => {
-          expect(authServiceSpy.logout).not.toHaveBeenCalled();
-        }
-      });
-
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+      expect(authServiceSpy.refresh).not.toHaveBeenCalled();
     });
   });
 
-  describe('403 error handling', () => {
-    it('should show error notification on 403 error', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: () => {
-          expect(notifySpy.error).toHaveBeenCalledWith(
-            'Access denied: insufficient permissions'
-          );
-        }
+  describe('403', () => {
+    it('shows a notify and propagates the error', () => {
+      httpClient.get(protectedUrl).subscribe({
+        error: (err: HttpErrorResponse) => expect(err.status).toBe(403)
       });
 
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
-    });
+      httpMock.expectOne(protectedUrl)
+        .flush({ message: 'no' }, { status: 403, statusText: 'Forbidden' });
 
-    it('should re-throw the error after showing notification', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: (err: HttpErrorResponse) => {
-          expect(err.status).toBe(403);
-          expect(notifySpy.error).toHaveBeenCalled();
-        }
-      });
-
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
-    });
-
-    it('should not show notification for non-403 errors', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.get(testUrl).subscribe({
-        error: () => {
-          expect(notifySpy.error).not.toHaveBeenCalled();
-        }
-      });
-
-      const req = httpMock.expectOne(testUrl);
-      req.flush({ message: 'Server error' }, { status: 500, statusText: 'Internal Server Error' });
+      expect(notifySpy.error).toHaveBeenCalledWith('Access denied: insufficient permissions');
     });
   });
 
-  describe('request passthrough', () => {
-    it('should pass through successful requests', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-      const responseData = { data: 'test' };
+  describe('passthrough', () => {
+    it('passes successful responses through unchanged', () => {
+      const result = vi.fn();
+      httpClient.get(protectedUrl).subscribe(result);
+      httpMock.expectOne(protectedUrl).flush({ ok: true });
+      expect(result).toHaveBeenCalledWith({ ok: true });
+    });
 
-      httpClient.get(testUrl).subscribe(response => {
-        expect(response).toEqual(responseData);
+    it('leaves 500 responses to the caller, no refresh attempted', () => {
+      httpClient.get(protectedUrl).subscribe({
+        error: (err: HttpErrorResponse) => expect(err.status).toBe(500)
       });
 
-      const req = httpMock.expectOne(testUrl);
-      req.flush(responseData);
-    });
+      httpMock.expectOne(protectedUrl)
+        .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
 
-    it('should preserve original request method', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-
-      httpClient.post(testUrl, { data: 'test' }).subscribe();
-
-      const req = httpMock.expectOne(testUrl);
-      expect(req.request.method).toBe('POST');
-      req.flush({});
-    });
-
-    it('should preserve original request body', () => {
-      authServiceSpy.getToken.mockReturnValue('token');
-      const requestBody = { username: 'test', password: 'password' };
-
-      httpClient.post(testUrl, requestBody).subscribe();
-
-      const req = httpMock.expectOne(testUrl);
-      expect(req.request.body).toEqual(requestBody);
-      req.flush({});
+      expect(authServiceSpy.refresh).not.toHaveBeenCalled();
     });
   });
 });

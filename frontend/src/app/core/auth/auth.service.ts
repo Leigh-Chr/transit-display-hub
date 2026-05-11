@@ -1,23 +1,25 @@
-import { inject, Injectable, signal, computed } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, Subject, tap } from 'rxjs';
-import { jwtDecode } from 'jwt-decode';
-import { LoginRequest, LoginResponse, UserRole, AuthUser } from '@shared/models';
-
-interface JwtPayload {
-  sub: string;
-  role: string;
-  exp: number;
-}
+import { firstValueFrom, Observable, Subject, tap } from 'rxjs';
+import { AuthUser, LoginRequest, LoginResponse, UserRole } from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly TOKEN_KEY = 'auth_token';
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
 
-  private readonly tokenSignal = signal<string | null>(this.getStoredToken());
+  /** UI-facing identity reconstructed from /api/auth/me at boot
+   *  and from the LoginResponse body on subsequent /login or /refresh. */
+  private readonly userSignal = signal<AuthUser | null>(null);
+
+  /** In-memory access JWT — kept ONLY because the STOMP CONNECT frame
+   *  still authenticates via a Bearer header (cookies don't ride
+   *  alongside STOMP frames). It is never written to localStorage so
+   *  an XSS payload cannot lift it. */
+  private readonly accessTokenSignal = signal<string | null>(null);
 
   /** URL the user was on when they got bumped to /login. Set by the auth
    *  interceptor on 401 and consumed by LoginComponent after a successful
@@ -30,56 +32,78 @@ export class AuthService {
   private readonly logoutSubject = new Subject<void>();
   readonly logout$ = this.logoutSubject.asObservable();
 
-  isAuthenticated = computed(() => {
-    const token = this.tokenSignal();
-    if (!token) {return false;}
-    return !this.isTokenExpired(token);
-  });
+  readonly isAuthenticated = computed(() => this.userSignal() !== null);
 
-  currentUser = computed<AuthUser | null>(() => {
-    const token = this.tokenSignal();
-    if (!token) {return null;}
+  readonly currentUser = computed<AuthUser | null>(() => this.userSignal());
+
+  readonly isAdmin = computed(() => this.userSignal()?.role === 'ADMIN');
+
+  /** Called once at app boot via provideAppInitializer. /api/auth/me reads
+   *  the httpOnly ACCESS_TOKEN cookie and rebuilds the session if it's
+   *  still valid; we then quietly /refresh to also mint a fresh JWT for
+   *  the WebSocket layer. A 401 on either call simply leaves the app in
+   *  the anonymous state, which is the right answer for public displays
+   *  and the login screen alike. */
+  async initializeSession(): Promise<void> {
     try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      return {
-        username: decoded.sub,
-        role: decoded.role as UserRole
-      };
+      const me = await firstValueFrom(
+        this.http.get<AuthUser>('/api/auth/me', { withCredentials: true })
+      );
+      this.userSignal.set(me);
+      this.refreshAccessTokenSilently();
     } catch {
-      return null;
+      this.userSignal.set(null);
+      this.accessTokenSignal.set(null);
     }
-  });
-
-  isAdmin = computed(() => {
-    return this.currentUser()?.role === 'ADMIN';
-  });
-
-  private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
+  }
 
   login(request: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
-      tap(response => {
-        localStorage.setItem(this.TOKEN_KEY, response.token);
-        this.tokenSignal.set(response.token);
-      })
-    );
+    return this.http
+      .post<LoginResponse>('/api/auth/login', request, { withCredentials: true })
+      .pipe(
+        tap(response => {
+          this.userSignal.set({ username: response.username, role: response.role });
+          this.accessTokenSignal.set(response.token);
+        })
+      );
+  }
+
+  /** Called by the HTTP interceptor on a 401 to mint a fresh access JWT
+   *  from the REFRESH_TOKEN cookie. Resolves the rotated token so the
+   *  caller can retry the original request. */
+  refresh(): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>('/api/auth/refresh', null, { withCredentials: true })
+      .pipe(
+        tap(response => {
+          this.userSignal.set({ username: response.username, role: response.role });
+          this.accessTokenSignal.set(response.token);
+        })
+      );
   }
 
   logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    this.tokenSignal.set(null);
+    // Fire-and-forget — local state must clear even if the server is
+    // unreachable so the user is not left in a half-authenticated UI.
+    this.http
+      .post('/api/auth/logout', null, { withCredentials: true })
+      .subscribe({ next: () => undefined, error: () => undefined });
+
+    this.userSignal.set(null);
+    this.accessTokenSignal.set(null);
     this.logoutSubject.next();
     void this.router.navigate(['/login']);
   }
 
+  /** Returns the current access JWT used by the STOMP CONNECT header.
+   *  Null when the session is anonymous or the post-boot /refresh has
+   *  not yet returned. */
   getToken(): string | null {
-    return this.tokenSignal();
+    return this.accessTokenSignal();
   }
 
   getRole(): UserRole | null {
-    const user = this.currentUser();
-    return user ? user.role : null;
+    return this.userSignal()?.role ?? null;
   }
 
   setRedirectUrl(url: string | null): void {
@@ -94,29 +118,15 @@ export class AuthService {
     return url;
   }
 
-  /** Read the persisted token, dropping it if it's already expired so the rest
-   *  of the app never sees a stale credential it would only hand back to the
-   *  server (which would then 401 and bounce the user mid-action). */
-  private getStoredToken(): string | null {
-    const stored = localStorage.getItem(this.TOKEN_KEY);
-    if (stored !== null && this.isTokenExpired(stored)) {
-      localStorage.removeItem(this.TOKEN_KEY);
-      return null;
-    }
-    return stored;
-  }
-
-  /** 30 s of leeway between client and server clocks: the typical drift on a
-   *  laptop after a long sleep is enough to throw a freshly-issued token into
-   *  "expired" territory if we compare strictly. */
-  private static readonly CLOCK_SKEW_SECONDS = 30;
-
-  private isTokenExpired(token: string): boolean {
-    try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      return (decoded.exp + AuthService.CLOCK_SKEW_SECONDS) * 1000 < Date.now();
-    } catch {
-      return true;
-    }
+  private refreshAccessTokenSilently(): void {
+    this.http
+      .post<LoginResponse>('/api/auth/refresh', null, { withCredentials: true })
+      .subscribe({
+        next: (response) => {
+          this.userSignal.set({ username: response.username, role: response.role });
+          this.accessTokenSignal.set(response.token);
+        },
+        error: () => undefined
+      });
   }
 }
