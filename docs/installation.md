@@ -166,7 +166,7 @@ spring:
 
 app:
   jwt:
-    secret: dev-secret-key-...
+    secret: ${JWT_SECRET}        # required in every profile, including dev
     expiration-hours: 8
     refresh-expiration-days: 14
   auth:
@@ -174,12 +174,11 @@ app:
     cookie-same-site: Strict
 ```
 
-> **⚠️ Dev secret only** — the literal `dev-secret-key-...` is rejected
-> by the prod and kiosk profiles (which require an explicit `JWT_SECRET`
-> env var ≥ 32 bytes). Generate one for any non-localhost run with
-> `openssl rand -base64 48`. Since v1.2.0 the backend fails fast at boot
-> if the secret is too short, and v1.4.1 enforces `@NotBlank` on the
-> property record.
+> **⚠️ `JWT_SECRET` is required in every profile** — dev included since
+> v1.4.2. Generate one with `openssl rand -base64 48` and export it
+> before `./gradlew bootRun`. `@NotBlank` on the property record refuses
+> a blank value at startup; `JwtService.validateSecretLength` refuses
+> anything shorter than 32 bytes.
 
 H2 console accessible at <http://localhost:8080/h2-console>
 

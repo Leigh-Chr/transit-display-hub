@@ -106,11 +106,10 @@ app:
       network-name: ${DATA_LOADER_GTFS_NETWORK_NAME:M Réso (Grenoble)}
       attribution: ${DATA_LOADER_GTFS_ATTRIBUTION:SMMAG / M Réso — ODbL}
   jwt:
-    # Dev fallback only — override via JWT_SECRET when running anywhere that
-    # might be reachable from outside localhost. The literal here is treated
-    # as compromised: the prod profile (below) refuses to start without an
-    # explicit JWT_SECRET env var.
-    secret: ${JWT_SECRET:dev-secret-key-for-jwt-token-generation-must-be-at-least-256-bits-long}
+    # No fallback even in dev: every profile must supply JWT_SECRET via the
+    # environment (see .env.example). Shipping a literal here means anyone
+    # who clones the repo can forge tokens against any forgotten override.
+    secret: ${JWT_SECRET}
     expiration-hours: 8
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
