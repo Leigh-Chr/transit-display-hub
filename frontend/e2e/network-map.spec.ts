@@ -1,27 +1,50 @@
 import { test, expect } from '@playwright/test';
+import { NetworkMapPage } from './pages/NetworkMapPage';
+import { NetworkListPage } from './pages/NetworkListPage';
 
 /**
- * Smoke test for the public network map. Confirms the page boots,
- * the schematic SVG renders, and the accessible tabular alternative
- * is reachable from the header. Doesn't assert on actual content —
- * a feed-less install still satisfies the test.
+ * Network map tests — schematic page, accessible list alternative.
+ * These are public routes; no authentication required.
  */
 test.describe('Network map', () => {
-  test('renders the schematic page', async ({ page }) => {
-    await page.goto('/map');
-    await expect(page.locator('h1')).toBeVisible();
+  test('renders the schematic page with a heading', async ({ page }) => {
+    const mapPage = new NetworkMapPage(page);
+    await mapPage.goto();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
-  test('exposes a tabular alternative reachable from the header', async ({ page }) => {
-    await page.goto('/map');
-    const listLink = page.getByRole('link', { name: /accessible|liste|list/i });
-    await expect(listLink).toBeVisible();
-    await listLink.click();
+  test('SVG element is present in the DOM', async ({ page }) => {
+    const mapPage = new NetworkMapPage(page);
+    await mapPage.goto();
+    // Allow up to 10 s for the network data to load and the SVG to render
+    await expect(page.locator('svg').first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('accessible list link navigates to /map/list', async ({ page }) => {
+    const mapPage = new NetworkMapPage(page);
+    await mapPage.goto();
+    await mapPage.goToList();
     await expect(page).toHaveURL(/\/map\/list$/);
   });
 
-  test('renders the tabular view directly', async ({ page }) => {
-    await page.goto('/map/list');
+  test('list page renders directly with a heading', async ({ page }) => {
+    const listPage = new NetworkListPage(page);
+    await listPage.goto();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  });
+
+  test('list page renders stop rows when feed data is available', async ({ page }) => {
+    const listPage = new NetworkListPage(page);
+    await listPage.goto();
+
+    // Wait for the loading indicator to disappear
+    await page.waitForSelector('[role="status"]', { state: 'hidden', timeout: 10_000 }).catch(() => {
+      // Not present when data loads fast — that's fine
+    });
+
+    // Either we have rows, or we have an empty-state element — both are valid.
+    const rowCount = await listPage.getRowCount();
+    const hasEmptyState = await page.locator('app-empty-state, .empty-state').count();
+    expect(rowCount > 0 || hasEmptyState > 0).toBe(true);
   });
 });

@@ -1,19 +1,36 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from './pages/LoginPage';
 
 /**
- * Auth-page smoke test. Checks that the login form renders and the
- * username + password inputs are focusable from the keyboard. The
- * actual sign-in flow needs a running backend with default users
- * loaded; we leave it out of the smoke suite so the test passes
- * when the API is unavailable.
+ * Login page tests — form rendering, keyboard navigation, and the
+ * actual sign-in flow (requires a running backend with default users).
  */
-test('login page renders and is keyboard-navigable', async ({ page }) => {
-  await page.goto('/login');
-  const usernameInput = page.getByLabel(/utilisateur|username/i);
-  const passwordInput = page.getByLabel(/mot de passe|password/i);
-  await expect(usernameInput).toBeVisible();
-  await expect(passwordInput).toBeVisible();
-  await usernameInput.focus();
-  await page.keyboard.press('Tab');
-  await expect(passwordInput).toBeFocused();
+test.describe('Login', () => {
+  test('renders and is keyboard-navigable', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+
+    await expect(loginPage.usernameInput).toBeVisible();
+    await expect(loginPage.passwordInput).toBeVisible();
+
+    await loginPage.usernameInput.focus();
+    await page.keyboard.press('Tab');
+    await expect(loginPage.passwordInput).toBeFocused();
+  });
+
+  test('admin credentials redirect to /admin', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('admin', 'admin123');
+    await expect(page).toHaveURL(/\/admin(\/|$)/, { timeout: 15_000 });
+  });
+
+  test('wrong credentials show inline error', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('admin', 'wrong-password');
+
+    const errorText = await loginPage.getErrorMessage();
+    expect(errorText).toMatch(/invalid|incorrect|credentials|identifiants/i);
+  });
 });
