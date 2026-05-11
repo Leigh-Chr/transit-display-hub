@@ -17,6 +17,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
+import jakarta.servlet.http.Cookie;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,6 +44,7 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "accessCookieName", "ACCESS_TOKEN");
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         SecurityContextHolder.clearContext();
@@ -151,6 +154,67 @@ class JwtAuthenticationFilterTest {
 
             assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
             verify(filterChain).doFilter(request, response);
+            verifyNoInteractions(jwtService);
+        }
+    }
+
+    @Nested
+    @DisplayName("Cookie fallback")
+    class CookieFallback {
+
+        @Test
+        @DisplayName("authenticates from ACCESS_TOKEN cookie when no Bearer header is present")
+        void withValidCookie_PopulatesSecurityContext() throws ServletException, IOException {
+            request.setCookies(new Cookie("ACCESS_TOKEN", "cookie-token"));
+            when(jwtService.isValidToken("cookie-token")).thenReturn(true);
+            when(jwtService.extractUsername("cookie-token")).thenReturn("alice");
+            when(jwtService.extractRole("cookie-token")).thenReturn(UserRole.ADMIN);
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            assertThat(auth).isNotNull();
+            assertThat(auth.getPrincipal()).isEqualTo("alice");
+            verify(filterChain).doFilter(request, response);
+        }
+
+        @Test
+        @DisplayName("Bearer header wins over cookie when both are present")
+        void bearerHeaderWinsOverCookie() throws ServletException, IOException {
+            request.addHeader("Authorization", "Bearer header-token");
+            request.setCookies(new Cookie("ACCESS_TOKEN", "cookie-token"));
+            when(jwtService.isValidToken("header-token")).thenReturn(true);
+            when(jwtService.extractUsername("header-token")).thenReturn("bob");
+            when(jwtService.extractRole("header-token")).thenReturn(UserRole.AGENT);
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            assertThat(auth.getPrincipal()).isEqualTo("bob");
+            verify(jwtService, never()).isValidToken("cookie-token");
+        }
+
+        @Test
+        @DisplayName("does not emit WWW-Authenticate when the cookie token is invalid")
+        void invalidCookie_DoesNotEmitWwwAuthenticate() throws ServletException, IOException {
+            request.setCookies(new Cookie("ACCESS_TOKEN", "bad-cookie"));
+            when(jwtService.isValidToken("bad-cookie")).thenReturn(false);
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            assertThat(response.getHeader("WWW-Authenticate")).isNull();
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+            verify(filterChain).doFilter(request, response);
+        }
+
+        @Test
+        @DisplayName("blank cookie value is ignored")
+        void blankCookieValue_Ignored() throws ServletException, IOException {
+            request.setCookies(new Cookie("ACCESS_TOKEN", ""));
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
             verifyNoInteractions(jwtService);
         }
     }
