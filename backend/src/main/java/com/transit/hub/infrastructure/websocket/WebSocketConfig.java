@@ -1,5 +1,7 @@
 package com.transit.hub.infrastructure.websocket;
 
+import com.transit.hub.application.dto.response.DeviceAuthResponse;
+import com.transit.hub.application.service.DeviceService;
 import com.transit.hub.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -27,6 +30,9 @@ import java.util.List;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtService jwtService;
+    private final DeviceService deviceService;
+
+    static final String DEVICE_ID_SESSION_KEY = "deviceId";
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsCsv;
@@ -61,35 +67,73 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 if (accessor == null || !StompCommand.CONNECT.equals(accessor.getCommand())) {
                     return message;
                 }
-
-                List<String> authHeaders = accessor.getNativeHeader("Authorization");
-                if (authHeaders == null || authHeaders.isEmpty()) {
-                    return message;
-                }
-                String header = authHeaders.getFirst();
-                if (header == null || !header.startsWith("Bearer ")) {
-                    return message;
-                }
-
-                String token = header.substring("Bearer ".length()).trim();
-                if (!jwtService.isValidToken(token)) {
-                    log.debug("STOMP CONNECT carries an expired/invalid token; "
-                            + "falling back to anonymous (kiosk topics are public)");
-                    // Drop the bad token but let the connection through anonymously.
-                    // Public topics (kiosk, network-map) keep working; private ones
-                    // remain protected because the principal isn't bound.
-                    return message;
-                }
-
-                String username = jwtService.extractUsername(token);
-                String role = jwtService.extractRole(token).name();
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-                accessor.setUser(auth);
+                bindUserPrincipal(accessor);
+                bindDeviceIdIfPresent(accessor);
                 return message;
             }
         });
+    }
+
+    /**
+     * If the CONNECT frame carries a Bearer JWT, validate it and bind the
+     * matching user principal to the STOMP session. An invalid or absent
+     * token leaves the connection anonymous — public topics (kiosk,
+     * network-map) keep working, private ones stay gated.
+     */
+    private void bindUserPrincipal(StompHeaderAccessor accessor) {
+        List<String> authHeaders = accessor.getNativeHeader("Authorization");
+        if (authHeaders == null || authHeaders.isEmpty()) {
+            return;
+        }
+        String header = authHeaders.getFirst();
+        if (header == null || !header.startsWith("Bearer ")) {
+            return;
+        }
+        String token = header.substring("Bearer ".length()).trim();
+        if (!jwtService.isValidToken(token)) {
+            log.debug("STOMP CONNECT carries an expired/invalid token; "
+                    + "falling back to anonymous (kiosk topics are public)");
+            return;
+        }
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token).name();
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                username,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+        accessor.setUser(auth);
+    }
+
+    /**
+     * Kiosk clients may send a {@code device-token} native header alongside
+     * (or instead of) the Bearer JWT. When present and valid, we bind the
+     * resolved deviceId to the STOMP session attributes so that downstream
+     * controllers ({@code DeviceHeartbeatController}) can match incoming
+     * payload device-ids against the connected device and reject mismatches.
+     *
+     * <p>Anonymous CONNECTs (no device-token) keep working as before; the
+     * heartbeat controller falls back to the legacy any-device behaviour
+     * when no deviceId is bound.
+     */
+    private void bindDeviceIdIfPresent(StompHeaderAccessor accessor) {
+        List<String> tokenHeaders = accessor.getNativeHeader("device-token");
+        if (tokenHeaders == null || tokenHeaders.isEmpty()) {
+            return;
+        }
+        String token = tokenHeaders.getFirst();
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        DeviceAuthResponse result = deviceService.authenticateDevice(token.trim());
+        if (!result.valid() || result.deviceId() == null) {
+            log.debug("STOMP CONNECT carries an unknown device-token; staying unbound");
+            return;
+        }
+        Map<String, Object> attrs = accessor.getSessionAttributes();
+        if (attrs == null) {
+            attrs = new java.util.HashMap<>();
+            accessor.setSessionAttributes(attrs);
+        }
+        attrs.put(DEVICE_ID_SESSION_KEY, result.deviceId());
     }
 }

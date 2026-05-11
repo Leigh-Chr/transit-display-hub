@@ -48,9 +48,18 @@ public class ImportAuditController {
 
     @GetMapping("/{id}/validation-report.html")
     public ResponseEntity<byte[]> getValidationReportHtml(@PathVariable UUID id) throws IOException {
+        // The validator's HTML is rendered from feed-supplied strings (agency
+        // names, route long names, etc.). The CSP sandbox directive renders
+        // it inert in the admin browser: scripts can't run, requests can't
+        // fire, no top-level navigation. Styles stay inline for readability.
         return importAuditService.readValidationReport(id, "report.html")
                 .map(bytes -> ResponseEntity.ok()
                         .contentType(MediaType.TEXT_HTML)
+                        .header("Content-Security-Policy",
+                                "sandbox; default-src 'none'; "
+                                        + "style-src 'unsafe-inline'; "
+                                        + "img-src 'self' data:")
+                        .header("X-Content-Type-Options", "nosniff")
                         .body(bytes))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
