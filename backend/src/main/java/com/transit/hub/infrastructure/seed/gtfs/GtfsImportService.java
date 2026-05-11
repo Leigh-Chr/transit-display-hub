@@ -3,8 +3,6 @@ package com.transit.hub.infrastructure.seed.gtfs;
 import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.domain.model.Location;
-import com.transit.hub.domain.model.FareAttribute;
-import com.transit.hub.domain.model.FareRule;
 import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.FlexStopTime;
 import com.transit.hub.domain.model.LocationGroup;
@@ -14,27 +12,15 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.Shape;
-import com.transit.hub.domain.model.ShapePoint;
 import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.BookingType;
-import com.transit.hub.domain.model.enums.FarePaymentMethod;
-import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
-import com.transit.hub.domain.util.ColorContrast;
-import com.transit.hub.domain.model.Area;
-import com.transit.hub.domain.model.FareLegJoinRule;
-import com.transit.hub.domain.model.FareLegRule;
-import com.transit.hub.domain.model.FareMedia;
-import com.transit.hub.domain.model.FareProduct;
-import com.transit.hub.domain.model.FareTransferRule;
-import com.transit.hub.domain.model.Network;
-import com.transit.hub.domain.model.Timeframe;
-import com.transit.hub.infrastructure.persistence.AgencyRepository;
-import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AttributionImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.FareV1Importer;
+import com.transit.hub.infrastructure.seed.gtfs.sections.FareV2Importer;
 import com.transit.hub.infrastructure.seed.gtfs.sections.PathwayImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.RouteImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ShapeImporter;
@@ -43,23 +29,12 @@ import com.transit.hub.infrastructure.seed.gtfs.sections.StopImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TransferImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TranslationImporter;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
-import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
-import com.transit.hub.infrastructure.persistence.FareLegJoinRuleRepository;
-import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
-import com.transit.hub.infrastructure.persistence.FareMediaRepository;
-import com.transit.hub.infrastructure.persistence.FareProductRepository;
-import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
 import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
-import com.transit.hub.infrastructure.persistence.RiderCategoryRepository;
-import com.transit.hub.infrastructure.persistence.NetworkRepository;
-import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
-import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
-import com.transit.hub.infrastructure.persistence.ShapeRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +58,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -110,7 +84,6 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
 public class GtfsImportService {
 
     private static final int LINE_NAME_MAX_LENGTH = 100;
-    private static final int STOP_NAME_MAX_LENGTH = 100;
     private static final double SCHEMATIC_SIZE = 1000.0;
     private static final double SCHEMATIC_MARGIN = 50.0;
 
@@ -123,29 +96,18 @@ public class GtfsImportService {
     private final StationLevelImporter stationLevelImporter;
     private final TranslationImporter translationImporter;
     private final AttributionImporter attributionImporter;
+    private final FareV1Importer fareV1Importer;
+    private final FareV2Importer fareV2Importer;
 
-    private final LineRepository lineRepository;
     private final StopRepository stopRepository;
     private final ItineraryRepository itineraryRepository;
     private final ScheduleRepository scheduleRepository;
     private final FeedInfoRepository feedInfoRepository;
-    private final AgencyRepository agencyRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
-    private final FareAttributeRepository fareAttributeRepository;
-    private final ShapeRepository shapeRepository;
     private final LocationGroupRepository locationGroupRepository;
     private final com.transit.hub.infrastructure.persistence.LocationRepository locationRepository;
     private final BookingRuleRepository bookingRuleRepository;
-    private final AreaRepository areaRepository;
-    private final TimeframeRepository timeframeRepository;
-    private final FareProductRepository fareProductRepository;
-    private final FareLegRuleRepository fareLegRuleRepository;
-    private final FareTransferRuleRepository fareTransferRuleRepository;
-    private final NetworkRepository networkRepository;
-    private final FareMediaRepository fareMediaRepository;
-    private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
     private final FlexStopTimeRepository flexStopTimeRepository;
-    private final RiderCategoryRepository riderCategoryRepository;
 
     /** Flushed at section boundaries so the persistence context stays
      *  bounded — without periodic flushes, each section's saveAll
@@ -1181,458 +1143,16 @@ public class GtfsImportService {
         translationImporter.importTranslations(translationsFile);
     }
 
-    /**
-     * Reads GTFS Fares v1 ({@code fare_attributes.txt} +
-     * {@code fare_rules.txt}). Wipes both tables first so each import
-     * starts from a clean slate. The pair is GTFS-optional; when
-     * {@code fare_attributes.txt} is missing we skip the entire fare
-     * pipeline rather than persisting orphan rules.
-     */
     private void importFares(Path workDir, Map<String, Line> linesByGtfsId,
                              Map<String, Agency> agenciesByGtfsId) throws IOException {
-        fareAttributeRepository.deleteAllInBatch();
-        fareAttributeRepository.flush();
-
-        Path fareAttributesFile = workDir.resolve("fare_attributes.txt");
-        if (!Files.exists(fareAttributesFile)) {
-            log.info("GTFS import: fare_attributes.txt missing, skipping fares");
-            return;
-        }
-
-        Map<String, FareAttribute> attributesByGtfsId = new HashMap<>();
-        int skippedAttrs = 0;
-        try (CSVParser parser = openCsv(fareAttributesFile)) {
-            for (CSVRecord record : parser) {
-                String fareId = optional(record, "fare_id");
-                String priceRaw = optional(record, "price");
-                String currency = optional(record, "currency_type");
-                if (isBlank(fareId) || isBlank(priceRaw) || isBlank(currency)) {
-                    skippedAttrs++;
-                    continue;
-                }
-                java.math.BigDecimal price;
-                try {
-                    price = new java.math.BigDecimal(priceRaw.trim());
-                } catch (NumberFormatException e) {
-                    skippedAttrs++;
-                    continue;
-                }
-                int paymentCode = parseInt(optional(record, "payment_method"), 0);
-                Integer transfers = parseTransfersField(optional(record, "transfers"));
-                Integer transferDuration = parseIntOrNull(optional(record, "transfer_duration"));
-                Agency agency = resolveAgency(optional(record, "agency_id"), agenciesByGtfsId);
-
-                FareAttribute attr = FareAttribute.builder()
-                        .externalId(truncate(fareId.trim(), 100))
-                        .price(price)
-                        .currency(truncate(currency.trim().toUpperCase(java.util.Locale.ROOT), 3))
-                        .paymentMethod(FarePaymentMethod.fromGtfsCode(paymentCode))
-                        .transfers(transfers)
-                        .transferDuration(transferDuration)
-                        .agency(agency)
-                        .build();
-                attributesByGtfsId.put(fareId, fareAttributeRepository.save(attr));
-            }
-        }
-        if (skippedAttrs > 0) {
-            log.warn("GTFS import: skipped {} malformed fare_attributes.txt rows", skippedAttrs);
-        }
-        log.info("GTFS import: {} fare attributes persisted", attributesByGtfsId.size());
-
-        // fare_rules.txt is optional — when absent, fare_attributes alone
-        // describe a flat fare that applies to every trip in the feed.
-        Path fareRulesFile = workDir.resolve("fare_rules.txt");
-        if (!Files.exists(fareRulesFile)) {
-            log.info("GTFS import: fare_rules.txt missing, fare attributes will apply unconditionally");
-            return;
-        }
-        int rulesPersisted = 0;
-        int skippedRules = 0;
-        try (CSVParser parser = openCsv(fareRulesFile)) {
-            for (CSVRecord record : parser) {
-                String fareId = optional(record, "fare_id");
-                if (isBlank(fareId)) {
-                    skippedRules++;
-                    continue;
-                }
-                FareAttribute attr = attributesByGtfsId.get(fareId);
-                if (attr == null) {
-                    skippedRules++;
-                    continue;
-                }
-                Line route = null;
-                String routeId = optional(record, "route_id");
-                if (!isBlank(routeId)) {
-                    route = linesByGtfsId.get(routeId);
-                }
-                FareRule rule = FareRule.builder()
-                        .fareAttribute(attr)
-                        .route(route)
-                        .originId(truncate(optional(record, "origin_id"), 100))
-                        .destinationId(truncate(optional(record, "destination_id"), 100))
-                        .containsId(truncate(optional(record, "contains_id"), 100))
-                        .build();
-                attr.getRules().add(rule);
-                rulesPersisted++;
-            }
-        }
-        // Attributes already saved; cascade on the rules collection picks
-        // up the new rows when we save the parent again.
-        fareAttributeRepository.saveAll(attributesByGtfsId.values());
-        if (skippedRules > 0) {
-            log.warn("GTFS import: skipped {} fare_rules.txt rows referencing unknown fare_id", skippedRules);
-        }
-        log.info("GTFS import: {} fare rules persisted", rulesPersisted);
+        fareV1Importer.importFares(workDir, linesByGtfsId, agenciesByGtfsId);
     }
 
-    /**
-     * GTFS encodes "unlimited transfers" by leaving the cell empty —
-     * this differs from "0 transfers" which is "no transfers allowed".
-     * Returning {@code null} preserves that distinction.
-     */
-    private Integer parseTransfersField(String raw) {
-        if (isBlank(raw)) {return null;}
-        return parseIntOrNull(raw.trim());
-    }
-
-    /**
-     * Imports the GTFS Fares v2 family — areas, timeframes, fare
-     * products, leg rules, transfer rules — in dependency order.
-     * Each table wipes and re-inserts; cross-references resolve via
-     * the maps built up as we go.
-     *
-     * v2 coexists with v1 (which {@link #importFares} populates):
-     * feeds in transition often ship both, and the kiosk can prefer
-     * v2 when present without dropping v1 data.
-     *
-     * Skipped GTFS-v2 files (kept as raw strings or unimported):
-     *   - networks.txt / route_networks.txt → leg rules store the
-     *     network_id verbatim, no FK.
-     *   - fare_media.txt → products store the fare_media_id verbatim.
-     *   - fare_leg_join_rules.txt → not consumed by any current
-     *     surface, niche.
-     */
     private void importFaresV2(Path workDir, StopImport stopImport,
                                Map<String, Line> linesByGtfsId) throws IOException {
-        // Order matters: leg rules reference areas / products, transfer
-        // rules reference products. Wipe the dependents first so FK
-        // SET NULL doesn't fire spuriously during the rebuild.
-        fareLegJoinRuleRepository.deleteAllInBatch();
-        fareTransferRuleRepository.deleteAllInBatch();
-        fareLegRuleRepository.deleteAllInBatch();
-        fareProductRepository.deleteAllInBatch();
-        riderCategoryRepository.deleteAllInBatch();
-        fareMediaRepository.deleteAllInBatch();
-        timeframeRepository.deleteAllInBatch();
-        areaRepository.deleteAllInBatch();
-        networkRepository.deleteAllInBatch();
-        fareTransferRuleRepository.flush();
-
-        importNetworks(workDir.resolve("networks.txt"),
-                workDir.resolve("route_networks.txt"), linesByGtfsId);
-        importFareMedia(workDir.resolve("fare_media.txt"));
-        importRiderCategories(workDir.resolve("rider_categories.txt"));
-        Map<String, Area> areasByExternalId = importAreas(workDir.resolve("areas.txt"),
-                workDir.resolve("stop_areas.txt"), stopImport);
-        importTimeframes(workDir.resolve("timeframes.txt"));
-        Map<String, FareProduct> productsByExternalId = importFareProducts(workDir.resolve("fare_products.txt"));
-        importFareLegRules(workDir.resolve("fare_leg_rules.txt"), areasByExternalId, productsByExternalId);
-        importFareTransferRules(workDir.resolve("fare_transfer_rules.txt"), productsByExternalId);
-        importFareLegJoinRules(workDir.resolve("fare_leg_join_rules.txt"), stopImport);
+        fareV2Importer.importFaresV2(workDir, stopImport, linesByGtfsId);
     }
 
-    private void importFareLegJoinRules(Path joinRulesFile, StopImport stopImport) throws IOException {
-        if (!Files.exists(joinRulesFile)) {
-            log.info("GTFS import: fare_leg_join_rules.txt missing, skipping");
-            return;
-        }
-        List<FareLegJoinRule> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(joinRulesFile)) {
-            for (CSVRecord record : parser) {
-                // Canonical (post-2024) layout: leg_group_id + leg_sequence
-                // + preceding_trip_transfer_limit. Legacy MobilityData
-                // layout: from/to_network/stop pairs. We accept both.
-                String legGroupId = optional(record, "leg_group_id");
-                Integer legSequence = parseIntOrNull(optional(record, "leg_sequence"));
-                Integer precedingLimit = parseIntOrNull(
-                        optional(record, "preceding_trip_transfer_limit"));
-
-                String fromStopId = optional(record, "from_stop_id");
-                String toStopId = optional(record, "to_stop_id");
-                String fromNet = optional(record, "from_network_id");
-                String toNet = optional(record, "to_network_id");
-                Stop fromStop = isBlank(fromStopId) ? null : stopImport.stopsByGtfsId().get(fromStopId);
-                Stop toStop = isBlank(toStopId) ? null : stopImport.stopsByGtfsId().get(toStopId);
-                boolean canonical = !isBlank(legGroupId) || legSequence != null;
-                boolean legacy = !isBlank(fromNet) || !isBlank(toNet)
-                        || fromStop != null || toStop != null;
-                if (!canonical && !legacy) {
-                    continue;
-                }
-                batch.add(FareLegJoinRule.builder()
-                        .legGroupId(truncate(legGroupId, 100))
-                        .legSequence(legSequence)
-                        .precedingTripTransferLimit(precedingLimit)
-                        .fromNetworkId(truncate(fromNet, 100))
-                        .toNetworkId(truncate(toNet, 100))
-                        .fromStop(fromStop)
-                        .toStop(toStop)
-                        .build());
-            }
-        }
-        fareLegJoinRuleRepository.saveAll(batch);
-        log.info("GTFS import: {} fare leg join rules persisted", batch.size());
-    }
-
-    private void importNetworks(Path networksFile, Path routeNetworksFile,
-                                Map<String, Line> linesByGtfsId) throws IOException {
-        Map<String, Network> result = new HashMap<>();
-        if (!Files.exists(networksFile)) {
-            log.info("GTFS import: networks.txt missing, skipping");
-            return;
-        }
-        try (CSVParser parser = openCsv(networksFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "network_id");
-                if (isBlank(externalId)) {continue;}
-                Network network = Network.builder()
-                        .externalId(truncate(externalId, 100))
-                        .name(truncate(optional(record, "network_name"), 200))
-                        .build();
-                result.put(externalId, network);
-            }
-        }
-        if (result.isEmpty()) {
-            return;
-        }
-
-        // Resolve route memberships before persist; the M2M join rows
-        // ride along with the parent saveAll.
-        if (Files.exists(routeNetworksFile)) {
-            try (CSVParser parser = openCsv(routeNetworksFile)) {
-                for (CSVRecord record : parser) {
-                    String networkExtId = optional(record, "network_id");
-                    String routeGtfsId = optional(record, "route_id");
-                    Network network = result.get(networkExtId);
-                    Line line = linesByGtfsId.get(routeGtfsId);
-                    if (network != null && line != null) {
-                        network.getRoutes().add(line);
-                    }
-                }
-            }
-        }
-        networkRepository.saveAll(result.values());
-        log.info("GTFS import: {} networks persisted", result.size());
-    }
-
-    private void importFareMedia(Path mediaFile) throws IOException {
-        if (!Files.exists(mediaFile)) {
-            log.info("GTFS import: fare_media.txt missing, skipping");
-            return;
-        }
-        List<FareMedia> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(mediaFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "fare_media_id");
-                if (isBlank(externalId)) {continue;}
-                batch.add(FareMedia.builder()
-                        .externalId(truncate(externalId, 100))
-                        .name(truncate(optional(record, "fare_media_name"), 200))
-                        .mediaType(parseShortOrNull(optional(record, "fare_media_type")))
-                        .build());
-            }
-        }
-        fareMediaRepository.saveAll(batch);
-        log.info("GTFS import: {} fare media rows persisted", batch.size());
-    }
-
-    private Map<String, Area> importAreas(Path areasFile, Path stopAreasFile, StopImport stopImport)
-            throws IOException {
-        Map<String, Area> result = new HashMap<>();
-        if (!Files.exists(areasFile)) {
-            log.info("GTFS import: areas.txt missing, skipping Fares v2 areas");
-            return result;
-        }
-        try (CSVParser parser = openCsv(areasFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "area_id");
-                if (isBlank(externalId)) {continue;}
-                Area area = Area.builder()
-                        .externalId(truncate(externalId, 100))
-                        .name(truncate(optional(record, "area_name"), 200))
-                        .build();
-                result.put(externalId, area);
-            }
-        }
-        if (result.isEmpty()) {
-            return result;
-        }
-
-        // Resolve stop memberships before persist so the @ManyToMany
-        // join rows go in atomically with their parents.
-        if (Files.exists(stopAreasFile)) {
-            try (CSVParser parser = openCsv(stopAreasFile)) {
-                for (CSVRecord record : parser) {
-                    String areaId = optional(record, "area_id");
-                    String stopGtfsId = optional(record, "stop_id");
-                    Area area = result.get(areaId);
-                    if (area == null || isBlank(stopGtfsId)) {continue;}
-                    Stop stop = stopImport.stopsByGtfsId().get(stopGtfsId);
-                    if (stop != null) {
-                        area.getStops().add(stop);
-                    }
-                }
-            }
-        }
-        areaRepository.saveAll(result.values());
-        log.info("GTFS import: {} fares-v2 areas persisted", result.size());
-        return result;
-    }
-
-    private void importTimeframes(Path timeframesFile) throws IOException {
-        if (!Files.exists(timeframesFile)) {
-            log.info("GTFS import: timeframes.txt missing, skipping");
-            return;
-        }
-        List<Timeframe> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(timeframesFile)) {
-            for (CSVRecord record : parser) {
-                String groupId = optional(record, "timeframe_group_id");
-                if (isBlank(groupId)) {continue;}
-                batch.add(Timeframe.builder()
-                        .timeframeGroupId(truncate(groupId, 100))
-                        .startTime(GtfsParse.parseGtfsTime(optional(record, "start_time")))
-                        .endTime(GtfsParse.parseGtfsTime(optional(record, "end_time")))
-                        .serviceId(truncate(optional(record, "service_id"), 100))
-                        .build());
-            }
-        }
-        timeframeRepository.saveAll(batch);
-        log.info("GTFS import: {} timeframe windows persisted", batch.size());
-    }
-
-    private void importRiderCategories(Path file) throws IOException {
-        if (!Files.exists(file)) {
-            log.info("GTFS import: rider_categories.txt missing, skipping");
-            return;
-        }
-        List<com.transit.hub.domain.model.RiderCategory> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(file)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "rider_category_id");
-                if (isBlank(externalId)) {continue;}
-                batch.add(com.transit.hub.domain.model.RiderCategory.builder()
-                        .externalId(truncate(externalId, 100))
-                        .name(truncate(optional(record, "rider_category_name"), 200))
-                        .isDefaultFareCategory(parseShortOrNull(
-                                optional(record, "is_default_fare_category")))
-                        .eligibilityUrl(truncate(optional(record, "eligibility_url"), 500))
-                        .build());
-            }
-        }
-        riderCategoryRepository.saveAll(batch);
-        log.info("GTFS import: {} rider categories persisted", batch.size());
-    }
-
-    private Map<String, FareProduct> importFareProducts(Path productsFile) throws IOException {
-        Map<String, FareProduct> result = new HashMap<>();
-        if (!Files.exists(productsFile)) {
-            log.info("GTFS import: fare_products.txt missing, skipping");
-            return result;
-        }
-        try (CSVParser parser = openCsv(productsFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "fare_product_id");
-                String amountRaw = optional(record, "amount");
-                String currency = optional(record, "currency");
-                if (isBlank(externalId) || isBlank(amountRaw) || isBlank(currency)) {continue;}
-                java.math.BigDecimal amount;
-                try {
-                    amount = new java.math.BigDecimal(amountRaw.trim());
-                } catch (NumberFormatException e) {
-                    log.warn("GTFS import: fare_product {} has invalid amount '{}', skipping",
-                            externalId, amountRaw);
-                    continue;
-                }
-                FareProduct product = FareProduct.builder()
-                        .externalId(truncate(externalId, 100))
-                        .name(truncate(optional(record, "fare_product_name"), 200))
-                        .fareMediaId(truncate(optional(record, "fare_media_id"), 100))
-                        .riderCategoryId(truncate(optional(record, "rider_category_id"), 100))
-                        .amount(amount)
-                        .currency(truncate(currency, 3))
-                        .build();
-                result.put(externalId, product);
-            }
-        }
-        fareProductRepository.saveAll(result.values());
-        log.info("GTFS import: {} fare products persisted", result.size());
-        return result;
-    }
-
-    private void importFareLegRules(Path legRulesFile,
-                                     Map<String, Area> areasByExternalId,
-                                     Map<String, FareProduct> productsByExternalId) throws IOException {
-        if (!Files.exists(legRulesFile)) {
-            log.info("GTFS import: fare_leg_rules.txt missing, skipping");
-            return;
-        }
-        List<FareLegRule> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(legRulesFile)) {
-            for (CSVRecord record : parser) {
-                FareLegRule rule = FareLegRule.builder()
-                        .legGroupId(truncate(optional(record, "leg_group_id"), 100))
-                        .networkId(truncate(optional(record, "network_id"), 100))
-                        .fromArea(areasByExternalId.get(optional(record, "from_area_id")))
-                        .toArea(areasByExternalId.get(optional(record, "to_area_id")))
-                        .fromTimeframeGroupId(truncate(optional(record, "from_timeframe_group_id"), 100))
-                        .toTimeframeGroupId(truncate(optional(record, "to_timeframe_group_id"), 100))
-                        .fareProduct(productsByExternalId.get(optional(record, "fare_product_id")))
-                        .rulePriority(parseIntOrNull(optional(record, "rule_priority")))
-                        .build();
-                batch.add(rule);
-            }
-        }
-        fareLegRuleRepository.saveAll(batch);
-        log.info("GTFS import: {} fare leg rules persisted", batch.size());
-    }
-
-    private void importFareTransferRules(Path transferRulesFile,
-                                          Map<String, FareProduct> productsByExternalId) throws IOException {
-        if (!Files.exists(transferRulesFile)) {
-            log.info("GTFS import: fare_transfer_rules.txt missing, skipping");
-            return;
-        }
-        List<FareTransferRule> batch = new ArrayList<>();
-        try (CSVParser parser = openCsv(transferRulesFile)) {
-            for (CSVRecord record : parser) {
-                String typeRaw = optional(record, "fare_transfer_type");
-                if (isBlank(typeRaw)) {continue;}
-                short transferType;
-                try {
-                    transferType = Short.parseShort(typeRaw.trim());
-                } catch (NumberFormatException e) {
-                    continue;
-                }
-                FareTransferRule rule = FareTransferRule.builder()
-                        .fromLegGroupId(truncate(optional(record, "from_leg_group_id"), 100))
-                        .toLegGroupId(truncate(optional(record, "to_leg_group_id"), 100))
-                        .transferCount(parseIntOrNull(optional(record, "transfer_count")))
-                        .durationLimit(parseIntOrNull(optional(record, "duration_limit")))
-                        .durationLimitType(parseShortOrNull(optional(record, "duration_limit_type")))
-                        .fareTransferType(transferType)
-                        .fareProduct(productsByExternalId.get(optional(record, "fare_product_id")))
-                        .minutesBeforeToStartBoardingTime(
-                                parseIntOrNull(optional(record, "minutes_before_to_start_boarding_time")))
-                        .minutesAfterToStartBoardingTime(
-                                parseIntOrNull(optional(record, "minutes_after_to_start_boarding_time")))
-                        .build();
-                batch.add(rule);
-            }
-        }
-        fareTransferRuleRepository.saveAll(batch);
-        log.info("GTFS import: {} fare transfer rules persisted", batch.size());
-    }
 
     /**
      * Reads {@code location_groups.txt} + {@code location_group_stops.txt}.
@@ -2043,26 +1563,6 @@ public class GtfsImportService {
             return com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE;
         }
         return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
-    }
-
-    /**
-     * Routes a GTFS {@code agency_id} to its persisted {@link Agency}.
-     * Falls back to the single agency when the feed has exactly one and
-     * the route omits {@code agency_id} (the GTFS spec permits this).
-     * Returns {@code null} when no agency was loaded — lines without an
-     * agency are still valid; the timezone resolver knows how to deal
-     * with that.
-     */
-    private static Agency resolveAgency(String agencyId, Map<String, Agency> agencies) {
-        if (agencies.isEmpty()) {return null;}
-        if (!isBlank(agencyId)) {
-            Agency match = agencies.get(agencyId.trim());
-            if (match != null) {return match;}
-        }
-        if (agencies.size() == 1) {
-            return agencies.values().iterator().next();
-        }
-        return null;
     }
 
     private static String buildItineraryName(String headsign, String directionId) {
