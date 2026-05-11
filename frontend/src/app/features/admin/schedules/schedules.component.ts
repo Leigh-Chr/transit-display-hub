@@ -321,7 +321,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
       data: { lines: stop.lines },
       width: '450px',
-      ariaLabel: 'Create new schedule entry',
+      ariaLabel: this.transloco.translate('admin.schedules.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -346,7 +346,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
       data: { entry, lines: stop.lines },
       width: '450px',
-      ariaLabel: `Edit schedule entry at ${this.formatTime(entry.time)}`,
+      ariaLabel: this.transloco.translate('admin.schedules.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -373,7 +373,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm deletion of schedule entry at ${this.formatTime(entry.time)}`,
+      ariaLabel: this.transloco.translate('admin.schedules.confirm.deleteTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {

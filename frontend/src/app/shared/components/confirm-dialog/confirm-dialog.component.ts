@@ -18,10 +18,14 @@ export interface ConfirmDialogData {
   selector: 'app-confirm-dialog',
   standalone: true,
   imports: [MatDialogModule, MatButtonModule],
+  // role="alertdialog" signals to assistive tech that this dialog requires
+  // immediate attention (a destructive action) and should be announced
+  // automatically, unlike a generic dialog which may be announced lazily.
+  host: { role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'confirm-dialog-title' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data.title }}</h2>
-    <mat-dialog-content>
+    <h2 mat-dialog-title id="confirm-dialog-title">{{ data.title }}</h2>
+    <mat-dialog-content aria-describedby="confirm-dialog-title">
       <p>{{ data.message }}</p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">

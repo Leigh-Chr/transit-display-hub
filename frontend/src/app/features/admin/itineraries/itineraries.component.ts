@@ -404,7 +404,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ItineraryDialogComponent, {
       data: { lines: this.lines() },
       width: '450px',
-      ariaLabel: 'Create new itinerary',
+      ariaLabel: this.transloco.translate('admin.itineraries.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -427,7 +427,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ItineraryDialogComponent, {
       data: { itinerary, lines: this.lines() },
       width: '450px',
-      ariaLabel: `Edit itinerary ${itinerary.name}`,
+      ariaLabel: this.transloco.translate('admin.itineraries.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -449,7 +449,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ItineraryStopsDialogComponent, {
       data: { itinerary },
       width: '500px',
-      ariaLabel: `Manage stops for itinerary ${itinerary.name}`,
+      ariaLabel: this.transloco.translate('admin.itineraries.stopsDialog.title', { name: itinerary.name }),
     });
 
     dialogRef.afterClosed().subscribe((result: UpdateItineraryStopsRequest | undefined) => {
@@ -475,7 +475,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm deletion of itinerary ${itinerary.name}`,
+      ariaLabel: this.transloco.translate('admin.itineraries.confirm.deleteTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {

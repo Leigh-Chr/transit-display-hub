@@ -325,7 +325,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(UserDialogComponent, {
       data: { isEdit: false },
       width: '450px',
-      ariaLabel: 'Create new user',
+      ariaLabel: this.transloco.translate('admin.users.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -348,7 +348,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(UserDialogComponent, {
       data: { user, isEdit: true },
       width: '450px',
-      ariaLabel: `Edit user ${user.username}`,
+      ariaLabel: this.transloco.translate('admin.users.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -374,7 +374,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
         confirmText: this.transloco.translate('common.delete'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm deletion of user ${user.username}`,
+      ariaLabel: this.transloco.translate('admin.users.confirm.deleteTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {

@@ -24,6 +24,10 @@ const translocoLang = {
       createFailed: 'Failed to create schedule entry',
       updateFailed: 'Failed to update schedule entry',
       deleteFailed: 'Failed to delete schedule entry',
+      dialog: {
+        titleCreate: 'New Schedule Entry',
+        titleEdit: 'Edit Schedule Entry',
+      },
       confirm: {
         deleteTitle: 'Delete Schedule Entry',
         deleteMessage: 'Delete schedule entry at {{time}} to {{terminus}}?',
@@ -229,7 +233,7 @@ describe('SchedulesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(ScheduleDialogComponent, {
         data: { lines: mockStop.lines },
         width: '450px',
-        ariaLabel: 'Create new schedule entry',
+        ariaLabel: 'New Schedule Entry',
       });
       expect(mockScheduleService.create).toHaveBeenCalledWith('s1', dialogResult);
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
@@ -261,7 +265,7 @@ describe('SchedulesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(ScheduleDialogComponent, {
         data: { entry: mockSchedule, lines: mockStop.lines },
         width: '450px',
-        ariaLabel: 'Edit schedule entry at 08:30',
+        ariaLabel: 'Edit Schedule Entry',
       });
       expect(mockScheduleService.update).toHaveBeenCalledWith('sc1', editResult);
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
@@ -295,7 +299,7 @@ describe('SchedulesComponent', () => {
           confirmText: 'Delete',
           confirmColor: 'warn',
         },
-        ariaLabel: 'Confirm deletion of schedule entry at 08:30',
+        ariaLabel: 'Delete Schedule Entry',
       });
       expect(mockScheduleService.delete).toHaveBeenCalledWith('sc1');
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
