@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-05-11
+
+Sprint 3: défense en profondeur (sécurité HTTP, JWT, WebSocket), déduplication
+backend (caches GTFS-RT, helpers, scope resolver), et optimisations de
+performance (requêtes schedule, JPA Specifications, assets Angular).
+Aucun changement cassant, aucune modification de schéma de base de données.
+
+### Security
+
+- **Defense-in-depth HTTP header chain**: chaîne de réponses complète
+  (Content-Security-Policy, HSTS, X-Content-Type-Options, Referrer-Policy,
+  Permissions-Policy) ; matchers actuator et openapi resserrés pour exclure
+  le filtre CSRF là où il est inutile.
+- **JWT iss/aud + validation du secret au démarrage**: les tokens émis
+  portent désormais les claims `iss` et `aud` ; la longueur minimale du
+  secret JWT (256 bits) est vérifiée à l'initialisation de l'application,
+  échec rapide avant acceptation de trafic. Coût BCrypt fixé à 12.
+- **Liaison session STOMP au token d'appareil + sandbox du rapport de
+  validation**: le token d'appareil est désormais lié à la session STOMP
+  côté serveur ; le rapport HTML de validation des entrées est servi avec
+  l'attribut `sandbox` pour empêcher l'exécution de scripts injectés.
+
+### Changed
+
+- **`BaseStompService` extrait**: logique commune aux 3 services WebSocket
+  (connexion, reconnexion, souscription, teardown) centralisée dans une
+  classe de base abstraite, éliminant ~120 lignes dupliquées.
+- **`NgOptimizedImage` pour les assets logo**: les balises `<img>` statiques
+  du logo remplacées par la directive Angular `NgOptimizedImage`, supprimant
+  les avertissements CLS et activant le lazy-loading natif.
+- **`AbstractRealtimeFeedCache`**: classe abstraite commune extraite des 3
+  caches GTFS-RT (vehicle positions, trip updates, service alerts), éliminant
+  la duplication de la logique de TTL, de refresh et de verrouillage.
+- **Helpers de parsing + `MessageScopeResolver` consolidés**: méthodes
+  utilitaires GTFS éparpillées regroupées dans `GtfsParse` ; la logique de
+  résolution de scope des messages extraite dans un composant dédié.
+- **Collapse des requêtes de schedules**: 6 requêtes de planning distinctes
+  fusionnées en 2 variantes de fenêtre temporelle, réduisant la charge SQL
+  sur les endpoints de consultation d'horaires.
+- **Pré-intersection des arrêts affectés (scope NETWORK)**: les arrêts
+  concernés par un message de portée réseau sont pré-intersectés avec le
+  tracker actif au moment de la résolution, évitant un filtrage complet à
+  chaque requête.
+- **JPA Specifications pour le listing des messages**: les cascades de
+  conditions `if/filter` remplacées par des `Specification<Message>` JPA
+  composables, simplifiant la construction de requêtes dynamiques et
+  facilitant les tests unitaires du prédicat.
+
+### Internal
+
+- **Alignement du budget bundle**: le seuil de budget Angular ajusté à la
+  taille de production mesurée (555 kB), supprimant les avertissements de
+  build sans assouplir la contrainte effective.
+
 ## [1.1.0] — 2026-05-11
 
 Sprint 2: internationalisation complète côté admin et displays, helpers

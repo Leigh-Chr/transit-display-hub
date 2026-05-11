@@ -11,7 +11,7 @@ RUN ./gradlew bootJar -x test --no-daemon
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
-COPY --from=builder /app/build/libs/transit-display-hub-1.1.0.jar app.jar
+COPY --from=builder /app/build/libs/transit-display-hub-1.2.0.jar app.jar
 RUN chown -R appuser:appgroup /app
 USER appuser
 EXPOSE 8080
