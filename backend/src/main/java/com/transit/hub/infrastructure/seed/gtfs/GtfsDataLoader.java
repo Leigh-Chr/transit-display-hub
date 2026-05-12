@@ -114,7 +114,8 @@ public class GtfsDataLoader implements CommandLineRunner {
         log.info("Itinerary stops:{}", r.itineraryStops());
         log.info("Schedules:      {}", r.schedules());
         log.info("========================================");
-        log.info("Default login: admin / admin123");
-        log.info("========================================");
+        // Seeded credentials are documented in CONTRIBUTING.md / .env.example;
+        // logging them on every boot would publish a valid login to whatever
+        // log collector the operator wires up.
     }
 }
