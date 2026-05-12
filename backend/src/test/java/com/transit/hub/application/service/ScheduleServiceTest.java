@@ -3,6 +3,7 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.request.CreateScheduleRequest;
 import com.transit.hub.application.dto.response.ScheduleResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
@@ -224,7 +225,7 @@ class ScheduleServiceTest {
             when(itineraryRepository.findByIdWithLineAndStops(otherItinerary.getId())).thenReturn(Optional.of(otherItinerary));
 
             assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("not associated with stop");
         }
 
@@ -238,7 +239,7 @@ class ScheduleServiceTest {
             when(itineraryRepository.findByIdWithLineAndStops(emptyItinerary.getId())).thenReturn(Optional.of(emptyItinerary));
 
             assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("has no stops");
         }
 
@@ -254,7 +255,7 @@ class ScheduleServiceTest {
                     .thenReturn(Optional.of(itineraryNotServingStop));
 
             assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("does not serve stop");
         }
 
@@ -269,7 +270,7 @@ class ScheduleServiceTest {
                     testStopId, testItineraryId, LocalTime.of(8, 30))).thenReturn(true);
 
             assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("already exists");
         }
     }
@@ -357,7 +358,7 @@ class ScheduleServiceTest {
             when(itineraryRepository.findByIdWithLineAndStops(otherItinerary.getId())).thenReturn(Optional.of(otherItinerary));
 
             assertThatThrownBy(() -> scheduleService.updateSchedule(testScheduleId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("not associated with stop");
         }
 
@@ -373,7 +374,7 @@ class ScheduleServiceTest {
                     testStopId, testItineraryId, LocalTime.of(10, 0), testScheduleId)).thenReturn(true);
 
             assertThatThrownBy(() -> scheduleService.updateSchedule(testScheduleId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("already exists");
         }
     }
@@ -532,7 +533,7 @@ class ScheduleServiceTest {
                     testStopId, testItineraryId, LocalTime.of(8, 30))).thenReturn(true);
 
             assertThatThrownBy(() -> scheduleService.createSchedule(testStopId, request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("already exists");
 
             verify(scheduleRepository, never()).save(any());

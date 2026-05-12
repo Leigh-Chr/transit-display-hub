@@ -3,6 +3,7 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.request.CreateScheduleRequest;
 import com.transit.hub.application.dto.response.ScheduleResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.Line;
@@ -56,9 +57,8 @@ public class ScheduleService {
 
         // Check for duplicate entry
         if (scheduleRepository.existsByStopIdAndItineraryIdAndTime(stopId, itinerary.getId(), time)) {
-            throw new IllegalArgumentException(
-                "A schedule entry already exists for itinerary " + itinerary.getName() +
-                " at " + time.format(TIME_FORMATTER) + " at this stop");
+            throw ValidationException.ofKey("error.schedule.duplicate",
+                    itinerary.getName(), time.format(TIME_FORMATTER));
         }
 
         Schedule schedule = Schedule.builder()
@@ -90,9 +90,8 @@ public class ScheduleService {
         // Check for duplicate entry (excluding the current one)
         if (scheduleRepository.existsByStopIdAndItineraryIdAndTimeExcludingId(
                 stop.getId(), itinerary.getId(), time, schedule.getId())) {
-            throw new IllegalArgumentException(
-                "A schedule entry already exists for itinerary " + itinerary.getName() +
-                " at " + time.format(TIME_FORMATTER) + " at this stop");
+            throw ValidationException.ofKey("error.schedule.duplicate",
+                    itinerary.getName(), time.format(TIME_FORMATTER));
         }
 
         schedule.setTime(time);
@@ -118,15 +117,15 @@ public class ScheduleService {
 
         // The itinerary's line must serve this stop
         if (!stop.getLines().contains(line)) {
-            throw new IllegalArgumentException(
-                    "Itinerary's line " + line.getCode() + " is not associated with stop " + stop.getName());
+            throw ValidationException.ofKey("error.schedule.lineNotServingStop",
+                    line.getCode(), stop.getName());
         }
 
         // The itinerary must contain at least one stop, otherwise its terminus
         // is undefined and the kiosk would render an empty destination cell.
         if (itinerary.getItineraryStops() == null || itinerary.getItineraryStops().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Itinerary " + itinerary.getName() + " has no stops; cannot schedule arrivals on it");
+            throw ValidationException.ofKey("error.schedule.itineraryHasNoStops",
+                    itinerary.getName());
         }
 
         // The itinerary must explicitly serve THIS stop, not just share its line.
@@ -134,8 +133,8 @@ public class ScheduleService {
         boolean stopBelongs = itinerary.getItineraryStops().stream()
                 .anyMatch(is -> is.getStop().getId().equals(stop.getId()));
         if (!stopBelongs) {
-            throw new IllegalArgumentException(
-                    "Itinerary " + itinerary.getName() + " does not serve stop " + stop.getName());
+            throw ValidationException.ofKey("error.schedule.itineraryDoesNotServeStop",
+                    itinerary.getName(), stop.getName());
         }
     }
 }
