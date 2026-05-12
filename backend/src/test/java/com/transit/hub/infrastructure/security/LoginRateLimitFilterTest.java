@@ -66,10 +66,30 @@ class LoginRateLimitFilterTest {
     }
 
     @Test
-    void honoursXForwardedForHeader() throws Exception {
-        MockHttpServletRequest req = loginRequest("10.0.0.1");
-        req.addHeader("X-Forwarded-For", "203.0.113.20, 10.0.0.99");
-        // Send 5 from the X-Forwarded-For IP via 5 separate requests
+    void ignoresXForwardedForFromUntrustedRemote() throws Exception {
+        // Default config: trustedProxies is empty. The TCP peer is the
+        // source of truth, regardless of what XFF claims. So six
+        // requests all share the 10.0.0.1 bucket and the sixth gets 429
+        // — even though the attacker tried to vary the apparent IP.
+        for (int i = 0; i < 5; i++) {
+            MockHttpServletRequest r = loginRequest("10.0.0.1");
+            r.addHeader("X-Forwarded-For", "203.0.113." + i);
+            filter.doFilter(r, new MockHttpServletResponse(), chain);
+        }
+        MockHttpServletRequest sixth = loginRequest("10.0.0.1");
+        sixth.addHeader("X-Forwarded-For", "203.0.113.99");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        filter.doFilter(sixth, res, chain);
+        assertThat(res.getStatus()).isEqualTo(429);
+    }
+
+    @Test
+    void honoursXForwardedForOnlyWhenRemoteIsATrustedProxy() throws Exception {
+        ReflectionTestUtils.setField(filter, "trustedProxiesCsv", "10.0.0.1");
+        filter.parseTrustedProxies();
+
+        // Five requests from the trusted proxy carrying the same client
+        // IP via XFF — they all count against the *client* bucket.
         for (int i = 0; i < 5; i++) {
             MockHttpServletRequest r = loginRequest("10.0.0.1");
             r.addHeader("X-Forwarded-For", "203.0.113.20");
@@ -80,6 +100,14 @@ class LoginRateLimitFilterTest {
         MockHttpServletResponse res = new MockHttpServletResponse();
         filter.doFilter(sixth, res, chain);
         assertThat(res.getStatus()).isEqualTo(429);
+
+        // A different real client through the same proxy still has its
+        // own quota — bucket is keyed on the XFF value, not the proxy.
+        MockHttpServletRequest other = loginRequest("10.0.0.1");
+        other.addHeader("X-Forwarded-For", "203.0.113.42");
+        MockHttpServletResponse otherRes = new MockHttpServletResponse();
+        filter.doFilter(other, otherRes, chain);
+        assertThat(otherRes.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
     }
 
     private MockHttpServletRequest loginRequest(String ip) {

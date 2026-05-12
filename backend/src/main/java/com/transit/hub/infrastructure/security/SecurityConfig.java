@@ -80,13 +80,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/attributions").permitAll()  // Public credit block
                         .requestMatchers(HttpMethod.GET, "/api/fares/**").permitAll()  // Public fare calculator
                         .requestMatchers("/actuator/health").permitAll()
-                        // Prometheus scrape endpoint — left open so the
-                        // local Prometheus instance can pull metrics
-                        // without provisioning service-account creds.
-                        // Production deployments should fence this off
-                        // at the reverse-proxy / network layer.
-                        .requestMatchers("/actuator/prometheus").permitAll()
-                        .requestMatchers("/actuator/metrics", "/actuator/info").hasRole("ADMIN")
+                        // Actuator surface, including the Prometheus scrape
+                        // endpoint, requires ADMIN. Previous default left
+                        // /prometheus permitAll which let any caller map
+                        // the application's HTTP endpoint catalogue. A
+                        // local Prometheus instance still works by either
+                        // (a) attaching a basic-auth scrape config that
+                        // hits the admin role, or (b) fencing the route
+                        // off at the reverse-proxy layer.
+                        .requestMatchers("/actuator/prometheus", "/actuator/metrics", "/actuator/info").hasRole("ADMIN")
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         // OpenAPI / Springdoc UI — open in dev for browsing,

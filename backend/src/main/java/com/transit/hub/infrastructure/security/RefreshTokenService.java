@@ -6,6 +6,7 @@ import com.transit.hub.infrastructure.config.JwtProperties;
 import com.transit.hub.infrastructure.persistence.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,6 +110,21 @@ public class RefreshTokenService {
     @Transactional
     public int purgeExpired() {
         return repository.deleteExpiredBefore(clock.instant());
+    }
+
+    /**
+     * Daily housekeeping so {@code refresh_tokens} doesn't grow without
+     * bound — issued rows beyond their {@code expires_at} carry no
+     * security value and only widen the audit query surface. Cron
+     * scheduled 30 min after the GTFS refresh window so the two jobs
+     * don't share a single Hikari connection burst.
+     */
+    @Scheduled(cron = "${app.auth.refresh-token-purge-cron:0 30 4 * * *}")
+    void scheduledPurgeExpired() {
+        int removed = purgeExpired();
+        if (removed > 0) {
+            log.info("Purged {} expired refresh tokens", removed);
+        }
     }
 
     public Duration ttl() {
