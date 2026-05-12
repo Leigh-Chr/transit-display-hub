@@ -23,6 +23,8 @@ import com.transit.hub.infrastructure.seed.gtfs.model.ServiceCalendarSnapshot;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.model.TripInfo;
 import lombok.RequiredArgsConstructor;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -73,6 +75,13 @@ public class ScheduleImporter {
     private final FlexStopTimeRepository flexStopTimeRepository;
     private final LocationRepository locationRepository;
     private final LocationGroupRepository locationGroupRepository;
+
+    /** Used to flush + detach each batch so the first-level cache doesn't
+     *  retain every persisted Schedule across the whole import. Without
+     *  this an Île-de-France-sized feed (~250 k schedules) keeps growing
+     *  the persistence context until the import OOMs. */
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * Reads {@code frequencies.txt} into a {@code tripId → List<FrequencyWindow>} map.
@@ -200,6 +209,7 @@ public class ScheduleImporter {
                             bookingRules, flexStartWindow, flexEndWindow));
                     if (flexBatch.size() >= MAX_SCHEDULE_BATCH) {
                         flexStopTimeRepository.saveAll(flexBatch);
+                        flushAndDetach(flexBatch);
                         flexTotal += flexBatch.size();
                         flexBatch.clear();
                     }
@@ -262,6 +272,7 @@ public class ScheduleImporter {
                             .build());
                     if (batch.size() >= MAX_SCHEDULE_BATCH) {
                         scheduleRepository.saveAll(batch);
+                        flushAndDetach(batch);
                         total += batch.size();
                         batch.clear();
                         log.debug("GTFS import: {} schedules persisted so far", total);
@@ -309,6 +320,7 @@ public class ScheduleImporter {
                                 .build());
                         if (batch.size() >= MAX_SCHEDULE_BATCH) {
                             scheduleRepository.saveAll(batch);
+                            flushAndDetach(batch);
                             total += batch.size();
                             batch.clear();
                             log.debug("GTFS import: {} schedules persisted so far", total);
@@ -320,10 +332,12 @@ public class ScheduleImporter {
 
         if (!batch.isEmpty()) {
             scheduleRepository.saveAll(batch);
+            flushAndDetach(batch);
             total += batch.size();
         }
         if (!flexBatch.isEmpty()) {
             flexStopTimeRepository.saveAll(flexBatch);
+            flushAndDetach(flexBatch);
             flexTotal += flexBatch.size();
         }
 
@@ -334,6 +348,17 @@ public class ScheduleImporter {
         log.info("GTFS import: {} schedules + {} flex stop_times created across {} service calendars",
                 total, flexTotal, services.size());
         return total;
+    }
+
+    /** Drain pending inserts and evict the batch from the persistence
+     *  context so the first-level cache stays bounded across hundreds
+     *  of batches. The parent entities (itineraries, stops, calendars)
+     *  remain managed because we only detach the rows we just saved. */
+    private void flushAndDetach(List<?> entities) {
+        entityManager.flush();
+        for (Object entity : entities) {
+            entityManager.detach(entity);
+        }
     }
 
     // ---------- flex stop-time builder ----------
