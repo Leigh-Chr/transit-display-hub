@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
@@ -35,6 +36,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatSelectModule,
     MatFormFieldModule,
     MatSortModule,
+    MatTooltipModule,
     TableSkeletonComponent,
     EmptyStateComponent,
     TranslocoDirective,
@@ -141,10 +143,10 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.common.actions') }}</th>
                 <td mat-cell *matCellDef="let entry" class="actions-column">
-                  <button mat-icon-button color="primary" (click)="openEditDialog(entry)">
+                  <button mat-icon-button color="primary" (click)="openEditDialog(entry)" [matTooltip]="t('admin.schedules.editTooltip')" [attr.aria-label]="t('admin.schedules.editTooltip')">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteSchedule(entry)">
+                  <button mat-icon-button color="warn" (click)="deleteSchedule(entry)" [matTooltip]="t('admin.schedules.deleteTooltip')" [attr.aria-label]="t('admin.schedules.deleteTooltip')">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </td>

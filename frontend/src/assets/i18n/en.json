@@ -369,6 +369,8 @@
       "createFailed": "Failed to create message",
       "updateFailed": "Failed to update message",
       "deleteFailed": "Failed to delete message",
+      "editTooltip": "Edit message",
+      "deleteTooltip": "Delete message",
       "dialog": {
         "titleCreate": "New Broadcast Message",
         "titleEdit": "Edit Message",
@@ -522,6 +524,8 @@
       "createFailed": "Failed to create schedule entry",
       "updateFailed": "Failed to update schedule entry",
       "deleteFailed": "Failed to delete schedule entry",
+      "editTooltip": "Edit schedule entry",
+      "deleteTooltip": "Delete schedule entry",
       "dialog": {
         "titleCreate": "New Schedule Entry",
         "titleEdit": "Edit Schedule Entry",

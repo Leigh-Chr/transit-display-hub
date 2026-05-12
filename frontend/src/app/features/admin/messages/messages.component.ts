@@ -10,6 +10,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { LineService } from '@core/api/line.service';
@@ -40,6 +41,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatSelectModule,
     MatFormFieldModule,
     MatPaginatorModule,
+    MatTooltipModule,
     CardSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
@@ -176,10 +178,10 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
                 </div>
 
                 <div class="message-actions">
-                  <button mat-icon-button color="primary" (click)="openEditDialog(message)">
+                  <button mat-icon-button color="primary" (click)="openEditDialog(message)" [matTooltip]="t('admin.messages.editTooltip')" [attr.aria-label]="t('admin.messages.editTooltip')">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteMessage(message)">
+                  <button mat-icon-button color="warn" (click)="deleteMessage(message)" [matTooltip]="t('admin.messages.deleteTooltip')" [attr.aria-label]="t('admin.messages.deleteTooltip')">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>

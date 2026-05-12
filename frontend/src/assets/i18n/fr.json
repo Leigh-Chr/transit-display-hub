@@ -369,6 +369,8 @@
       "createFailed": "Impossible de créer le message",
       "updateFailed": "Impossible de mettre à jour le message",
       "deleteFailed": "Impossible de supprimer le message",
+      "editTooltip": "Modifier le message",
+      "deleteTooltip": "Supprimer le message",
       "dialog": {
         "titleCreate": "Nouveau message diffusé",
         "titleEdit": "Modifier le message",
@@ -522,6 +524,8 @@
       "createFailed": "Impossible de créer l'entrée",
       "updateFailed": "Impossible de mettre à jour l'entrée",
       "deleteFailed": "Impossible de supprimer l'entrée",
+      "editTooltip": "Modifier l'entrée",
+      "deleteTooltip": "Supprimer l'entrée",
       "dialog": {
         "titleCreate": "Nouvelle entrée d'horaire",
         "titleEdit": "Modifier l'entrée",
