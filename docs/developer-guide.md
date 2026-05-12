@@ -872,6 +872,66 @@ fork by default for dev iteration speed).
 
 ---
 
+## Maintainability guardrails
+
+A small set of CI gates pins the current ceiling on file size,
+cyclomatic complexity, layered architecture and duplication.
+Each gate ships with a tracked allowlist so the existing
+"monoliths" do not block the build today, but no _new_ monolith
+can land silently. See ADR 0040 for the rationale and the
+rotation roadmap (`.planning/refactors/2026-05-12-maintainability-guardrails.md`).
+
+### Active gates
+
+| Gate                     | Where                                       | Enforced via                                  |
+|--------------------------|---------------------------------------------|-----------------------------------------------|
+| Layered architecture     | `backend/src/test/java/com/transit/hub/architecture/LayeredArchitectureTest.java` | ArchUnit, runs as part of `./gradlew check`   |
+| Cyclomatic complexity    | `backend/config/pmd/ruleset.xml`            | PMD `design/CyclomaticComplexity`, method 30 / class 110 |
+| Source file size         | `scripts/check-file-size.sh`                | `.github/workflows/file-size.yml`             |
+| Duplication              | `.jscpd.json` (threshold 6 %)               | `npx jscpd` step in `.github/workflows/frontend.yml` |
+| Dead code (front)        | `frontend/knip.json`                        | `npm run knip -- --reporter github-actions`   |
+| Bytecode bug patterns    | `backend/config/spotbugs/`                  | SpotBugs in `./gradlew check`                 |
+| Coverage floor           | `backend/build.gradle.kts`, `vitest.config` | JaCoCo 55 instr / 45 br ; Vitest 65 stmt / 60 br |
+
+### Adding to the allowlists
+
+When a refactor legitimately needs an exemption (rare):
+
+1. **`scripts/oversized-allowlist.txt`** — append the path on its
+   own line, with no trailing whitespace. The script will then
+   skip the block but will print an INFO line the day the file
+   falls back under threshold, prompting removal of the entry.
+2. **`LayeredArchitectureTest`** — add a `private static final
+   String` constant for the fully-qualified class name and an
+   `.and().doNotHaveFullyQualifiedName(...)` clause on the
+   relevant rule. The Javadoc at the top of the file lists every
+   active exception and must be kept in sync.
+3. **PMD `// NOPMD`** suppressions — only on the offending line
+   with a comment explaining the choice; avoid class-level
+   suppressions.
+
+In all three cases the PR description must reference the planned
+phase (or follow-up issue) that will eventually retire the entry.
+An allowlist that only grows is the failure mode the gates were
+designed to prevent.
+
+### Running the gates locally
+
+```bash
+# Backend gates: ArchUnit, PMD cyclo, SpotBugs, JaCoCo verify
+( cd backend && ./gradlew check )
+
+# Frontend gates: ESLint, Knip, jscpd, Vitest coverage, build
+( cd frontend && npm run lint && npm run knip \
+                 && npm run test:coverage && npm run build )
+npx jscpd                               # from the repo root
+
+# File-size guardrail
+bash scripts/check-file-size.sh
+```
+
+---
+
 ## Internationalisation (i18n)
 
 Runtime language switching via Transloco

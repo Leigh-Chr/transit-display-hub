@@ -45,6 +45,7 @@ should think twice before reverting.
 | [0037](0037-quality-gates-and-ci.md) | Quality gates and continuous integration (JaCoCo, Vitest cov, Playwright, GH Actions) |
 | [0038](0038-recognition-strategy.md) | Recognition strategy: README-only entry point, channel-specific drafts |
 | [0039](0039-cookie-based-auth-with-refresh-tokens.md) | Cookie-based auth with refresh token rotation + CSRF, Bearer kept for Swagger / STOMP |
+| [0040](0040-maintainability-guardrails.md) | Maintainability guardrails as a CI gate (ArchUnit, PMD cyclo, file size, jscpd, knip) with a frozen allowlist |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
