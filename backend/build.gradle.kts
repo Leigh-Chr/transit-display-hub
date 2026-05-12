@@ -282,10 +282,24 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
             element = "BUNDLE"
+            // Instruction coverage gate — the headline number we shipped
+            // with v1.0.0. Tightening it without first plugging the gaps
+            // surfaced in audit 2026-05-12 (Fare/Flex/DeviceHeartbeat at
+            // 0 %) would mean ratcheting CI red for a known list of
+            // controllers; do it once those land.
             limit {
                 counter = "INSTRUCTION"
                 value = "COVEREDRATIO"
                 minimum = "0.55".toBigDecimal()
+            }
+            // Branch coverage gate — the previous audit left branches
+            // ungated entirely (today's run sits at ~48 %). Floor at 45 %
+            // so a careless `if` cascade can't drag it below the current
+            // baseline; lift toward 60 % once the importer tests land.
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.45".toBigDecimal()
             }
         }
     }
