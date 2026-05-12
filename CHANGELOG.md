@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-05-12
+
+Suite de l'audit du 2026-05-12 : ferme les deux P0 reportés depuis
+1.4.2 (tests d'Importer GTFS + tests des controllers à 0 %), achève
+les régressions i18n sur les dialogs admin, et livre une vague de
+hardening sécu (TOCTOU refresh, révocation immédiate des comptes
+désactivés, scheduler de purge, restriction de prometheus, trust
+explicite des proxies) ainsi qu'une couche d'observabilité
+(correlation id MDC + logback async). Audit consolidé à 11/11 P0
+fermés.
+
+### Added
+
+- **Correlation id sur les logs** : `RequestIdFilter` honore l'en-tête
+  `X-Request-Id` quand un reverse-proxy en pousse un, sinon génère un
+  UUID. Publié sur MDC sous la clé `requestId`, ré-émis sur la
+  réponse, libéré dans le `finally` même si la chaîne en aval lève.
+  `logback-spring.xml` ajoute un appender async (queue 256,
+  `neverBlock=true`) et intègre `{requestId}` dans le pattern.
+- **`@Scheduled` quotidien sur `RefreshTokenService#purgeExpired`**
+  (cron `app.auth.refresh-token-purge-cron`, défaut 04:30) — la
+  méthode existait depuis v1.4.0 mais n'était jamais appelée.
+- **Liste de proxies HTTP de confiance** : `app.security.trusted-proxies`
+  (CSV des IPs des reverse-proxies). `X-Forwarded-For` n'est plus
+  honoré que si le peer TCP fait partie de la liste — défaut vide
+  pour fail-safe.
+- **Workflow CodeQL** (Java/Kotlin + JS/TS, pack `security-and-quality`,
+  hebdomadaire + push/PR).
+- **E2E i18n guard** : `frontend/e2e/i18n-public-pages.spec.ts` visite
+  /login, /map, /map/list, /not-found en FR et EN, exige au moins une
+  ancre traduite par locale et bloque toute fuite de chaîne de l'autre
+  langue. Vérifie aussi que `<html lang>` suit la locale résolue au
+  boot.
+- **59 tests unitaires GTFS Importer** : `ItineraryImporterTest` (25)
+  + `RouteImporterTest` (8) + extension `GtfsParseTest` (+26).
+  Couvrent les statics pures que l'audit signalait comme « taillées
+  pour le test » : `majorityWheelchair/Bikes/Cars`,
+  `computeXOverride`, `buildItineraryName`, `routeTypeLabel`,
+  `resolveAgency`, plus les helpers `GtfsParse` partagés.
+- **19 tests d'intégration controllers** :
+  `FareCalculatorControllerIntegrationTest` (7),
+  `FlexStopTimeControllerIntegrationTest` (6),
+  `DeviceHeartbeatControllerIntegrationTest` (6) — les trois
+  controllers que l'audit avait flagués à 0 % JaCoCo passent à ~100 %.
+
+### Security
+
+- **S-02 final — TOCTOU sur la rotation du refresh token.** Deux
+  /refresh concurrents passaient les checks de fraîcheur et
+  émettaient chacun un successeur avant de committer `replacedBy`,
+  contournant silencieusement la détection de réutilisation.
+  `findByTokenHashForUpdate` ajoute un lock pessimiste (`SELECT FOR
+  UPDATE`) ; le second appelant voit l'état rotaté et tombe sur le
+  chemin chain-revocation.
+- **S-06 — `User.enabled=false` était ignoré pendant 8 h.** Un user
+  désactivé restait actif jusqu'à l'expiration de son JWT. Le filtre
+  `JwtAuthenticationFilter` re-lit l'utilisateur en clé primaire à
+  chaque requête authentifiée — absent ou `!enabled` →
+  `SecurityContext` anonyme + `WWW-Authenticate:
+  error_description="Account disabled"` pour distinguer un lockout
+  d'un simple timeout.
+- **`/actuator/prometheus` passe sous ADMIN.** L'endpoint scrape
+  cessait d'être `permitAll` (n'importe qui pouvait inventorier le
+  catalogue HTTP). Un Prometheus local doit désormais scraper avec
+  un JWT admin ou être posté derrière un reverse-proxy filtrant.
+
+### Fixed
+
+- **5 dialogs admin entièrement traduits** : `schedule-dialog`,
+  `device-dialog`, `itinerary-dialog`, `itinerary-stops-dialog`,
+  `user-dialog`. Les clés étaient déjà prêtes sous
+  `admin.{ns}.dialog.*` ; le wiring `*transloco` les consomme
+  maintenant. 93 spec cases mis à jour avec `TranslocoTestingModule`.
+
+### Changed
+
+- **`AUTH_COOKIE_SECURE` défaut `true`** — déplacé hors de 1.4.2 mais
+  documenté ici car la doc d'installation rappelle qu'un opérateur
+  qui passe en HTTP doit désormais opt-out explicitement.
+
 ## [1.4.2] — 2026-05-12
 
 Patch suivi de l'audit consolidé du 2026-05-12. Ferme 9 des 11 P0
