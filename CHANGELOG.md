@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-05-12
+
+Patch suivi de l'audit consolidé du 2026-05-12. Ferme 9 des 11 P0
+identifiés (sécurité auth, régressions i18n, fuites WebSocket,
+side-effects rxResource, asymétrie d'import GTFS) sans changement
+d'API ni de comportement utilisateur normal — toutes les corrections
+sont rétrocompatibles. Les deux P0 restants (tests unitaires des
+GTFS Importers, tests des controllers Fare/Flex/DeviceHeartbeat à
+0 %) sont reportés en 1.5.0.
+
+### Security
+
+- **`JWT_SECRET` requis dans le profil dev aussi** : le littéral
+  `dev-secret-key-for-jwt-token-generation-…` ne traîne plus dans
+  `application.yml`. Toute installation (dev, prod, kiosk) doit
+  fournir `JWT_SECRET` ; `@NotBlank` sur `JwtProperties` fait
+  échouer le boot autrement.
+- **CSRF bypass Bearer fermé** : le filtre `csrfProtectionMatcher`
+  exemptait n'importe quel appelant dont l'en-tête `Authorization`
+  commençait par `Bearer ` sans valider l'en-tête. Combiné au
+  fallback cookie introduit en 1.4.0, un formulaire cross-site
+  pouvait s'authentifier via le cookie de la victime en ajoutant un
+  faux Bearer. Le matcher refuse maintenant l'exemption dès qu'un
+  cookie d'auth accompagne le Bearer. Extrait dans
+  `CsrfProtectionMatcher` + 13 cas de test unitaires.
+- **`/api/auth/refresh` et `/api/auth/logout` reviennent sous CSRF**
+  (seule `/login` reste exempte parce qu'aucun XSRF cookie n'a pu
+  être posé avant). Sans ce verrou, un opérateur passant
+  `SameSite=Strict → Lax` ouvrait une porte au logout en un clic
+  cross-site.
+- **`cookie-secure` défaut `true`** au niveau racine — le profil
+  dev passe explicitement à `false` pour `ng serve` sur
+  `http://localhost`. Un prod mal configuré qui oublie
+  `AUTH_COOKIE_SECURE=true` voit maintenant la session échouer au
+  lieu d'expédier la JWT en clair.
+- **Credentials d'amorce plus loggués** : `GtfsDataLoader` cessait
+  d'afficher `admin / admin123` en INFO à chaque démarrage,
+  publication implicite à tout collecteur de logs.
+
+### Fixed
+
+- **`BaseStompService` ne fuit plus son abonnement `logout$`** :
+  les trois sous-classes (`WebSocketService`, `HubWebSocketService`,
+  `NetworkMapWebSocketService`) déclaraient chacune leur propre
+  `authService.logout$.subscribe` dans le constructeur sans
+  `unsubscribe`. La logique est hissée dans la base, attachée à
+  `takeUntilDestroyed()`, et `ngOnDestroy` libère le client STOMP.
+  La Promise renvoyée par `client.deactivate()` n'est plus jetée à
+  la poubelle.
+- **`rxResource.params` redevient pur sur les pages admin
+  Lines + Stops** : les mutations de `tableState` et `lineId`
+  glissent dans des `effect()` séparés. La snap-back de page après
+  un delete sort du `computed` (anti-pattern) et passe également en
+  `effect()`.
+- **Les erreurs de chargement remontent dans l'UI** au lieu de
+  finir en `catchError → EMPTY` (qui s'affichait comme un
+  empty-state silencieux). Nouveau bloc d'état d'erreur avec
+  bouton « Réessayer » sur les listes Lines et Stops.
+- **Login + dashboard widget i18n** : `auth/login` était la seule
+  page publique non authentifiée et tout son contenu (titre,
+  labels, bouton, erreurs, hint dev) restait codé en anglais.
+  `data-overview-card` dans le dashboard admin restait en français
+  hardcodé. Les deux passent par Transloco ; les clés vivent dans
+  `en.json` / `fr.json`.
+- **`<html lang>` synchronisé au boot** : `LocaleService` ne
+  l'écrivait que dans `setLang()`. Un utilisateur dont la première
+  visite résolvait à `fr` restait coincé sur le `lang="en"` static
+  de `index.html` jusqu'au premier toggle de langue.
+
+### Changed
+
+- **`ItineraryImporter` unifié** : les chemins create et update
+  populaient les 13 mêmes champs via deux blocs (builder vs
+  setters) dont l'asymétrie aurait fait disparaître silencieusement
+  tout champ ajouté sur une seule branche. Un seul bloc de
+  setters reste désormais.
+- **Contraste de la sidenav** : `--mdc-list-item-supporting-text-color`
+  passe de `rgba(255,255,255,0.5)` (≈ 3 : 1 sur `#1A1A2E`, fail
+  WCAG AA) à `0.65` (≥ 4.5 : 1).
+- **Verrou JaCoCo sur les branches** : `jacocoTestCoverageVerification`
+  ne gatait que la couverture d'instructions. Un nouveau seuil
+  BRANCH ≥ 45 % verrouille la base actuelle (~48 %).
+
+### Build
+
+- **`backend/Dockerfile`** ne hardcode plus
+  `transit-display-hub-1.3.0.jar` — globbing sur
+  `transit-display-hub-*.jar` pour que la prochaine bump de version
+  ne casse pas le build. `HEALTHCHECK` ajouté sur les deux
+  Dockerfiles (backend = `actuator/health`, frontend = `/`).
+- **`frontend/package-lock.json`** réaligné sur la version
+  `1.4.1` (était resté à `1.3.0`).
+- **`ops/kiosk/install.sh`** : la note « pre-built GHCR images are
+  not yet published » disparaît — `release.yml` publie depuis
+  v1.4.0.
+- **Workflow CodeQL** ajouté (Java/Kotlin + JS/TS, pack
+  `security-and-quality`, scan hebdomadaire + push/PR).
+- **`e2e.yml` exécute aussi firefox** en plus de chromium (le
+  local couvrait déjà la matrice tri-browser depuis 1.4.1).
+  `JWT_SECRET` per-run injecté pour que le profil dev démarre.
+
 ## [1.4.1] — 2026-05-12
 
 Patch interne sans changement fonctionnel. Consolide les properties Spring
