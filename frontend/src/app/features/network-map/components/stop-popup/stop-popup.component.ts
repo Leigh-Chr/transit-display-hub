@@ -17,6 +17,8 @@ import {
   ringToSvgPath,
   ringsFromLocation,
 } from '@shared/utils/flex-locations.utils';
+import { LocaleService } from '@core/i18n/locale.service';
+import { bcp47 } from '@shared/utils/locale-date.utils';
 import { NetworkMapDataService } from '../../services/network-map-data.service';
 import { LayoutStop } from '../../services/schematic-layout.service';
 
@@ -705,6 +707,7 @@ export class StopPopupComponent implements OnInit {
   private readonly networkMapData = inject(NetworkMapDataService);
   private readonly fareCalculator = inject(FareCalculatorService);
   private readonly flexStopTimes = inject(FlexStopTimeService);
+  private readonly locale = inject(LocaleService);
   readonly data = inject<StopPopupData>(MAT_DIALOG_DATA);
 
   loading = signal(true);
@@ -873,7 +876,7 @@ export class StopPopupComponent implements OnInit {
   private formatCurrency(amount: number, currency: string | null): string {
     if (currency) {
       try {
-        return new Intl.NumberFormat('fr-FR', {
+        return new Intl.NumberFormat(bcp47(this.locale.current()), {
           style: 'currency',
           currency,
           minimumFractionDigits: 2,

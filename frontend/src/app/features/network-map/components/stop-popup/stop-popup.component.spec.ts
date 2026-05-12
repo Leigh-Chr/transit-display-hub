@@ -1,4 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -6,6 +7,7 @@ import { StopPopupComponent, StopPopupData } from './stop-popup.component';
 import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { ScheduleService } from '@core/api/schedule.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { FareCalculationResult, FlexLocation, FlexStopTime, Schedule } from '@shared/models';
 import { NetworkMapDataService } from '../../services/network-map-data.service';
 import { LayoutStop } from '../../services/schematic-layout.service';
@@ -106,6 +108,7 @@ describe('StopPopupComponent', () => {
         { provide: NetworkMapDataService, useValue: mockNetworkMapData },
         { provide: FareCalculatorService, useValue: mockFareCalculator },
         { provide: FlexStopTimeService, useValue: mockFlexStopTimes },
+        { provide: LocaleService, useValue: { current: signal('fr') } },
       ],
     });
 

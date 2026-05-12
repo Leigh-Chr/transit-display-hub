@@ -1,9 +1,11 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ImportAuditComponent } from './import-audit.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { ImportAudit } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
@@ -50,6 +52,7 @@ describe('ImportAuditComponent', () => {
       providers: [
         provideRouter([]),
         { provide: GtfsDataService, useValue: mockService },
+        { provide: LocaleService, useValue: { current: signal('fr') } },
       ],
     });
 

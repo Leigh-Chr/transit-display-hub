@@ -8,9 +8,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { bcp47 } from '@shared/utils/locale-date.utils';
 
 /**
  * Timeline of GTFS import attempts. Each row exposes status,
@@ -301,6 +303,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 })
 export class ImportAuditComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
+  private readonly locale = inject(LocaleService);
 
   readonly audits = signal<ImportAudit[]>([]);
   readonly loading = signal(false);
@@ -367,8 +370,9 @@ export class ImportAuditComponent implements OnInit {
   }
 
   formatLarge(value: number): string {
-    if (value < 10_000) {return value.toLocaleString('fr-FR');}
-    return (value / 1000).toFixed(1).replace('.', ',') + 'k';
+    const tag = bcp47(this.locale.current());
+    if (value < 10_000) {return value.toLocaleString(tag);}
+    return (value / 1000).toLocaleString(tag, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k';
   }
 
   reportHtmlUrl(auditId: string): string {

@@ -4,7 +4,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { DataOverviewService } from '@core/api/data-overview.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { DataOverview } from '@shared/models';
+import { bcp47 } from '@shared/utils/locale-date.utils';
 
 /**
  * Single-call snapshot of every persisted GTFS entity count plus the
@@ -235,6 +237,7 @@ import { DataOverview } from '@shared/models';
 })
 export class DataOverviewCardComponent implements OnInit {
   private readonly overviewService = inject(DataOverviewService);
+  private readonly locale = inject(LocaleService);
 
   readonly overview = signal<DataOverview | null>(null);
   readonly loaded = signal<boolean>(false);
@@ -264,9 +267,10 @@ export class DataOverviewCardComponent implements OnInit {
   /** Compact rendering for >=10k counts: "12 345" → "12.3k". Keeps
    *  the cell width tight on dense feeds without losing magnitude. */
   formatLarge(value: number): string {
+    const tag = bcp47(this.locale.current());
     if (value < 10_000) {
-      return value.toLocaleString('fr-FR');
+      return value.toLocaleString(tag);
     }
-    return (value / 1000).toFixed(1).replace('.', ',') + 'k';
+    return (value / 1000).toLocaleString(tag, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k';
   }
 }

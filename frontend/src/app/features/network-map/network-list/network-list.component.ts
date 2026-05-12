@@ -10,7 +10,9 @@ import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
+import { bcp47 } from '@shared/utils/locale-date.utils';
 
 /**
  * Tabular alternative to the SVG schematic at {@code /map}. Ships the
@@ -223,6 +225,7 @@ import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
 export class NetworkListComponent implements OnInit {
   private readonly dataService = inject(NetworkMapDataService);
   private readonly transloco = inject(TranslocoService);
+  private readonly locale = inject(LocaleService);
 
   readonly data = signal<NetworkMap | null>(null);
   readonly loading = signal<boolean>(true);
@@ -285,7 +288,8 @@ export class NetworkListComponent implements OnInit {
   }
 
   formatCount(value: number): string {
-    if (value < 10_000) {return value.toLocaleString('fr-FR');}
-    return (value / 1000).toFixed(1).replace('.', ',') + 'k';
+    const tag = bcp47(this.locale.current());
+    if (value < 10_000) {return value.toLocaleString(tag);}
+    return (value / 1000).toLocaleString(tag, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k';
   }
 }
