@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { NotifyService } from '@core/services/notify.service';
 import { StopService } from '@core/api/stop.service';
 import { Itinerary, Stop, UpdateItineraryStopsRequest } from '@shared/models';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 export interface ItineraryStopsDialogData {
   itinerary: Itinerary;
@@ -37,20 +38,22 @@ interface StopItem {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>Manage Stops - {{ data.itinerary.name }}</h2>
+    <ng-container *transloco="let t">
+    <h2 mat-dialog-title>{{ t('admin.itineraries.stopsDialog.title', { name: data.itinerary.name }) }}</h2>
 
     <mat-dialog-content class="itinerary-stops-dialog-content">
       @if (loading()) {
         <div class="loading-container">
-          <mat-spinner diameter="40" aria-label="Loading itinerary stops" />
+          <mat-spinner diameter="40" [attr.aria-label]="t('admin.itineraries.stopsDialog.title', { name: data.itinerary.name })" />
         </div>
       } @else {
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Add a stop</mat-label>
+          <mat-label>{{ t('admin.itineraries.stopsDialog.addStop') }}</mat-label>
           <mat-select
             [value]="null"
             (selectionChange)="addStop($event.value); $event.source.value = null"
@@ -60,10 +63,10 @@ interface StopItem {
               <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
             }
             @if (availableStops().length === 0) {
-              <mat-option disabled>No more stops available</mat-option>
+              <mat-option disabled>{{ t('admin.itineraries.stopsDialog.noMoreStops') }}</mat-option>
             }
           </mat-select>
-          <mat-hint>Select a stop to add to this itinerary</mat-hint>
+          <mat-hint>{{ t('admin.itineraries.stopsDialog.addStopHint') }}</mat-hint>
         </mat-form-field>
 
         @if (selectedStops().length > 0) {
@@ -73,7 +76,13 @@ interface StopItem {
                 <mat-icon cdkDragHandle class="drag-handle">drag_handle</mat-icon>
                 <span class="position">{{ i + 1 }}</span>
                 <span class="name">{{ stop.name }}</span>
-                <button mat-icon-button color="warn" (click)="removeStop(i)" class="delete-btn">
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeStop(i)"
+                  class="delete-btn"
+                  [attr.aria-label]="t('admin.itineraries.stopsDialog.removeTooltip')"
+                >
                   <mat-icon>delete</mat-icon>
                 </button>
                 <div class="drop-placeholder" *cdkDragPlaceholder></div>
@@ -83,26 +92,27 @@ interface StopItem {
 
           <p class="terminus-info">
             <mat-icon class="terminus-icon">flag</mat-icon>
-            <span>Terminus: <strong>{{ selectedStops()[selectedStops().length - 1]?.name }}</strong></span>
+            <span>{{ t('admin.itineraries.stopsDialog.terminusLabel') }} <strong>{{ selectedStops()[selectedStops().length - 1]?.name }}</strong></span>
           </p>
         } @else {
           <p class="empty-message">
             <mat-icon>info</mat-icon>
-            No stops added yet. Add stops to define the itinerary.
+            {{ t('admin.itineraries.stopsDialog.noStopsYet') }}
           </p>
         }
       }
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         (click)="save()"
         [disabled]="loading() || selectedStops().length === 0"
-      >Save</button>
+      >{{ t('admin.itineraries.stopsDialog.actionSave') }}</button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .itinerary-stops-dialog-content {
@@ -247,6 +257,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
   readonly data = inject<ItineraryStopsDialogData>(MAT_DIALOG_DATA);
   private readonly stopService = inject(StopService);
   private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly loading = signal(true);
   readonly availableStops = signal<Stop[]>([]);

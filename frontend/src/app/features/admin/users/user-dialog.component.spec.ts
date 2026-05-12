@@ -1,8 +1,40 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UserDialogComponent, UserDialogData } from './user-dialog.component';
 import { User } from '@shared/models';
+
+const en = {
+  common: { cancel: 'Cancel' },
+  admin: {
+    users: {
+      dialog: {
+        titleCreate: 'New User',
+        titleEdit: 'Edit User',
+        fieldUsername: 'Username',
+        fieldUsernamePlaceholder: 'Enter username',
+        fieldUsernameHint: '3-50 characters',
+        fieldUsernameRequired: 'Username must be 3-50 characters',
+        fieldPassword: 'Password',
+        fieldPasswordPlaceholderCreate: 'Enter password',
+        fieldPasswordPlaceholderEdit: 'Leave empty to keep current',
+        fieldPasswordHintCreate: 'Minimum 6 characters',
+        fieldPasswordHintEdit: 'Leave empty to keep current password',
+        fieldPasswordErrorCreate: 'Password is required (min 6 characters)',
+        fieldPasswordErrorEdit: 'Password must be at least 6 characters',
+        fieldRole: 'Role',
+        fieldRoleRequired: 'Role is required',
+        roleAdminDesc: 'Full access to all features',
+        roleAgentDesc: 'Can only manage messages',
+        fieldEnabled: 'Account enabled',
+        fieldEnabledHint: 'Disabled accounts cannot log in',
+        actionCreate: 'Create User',
+        actionSave: 'Save Changes',
+      },
+    },
+  },
+};
 
 describe('UserDialogComponent', () => {
   let component: UserDialogComponent;
@@ -14,7 +46,13 @@ describe('UserDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [UserDialogComponent],
+      imports: [
+        UserDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },

@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { User, UserRole, CreateUserRequest, UpdateUserRequest } from '@shared/models';
 
 export interface UserDialogData {
@@ -28,16 +29,18 @@ export interface UserDialogData {
     MatInputModule,
     MatSelectModule,
     MatSlideToggleModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <h2 mat-dialog-title>
-      {{ data.isEdit ? 'Edit User' : 'New User' }}
+      {{ data.user ? t('admin.users.dialog.titleEdit') : t('admin.users.dialog.titleCreate') }}
     </h2>
     <mat-dialog-content>
       <form #userForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Username</mat-label>
+          <mat-label>{{ t('admin.users.dialog.fieldUsername') }}</mat-label>
           <input
             matInput
             [(ngModel)]="form.username"
@@ -46,18 +49,18 @@ export interface UserDialogData {
             [disabled]="data.isEdit"
             minlength="3"
             maxlength="50"
-            placeholder="Enter username"
+            [placeholder]="t('admin.users.dialog.fieldUsernamePlaceholder')"
           />
           @if (!data.isEdit) {
-            <mat-hint>3-50 characters</mat-hint>
+            <mat-hint>{{ t('admin.users.dialog.fieldUsernameHint') }}</mat-hint>
           }
           @if (!data.isEdit) {
-            <mat-error>Username must be 3-50 characters</mat-error>
+            <mat-error>{{ t('admin.users.dialog.fieldUsernameRequired') }}</mat-error>
           }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Password</mat-label>
+          <mat-label>{{ t('admin.users.dialog.fieldPassword') }}</mat-label>
           <input
             matInput
             type="password"
@@ -66,52 +69,53 @@ export interface UserDialogData {
             [required]="!data.isEdit"
             minlength="6"
             maxlength="100"
-            [placeholder]="data.isEdit ? 'Leave empty to keep current' : 'Enter password'"
+            [placeholder]="data.isEdit ? t('admin.users.dialog.fieldPasswordPlaceholderEdit') : t('admin.users.dialog.fieldPasswordPlaceholderCreate')"
           />
-          <mat-hint>{{ data.isEdit ? 'Leave empty to keep current password' : 'Minimum 6 characters' }}</mat-hint>
-          <mat-error>{{ data.isEdit ? 'Password must be at least 6 characters' : 'Password is required (min 6 characters)' }}</mat-error>
+          <mat-hint>{{ data.isEdit ? t('admin.users.dialog.fieldPasswordHintEdit') : t('admin.users.dialog.fieldPasswordHintCreate') }}</mat-hint>
+          <mat-error>{{ data.isEdit ? t('admin.users.dialog.fieldPasswordErrorEdit') : t('admin.users.dialog.fieldPasswordErrorCreate') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Role</mat-label>
+          <mat-label>{{ t('admin.users.dialog.fieldRole') }}</mat-label>
           <mat-select [(ngModel)]="form.role" name="role" required>
             <mat-option value="ADMIN">
               <span class="role-option">
                 <strong>ADMIN</strong>
-                <span class="role-desc">Full access to all features</span>
+                <span class="role-desc">{{ t('admin.users.dialog.roleAdminDesc') }}</span>
               </span>
             </mat-option>
             <mat-option value="AGENT">
               <span class="role-option">
                 <strong>AGENT</strong>
-                <span class="role-desc">Can only manage messages</span>
+                <span class="role-desc">{{ t('admin.users.dialog.roleAgentDesc') }}</span>
               </span>
             </mat-option>
           </mat-select>
-          <mat-error>Role is required</mat-error>
+          <mat-error>{{ t('admin.users.dialog.fieldRoleRequired') }}</mat-error>
         </mat-form-field>
 
         @if (data.isEdit) {
           <div class="toggle-row">
             <mat-slide-toggle [(ngModel)]="form.enabled" name="enabled">
-              Account enabled
+              {{ t('admin.users.dialog.fieldEnabled') }}
             </mat-slide-toggle>
-            <span class="toggle-hint">Disabled accounts cannot log in</span>
+            <span class="toggle-hint">{{ t('admin.users.dialog.fieldEnabledHint') }}</span>
           </div>
         }
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         [disabled]="!isFormValid()"
         (click)="save()"
       >
-        {{ data.isEdit ? 'Save Changes' : 'Create User' }}
+        {{ data.user ? t('admin.users.dialog.actionSave') : t('admin.users.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

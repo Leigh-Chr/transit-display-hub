@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { Itinerary, Line, CreateItineraryRequest } from '@shared/models';
 
 export interface ItineraryDialogData {
@@ -33,16 +34,18 @@ interface ItineraryForm {
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <h2 mat-dialog-title>
-      {{ data.itinerary ? 'Edit Itinerary' : 'New Itinerary' }}
+      {{ data.itinerary ? t('admin.itineraries.dialog.titleEdit') : t('admin.itineraries.dialog.titleCreate') }}
     </h2>
     <mat-dialog-content>
       <form #itineraryForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Line</mat-label>
+          <mat-label>{{ t('admin.itineraries.dialog.fieldLine') }}</mat-label>
           <mat-select
             [(ngModel)]="form.lineId"
             name="lineId"
@@ -61,50 +64,51 @@ interface ItineraryForm {
             }
           </mat-select>
           @if (data.itinerary) {
-            <mat-hint>Line cannot be changed after creation</mat-hint>
+            <mat-hint>{{ t('admin.itineraries.dialog.fieldLineHint') }}</mat-hint>
           }
-          <mat-error>Line is required</mat-error>
+          <mat-error>{{ t('admin.itineraries.dialog.fieldLineRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Itinerary Name</mat-label>
+          <mat-label>{{ t('admin.itineraries.dialog.fieldName') }}</mat-label>
           <input
             matInput
             [(ngModel)]="form.name"
             name="name"
             required
             maxlength="100"
-            placeholder="e.g., Direction Eastern Terminal"
+            [placeholder]="t('admin.itineraries.dialog.fieldNamePlaceholder')"
           />
-          <mat-hint>Name for this direction/itinerary</mat-hint>
-          <mat-error>Name is required</mat-error>
+          <mat-hint>{{ t('admin.itineraries.dialog.fieldNameHint') }}</mat-hint>
+          <mat-error>{{ t('admin.itineraries.dialog.fieldNameRequired') }}</mat-error>
         </mat-form-field>
 
         @if (!data.itinerary) {
           <p class="info-text">
             <mat-icon class="info-icon">info</mat-icon>
-            After creating the itinerary, you can add stops to define the terminus.
+            {{ t('admin.itineraries.dialog.infoAfterCreate') }}
           </p>
         } @else if (data.itinerary.terminusName) {
           <p class="terminus-info">
-            <strong>Terminus:</strong> {{ data.itinerary.terminusName }}
+            <strong>{{ t('admin.itineraries.dialog.terminusLabel') }}</strong> {{ data.itinerary.terminusName }}
             <br />
-            <span class="muted">The terminus is automatically derived from the last stop.</span>
+            <span class="muted">{{ t('admin.itineraries.dialog.terminusHint') }}</span>
           </p>
         }
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         [disabled]="!itineraryForm.valid"
         (click)="save()"
       >
-        {{ data.itinerary ? 'Save Changes' : 'Create Itinerary' }}
+        {{ data.itinerary ? t('admin.itineraries.dialog.actionSave') : t('admin.itineraries.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

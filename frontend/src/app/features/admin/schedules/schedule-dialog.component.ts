@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Schedule, CreateScheduleRequest, LineInfo, Itinerary } from '@shared/models';
 import { ItineraryService } from '@core/api/itinerary.service';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 export interface ScheduleDialogData {
   entry?: Schedule;
@@ -27,16 +28,18 @@ export interface ScheduleDialogData {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     <h2 mat-dialog-title>
-      {{ data.entry ? 'Edit Schedule Entry' : 'New Schedule Entry' }}
+      {{ data.entry ? t('admin.schedules.dialog.titleEdit') : t('admin.schedules.dialog.titleCreate') }}
     </h2>
     <mat-dialog-content>
       <form #scheduleForm="ngForm" class="form-container">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Itinerary</mat-label>
+          <mat-label>{{ t('admin.schedules.dialog.fieldItinerary') }}</mat-label>
           <mat-select
             [(ngModel)]="form.itineraryId"
             name="itineraryId"
@@ -57,11 +60,11 @@ export interface ScheduleDialogData {
               </mat-optgroup>
             }
           </mat-select>
-          <mat-error>Itinerary is required</mat-error>
+          <mat-error>{{ t('admin.schedules.dialog.fieldItineraryRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Time</mat-label>
+          <mat-label>{{ t('admin.schedules.dialog.fieldTime') }}</mat-label>
           <input
             matInput
             type="time"
@@ -69,21 +72,22 @@ export interface ScheduleDialogData {
             name="time"
             required
           />
-          <mat-error>Time is required</mat-error>
+          <mat-error>{{ t('admin.schedules.dialog.fieldTimeRequired') }}</mat-error>
         </mat-form-field>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         [disabled]="!scheduleForm.valid || !form.itineraryId"
         (click)="save()"
       >
-        {{ data.entry ? 'Save Changes' : 'Create Entry' }}
+        {{ data.entry ? t('admin.schedules.dialog.actionSave') : t('admin.schedules.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

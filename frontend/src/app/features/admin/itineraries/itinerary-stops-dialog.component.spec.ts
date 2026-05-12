@@ -2,9 +2,37 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ItineraryStopsDialogComponent, ItineraryStopsDialogData } from './itinerary-stops-dialog.component';
 import { StopService } from '@core/api/stop.service';
 import { Itinerary, Stop } from '@shared/models';
+
+const en = {
+  common: { cancel: 'Cancel' },
+  admin: {
+    itineraries: {
+      stopsDialog: {
+        title: 'Manage Stops - {{ name }}',
+        addStop: 'Add a stop',
+        addStopHint: 'Select a stop to add to this itinerary',
+        noMoreStops: 'No more stops available',
+        noStopsYet: 'No stops added yet. Add stops to define the itinerary.',
+        terminusLabel: 'Terminus:',
+        loadFailed: 'Failed to load stops',
+        available: 'Available stops',
+        selected: 'Selected stops',
+        searchPlaceholder: 'Search a stop…',
+        noStopsAvailable: 'No more stops available',
+        noStopsSelected: 'No stops added yet. Add stops to define the itinerary.',
+        addTooltip: 'Add stop',
+        removeTooltip: 'Remove stop',
+        moveUpTooltip: 'Move up',
+        moveDownTooltip: 'Move down',
+        actionSave: 'Save',
+      },
+    },
+  },
+};
 
 describe('ItineraryStopsDialogComponent', () => {
   let component: ItineraryStopsDialogComponent;
@@ -37,7 +65,13 @@ describe('ItineraryStopsDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [ItineraryStopsDialogComponent],
+      imports: [
+        ItineraryStopsDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
@@ -176,7 +210,13 @@ describe('ItineraryStopsDialogComponent', () => {
 
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        imports: [ItineraryStopsDialogComponent],
+        imports: [
+          ItineraryStopsDialogComponent,
+          TranslocoTestingModule.forRoot({
+            langs: { en, fr: en },
+            translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          }),
+        ],
         providers: [
           { provide: MAT_DIALOG_DATA, useValue: { itinerary: mockItinerary } },
           { provide: MatDialogRef, useValue: mockDialogRef },

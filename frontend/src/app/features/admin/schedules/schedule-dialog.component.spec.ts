@@ -2,9 +2,28 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { Schedule, LineInfo, Itinerary } from '@shared/models';
+
+const en = {
+  common: { cancel: 'Cancel' },
+  admin: {
+    schedules: {
+      dialog: {
+        titleCreate: 'New Schedule Entry',
+        titleEdit: 'Edit Schedule Entry',
+        fieldItinerary: 'Itinerary',
+        fieldItineraryRequired: 'Itinerary is required',
+        fieldTime: 'Time',
+        fieldTimeRequired: 'Time is required',
+        actionCreate: 'Create Entry',
+        actionSave: 'Save Changes',
+      },
+    },
+  },
+};
 
 describe('ScheduleDialogComponent', () => {
   let component: ScheduleDialogComponent;
@@ -41,7 +60,13 @@ describe('ScheduleDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [ScheduleDialogComponent],
+      imports: [
+        ScheduleDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
@@ -127,7 +152,13 @@ describe('ScheduleDialogComponent', () => {
 
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        imports: [ScheduleDialogComponent],
+        imports: [
+          ScheduleDialogComponent,
+          TranslocoTestingModule.forRoot({
+            langs: { en, fr: en },
+            translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          }),
+        ],
         providers: [
           { provide: MAT_DIALOG_DATA, useValue: { lines: mockLines } },
           { provide: MatDialogRef, useValue: mockDialogRef },

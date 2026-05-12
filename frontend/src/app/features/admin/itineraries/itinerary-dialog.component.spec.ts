@@ -1,8 +1,35 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ItineraryDialogComponent, ItineraryDialogData } from './itinerary-dialog.component';
 import { Line, Itinerary } from '@shared/models';
+
+const en = {
+  common: { cancel: 'Cancel' },
+  admin: {
+    itineraries: {
+      dialog: {
+        titleCreate: 'New Itinerary',
+        titleEdit: 'Edit Itinerary',
+        fieldLine: 'Line',
+        fieldLineHint: 'Line cannot be changed after creation',
+        fieldLineRequired: 'Line is required',
+        fieldName: 'Itinerary Name',
+        fieldNamePlaceholder: 'e.g., Direction Eastern Terminal',
+        fieldNameHint: 'Name for this direction/itinerary',
+        fieldNameRequired: 'Name is required',
+        fieldTerminus: 'Terminus',
+        fieldTerminusPlaceholder: 'e.g., North Terminal',
+        infoAfterCreate: 'After creating the itinerary, you can add stops to define the terminus.',
+        terminusLabel: 'Terminus:',
+        terminusHint: 'The terminus is automatically derived from the last stop.',
+        actionCreate: 'Create Itinerary',
+        actionSave: 'Save Changes',
+      },
+    },
+  },
+};
 
 describe('ItineraryDialogComponent', () => {
   let component: ItineraryDialogComponent;
@@ -19,7 +46,13 @@ describe('ItineraryDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [ItineraryDialogComponent],
+      imports: [
+        ItineraryDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },

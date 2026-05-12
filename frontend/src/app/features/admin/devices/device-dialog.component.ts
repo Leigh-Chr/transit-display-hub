@@ -8,6 +8,7 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { Line, Stop, RegisterDeviceRequest } from '@shared/models';
 import { StopService } from '@core/api/stop.service';
 
@@ -29,59 +30,62 @@ interface DeviceForm {
     MatButtonModule,
     MatFormFieldModule,
     MatSelectModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>Register New Device</h2>
-    <mat-dialog-content>
-      <form #deviceForm="ngForm" class="form-container">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Line</mat-label>
-          <mat-select
-            [(ngModel)]="form.lineId"
-            name="lineId"
-            required
-            (selectionChange)="onLineChange()"
-          >
-            @for (line of data.lines; track line.id) {
-              <mat-option [value]="line.id">
-                {{ line.code }} - {{ line.name }}
-              </mat-option>
-            }
-          </mat-select>
-          <mat-error>Line is required</mat-error>
-        </mat-form-field>
+    <ng-container *transloco="let t">
+      <h2 mat-dialog-title>{{ t('admin.devices.dialog.title') }}</h2>
+      <mat-dialog-content>
+        <form #deviceForm="ngForm" class="form-container">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('admin.devices.dialog.fieldLine') }}</mat-label>
+            <mat-select
+              [(ngModel)]="form.lineId"
+              name="lineId"
+              required
+              (selectionChange)="onLineChange()"
+            >
+              @for (line of data.lines; track line.id) {
+                <mat-option [value]="line.id">
+                  {{ line.code }} - {{ line.name }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error>{{ t('admin.devices.dialog.fieldLineRequired') }}</mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Stop</mat-label>
-          <mat-select
-            [(ngModel)]="form.stopId"
-            name="stopId"
-            required
-            [disabled]="!form.lineId"
-          >
-            @for (stop of stops(); track stop.id) {
-              <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ t('admin.devices.dialog.fieldStop') }}</mat-label>
+            <mat-select
+              [(ngModel)]="form.stopId"
+              name="stopId"
+              required
+              [disabled]="!form.lineId"
+            >
+              @for (stop of stops(); track stop.id) {
+                <mat-option [value]="stop.id">{{ stop.name }}</mat-option>
+              }
+            </mat-select>
+            @if (!form.lineId) {
+              <mat-hint>{{ t('admin.devices.dialog.fieldStopHint') }}</mat-hint>
             }
-          </mat-select>
-          @if (!form.lineId) {
-            <mat-hint>Pick a line first</mat-hint>
-          }
-          <mat-error>Stop is required</mat-error>
-        </mat-form-field>
-      </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!deviceForm.valid"
-        (click)="save()"
-      >
-        Register Device
-      </button>
-    </mat-dialog-actions>
+            <mat-error>{{ t('admin.devices.dialog.fieldStopRequired') }}</mat-error>
+          </mat-form-field>
+        </form>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="!deviceForm.valid"
+          (click)="save()"
+        >
+          {{ t('admin.devices.dialog.actionRegister') }}
+        </button>
+      </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     .form-container {

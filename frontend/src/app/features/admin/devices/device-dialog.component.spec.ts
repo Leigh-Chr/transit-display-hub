@@ -1,10 +1,28 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop } from '@shared/models';
+
+const en = {
+  common: { cancel: 'Cancel' },
+  admin: {
+    devices: {
+      dialog: {
+        title: 'Register New Device',
+        fieldLine: 'Line',
+        fieldLineRequired: 'Line is required',
+        fieldStop: 'Stop',
+        fieldStopRequired: 'Stop is required',
+        fieldStopHint: 'Pick a line first',
+        actionRegister: 'Register Device',
+      },
+    },
+  },
+};
 
 describe('DeviceDialogComponent', () => {
   let component: DeviceDialogComponent;
@@ -28,7 +46,13 @@ describe('DeviceDialogComponent', () => {
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [DeviceDialogComponent],
+      imports: [
+        DeviceDialogComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: mockDialogRef },
