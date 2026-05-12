@@ -1101,14 +1101,15 @@ export class KioskComponent implements OnInit, OnDestroy {
     // Initialise the reducedMotion signal from the media query. A change
     // listener keeps the signal in sync if the user toggles the OS setting
     // while the kiosk is running (e.g. on a shared-use accessibility kiosk).
-    const mql = typeof window !== 'undefined'
+    this.mql = typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)')
       : null;
-    this.reducedMotion = signal(mql?.matches ?? false);
-    if (mql) {
-      mql.addEventListener('change', (e) => {
+    this.reducedMotion = signal(this.mql?.matches ?? false);
+    if (this.mql) {
+      this.mqlChangeHandler = (e: MediaQueryListEvent) => {
         this.reducedMotion.set(e.matches);
-      });
+      };
+      this.mql.addEventListener('change', this.mqlChangeHandler);
     }
 
     // When reduced-motion is active, advance the page index at a fixed interval
@@ -1139,6 +1140,8 @@ export class KioskComponent implements OnInit, OnDestroy {
   private deviceId: string | null = null;
   private timeInterval: ReturnType<typeof setInterval> | null = null;
   private visibilityHandler: (() => void) | null = null;
+  private mql: MediaQueryList | null = null;
+  private mqlChangeHandler: ((e: MediaQueryListEvent) => void) | null = null;
   /** Wall-clock timestamp of the most recent state update (initial fetch or
    *  WebSocket push). Used to surface "data is stale" when the WS link is
    *  technically open but the backend has gone quiet (deleted stop, etc.). */
@@ -1324,6 +1327,11 @@ export class KioskComponent implements OnInit, OnDestroy {
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
+    }
+    if (this.mql && this.mqlChangeHandler) {
+      this.mql.removeEventListener('change', this.mqlChangeHandler);
+      this.mql = null;
+      this.mqlChangeHandler = null;
     }
     this.wsService.disconnect();
   }
