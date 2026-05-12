@@ -106,6 +106,11 @@ dependencies {
     implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.0")
     implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.0")
 
+    // Pin commons-compress ahead of the gtfs-validator transitive (1.20),
+    // which carries four DoS CVEs reachable from POST /api/admin/gtfs/reimport
+    // (CVE-2021-35515/-35516/-35517/-36090).
+    implementation("org.apache.commons:commons-compress:1.27.1")
+
     // Database. Versions pinned ahead of the Spring Boot BOM defaults to
     // pull in the latest patch releases (CVE bumps, JDBC fixes).
     runtimeOnly("com.h2database:h2")
