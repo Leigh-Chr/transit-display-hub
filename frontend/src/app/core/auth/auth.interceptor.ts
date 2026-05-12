@@ -1,6 +1,7 @@
 import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslocoService } from '@jsverse/transloco';
 import { Observable, catchError, switchMap, throwError } from 'rxjs';
 import { LoginResponse } from '@shared/models';
 import { NotifyService } from '../services/notify.service';
@@ -20,6 +21,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const notify = inject(NotifyService);
+  const transloco = inject(TranslocoService);
 
   // Every browser-driven call needs withCredentials: true so the
   // ACCESS_TOKEN / REFRESH_TOKEN / XSRF-TOKEN cookies ride along —
@@ -30,7 +32,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(reqWithCreds).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 0) {
-        notify.error('Network error: please check your connection');
+        notify.error(transloco.translate('common.errors.network'));
       }
 
       const isAuthEndpoint = reqWithCreds.url.includes(AUTH_PATH_PREFIX);
@@ -40,7 +42,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       if (error.status === 403) {
-        notify.error('Access denied: insufficient permissions');
+        notify.error(transloco.translate('common.errors.accessDenied'));
       }
 
       return throwError(() => error);

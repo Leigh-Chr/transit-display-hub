@@ -15,6 +15,10 @@
     "refresh": "Rafraîchir",
     "ok": "OK",
     "retry": "Réessayer",
+    "errors": {
+      "network": "Erreur réseau : vérifiez votre connexion",
+      "accessDenied": "Accès refusé : permissions insuffisantes"
+    },
     "language": "Langue",
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français"

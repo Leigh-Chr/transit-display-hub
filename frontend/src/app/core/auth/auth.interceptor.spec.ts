@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
+import { TranslocoService } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 import { LoginResponse } from '@shared/models';
 import { NotifyService } from '@core/services/notify.service';
@@ -40,13 +41,20 @@ describe('authInterceptor', () => {
     notifySpy = { error: vi.fn() };
     routerSpy = { url: '/admin/lines' };
 
+    const translations: Record<string, string> = {
+      'common.errors.network': 'Network error: please check your connection',
+      'common.errors.accessDenied': 'Access denied: insufficient permissions',
+    };
+    const translocoSpy = { translate: (key: string) => translations[key] ?? key };
+
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceSpy },
         { provide: NotifyService, useValue: notifySpy },
-        { provide: Router, useValue: routerSpy }
+        { provide: Router, useValue: routerSpy },
+        { provide: TranslocoService, useValue: translocoSpy }
       ]
     });
 
