@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-05-12
+
+Patch defensif autour du dernier P2 de l'audit du 12/05 (pagination
+findAll). Aucun changement de signature publique — les méthodes
+existantes restent `List<T>`.
+
+### Fixed
+
+- **`UnpaginatedCap.findAllCapped`** — nouveau helper partagé qui
+  borne tout `repository.findAll()` non paginé à 1 000 lignes et
+  loggue un `WARN` (label appelant + totalElements) quand le cap est
+  atteint. Appliqué à `AttributionService.getAllAttributions`,
+  `BookingRuleService.browse`, `UserService.getAll` (l'overload
+  legacy sans `Pageable`), `MessageService.getAllMessages` (la table
+  `broadcast_messages` était la seule à grossir sans borne amont) et
+  à trois des huit reads de `FaresV2Service.browse` — les cinq
+  autres conservent leurs variantes `findAllWith*` JOIN-FETCH parce
+  que le cap dégraderait l'optimisation. 3 nouveaux specs unitaires
+  sur le helper (forme du `Pageable`, pass-through sous cap, warn à
+  cap atteint).
+
 ## [1.5.0] — 2026-05-12
 
 Suite de l'audit du 2026-05-12 : ferme les deux P0 reportés depuis
