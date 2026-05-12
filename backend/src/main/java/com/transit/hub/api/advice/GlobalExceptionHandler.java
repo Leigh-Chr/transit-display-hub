@@ -52,13 +52,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(EntityNotFoundException ex, WebRequest request) {
         log.warn("Entity not found: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), null, request);
+        String message = ex.getMessageKey() != null
+                ? messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(),
+                        ex.getMessage(), LocaleContextHolder.getLocale())
+                : ex.getMessage();
+        return buildErrorResponse(HttpStatus.NOT_FOUND, message, null, request);
     }
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiError> handleValidation(ValidationException ex, WebRequest request) {
         log.warn("Validation error: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
+        String message = ex.getMessageKey() != null
+                ? messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(),
+                        ex.getMessage(), LocaleContextHolder.getLocale())
+                : ex.getMessage();
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

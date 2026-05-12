@@ -103,7 +103,7 @@ public class ItineraryService {
                 .orElseThrow(() -> new EntityNotFoundException("Line", request.lineId()));
 
         if (itineraryRepository.existsByLineIdAndName(request.lineId(), request.name())) {
-            throw new ValidationException("Itinerary with name '" + request.name() + "' already exists for line " + line.getCode());
+            throw ValidationException.ofKey("error.itinerary.nameAlreadyExistsForLine", request.name(), line.getCode());
         }
 
         Itinerary itinerary = Itinerary.builder()
@@ -132,7 +132,7 @@ public class ItineraryService {
                 .orElseThrow(() -> new EntityNotFoundException("Line", request.lineId()));
 
         if (itineraryRepository.existsByLineIdAndNameExcludingId(request.lineId(), request.name(), id)) {
-            throw new ValidationException("Itinerary with name '" + request.name() + "' already exists for line " + line.getCode());
+            throw ValidationException.ofKey("error.itinerary.nameAlreadyExistsForLine", request.name(), line.getCode());
         }
 
         itinerary.setLine(line);
@@ -188,7 +188,7 @@ public class ItineraryService {
                 .orElseThrow(() -> new EntityNotFoundException("Stop", request.stopId()));
 
         if (itineraryStopRepository.existsByItineraryIdAndStopId(itineraryId, request.stopId())) {
-            throw new ValidationException("Stop '" + stop.getName() + "' is already in this itinerary");
+            throw ValidationException.ofKey("error.itinerary.stopAlreadyInItinerary", stop.getName());
         }
 
         int position;
@@ -231,7 +231,7 @@ public class ItineraryService {
 
         boolean removed = itinerary.getItineraryStops().removeIf(is -> is.getStop().getId().equals(stopId));
         if (!removed) {
-            throw new ValidationException("Stop is not part of this itinerary");
+            throw ValidationException.ofKey("error.itinerary.stopNotInItinerary");
         }
 
         // Reorder remaining stops

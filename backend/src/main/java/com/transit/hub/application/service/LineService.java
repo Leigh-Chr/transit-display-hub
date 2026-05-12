@@ -78,7 +78,7 @@ public class LineService {
     @Transactional
     public LineResponse createLine(CreateLineRequest request) {
         if (lineRepository.existsByCode(request.code())) {
-            throw new ValidationException("Line with code '" + request.code() + "' already exists");
+            throw ValidationException.ofKey("error.line.codeAlreadyExists", request.code());
         }
 
         Line line = Line.builder()
@@ -101,7 +101,7 @@ public class LineService {
 
         // Check if code is being changed to an existing code
         if (!line.getCode().equals(request.code()) && lineRepository.existsByCode(request.code())) {
-            throw new ValidationException("Line with code '" + request.code() + "' already exists");
+            throw ValidationException.ofKey("error.line.codeAlreadyExists", request.code());
         }
 
         boolean colorChanged = !line.getColor().equals(request.color());

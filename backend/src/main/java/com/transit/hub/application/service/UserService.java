@@ -58,7 +58,7 @@ public class UserService {
 
     public UserResponse create(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.username())) {
-            throw new ValidationException("Username already exists");
+            throw ValidationException.ofKey("error.user.usernameAlreadyExists");
         }
 
         User user = User.builder()
@@ -108,8 +108,7 @@ public class UserService {
         // The caller is still counted at this point — at least 2 are needed
         // for the change to leave someone else as active admin.
         if (activeAdmins <= 1) {
-            throw new ValidationException(
-                    "Cannot disable, demote or delete the last active administrator");
+            throw ValidationException.ofKey("error.user.lastActiveAdmin");
         }
     }
 }

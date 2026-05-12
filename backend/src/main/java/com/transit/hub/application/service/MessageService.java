@@ -198,18 +198,18 @@ public class MessageService {
 
     private void validateMessageRequest(CreateMessageRequest request) {
         if (request.startTime().isAfter(request.endTime())) {
-            throw new ValidationException("Start time must be before end time");
+            throw ValidationException.ofKey("error.message.startBeforeEnd");
         }
 
         switch (request.scopeType()) {
             case NETWORK:
                 if (request.scopeId() != null) {
-                    throw new ValidationException("Scope ID must be null for NETWORK scope");
+                    throw ValidationException.ofKey("error.message.scopeIdNullForNetwork");
                 }
                 break;
             case LINE:
                 if (request.scopeId() == null) {
-                    throw new ValidationException("Scope ID is required for LINE scope");
+                    throw ValidationException.ofKey("error.message.scopeIdRequiredForLine");
                 }
                 if (!lineRepository.existsById(request.scopeId())) {
                     throw new EntityNotFoundException("Line", request.scopeId());
@@ -217,7 +217,7 @@ public class MessageService {
                 break;
             case STOP:
                 if (request.scopeId() == null) {
-                    throw new ValidationException("Scope ID is required for STOP scope");
+                    throw ValidationException.ofKey("error.message.scopeIdRequiredForStop");
                 }
                 if (!stopRepository.existsById(request.scopeId())) {
                     throw new EntityNotFoundException("Stop", request.scopeId());
