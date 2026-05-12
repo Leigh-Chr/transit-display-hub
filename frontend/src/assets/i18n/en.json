@@ -21,7 +21,9 @@
     },
     "language": "Language",
     "switchToEnglish": "Switch to English",
-    "switchToFrench": "Passer en français"
+    "switchToFrench": "Passer en français",
+    "switchLight": "Switch to light mode",
+    "switchDark": "Switch to dark mode"
   },
   "auth": {
     "login": {
@@ -91,8 +93,21 @@
   },
   "map": {
     "title": "Network map",
+    "networkMap": "Network Map",
     "viewList": "List view",
     "viewListAria": "Accessible tabular view — keyboard / screen reader",
+    "categoryNav": "Network category",
+    "tabAll": "All",
+    "emptyStops": "No stops configured yet",
+    "loadingAria": "Loading network",
+    "findStop": "Find a stop",
+    "stopNamePlaceholder": "Stop name",
+    "dataAttribution": "Data attribution: {{ source }}",
+    "accessibleOnlyTitle": "Compute a wheelchair-accessible route only (filters out stops with wheelchair_boarding=2)",
+    "accessibleOnly": "Wheelchair only",
+    "allStops": "All stops",
+    "routeOnly": "Route only",
+    "fullNetwork": "Full network",
     "filterAccessible": "Show wheelchair-accessible stops only",
     "filterOnDemand": "Show on-demand (DRT) stops only",
     "searchStop": "Filter by stop name",

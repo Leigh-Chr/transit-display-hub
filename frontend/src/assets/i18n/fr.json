@@ -21,7 +21,9 @@
     },
     "language": "Langue",
     "switchToEnglish": "Switch to English",
-    "switchToFrench": "Passer en français"
+    "switchToFrench": "Passer en français",
+    "switchLight": "Passer en mode clair",
+    "switchDark": "Passer en mode sombre"
   },
   "auth": {
     "login": {
@@ -91,6 +93,19 @@
   },
   "map": {
     "title": "Plan du réseau",
+    "networkMap": "Carte du réseau",
+    "categoryNav": "Catégorie de réseau",
+    "tabAll": "Toutes",
+    "emptyStops": "Aucun arrêt configuré",
+    "loadingAria": "Chargement du réseau",
+    "findStop": "Rechercher un arrêt",
+    "stopNamePlaceholder": "Nom de l'arrêt",
+    "dataAttribution": "Attribution des données : {{ source }}",
+    "accessibleOnlyTitle": "Calculer un itinéraire accessible PMR uniquement (filtre les arrêts wheelchair_boarding=2)",
+    "accessibleOnly": "PMR uniquement",
+    "allStops": "Tous les arrêts",
+    "routeOnly": "Itinéraire seul",
+    "fullNetwork": "Réseau complet",
     "viewList": "Vue liste",
     "viewListAria": "Vue tabulaire accessible — clavier / lecteur d'écran",
     "filterAccessible": "Arrêts accessibles PMR uniquement",

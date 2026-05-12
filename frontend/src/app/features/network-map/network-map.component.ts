@@ -53,7 +53,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
       <header class="page-header">
         <div class="title-row">
           <img ngSrc="assets/logo.png" width="32" height="32" alt="Transit Display Hub" class="header-logo" priority>
-          <h1>Network Map</h1>
+          <h1>{{ 'map.networkMap' | transloco }}</h1>
         </div>
         <p class="subtitle">{{ subtitle() }}</p>
         <a routerLink="/map/list" class="list-alt-link"
@@ -65,8 +65,8 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
           class="lang-toggle"
           type="button"
           (click)="localeService.toggle()"
-          [attr.aria-label]="localeService.current() === 'fr' ? 'Switch to English' : 'Passer en français'"
-          [title]="localeService.current() === 'fr' ? 'Switch to English' : 'Passer en français'"
+          [attr.aria-label]="(localeService.current() === 'fr' ? 'common.switchToEnglish' : 'common.switchToFrench') | transloco"
+          [title]="(localeService.current() === 'fr' ? 'common.switchToEnglish' : 'common.switchToFrench') | transloco"
         >
           {{ localeService.current() === 'fr' ? 'EN' : 'FR' }}
         </button>
@@ -74,8 +74,8 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
           class="theme-toggle"
           type="button"
           (click)="themeService.toggleTheme()"
-          [title]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
-          [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+          [title]="(themeService.isDarkMode() ? 'common.switchLight' : 'common.switchDark') | transloco"
+          [attr.aria-label]="(themeService.isDarkMode() ? 'common.switchLight' : 'common.switchDark') | transloco"
           [attr.aria-pressed]="themeService.isDarkMode()"
         >
           <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -83,7 +83,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
       </header>
 
       @if (categories().length > 1) {
-        <nav class="category-tabs" role="tablist" aria-label="Network category">
+        <nav class="category-tabs" role="tablist" [attr.aria-label]="'map.categoryNav' | transloco">
           <button
             type="button"
             role="tab"
@@ -92,7 +92,7 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
             [attr.aria-selected]="selectedCategory() === null"
             (click)="setCategory(null)"
           >
-            <span class="tab-label">All</span>
+            <span class="tab-label">{{ 'map.tabAll' | transloco }}</span>
             <span class="tab-count">{{ allLines().length }}</span>
           </button>
           @for (cat of categories(); track cat.key) {
@@ -113,25 +113,25 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
 
       <main class="map-wrapper">
         @if (attribution()) {
-          <span class="attribution" [attr.aria-label]="'Data attribution: ' + attribution()">
+          <span class="attribution" [attr.aria-label]="'map.dataAttribution' | transloco: { source: attribution() }">
             {{ attribution() }}
           </span>
         }
         @if (loading()) {
           <div class="loading-state">
-            <mat-spinner diameter="48" aria-label="Loading network"></mat-spinner>
-            <span>Loading network...</span>
+            <mat-spinner diameter="48" [attr.aria-label]="'map.loadingAria' | transloco"></mat-spinner>
+            <span>{{ 'map.loadingNetwork' | transloco }}</span>
           </div>
         } @else if (error()) {
           <div class="error-state">
             <mat-icon>error_outline</mat-icon>
             <span>{{ error() }}</span>
-            <button mat-flat-button (click)="loadNetwork()">Retry</button>
+            <button mat-flat-button (click)="loadNetwork()">{{ 'common.retry' | transloco }}</button>
           </div>
         } @else if (layoutStops().length === 0) {
           <div class="empty-state">
             <mat-icon>route</mat-icon>
-            <span>No stops configured yet</span>
+            <span>{{ 'map.emptyStops' | transloco }}</span>
           </div>
         } @else if (useIndexView()) {
           <app-line-index
@@ -164,14 +164,14 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
             <div class="stop-search-panel">
               <div class="panel-header">
                 <mat-icon class="panel-icon">search</mat-icon>
-                <span class="panel-title">Find a stop</span>
+                <span class="panel-title">{{ 'map.findStop' | transloco }}</span>
               </div>
               <mat-form-field class="stop-search-field" appearance="fill" subscriptSizing="dynamic">
                 <mat-icon matPrefix class="field-icon">location_on</mat-icon>
                 <input matInput
                   [formControl]="stopSearchCtrl"
                   [matAutocomplete]="stopAuto"
-                  placeholder="Stop name"
+                  [placeholder]="'map.stopNamePlaceholder' | transloco"
                 />
                 @if (stopSearchCtrl.value) {
                   <button matSuffix class="clear-btn" (click)="clearStopSearch()">
@@ -204,14 +204,14 @@ import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credi
                     [class.toggled]="accessibleOnly()"
                     (click)="toggleAccessibleOnly()"
                     [attr.aria-pressed]="accessibleOnly()"
-                    title="Calculer un itinéraire accessible PMR uniquement (filtre les arrêts wheelchair_boarding=2)">
+                    [title]="'map.accessibleOnlyTitle' | transloco">
               <mat-icon>{{ accessibleOnly() ? 'accessible_forward' : 'accessibility' }}</mat-icon>
-              <span>{{ accessibleOnly() ? 'PMR uniquement' : 'Tous les arrêts' }}</span>
+              <span>{{ (accessibleOnly() ? 'map.accessibleOnly' : 'map.allStops') | transloco }}</span>
             </button>
             @if (routeResult()) {
               <button class="view-toggle-btn" (click)="toggleNetworkView()">
                 <mat-icon>{{ showFullNetwork() ? 'filter_alt' : 'public' }}</mat-icon>
-                <span>{{ showFullNetwork() ? 'Route only' : 'Full network' }}</span>
+                <span>{{ (showFullNetwork() ? 'map.routeOnly' : 'map.fullNetwork') | transloco }}</span>
               </button>
             }
           </div>
