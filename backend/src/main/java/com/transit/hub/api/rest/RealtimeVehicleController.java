@@ -35,9 +35,30 @@ public class RealtimeVehicleController {
                        + "app.gtfs-rt.vehicle-positions-poll-cron.")
     public ResponseEntity<List<VehiclePositionResponse>> current() {
         List<VehiclePositionResponse> positions = cache.currentSnapshot().stream()
-                .map(VehiclePositionResponse::from)
+                .map(RealtimeVehicleController::toResponse)
                 .toList();
         return ResponseEntity.ok(positions);
+    }
+
+    private static VehiclePositionResponse toResponse(RealtimeVehiclePositionCache.VehicleSnapshot snap) {
+        return new VehiclePositionResponse(
+                snap.entityId(),
+                snap.vehicleId(),
+                snap.vehicleLabel(),
+                snap.tripId(),
+                snap.routeId(),
+                snap.latitude(),
+                snap.longitude(),
+                snap.bearing(),
+                snap.speed(),
+                snap.currentStatus(),
+                snap.currentStopId(),
+                snap.currentStopSequence(),
+                snap.congestionLevel(),
+                snap.occupancyStatus(),
+                snap.occupancyPercentage(),
+                snap.timestampEpochSeconds()
+        );
     }
 
     @PostMapping("/refresh")

@@ -35,9 +35,24 @@ public class RealtimeAlertController {
                        + "dans leur fenêtre temporelle.")
     public ResponseEntity<List<RealtimeAlertResponse>> active() {
         List<RealtimeAlertResponse> alerts = alertCache.activeAlerts(Instant.now()).stream()
-                .map(RealtimeAlertResponse::from)
+                .map(RealtimeAlertController::toResponse)
                 .toList();
         return ResponseEntity.ok(alerts);
+    }
+
+    private static RealtimeAlertResponse toResponse(RealtimeAlertCache.AlertSnapshot snap) {
+        return new RealtimeAlertResponse(
+                snap.id(),
+                List.copyOf(snap.routeExternalIds()),
+                List.copyOf(snap.stopExternalIds()),
+                List.copyOf(snap.agencyExternalIds()),
+                snap.headerText(),
+                snap.descriptionText(),
+                snap.url(),
+                snap.cause() != null ? snap.cause().name() : null,
+                snap.effect() != null ? snap.effect().name() : null,
+                snap.severity() != null ? snap.severity().name() : null
+        );
     }
 
     @PostMapping("/refresh")

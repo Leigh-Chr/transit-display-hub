@@ -18,32 +18,18 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * caches, configuration) or into {@code application} (DTOs,
  * services, exceptions).
  *
- * <p>Allowlist (frozen exceptions kept in code rather than in a
- * sidecar violations store, so each entry is visible at review
- * time and easy to remove once the underlying class is moved):
- *
- * <ul>
- *   <li>{@code VehiclePositionResponse} and {@code RealtimeAlertResponse}
- *   expose a {@code from(cacheSnapshot)} factory that takes an inner
- *   record of {@code RealtimeVehiclePositionCache} / {@code RealtimeAlertCache}.
- *   The shape-adapter belongs in the cache or in a dedicated mapper;
- *   relocation tracked for a future minor.</li>
- * </ul>
- *
- * <p>Removing an allowlist entry should always be paired with
- * the corresponding refactor commit.
+ * <p>The allowlist is intentionally empty: every package boundary
+ * holds without name-based exemption. When a future refactor needs
+ * a temporary frozen exception, add a {@code private static final
+ * String} constant and an {@code .and().doNotHaveFullyQualifiedName(...)}
+ * clause to the relevant rule, and document the planned phase that
+ * will retire the entry.
  */
 @AnalyzeClasses(
     packages = "com.transit.hub",
     importOptions = ImportOption.DoNotIncludeTests.class
 )
 class LayeredArchitectureTest {
-
-    private static final String VEHICLE_POSITION_RESPONSE =
-        "com.transit.hub.application.dto.response.VehiclePositionResponse";
-
-    private static final String REALTIME_ALERT_RESPONSE =
-        "com.transit.hub.application.dto.response.RealtimeAlertResponse";
 
     @ArchTest
     static final ArchRule domainDoesNotDependOnInfrastructure =
@@ -66,8 +52,6 @@ class LayeredArchitectureTest {
     static final ArchRule applicationDtoDoesNotDependOnInfrastructure =
         noClasses()
             .that().resideInAPackage("..application.dto..")
-            .and().doNotHaveFullyQualifiedName(VEHICLE_POSITION_RESPONSE)
-            .and().doNotHaveFullyQualifiedName(REALTIME_ALERT_RESPONSE)
             .should().dependOnClassesThat()
             .resideInAPackage("..infrastructure..")
             .as("DTOs must remain free of infrastructure dependencies");

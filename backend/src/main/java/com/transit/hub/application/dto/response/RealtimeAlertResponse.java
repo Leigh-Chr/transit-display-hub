@@ -1,7 +1,5 @@
 package com.transit.hub.application.dto.response;
 
-import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
-
 import java.util.List;
 
 /**
@@ -21,18 +19,4 @@ public record RealtimeAlertResponse(
         String effect,
         String severity
 ) {
-    public static RealtimeAlertResponse from(RealtimeAlertCache.AlertSnapshot snap) {
-        return new RealtimeAlertResponse(
-                snap.id(),
-                List.copyOf(snap.routeExternalIds()),
-                List.copyOf(snap.stopExternalIds()),
-                List.copyOf(snap.agencyExternalIds()),
-                snap.headerText(),
-                snap.descriptionText(),
-                snap.url(),
-                snap.cause() != null ? snap.cause().name() : null,
-                snap.effect() != null ? snap.effect().name() : null,
-                snap.severity() != null ? snap.severity().name() : null
-        );
-    }
 }
