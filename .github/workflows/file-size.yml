@@ -1,0 +1,20 @@
+name: File size guardrail
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Enforce maintainability ceiling
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check source file sizes
+        run: bash scripts/check-file-size.sh

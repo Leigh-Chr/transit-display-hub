@@ -1,0 +1,27 @@
+# scripts/oversized-allowlist.txt
+#
+# Files exempt from the size guardrail enforced by
+# scripts/check-file-size.sh. Each entry should be removed in the same
+# commit as the refactor that brings the file back under threshold.
+#
+# Planned removals (see
+# .planning/refactors/2026-05-12-maintainability-guardrails.md
+# § "Après Phase 1") :
+#
+#   Phase 1.7.0 — fusion kiosk/hub via <display-board>, decompose
+#                 schematic-map (Dijkstra + layout services),
+#                 relocate DisplayStateCalculator to application.service
+#   Phase 1.8.0 — AdminPageBase migration (dashboard → use shared shell)
+#   Phase 1.9.0 — schematic-map decomposition completion
+#   Phase 1.10.0 — external templates (kiosk, hub, network-map,
+#                  stop-popup) shrink the .ts files below 1000 lines
+#
+# Lines starting with '#' and blank lines are ignored.
+
+frontend/src/app/features/display/kiosk/kiosk.component.ts
+frontend/src/app/features/network-map/components/schematic-map/schematic-map.component.ts
+frontend/src/app/features/network-map/network-map.component.ts
+frontend/src/app/features/admin/dashboard/dashboard.component.ts
+frontend/src/app/features/display/hub/hub.component.ts
+frontend/src/app/features/network-map/components/stop-popup/stop-popup.component.ts
+frontend/src/app/shared/models/index.ts
