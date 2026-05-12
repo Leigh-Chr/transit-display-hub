@@ -4,7 +4,6 @@ import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
-import com.transit.hub.domain.service.DisplayStateCalculator;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

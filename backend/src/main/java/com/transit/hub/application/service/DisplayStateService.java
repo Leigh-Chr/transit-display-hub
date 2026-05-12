@@ -6,7 +6,6 @@ import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.event.ScheduleChangedEvent;
 import com.transit.hub.domain.event.StopDeletedEvent;
 import com.transit.hub.domain.model.enums.MessageSeverity;
-import com.transit.hub.domain.service.DisplayStateCalculator;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

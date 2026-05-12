@@ -3,7 +3,6 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.dto.response.HubDisplayState;
 import com.transit.hub.application.dto.response.LineInfo;
-import com.transit.hub.domain.service.DisplayStateCalculator;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

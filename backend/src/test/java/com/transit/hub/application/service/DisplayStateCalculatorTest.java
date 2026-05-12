@@ -1,4 +1,4 @@
-package com.transit.hub.domain.service;
+package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.exception.EntityNotFoundException;

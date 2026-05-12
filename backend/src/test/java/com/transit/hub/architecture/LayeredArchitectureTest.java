@@ -23,18 +23,11 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * time and easy to remove once the underlying class is moved):
  *
  * <ul>
- *   <li>{@code DisplayStateCalculator} currently reaches into
- *   {@code infrastructure.persistence.*}, {@code infrastructure.realtime.*}
- *   and {@code application.dto.*}. The move to {@code application.service}
- *   is planned in the next minor (see
- *   {@code .planning/refactors/2026-05-12-maintainability-guardrails.md}
- *   § "Après Phase 1").</li>
  *   <li>{@code VehiclePositionResponse} and {@code RealtimeAlertResponse}
  *   expose a {@code from(cacheSnapshot)} factory that takes an inner
  *   record of {@code RealtimeVehiclePositionCache} / {@code RealtimeAlertCache}.
  *   The shape-adapter belongs in the cache or in a dedicated mapper;
- *   relocation tracked together with the {@code DisplayStateCalculator}
- *   move.</li>
+ *   relocation tracked for a future minor.</li>
  * </ul>
  *
  * <p>Removing an allowlist entry should always be paired with
@@ -46,9 +39,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 )
 class LayeredArchitectureTest {
 
-    private static final String DISPLAY_STATE_CALCULATOR =
-        "com.transit.hub.domain.service.DisplayStateCalculator";
-
     private static final String VEHICLE_POSITION_RESPONSE =
         "com.transit.hub.application.dto.response.VehiclePositionResponse";
 
@@ -59,7 +49,6 @@ class LayeredArchitectureTest {
     static final ArchRule domainDoesNotDependOnInfrastructure =
         noClasses()
             .that().resideInAPackage("..domain..")
-            .and().doNotHaveFullyQualifiedName(DISPLAY_STATE_CALCULATOR)
             .should().dependOnClassesThat()
             .resideInAPackage("..infrastructure..")
             .as("domain classes must not depend on infrastructure");
@@ -68,7 +57,6 @@ class LayeredArchitectureTest {
     static final ArchRule domainDoesNotDependOnApplication =
         noClasses()
             .that().resideInAPackage("..domain..")
-            .and().doNotHaveFullyQualifiedName(DISPLAY_STATE_CALCULATOR)
             .should().dependOnClassesThat()
             .resideInAPackage("..application..")
             .as("domain classes must not depend on application "

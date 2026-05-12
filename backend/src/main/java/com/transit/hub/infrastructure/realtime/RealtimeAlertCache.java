@@ -16,7 +16,7 @@ import java.util.Set;
  * In-memory cache of GTFS-Realtime {@code ServiceAlert}s. A single
  * background poll fetches the configured feed URL, parses the
  * Protobuf {@code FeedMessage}, and replaces the snapshot atomically
- * so {@link com.transit.hub.domain.service.DisplayStateCalculator}
+ * so {@link com.transit.hub.application.service.DisplayStateCalculator}
  * reads through a single volatile reference without locking.
  * <p>
  * Disabled when {@code app.gtfs-rt.alerts-url} is empty: the cache
