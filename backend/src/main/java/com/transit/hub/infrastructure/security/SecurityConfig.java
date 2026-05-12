@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.transit.hub.infrastructure.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +24,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -41,6 +41,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final LoginRateLimitFilter loginRateLimitFilter;
     private final Environment environment;
+    private final AuthProperties authProperties;
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsCsv;
@@ -56,15 +57,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(csrfHandler)
-                        // While the cookie-based session is rolling out, callers still
-                        // arriving with an Authorization: Bearer header keep the
-                        // stateless contract — browsers never attach that header
-                        // automatically, so CSRF protection is unnecessary for them.
-                        // /api/auth/** is also exempt: /login has no XSRF cookie yet,
-                        // and /refresh + /logout are already gated by their own
-                        // refresh-token cookie. Once Bearer support is dropped the
-                        // matcher reduces to the default mutating-request rule.
-                        .requireCsrfProtectionMatcher(csrfProtectionMatcher())
+                        // Only /api/auth/login is exempt (pre-auth: no XSRF cookie can
+                        // exist yet), plus the rare stateless caller that arrives with
+                        // an Authorization: Bearer header AND no auth cookie. Cookie
+                        // carriers — including /refresh and /logout — go through CSRF
+                        // because SameSite=Strict alone evaporates the moment a deploy
+                        // flips it to Lax (one-click logout / forced refresh otherwise).
+                        .requireCsrfProtectionMatcher(new CsrfProtectionMatcher(authProperties))
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -171,22 +170,6 @@ public class SecurityConfig {
                 );
 
         return http.build();
-    }
-
-    private static RequestMatcher csrfProtectionMatcher() {
-        return request -> {
-            String method = request.getMethod();
-            if ("GET".equals(method) || "HEAD".equals(method)
-                    || "OPTIONS".equals(method) || "TRACE".equals(method)) {
-                return false;
-            }
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                return false;
-            }
-            String path = request.getRequestURI();
-            return path == null || !path.startsWith("/api/auth/");
-        };
     }
 
     @Bean

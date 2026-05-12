@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -233,7 +234,7 @@ class AuthControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 when refresh cookie is missing")
         void noCookie_Returns401() throws Exception {
-            mockMvc.perform(post("/api/auth/refresh"))
+            mockMvc.perform(post("/api/auth/refresh").with(csrf()))
                     .andExpect(status().isUnauthorized());
         }
 
@@ -249,7 +250,9 @@ class AuthControllerIntegrationTest {
             Cookie initialRefresh = login.getResponse().getCookie("REFRESH_TOKEN");
             assertThat(initialRefresh).isNotNull();
 
-            MvcResult refresh = mockMvc.perform(post("/api/auth/refresh").cookie(initialRefresh))
+            MvcResult refresh = mockMvc.perform(post("/api/auth/refresh")
+                            .cookie(initialRefresh)
+                            .with(csrf()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.token", notNullValue()))
                     .andExpect(jsonPath("$.role", is("ADMIN")))
@@ -272,12 +275,28 @@ class AuthControllerIntegrationTest {
                     .andReturn();
             Cookie firstRefresh = login.getResponse().getCookie("REFRESH_TOKEN");
 
-            mockMvc.perform(post("/api/auth/refresh").cookie(firstRefresh))
+            mockMvc.perform(post("/api/auth/refresh").cookie(firstRefresh).with(csrf()))
                     .andExpect(status().isOk());
 
             // Replaying the now-rotated cookie must fail loud.
-            mockMvc.perform(post("/api/auth/refresh").cookie(firstRefresh))
+            mockMvc.perform(post("/api/auth/refresh").cookie(firstRefresh).with(csrf()))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("rejects a refresh attempt that arrives without a CSRF token")
+        void missingCsrfToken_Returns403() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn();
+            Cookie refresh = login.getResponse().getCookie("REFRESH_TOKEN");
+
+            // No .with(csrf()) — exactly the cross-site-form-without-the-header
+            // attack that the previous /api/auth/** exemption silently allowed.
+            mockMvc.perform(post("/api/auth/refresh").cookie(refresh))
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -295,7 +314,9 @@ class AuthControllerIntegrationTest {
                     .andReturn();
             Cookie refresh = login.getResponse().getCookie("REFRESH_TOKEN");
 
-            MvcResult logout = mockMvc.perform(post("/api/auth/logout").cookie(refresh))
+            MvcResult logout = mockMvc.perform(post("/api/auth/logout")
+                            .cookie(refresh)
+                            .with(csrf()))
                     .andExpect(status().isNoContent())
                     .andReturn();
 
@@ -310,8 +331,24 @@ class AuthControllerIntegrationTest {
         @Test
         @DisplayName("is idempotent when called without a refresh cookie")
         void noCookie_Returns204() throws Exception {
-            mockMvc.perform(post("/api/auth/logout"))
+            mockMvc.perform(post("/api/auth/logout").with(csrf()))
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("rejects a logout attempt that arrives without a CSRF token")
+        void missingCsrfToken_Returns403() throws Exception {
+            LoginRequest request = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn();
+            Cookie refresh = login.getResponse().getCookie("REFRESH_TOKEN");
+
+            // No .with(csrf()) — would let a cross-site form involuntarily
+            // log the user out via cookie SameSite=Lax. CSRF must close it.
+            mockMvc.perform(post("/api/auth/logout").cookie(refresh))
+                    .andExpect(status().isForbidden());
         }
     }
 
