@@ -6,7 +6,7 @@ import { SNACKBAR_DURATIONS } from '../../shared/utils/snackbar.constants';
 import { NotifyService } from './notify.service';
 
 describe('NotifyService', () => {
-  function setup() {
+  function setup(): { service: NotifyService; open: ReturnType<typeof vi.fn>; actionSubject: Subject<void> } {
     const actionSubject = new Subject<void>();
     const open = vi.fn().mockReturnValue({ onAction: () => EMPTY });
     TestBed.configureTestingModule({

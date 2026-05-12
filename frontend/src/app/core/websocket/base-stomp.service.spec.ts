@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Injectable } from '@angular/core';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Subject } from 'rxjs';
-import { Client, StompConfig } from '@stomp/stompjs';
+import { Client, StompConfig, StompSubscription } from '@stomp/stompjs';
 import { AuthService } from '@core/auth/auth.service';
 import { BaseStompService } from './base-stomp.service';
 import { STOMP_CLIENT_FACTORY, StompClientFactory } from './stomp-client.factory';
@@ -30,7 +30,7 @@ class TestStompService extends BaseStompService {
     destination: string,
     parse: (body: string) => T,
     onMessage: (payload: T) => void,
-  ) {
+  ): StompSubscription | null {
     return this.subscribeToTopic(destination, parse, onMessage, destination);
   }
 }

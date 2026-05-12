@@ -7,6 +7,12 @@
  * `{ error: { message: string } }` via GlobalExceptionHandler.
  */
 export function httpErrorMessage(err: unknown, fallback: string): string {
+  // The cast assumes non-nullish but the spec deliberately passes null
+  // / undefined / strings to prove the helper degrades gracefully; the
+  // optional chain is what makes that contract work, so the lint rule
+  // is silenced here on purpose.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const httpErr = err as { error?: { message?: string } };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return httpErr?.error?.message ?? fallback;
 }
