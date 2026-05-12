@@ -41,6 +41,11 @@
     }
   },
   "kiosk": {
+    "errors": {
+      "missingDeviceOrStop": "Jeton d'appareil ou identifiant d'arrêt manquant. Configurez l'URL d'affichage avec /display/:stopId, ?token=<jeton-appareil>, ou ?stopId=<id-arrêt>",
+      "invalidToken": "Jeton d'appareil invalide ou appareil introuvable.",
+      "stopNotFound": "Arrêt introuvable."
+    },
     "noArrivals": "Aucun passage prévu",
     "noScheduledDepartures": "Aucun passage à annoncer",
     "alertWarning": "Alerte trafic",
@@ -126,6 +131,13 @@
       "accessible": "Accessible PMR",
       "notAccessible": "Non accessible",
       "unknown": "Non renseigné"
+    }
+  },
+  "hub": {
+    "errors": {
+      "missingStopIds": "Identifiants d'arrêts manquants. Utilisez /hub?stopIds=id1,id2,id3&name=Nom+du+hub",
+      "noValidStopIds": "Aucun identifiant d'arrêt valide fourni.",
+      "loadFailed": "Échec du chargement de l'affichage hub. Vérifiez les identifiants d'arrêts."
     }
   },
   "notFound": {

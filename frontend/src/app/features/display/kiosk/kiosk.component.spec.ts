@@ -12,6 +12,11 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 const translocoLangs = {
   en: {
     kiosk: {
+      errors: {
+        missingDeviceOrStop: 'Missing device token or stop ID. Configure the display URL with /display/:stopId, ?token=<device-token>, or ?stopId=<stop-id>',
+        invalidToken: 'Invalid device token or device not found.',
+        stopNotFound: 'Stop not found.',
+      },
       noArrivals: 'No upcoming departure',
       noScheduledDepartures: 'No scheduled departures',
       imminent: 'Imminent',

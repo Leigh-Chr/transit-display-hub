@@ -41,6 +41,11 @@
     }
   },
   "kiosk": {
+    "errors": {
+      "missingDeviceOrStop": "Missing device token or stop ID. Configure the display URL with /display/:stopId, ?token=<device-token>, or ?stopId=<stop-id>",
+      "invalidToken": "Invalid device token or device not found.",
+      "stopNotFound": "Stop not found."
+    },
     "noArrivals": "No upcoming departure",
     "noScheduledDepartures": "No scheduled departures",
     "alertWarning": "Service alert",
@@ -126,6 +131,13 @@
       "accessible": "Wheelchair accessible",
       "notAccessible": "Not accessible",
       "unknown": "Not declared"
+    }
+  },
+  "hub": {
+    "errors": {
+      "missingStopIds": "Missing stop IDs. Use /hub?stopIds=id1,id2,id3&name=Hub+Name",
+      "noValidStopIds": "No valid stop IDs provided.",
+      "loadFailed": "Failed to load hub display state. Check stop IDs."
     }
   },
   "notFound": {

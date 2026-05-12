@@ -1301,9 +1301,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.stopId = queryStopId;
         this.initializeWithStopId();
       } else if (!this.stopId && !this.token) {
-        this.error.set(
-          'Missing device token or stop ID. Configure the display URL with /display/:stopId, ?token=<device-token>, or ?stopId=<stop-id>'
-        );
+        this.error.set(this.transloco.translate('kiosk.errors.missingDeviceOrStop'));
       }
     });
 
@@ -1383,7 +1381,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.subscribeToUpdates(authenticated.state.stopId);
       },
       error: () => {
-        this.error.set('Invalid device token or device not found.');
+        this.error.set(this.transloco.translate('kiosk.errors.invalidToken'));
       },
     });
   }
@@ -1400,7 +1398,7 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.subscribeToUpdates(stopId);
       },
       error: () => {
-        this.error.set('Stop not found.');
+        this.error.set(this.transloco.translate('kiosk.errors.stopNotFound'));
       },
     });
   }

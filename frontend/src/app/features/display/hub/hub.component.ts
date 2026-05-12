@@ -844,15 +844,13 @@ export class HubComponent implements OnInit, OnDestroy {
       this.hubName = String(params['name'] ?? '') || 'Hub';
 
       if (!stopIdsParam) {
-        this.error.set(
-          'Missing stop IDs. Use /hub?stopIds=id1,id2,id3&name=Hub+Name'
-        );
+        this.error.set(this.transloco.translate('hub.errors.missingStopIds'));
         return;
       }
 
       this.stopIds = stopIdsParam.split(',').map(id => id.trim()).filter(Boolean);
       if (this.stopIds.length === 0) {
-        this.error.set('No valid stop IDs provided.');
+        this.error.set(this.transloco.translate('hub.errors.noValidStopIds'));
         return;
       }
 
@@ -908,7 +906,7 @@ export class HubComponent implements OnInit, OnDestroy {
         this.subscribeToUpdates();
       },
       error: () => {
-        this.error.set('Failed to load hub display state. Check stop IDs.');
+        this.error.set(this.transloco.translate('hub.errors.loadFailed'));
       },
     });
   }
