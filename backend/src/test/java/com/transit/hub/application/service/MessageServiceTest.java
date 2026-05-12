@@ -480,7 +480,8 @@ class MessageServiceTest {
         void returnsAllMessages() {
             BroadcastMessage msg1 = TestDataFactory.createNetworkMessage();
             BroadcastMessage msg2 = TestDataFactory.createLineMessage(testLineId);
-            when(messageRepository.findAll()).thenReturn(List.of(msg1, msg2));
+            when(messageRepository.findAll(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(msg1, msg2)));
 
             List<MessageResponse> result = messageService.getAllMessages();
 
@@ -490,7 +491,8 @@ class MessageServiceTest {
         @Test
         @DisplayName("returns empty list when no messages")
         void returnsEmptyWhenNoMessages() {
-            when(messageRepository.findAll()).thenReturn(List.of());
+            when(messageRepository.findAll(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
 
             List<MessageResponse> result = messageService.getAllMessages();
 

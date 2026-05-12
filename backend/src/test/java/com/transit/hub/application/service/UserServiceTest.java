@@ -69,7 +69,8 @@ class UserServiceTest {
         @Test
         @DisplayName("returns all users")
         void returnsAllUsers() {
-            when(userRepository.findAll()).thenReturn(List.of(testAdmin, testAgent));
+            when(userRepository.findAll(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(testAdmin, testAgent)));
 
             List<UserResponse> result = userService.getAll();
 
@@ -80,7 +81,7 @@ class UserServiceTest {
         @Test
         @DisplayName("returns empty list when no users")
         void returnsEmptyList() {
-            when(userRepository.findAll()).thenReturn(List.of());
+            when(userRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
             List<UserResponse> result = userService.getAll();
 
