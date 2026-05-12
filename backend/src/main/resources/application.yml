@@ -30,6 +30,12 @@ app:
   # Operator-facing local time used for schedule comparisons. Override via
   # APP_TIMEZONE on networks running outside Europe/Paris.
   timezone: ${APP_TIMEZONE:Europe/Paris}
+  cors:
+    # Explicit allowlist for cross-origin browser callers. Each deploy
+    # MUST set APP_CORS_ALLOWED_ORIGINS to the public frontend / kiosk
+    # origins; the localhost default keeps the dev profile working but
+    # would block every legitimate request in prod.
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}
   auth:
     # HttpOnly cookies dropped at /api/auth/login. Secure defaults to true
     # so a misconfigured deployment fails closed (browser refuses to send

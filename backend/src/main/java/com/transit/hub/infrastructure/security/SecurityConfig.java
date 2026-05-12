@@ -171,9 +171,18 @@ public class SecurityConfig {
                                         + "img-src 'self' data:; "
                                         + "frame-ancestors 'self'; "
                                         + "base-uri 'self'"))
-                        .httpStrictTransportSecurity(hsts -> hsts
-                                .includeSubDomains(true)
-                                .maxAgeInSeconds(63072000L))
+                        // HSTS only outside dev — emitting Strict-Transport-Security
+                        // on http://localhost:8080 forces every browser that hits
+                        // the dev server to remember the host as HTTPS-only,
+                        // which then breaks the next plain-HTTP visit until the
+                        // header expires (two years here).
+                        .httpStrictTransportSecurity(hsts -> {
+                            if (environment.acceptsProfiles(Profiles.of("dev"))) {
+                                hsts.disable();
+                            } else {
+                                hsts.includeSubDomains(true).maxAgeInSeconds(63072000L);
+                            }
+                        })
                         .referrerPolicy(rp -> rp.policy(
                                 ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 );
