@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { DataOverviewService } from '@core/api/data-overview.service';
 import { DataOverview } from '@shared/models';
 
@@ -18,76 +19,78 @@ import { DataOverview } from '@shared/models';
 @Component({
   selector: 'app-data-overview-card',
   standalone: true,
-  imports: [MatCardModule, MatIconModule, MatTooltipModule],
+  imports: [MatCardModule, MatIconModule, MatTooltipModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (loaded() && overview(); as data) {
-      <mat-card class="overview-card">
+      <mat-card class="overview-card" *transloco="let t; prefix: 'admin.dashboard.overview'">
         <mat-card-content>
           <div class="overview-header">
             <mat-icon class="overview-icon">storage</mat-icon>
-            <strong>Données du feed</strong>
+            <strong>{{ t('feedData') }}</strong>
           </div>
 
           <div class="overview-grid">
-            <div class="overview-item" matTooltip="Lignes (routes.txt)">
+            <div class="overview-item" [matTooltip]="t('tooltipLines')">
               <span class="count">{{ data.staticGtfs.lines }}</span>
-              <span class="label">lignes</span>
+              <span class="label">{{ t('lines') }}</span>
             </div>
             <div class="overview-item" [class.has-issue]="data.staticGtfs.disabledStops > 0"
-                 [matTooltip]="stopsTooltip()">
+                 [matTooltip]="data.staticGtfs.disabledStops === 0
+                    ? t('tooltipStops')
+                    : t('tooltipStopsOrphans', { count: data.staticGtfs.disabledStops })">
               <span class="count">{{ data.staticGtfs.stops }}</span>
-              <span class="label">arrêts</span>
+              <span class="label">{{ t('stops') }}</span>
               @if (data.staticGtfs.disabledStops > 0) {
                 <span class="orphan-badge">−{{ data.staticGtfs.disabledStops }}</span>
               }
             </div>
-            <div class="overview-item" matTooltip="Itinéraires actifs (route, direction)">
+            <div class="overview-item" [matTooltip]="t('tooltipItineraries')">
               <span class="count">{{ data.staticGtfs.itineraries }}</span>
-              <span class="label">itinéraires</span>
+              <span class="label">{{ t('itineraries') }}</span>
             </div>
-            <div class="overview-item" matTooltip="Horaires persistés (toutes lignes, tous services)">
+            <div class="overview-item" [matTooltip]="t('tooltipSchedules')">
               <span class="count">{{ formatLarge(data.staticGtfs.schedules) }}</span>
-              <span class="label">horaires</span>
+              <span class="label">{{ t('schedules') }}</span>
             </div>
-            <div class="overview-item" matTooltip="Calendriers de service (calendar.txt + calendar_dates.txt)">
+            <div class="overview-item" [matTooltip]="t('tooltipCalendars')">
               <span class="count">{{ data.staticGtfs.serviceCalendars }}</span>
-              <span class="label">calendriers</span>
+              <span class="label">{{ t('calendars') }}</span>
             </div>
             @if (data.staticGtfs.transfers > 0) {
-              <div class="overview-item" matTooltip="Transfers entre arrêts">
+              <div class="overview-item" [matTooltip]="t('tooltipTransfers')">
                 <span class="count">{{ data.staticGtfs.transfers }}</span>
-                <span class="label">transfers</span>
+                <span class="label">{{ t('transfers') }}</span>
               </div>
             }
             @if (data.staticGtfs.shapes > 0) {
-              <div class="overview-item" matTooltip="Polylines géographiques (shapes.txt)">
+              <div class="overview-item" [matTooltip]="t('tooltipShapes')">
                 <span class="count">{{ data.staticGtfs.shapes }}</span>
-                <span class="label">shapes</span>
+                <span class="label">{{ t('shapes') }}</span>
               </div>
             }
             @if (data.staticGtfs.pathways > 0) {
-              <div class="overview-item" matTooltip="Connexions intra-station (pathways.txt)">
+              <div class="overview-item" [matTooltip]="t('tooltipPathways')">
                 <span class="count">{{ data.staticGtfs.pathways }}</span>
-                <span class="label">pathways</span>
+                <span class="label">{{ t('pathways') }}</span>
               </div>
             }
             @if (data.staticGtfs.fareAttributes > 0) {
-              <div class="overview-item" matTooltip="Tarifs (Fares v1)">
+              <div class="overview-item" [matTooltip]="t('tooltipFares')">
                 <span class="count">{{ data.staticGtfs.fareAttributes }}</span>
-                <span class="label">tarifs</span>
+                <span class="label">{{ t('fares') }}</span>
               </div>
             }
             @if (data.staticGtfs.translations > 0) {
-              <div class="overview-item" matTooltip="Traductions (translations.txt)">
+              <div class="overview-item" [matTooltip]="t('tooltipTranslations')">
                 <span class="count">{{ formatLarge(data.staticGtfs.translations) }}</span>
-                <span class="label">traductions</span>
+                <span class="label">{{ t('translations') }}</span>
               </div>
             }
             @if (data.staticGtfs.bookingRules > 0) {
-              <div class="overview-item" matTooltip="Règles de réservation TAD">
+              <div class="overview-item" [matTooltip]="t('tooltipBookingRules')">
                 <span class="count">{{ data.staticGtfs.bookingRules }}</span>
-                <span class="label">réservations</span>
+                <span class="label">{{ t('bookingRules') }}</span>
               </div>
             }
           </div>
@@ -96,27 +99,27 @@ import { DataOverview } from '@shared/models';
             <div class="rt-section">
               <div class="rt-header">
                 <mat-icon class="rt-icon">sensors</mat-icon>
-                <span>Temps réel</span>
+                <span>{{ t('realtime') }}</span>
               </div>
               <div class="rt-grid">
                 @if (data.realtime.alertsEnabled) {
                   <div class="rt-item" [class.rt-active]="data.realtime.alerts > 0">
                     <span class="rt-dot"></span>
-                    <span class="rt-label">Alertes</span>
+                    <span class="rt-label">{{ t('rtAlerts') }}</span>
                     <span class="rt-count">{{ data.realtime.alerts }}</span>
                   </div>
                 }
                 @if (data.realtime.tripUpdatesEnabled) {
                   <div class="rt-item" [class.rt-active]="data.realtime.tripUpdates > 0">
                     <span class="rt-dot"></span>
-                    <span class="rt-label">Trips</span>
+                    <span class="rt-label">{{ t('rtTrips') }}</span>
                     <span class="rt-count">{{ data.realtime.tripUpdates }}</span>
                   </div>
                 }
                 @if (data.realtime.vehiclePositionsEnabled) {
                   <div class="rt-item" [class.rt-active]="data.realtime.vehiclePositions > 0">
                     <span class="rt-dot"></span>
-                    <span class="rt-label">Véhicules</span>
+                    <span class="rt-label">{{ t('rtVehicles') }}</span>
                     <span class="rt-count">{{ data.realtime.vehiclePositions }}</span>
                   </div>
                 }
@@ -242,15 +245,6 @@ export class DataOverviewCardComponent implements OnInit {
     return o.realtime.alertsEnabled
         || o.realtime.tripUpdatesEnabled
         || o.realtime.vehiclePositionsEnabled;
-  });
-
-  readonly stopsTooltip = computed<string>(() => {
-    const o = this.overview();
-    if (!o) {return '';}
-    if (o.staticGtfs.disabledStops === 0) {
-      return 'Arrêts (stops.txt)';
-    }
-    return `Arrêts (${o.staticGtfs.disabledStops} orphelins du dernier import)`;
   });
 
   ngOnInit(): void {

@@ -194,7 +194,16 @@
       "loadLinesFailed": "Failed to load lines for hub selector",
       "overview": {
         "feedData": "Feed data",
+        "lines": "lines",
+        "stops": "stops",
+        "itineraries": "itineraries",
+        "schedules": "schedules",
         "calendars": "calendars",
+        "transfers": "transfers",
+        "shapes": "shapes",
+        "pathways": "pathways",
+        "fares": "fares",
+        "translations": "translations",
         "bookingRules": "booking rules",
         "tooltipLines": "Lines (routes.txt)",
         "tooltipStops": "Stops (stops.txt)",
@@ -207,7 +216,11 @@
         "tooltipPathways": "Intra-station connections (pathways.txt)",
         "tooltipFares": "Fares (Fares v1)",
         "tooltipTranslations": "Translations (translations.txt)",
-        "tooltipBookingRules": "DRT booking rules"
+        "tooltipBookingRules": "DRT booking rules",
+        "realtime": "Real-time",
+        "rtAlerts": "Alerts",
+        "rtTrips": "Trips",
+        "rtVehicles": "Vehicles"
       },
       "feedInfo": {
         "dayLeft": "day left",
