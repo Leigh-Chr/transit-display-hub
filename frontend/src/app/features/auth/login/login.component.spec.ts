@@ -2,9 +2,29 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { LoginComponent } from './login.component';
 import { AuthService } from '@core/auth/auth.service';
 import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
+
+const en = {
+  common: { appName: 'Transit Display Hub' },
+  auth: {
+    login: {
+      logoAlt: 'Transit Display Hub logo',
+      usernameLabel: 'Username',
+      passwordLabel: 'Password',
+      submit: 'Login',
+      loadingAriaLabel: 'Logging in',
+      devHint: 'Default credentials: admin / admin123',
+      error: {
+        invalidCredentials: 'Invalid credentials',
+        tooManyAttempts: 'Too many login attempts. Please try again in a few minutes.',
+        generic: 'An error occurred. Please try again.',
+      },
+    },
+  },
+};
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -23,7 +43,13 @@ describe('LoginComponent', () => {
     routerSpy = { navigate: vi.fn(), navigateByUrl: vi.fn() };
 
     await TestBed.configureTestingModule({
-      imports: [LoginComponent],
+      imports: [
+        LoginComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en, fr: en },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        }),
+      ],
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Router, useValue: routerSpy }
@@ -203,8 +229,25 @@ describe('LoginComponent', () => {
       component.username = 'admin';
       component.password = 'wrong';
       component.onSubmit();
+      fixture.detectChanges();
 
-      expect(component.error()).toBe('Invalid credentials');
+      expect(component.error()).toBe('auth.login.error.invalidCredentials');
+      expect(fixture.nativeElement.querySelector('.error-message').textContent)
+        .toContain('Invalid credentials');
+    });
+
+    it('should display rate-limit error on 429', () => {
+      const errorResponse = new HttpErrorResponse({
+        status: 429,
+        statusText: 'Too Many Requests'
+      });
+      authServiceSpy.login.mockReturnValue(throwError(() => errorResponse));
+
+      component.username = 'admin';
+      component.password = 'wrong';
+      component.onSubmit();
+
+      expect(component.error()).toBe('auth.login.error.tooManyAttempts');
     });
 
     it('should display generic error for other errors', () => {
@@ -218,7 +261,7 @@ describe('LoginComponent', () => {
       component.password = 'password';
       component.onSubmit();
 
-      expect(component.error()).toBe('An error occurred. Please try again.');
+      expect(component.error()).toBe('auth.login.error.generic');
     });
 
     it('should set loading to false after error', () => {
@@ -296,8 +339,8 @@ describe('LoginComponent', () => {
   });
 
   describe('error display', () => {
-    it('should display error message when error exists', () => {
-      component.error.set('Invalid credentials');
+    it('should display the translated error message when an error key is set', () => {
+      component.error.set('auth.login.error.invalidCredentials');
       fixture.detectChanges();
 
       const errorElement = fixture.nativeElement.querySelector('.error-message');

@@ -17,6 +17,21 @@
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français"
   },
+  "auth": {
+    "login": {
+      "logoAlt": "Logo Transit Display Hub",
+      "usernameLabel": "Nom d'utilisateur",
+      "passwordLabel": "Mot de passe",
+      "submit": "Connexion",
+      "loadingAriaLabel": "Connexion en cours",
+      "devHint": "Identifiants par défaut : admin / admin123",
+      "error": {
+        "invalidCredentials": "Identifiants invalides",
+        "tooManyAttempts": "Trop de tentatives. Réessayez dans quelques minutes.",
+        "generic": "Une erreur est survenue. Veuillez réessayer."
+      }
+    }
+  },
   "kiosk": {
     "noArrivals": "Aucun passage prévu",
     "noScheduledDepartures": "Aucun passage à annoncer",

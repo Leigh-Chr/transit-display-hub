@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { NgOptimizedImage } from '@angular/common';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 
 @Component({
@@ -22,22 +23,23 @@ import { AuthService } from '@core/auth/auth.service';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="login-container">
+    <main class="login-container" *transloco="let t">
       <mat-card class="login-card">
         <mat-card-header>
           <div class="login-brand">
-            <img ngSrc="assets/logo.png" width="72" height="72" alt="Transit Display Hub logo" class="brand-logo" priority>
-            <h1 class="login-title">Transit Display Hub</h1>
+            <img ngSrc="assets/logo.png" width="72" height="72" [alt]="t('auth.login.logoAlt')" class="brand-logo" priority>
+            <h1 class="login-title">{{ t('common.appName') }}</h1>
           </div>
         </mat-card-header>
 
         <mat-card-content>
           <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Username</mat-label>
+              <mat-label>{{ t('auth.login.usernameLabel') }}</mat-label>
               <mat-icon matPrefix>person</mat-icon>
               <input
                 matInput
@@ -49,7 +51,7 @@ import { AuthService } from '@core/auth/auth.service';
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Password</mat-label>
+              <mat-label>{{ t('auth.login.passwordLabel') }}</mat-label>
               <mat-icon matPrefix>lock</mat-icon>
               <input
                 matInput
@@ -63,7 +65,7 @@ import { AuthService } from '@core/auth/auth.service';
             @if (error()) {
               <div class="error-message" role="alert" aria-live="assertive">
                 <mat-icon>error</mat-icon>
-                {{ error() }}
+                {{ t(error()!) }}
               </div>
             }
 
@@ -75,9 +77,9 @@ import { AuthService } from '@core/auth/auth.service';
               [disabled]="loading()"
             >
               @if (loading()) {
-                <mat-spinner diameter="20" aria-label="Logging in"></mat-spinner>
+                <mat-spinner diameter="20" [attr.aria-label]="t('auth.login.loadingAriaLabel')"></mat-spinner>
               } @else {
-                Login
+                {{ t('auth.login.submit') }}
               }
             </button>
           </form>
@@ -85,7 +87,7 @@ import { AuthService } from '@core/auth/auth.service';
 
         @if (devMode) {
           <mat-card-footer>
-            <p class="hint-text">Default credentials: admin / admin123</p>
+            <p class="hint-text">{{ t('auth.login.devHint') }}</p>
           </mat-card-footer>
         }
       </mat-card>
@@ -212,11 +214,11 @@ export class LoginComponent {
           this.loading.set(false);
           const httpErr = err as { status?: number };
           if (httpErr.status === 401) {
-            this.error.set('Invalid credentials');
+            this.error.set('auth.login.error.invalidCredentials');
           } else if (httpErr.status === 429) {
-            this.error.set('Too many login attempts. Please try again in a few minutes.');
+            this.error.set('auth.login.error.tooManyAttempts');
           } else {
-            this.error.set('An error occurred. Please try again.');
+            this.error.set('auth.login.error.generic');
           }
         },
       });

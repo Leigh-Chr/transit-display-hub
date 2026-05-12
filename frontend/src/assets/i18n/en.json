@@ -17,6 +17,21 @@
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français"
   },
+  "auth": {
+    "login": {
+      "logoAlt": "Transit Display Hub logo",
+      "usernameLabel": "Username",
+      "passwordLabel": "Password",
+      "submit": "Login",
+      "loadingAriaLabel": "Logging in",
+      "devHint": "Default credentials: admin / admin123",
+      "error": {
+        "invalidCredentials": "Invalid credentials",
+        "tooManyAttempts": "Too many login attempts. Please try again in a few minutes.",
+        "generic": "An error occurred. Please try again."
+      }
+    }
+  },
   "kiosk": {
     "noArrivals": "No upcoming departure",
     "noScheduledDepartures": "No scheduled departures",
