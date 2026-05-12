@@ -11,7 +11,6 @@ export function httpErrorMessage(err: unknown, fallback: string): string {
   // / undefined / strings to prove the helper degrades gracefully; the
   // optional chain is what makes that contract work, so the lint rule
   // is silenced here on purpose.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const httpErr = err as { error?: { message?: string } };
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return httpErr?.error?.message ?? fallback;
