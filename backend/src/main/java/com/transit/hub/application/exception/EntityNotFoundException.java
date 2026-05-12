@@ -32,6 +32,6 @@ public class EntityNotFoundException extends RuntimeException {
     }
 
     public Object[] getMessageArgs() {
-        return messageArgs;
+        return messageArgs == null ? null : messageArgs.clone();
     }
 }
