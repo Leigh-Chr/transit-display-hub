@@ -13,7 +13,8 @@ import { ItineraryService } from '@core/api/itinerary.service';
 import { Itinerary, Shape, ShapePoint } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { lineTextColor, readableTextColor } from '@shared/utils/color.utils';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 interface ProjectedPoint { x: number; y: number; }
 
@@ -115,6 +116,14 @@ interface ProjectedPoint { x: number; y: number; }
 
             @if (loading()) {
               <div class="shape-canvas placeholder">{{ t('admin.shapes.loading') }}</div>
+            } @else if (loadError()) {
+              <app-empty-state
+                icon="error_outline"
+                [title]="t('admin.shapes.loadFailed')"
+                [description]="t('admin.common.loadErrorDescription')"
+                [actionLabel]="t('common.refresh')"
+                actionIcon="refresh"
+                (action)="loadShape()" />
             } @else if (!shape() || shape()!.points.length < 2) {
               <app-empty-state
                 icon="signal_disconnected"
@@ -231,6 +240,7 @@ interface ProjectedPoint { x: number; y: number; }
 export class ShapesComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly itineraryService = inject(ItineraryService);
+  private readonly transloco = inject(TranslocoService);
 
   private static readonly VIEW_W = 800;
   private static readonly VIEW_H = 480;
@@ -241,6 +251,7 @@ export class ShapesComponent implements OnInit {
   readonly selectedItin = signal<Itinerary | null>(null);
   readonly shape = signal<Shape | null>(null);
   readonly loading = signal(false);
+  readonly loadError = signal<string | null>(null);
 
   search = '';
 
@@ -309,16 +320,24 @@ export class ShapesComponent implements OnInit {
   onItinSelected(itin: Itinerary): void {
     this.selectedItin.set(itin);
     this.search = itin.name;
+    this.loadShape();
+  }
+
+  loadShape(): void {
+    const itin = this.selectedItin();
+    if (!itin) { return; }
     this.shape.set(null);
+    this.loadError.set(null);
     this.loading.set(true);
     this.gtfsData.getShapeForItinerary(itin.id).subscribe({
       next: (data) => {
         this.shape.set(data);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.shape.set(null);
         this.loading.set(false);
+        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.shapes.loadFailed')));
       },
     });
   }

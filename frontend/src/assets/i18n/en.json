@@ -760,6 +760,7 @@
       "title": "Import History",
       "subtitle": "GTFS import attempts — successes, skips for unchanged feed, failures with their message. Boot-time scheduler and manual import-now writes appear here.",
       "refresh": "Refresh",
+      "loadFailed": "Failed to load import history",
       "noAudits": "No imports recorded yet",
       "noAuditsDesc": "Configure app.gtfs.feed-url and trigger an import from the admin screen.",
       "colStatus": "Status",
@@ -855,6 +856,7 @@
       "itinPickerLabel": "Itinerary",
       "itinPickerPlaceholder": "Type a name or line code…",
       "loading": "Loading…",
+      "loadFailed": "Failed to load shape",
       "emptyShapeTitle": "No shape for this itinerary",
       "emptyShapeDesc": "The feed did not attach a shape_id to this trip, or the shape has fewer than two points.",
       "emptySelectTitle": "Select an itinerary",
@@ -871,7 +873,8 @@
       "mapAria": "DRT zones map",
       "zoneCount": "{{ count }} zone(s)",
       "mapFootnote": "Equirectangular projection, free scale. Overlaps visible here reflect actual overlaps in the feed.",
-      "stopTooltip": "This zone is attached to a GTFS stop_id"
+      "stopTooltip": "This zone is attached to a GTFS stop_id",
+      "loadFailed": "Failed to load DRT zones"
     }
   }
 }

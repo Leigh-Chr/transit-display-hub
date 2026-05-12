@@ -96,6 +96,17 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             [rows]="6"
             [columns]="[{ width: '100px' }, { width: '150px' }, { width: '80px' }]"
           />
+        } @else if (loadError()) {
+          <mat-card animate.enter="fade-in">
+            <app-empty-state
+              icon="error_outline"
+              [title]="t('admin.schedules.loadFailed')"
+              [description]="t('admin.common.loadErrorDescription')"
+              [actionLabel]="t('common.refresh')"
+              actionIcon="refresh"
+              (action)="loadSchedules()"
+            />
+          </mat-card>
         } @else if (dataSource.data.length === 0) {
           <mat-card animate.enter="fade-in">
             <mat-card-header>
@@ -255,6 +266,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
   readonly sort = viewChild(MatSort);
   loading = signal(false);
+  loadError = signal<string | null>(null);
   lines = signal<Line[]>([]);
   stops = signal<Stop[]>([]);
   dataSource = new MatTableDataSource<Schedule>([]);
@@ -298,6 +310,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   loadSchedules(): void {
     if (this.selectedStopId) {
       this.loading.set(true);
+      this.loadError.set(null);
       const stop = this.stops().find((s) => s.id === this.selectedStopId);
       this.selectedStop.set(stop ?? null);
       this.scheduleService.getForStop(this.selectedStopId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -307,7 +320,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.loadFailed')));
+          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.schedules.loadFailed')));
         },
       });
     } else {

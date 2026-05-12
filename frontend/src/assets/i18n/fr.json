@@ -760,6 +760,7 @@
       "title": "Historique des imports",
       "subtitle": "Tentatives d'import GTFS — succès, skip pour feed inchangé, échecs avec leur message. Le scheduler boot-time et les import-now manuels écrivent ici.",
       "refresh": "Rafraîchir",
+      "loadFailed": "Impossible de charger l'historique d'import",
       "noAudits": "Pas encore d'import enregistré",
       "noAuditsDesc": "Configure app.gtfs.feed-url et déclenche un import depuis l'écran admin.",
       "colStatus": "Statut",
@@ -855,6 +856,7 @@
       "itinPickerLabel": "Itinéraire",
       "itinPickerPlaceholder": "Tape un nom ou code de ligne…",
       "loading": "Chargement…",
+      "loadFailed": "Impossible de charger le tracé",
       "emptyShapeTitle": "Pas de shape pour cet itinéraire",
       "emptyShapeDesc": "Le feed n'a pas attaché de shape_id à ce trip, ou le shape ne contient qu'un point.",
       "emptySelectTitle": "Sélectionne un itinéraire",
@@ -871,7 +873,8 @@
       "mapAria": "Carte des zones TAD",
       "zoneCount": "{{ count }} zone(s)",
       "mapFootnote": "Projection plate carrée, échelle libre. Les chevauchements visibles ici reflètent les chevauchements réels du feed.",
-      "stopTooltip": "Cette zone est rattachée à un stop_id GTFS"
+      "stopTooltip": "Cette zone est rattachée à un stop_id GTFS",
+      "loadFailed": "Impossible de charger les zones TAD"
     }
   }
 }

@@ -174,7 +174,7 @@ describe('SchedulesComponent', () => {
       expect(mockScheduleService.getForStop).not.toHaveBeenCalled();
     });
 
-    it('should handle error and show snackbar', () => {
+    it('should handle error by surfacing the load error inline', () => {
       fixture.detectChanges();
       component.stops.set([mockStop]);
       component.selectedStopId = 's1';
@@ -185,7 +185,7 @@ describe('SchedulesComponent', () => {
       component.loadSchedules();
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBe('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -196,7 +196,7 @@ describe('SchedulesComponent', () => {
 
       component.loadSchedules();
 
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load schedules');
+      expect(component.loadError()).toBe('Failed to load schedules');
     });
   });
 

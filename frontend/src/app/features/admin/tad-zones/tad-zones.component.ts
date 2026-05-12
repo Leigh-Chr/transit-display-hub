@@ -7,7 +7,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { FlexLocation } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 import {
   FlatRing,
   buildViewport,
@@ -60,6 +61,14 @@ interface RenderedRing {
 
       @if (loading()) {
         <div class="loading">{{ t('admin.tadZones.loading') }}</div>
+      } @else if (loadError()) {
+        <app-empty-state
+          icon="error_outline"
+          [title]="t('admin.tadZones.loadFailed')"
+          [description]="t('admin.common.loadErrorDescription')"
+          [actionLabel]="t('common.refresh')"
+          actionIcon="refresh"
+          (action)="loadZones()" />
       } @else if (locations().length === 0) {
         <app-empty-state
           icon="layers_clear"
@@ -261,9 +270,11 @@ interface RenderedRing {
 })
 export class TadZonesComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly locations = signal<FlexLocation[]>([]);
   readonly loading = signal(true);
+  readonly loadError = signal<string | null>(null);
   readonly selectedIndex = signal<number | null>(null);
   readonly hoveredIndex = signal<number | null>(null);
 
@@ -295,14 +306,21 @@ export class TadZonesComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadZones();
+  }
+
+  loadZones(): void {
+    this.loading.set(true);
+    this.loadError.set(null);
     this.gtfsData.getFlexLocations().subscribe({
       next: (data) => {
         this.locations.set(data);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.locations.set([]);
         this.loading.set(false);
+        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.tadZones.loadFailed')));
       },
     });
   }

@@ -11,7 +11,8 @@ import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 import { bcp47 } from '@shared/utils/locale-date.utils';
 
 /**
@@ -55,7 +56,15 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
         }
       </div>
 
-      @if (audits().length === 0) {
+      @if (loadError()) {
+        <app-empty-state
+          icon="error_outline"
+          [title]="t('admin.importAudit.loadFailed')"
+          [description]="t('admin.common.loadErrorDescription')"
+          [actionLabel]="t('common.refresh')"
+          actionIcon="refresh"
+          (action)="reload()" />
+      } @else if (audits().length === 0) {
         <app-empty-state
           icon="history"
           [title]="t('admin.importAudit.noAudits')"
@@ -304,9 +313,11 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
 export class ImportAuditComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly locale = inject(LocaleService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly audits = signal<ImportAudit[]>([]);
   readonly loading = signal(false);
+  readonly loadError = signal<string | null>(null);
 
   readonly columns = ['status', 'startedAt', 'duration', 'counts', 'validation', 'hash', 'error'];
 
@@ -316,14 +327,16 @@ export class ImportAuditComponent implements OnInit {
 
   reload(): void {
     this.loading.set(true);
+    this.loadError.set(null);
     this.gtfsData.getImportAudit(50).subscribe({
       next: (data) => {
         this.audits.set(data);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.audits.set([]);
         this.loading.set(false);
+        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.importAudit.loadFailed')));
       },
     });
   }
