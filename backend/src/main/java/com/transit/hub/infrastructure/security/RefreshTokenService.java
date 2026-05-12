@@ -62,7 +62,13 @@ public class RefreshTokenService {
     @Transactional
     public Issued rotate(String rawToken, String userAgent, String ipAddress) {
         String hash = hash(rawToken);
-        RefreshToken existing = repository.findByTokenHash(hash)
+        // Pessimistic-write lock so two concurrent /refresh calls for the
+        // same token serialise on the row. Without it, both threads could
+        // pass the freshness checks and mint successors before either
+        // committed `replacedBy`, silently bypassing the reuse-detection
+        // chain. The lock is released when the surrounding @Transactional
+        // commits.
+        RefreshToken existing = repository.findByTokenHashForUpdate(hash)
                 .orElseThrow(() -> new BadCredentialsException("Unknown refresh token"));
 
         Instant now = clock.instant();

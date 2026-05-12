@@ -1,6 +1,8 @@
 package com.transit.hub.infrastructure.security;
 
+import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
+import com.transit.hub.infrastructure.persistence.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.AfterEach;
@@ -21,8 +23,10 @@ import jakarta.servlet.http.Cookie;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +35,9 @@ class JwtAuthenticationFilterTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private FilterChain filterChain;
@@ -42,10 +49,14 @@ class JwtAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         AuthProperties authProps = new AuthProperties("ACCESS_TOKEN", "REFRESH_TOKEN", false, "Strict", "");
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, authProps);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, authProps, userRepository);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         SecurityContextHolder.clearContext();
+    }
+
+    private static User enabledUser(String username, UserRole role) {
+        return User.builder().username(username).role(role).enabled(true).build();
     }
 
     @AfterEach
@@ -64,6 +75,8 @@ class JwtAuthenticationFilterTest {
             when(jwtService.isValidToken("valid-token")).thenReturn(true);
             when(jwtService.extractUsername("valid-token")).thenReturn("admin");
             when(jwtService.extractRole("valid-token")).thenReturn(UserRole.ADMIN);
+            when(userRepository.findByUsername("admin"))
+                    .thenReturn(Optional.of(enabledUser("admin", UserRole.ADMIN)));
 
             jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
@@ -77,12 +90,49 @@ class JwtAuthenticationFilterTest {
         }
 
         @Test
+        @DisplayName("leaves SecurityContext anonymous when the user is disabled (regression S-06)")
+        void disabledUser_LeavesContextAnonymous() throws ServletException, IOException {
+            request.addHeader("Authorization", "Bearer valid-token");
+            when(jwtService.isValidToken("valid-token")).thenReturn(true);
+            when(jwtService.extractUsername("valid-token")).thenReturn("disabled-user");
+            when(jwtService.extractRole("valid-token")).thenReturn(UserRole.ADMIN);
+            User disabled = User.builder()
+                    .username("disabled-user").role(UserRole.ADMIN).enabled(false).build();
+            when(userRepository.findByUsername("disabled-user"))
+                    .thenReturn(Optional.of(disabled));
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+            assertThat(response.getHeader("WWW-Authenticate"))
+                    .isEqualTo("Bearer error=\"invalid_token\", error_description=\"Account disabled\"");
+            verify(filterChain).doFilter(request, response);
+        }
+
+        @Test
+        @DisplayName("leaves SecurityContext anonymous when the username no longer exists")
+        void unknownUser_LeavesContextAnonymous() throws ServletException, IOException {
+            request.addHeader("Authorization", "Bearer valid-token");
+            when(jwtService.isValidToken("valid-token")).thenReturn(true);
+            when(jwtService.extractUsername("valid-token")).thenReturn("ghost");
+            when(jwtService.extractRole("valid-token")).thenReturn(UserRole.AGENT);
+            when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+            verify(filterChain).doFilter(request, response);
+        }
+
+        @Test
         @DisplayName("populates SecurityContext with ROLE_AGENT")
         void withValidAgentToken_PopulatesSecurityContext() throws ServletException, IOException {
             request.addHeader("Authorization", "Bearer agent-token");
             when(jwtService.isValidToken("agent-token")).thenReturn(true);
             when(jwtService.extractUsername("agent-token")).thenReturn("agent");
             when(jwtService.extractRole("agent-token")).thenReturn(UserRole.AGENT);
+            when(userRepository.findByUsername("agent"))
+                    .thenReturn(Optional.of(enabledUser("agent", UserRole.AGENT)));
 
             jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
@@ -167,6 +217,8 @@ class JwtAuthenticationFilterTest {
             when(jwtService.isValidToken("cookie-token")).thenReturn(true);
             when(jwtService.extractUsername("cookie-token")).thenReturn("alice");
             when(jwtService.extractRole("cookie-token")).thenReturn(UserRole.ADMIN);
+            when(userRepository.findByUsername("alice"))
+                    .thenReturn(Optional.of(enabledUser("alice", UserRole.ADMIN)));
 
             jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
@@ -184,6 +236,8 @@ class JwtAuthenticationFilterTest {
             when(jwtService.isValidToken("header-token")).thenReturn(true);
             when(jwtService.extractUsername("header-token")).thenReturn("bob");
             when(jwtService.extractRole("header-token")).thenReturn(UserRole.AGENT);
+            when(userRepository.findByUsername("bob"))
+                    .thenReturn(Optional.of(enabledUser("bob", UserRole.AGENT)));
 
             jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 

@@ -1,7 +1,9 @@
 package com.transit.hub.infrastructure.security;
 
+import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.config.AuthProperties;
+import com.transit.hub.infrastructure.persistence.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -19,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final AuthProperties authProperties;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -48,6 +52,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserRole role = jwtService.extractRole(source.token());
 
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    // Re-read the user on every authenticated hit so a
+                    // disabled flip lands within one request instead of
+                    // the JWT's 8 h expiry window. The DB cost is one
+                    // primary-key lookup; cache later if it shows up on
+                    // a profile. A user that's gone or disabled produces
+                    // an anonymous SecurityContext — the downstream
+                    // authorize-http-requests chain will 401/403 it.
+                    Optional<User> snapshot = userRepository.findByUsername(username);
+                    if (snapshot.isEmpty() || !snapshot.get().isEnabled()) {
+                        if (source.fromBearer()) {
+                            response.setHeader(
+                                    "WWW-Authenticate",
+                                    "Bearer error=\"invalid_token\", error_description=\"Account disabled\"");
+                        }
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
                     List<SimpleGrantedAuthority> authorities = List.of(
                             new SimpleGrantedAuthority("ROLE_" + role.name())
                     );

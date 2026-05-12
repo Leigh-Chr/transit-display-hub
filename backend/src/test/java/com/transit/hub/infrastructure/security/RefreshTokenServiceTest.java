@@ -98,7 +98,7 @@ class RefreshTokenServiceTest {
             when(repository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
             RefreshTokenService.Issued initial = service.issue(user, UA, IP);
 
-            when(repository.findByTokenHash(initial.entity().getTokenHash()))
+            when(repository.findByTokenHashForUpdate(initial.entity().getTokenHash()))
                     .thenReturn(Optional.of(initial.entity()));
 
             RefreshTokenService.Issued rotated = service.rotate(initial.rawToken(), UA, IP);
@@ -111,7 +111,7 @@ class RefreshTokenServiceTest {
         @Test
         @DisplayName("rejects an unknown token")
         void rejectsUnknown() {
-            when(repository.findByTokenHash(any())).thenReturn(Optional.empty());
+            when(repository.findByTokenHashForUpdate(any())).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.rotate("nope", UA, IP))
                     .isInstanceOf(BadCredentialsException.class)
@@ -124,7 +124,7 @@ class RefreshTokenServiceTest {
             when(repository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
             RefreshTokenService.Issued initial = service.issue(user, UA, IP);
             initial.entity().setRevokedAt(FIXED_NOW.minusSeconds(60));
-            when(repository.findByTokenHash(initial.entity().getTokenHash()))
+            when(repository.findByTokenHashForUpdate(initial.entity().getTokenHash()))
                     .thenReturn(Optional.of(initial.entity()));
 
             assertThatThrownBy(() -> service.rotate(initial.rawToken(), UA, IP))
@@ -138,7 +138,7 @@ class RefreshTokenServiceTest {
             when(repository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
             RefreshTokenService.Issued initial = service.issue(user, UA, IP);
             initial.entity().setExpiresAt(FIXED_NOW.minusSeconds(1));
-            when(repository.findByTokenHash(initial.entity().getTokenHash()))
+            when(repository.findByTokenHashForUpdate(initial.entity().getTokenHash()))
                     .thenReturn(Optional.of(initial.entity()));
 
             assertThatThrownBy(() -> service.rotate(initial.rawToken(), UA, IP))
@@ -154,7 +154,7 @@ class RefreshTokenServiceTest {
             // Simulate a previous successful rotation.
             RefreshToken successor = RefreshToken.builder().build();
             first.entity().setReplacedBy(successor);
-            when(repository.findByTokenHash(first.entity().getTokenHash()))
+            when(repository.findByTokenHashForUpdate(first.entity().getTokenHash()))
                     .thenReturn(Optional.of(first.entity()));
 
             assertThatThrownBy(() -> service.rotate(first.rawToken(), UA, IP))
