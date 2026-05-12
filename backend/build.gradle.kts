@@ -111,6 +111,13 @@ dependencies {
     // (CVE-2021-35515/-35516/-35517/-36090).
     implementation("org.apache.commons:commons-compress:1.27.1")
 
+    // gtfs-validator also drags in commons-beanutils 1.9.2 (CVE-2025-48734
+    // RCE via crafted properties) and commons-validator 1.6 (various
+    // out-of-scope CVEs). Pin both ahead so the runtime classpath uses
+    // current patched releases.
+    implementation("commons-beanutils:commons-beanutils:1.11.0")
+    implementation("commons-validator:commons-validator:1.10.0")
+
     // Database. Versions pinned ahead of the Spring Boot BOM defaults to
     // pull in the latest patch releases (CVE bumps, JDBC fixes).
     runtimeOnly("com.h2database:h2")

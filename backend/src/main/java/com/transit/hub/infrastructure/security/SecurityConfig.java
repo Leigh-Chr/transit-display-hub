@@ -89,7 +89,14 @@ public class SecurityConfig {
                         // hits the admin role, or (b) fencing the route
                         // off at the reverse-proxy layer.
                         .requestMatchers("/actuator/prometheus", "/actuator/metrics", "/actuator/info").hasRole("ADMIN")
-                        .requestMatchers("/h2-console/**").permitAll()
+                        // h2-console is a developer convenience — opening it
+                        // outside the dev profile would expose the DB shell
+                        // to anyone reaching the host. Profile-gated so a
+                        // staging or prod deployment that accidentally ships
+                        // with H2 on the classpath still fails closed.
+                        .requestMatchers("/h2-console/**")
+                                .access((authn, ctx) -> new org.springframework.security.authorization.AuthorizationDecision(
+                                        environment.acceptsProfiles(Profiles.of("dev"))))
                         .requestMatchers("/ws/**").permitAll()
                         // OpenAPI / Springdoc UI — open in dev for browsing,
                         // ADMIN-only otherwise so the endpoint catalogue is
