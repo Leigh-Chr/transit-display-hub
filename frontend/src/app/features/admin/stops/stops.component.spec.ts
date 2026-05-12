@@ -223,21 +223,23 @@ describe('StopsComponent', () => {
       expect(component.totalElements()).toBe(1);
     });
 
-    it('should handle error and show snackbar', async () => {
+    it('should surface load errors via the resource error state, not via a snackbar', async () => {
       mockStopService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
       await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBeTruthy();
+      expect(mockNotify.error).not.toHaveBeenCalled();
     });
 
-    it('should show fallback error message when error has no message', async () => {
+    it('should render an error empty-state when the resource errors', async () => {
       mockStopService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
       await detectAndFlush(fixture);
 
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load stops');
+      const errorState = fixture.nativeElement.querySelector('app-empty-state[icon="error_outline"]');
+      expect(errorState).toBeTruthy();
     });
   });
 

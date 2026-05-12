@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, computed, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, EMPTY } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -110,6 +110,17 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             { width: '80px' }
           ]"
         />
+      } @else if (loadError()) {
+        <mat-card animate.enter="fade-in">
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.stops.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadStops()"
+          />
+        </mat-card>
       } @else if (stops().length === 0 && !tableState.search && !lineId()) {
         <mat-card animate.enter="fade-in">
           @if (lines().length === 0) {
@@ -424,50 +435,53 @@ export class StopsComponent {
     this.linesResource.hasValue() ? this.linesResource.value() : [],
   );
 
-  // Stops reload whenever query params or lineId change.
-  private readonly stopsResource = rxResource<PageResponse<Stop>, ReturnType<typeof this.queryParams>>({
-    params: () => {
-      const params = this.queryParams();
+  constructor() {
+    // URL → tableState + lineId mirror, kept out of the resource so its
+    // params stays pure. queryParams is the single source of truth; this
+    // effect just shovels the same bag into the UI-facing buffers.
+    effect(() => {
+      const params = this.queryParams() as Record<string, string | undefined>;
       this.tableState.syncFromQueryParams(params);
-      // lineId may arrive via URL (navigation from paginator/sort) or be set
-      // locally by onLineChange before the URL round-trips.
-      const qpLineId = (params as Record<string, string | undefined>)['lineId'] ?? '';
-      if (qpLineId !== untracked(this.lineId)) {
-        untracked(() => this.lineId.set(qpLineId));
+      const qpLineId = params['lineId'] ?? '';
+      if (qpLineId !== this.lineId()) {
+        this.lineId.set(qpLineId);
       }
-      return params;
-    },
-    stream: () =>
+    });
+
+    // Snap the cursor back when a delete leaves a non-first page empty.
+    // Effect — not a computed — because this writes to tableState; signal
+    // computed values must stay pure.
+    effect(() => {
+      const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
+      if (page?.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
+        this.tableState.page = Math.max(0, page.totalPages - 1);
+        this.tableState.updateUrl();
+      }
+    });
+  }
+
+  // Stops reload whenever the URL-derived query bag (incl. lineId) changes.
+  private readonly stopsResource = rxResource<PageResponse<Stop>, Record<string, string | undefined>>({
+    params: () => this.queryParams(),
+    stream: ({ params: p }) =>
       this.stopService
         .getAllPaginated({
-          page: this.tableState.page,
-          size: this.tableState.size,
-          sortBy: this.tableState.sortBy,
-          sortDir: this.tableState.sortDir,
-          search: this.tableState.search || undefined,
-          lineId: this.lineId() || undefined,
-        })
-        .pipe(
-          catchError((err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.loadFailed')));
-            return EMPTY;
-          }),
-        ),
+          page: +(p['page'] ?? 0),
+          size: +(p['size'] ?? 10),
+          sortBy: p['sortBy'] ?? 'name',
+          sortDir: p['sortDir'] === 'desc' ? 'desc' : 'asc',
+          search: p['search'] ?? undefined,
+          lineId: p['lineId'] ?? undefined,
+        }),
   });
 
   readonly loading = computed(() => this.stopsResource.isLoading());
 
+  readonly loadError = computed(() => this.stopsResource.error());
+
   readonly stops = computed((): Stop[] => {
     const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
-    if (!page) { return []; }
-    // After a delete on the last item of a page > 0, the server returns an
-    // empty page. Step back via URL update so the params signal re-fires.
-    if (page.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
-      this.tableState.page = Math.max(0, page.totalPages - 1);
-      this.tableState.updateUrl();
-      return [];
-    }
-    return page.content;
+    return page?.content ?? [];
   });
 
   readonly totalElements = computed((): number => {
