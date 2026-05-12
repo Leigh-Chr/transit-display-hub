@@ -32,6 +32,13 @@ export class LocaleService {
 
   constructor() {
     this.transloco.setActiveLang(this.current());
+    // Keep <html lang> aligned with the boot-resolved language too —
+    // setLang() only ran on subsequent toggles, so a user whose first
+    // visit resolved to fr was stuck with the static index.html "en"
+    // until they clicked the language switch.
+    if (this.isBrowser) {
+      document.documentElement.lang = this.current();
+    }
   }
 
   setLang(lang: SupportedLang): void {

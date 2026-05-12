@@ -438,7 +438,11 @@ html.large-text-theme {
   mat-nav-list {
     // List item text color
     --mdc-list-item-label-text-color: rgba(255, 255, 255, 0.7);
-    --mdc-list-item-supporting-text-color: rgba(255, 255, 255, 0.5);
+    // Supporting text used to sit at alpha 0.5 → ~3:1 on the dark sidebar
+    // background (audit 2026-05-12, fails WCAG AA normal-text 4.5:1).
+    // 0.65 lifts us past 4.5:1 while keeping the hierarchy with the
+    // 0.7 label and 0.95 hover state.
+    --mdc-list-item-supporting-text-color: rgba(255, 255, 255, 0.65);
     --mdc-list-item-hover-label-text-color: rgba(255, 255, 255, 0.95);
 
     // List item icon color
