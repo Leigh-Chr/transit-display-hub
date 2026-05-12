@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Injectable } from '@angular/core';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { Subject } from 'rxjs';
 import { Client, StompConfig } from '@stomp/stompjs';
+import { AuthService } from '@core/auth/auth.service';
 import { BaseStompService } from './base-stomp.service';
 import { STOMP_CLIENT_FACTORY, StompClientFactory } from './stomp-client.factory';
 
@@ -56,12 +58,23 @@ const factory: StompClientFactory = (config: StompConfig) => {
 
 describe('BaseStompService', () => {
   let service: TestStompService;
+  let logoutSubject: Subject<void>;
 
   beforeEach(() => {
+    logoutSubject = new Subject<void>();
     TestBed.configureTestingModule({
       providers: [
         TestStompService,
         { provide: STOMP_CLIENT_FACTORY, useValue: factory },
+        // Replace the real AuthService so the constructor subscription to
+        // logout$ doesn't drag the HTTP client and the Router into the test.
+        {
+          provide: AuthService,
+          useValue: {
+            logout$: logoutSubject.asObservable(),
+            getToken: () => null,
+          },
+        },
       ],
     });
     service = TestBed.inject(TestStompService);
@@ -213,6 +226,44 @@ describe('BaseStompService', () => {
       service.activateForTest();
       mockClient.config.onConnect!({} as never);
       expect(service.connectedCalled).toBe(1);
+    });
+  });
+
+  describe('lifecycle wiring', () => {
+    it('should disconnect on logout — wired by the base service, no subclass plumbing required', () => {
+      service.activateForTest();
+      mockClient.config.onConnect!({} as never);
+      expect(service.isConnected()).toBe(true);
+
+      // The base service subscribed to logout$ in its constructor; firing
+      // the subject from the AuthService stand-in must trip disconnect().
+      logoutSubject.next();
+
+      expect(mockClient.deactivate).toHaveBeenCalled();
+      expect(service.connectionState()).toBe('DISCONNECTED');
+    });
+
+    it('should disconnect when the injector tears the service down (ngOnDestroy)', () => {
+      service.activateForTest();
+      mockClient.config.onConnect!({} as never);
+      const deactivate = mockClient.deactivate;
+
+      service.ngOnDestroy();
+
+      expect(deactivate).toHaveBeenCalled();
+      expect(service.connectionState()).toBe('DISCONNECTED');
+    });
+
+    it('should not surface a rejected deactivate Promise as an unhandled rejection', async () => {
+      service.activateForTest();
+      mockClient.deactivate = vi.fn().mockRejectedValue(new Error('late socket'));
+
+      expect(() => service.disconnect()).not.toThrow();
+      // Microtask flush — the .catch() handler in disconnect() owns the rejection.
+      await Promise.resolve();
+      // Vitest fails the test if an unhandled rejection escapes; reaching
+      // this assertion means the catch worked.
+      expect(service.connectionState()).toBe('DISCONNECTED');
     });
   });
 

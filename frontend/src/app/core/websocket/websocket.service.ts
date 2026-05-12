@@ -15,10 +15,7 @@ export class WebSocketService extends BaseStompService {
   private deviceId: string | null = null;
   private stopId: string | null = null;
 
-  constructor() {
-    super();
-    this.authService.logout$.subscribe(() => this.disconnect());
-  }
+  // Logout-on-disconnect is handled by BaseStompService; no constructor needed.
 
   protected override buildBrokerUrl(): string {
     return BaseStompService.buildWsUrl();

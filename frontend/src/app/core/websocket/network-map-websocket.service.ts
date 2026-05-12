@@ -9,10 +9,7 @@ import { BaseStompService } from './base-stomp.service';
 export class NetworkMapWebSocketService extends BaseStompService {
   private updateSubject = new Subject<NetworkMapUpdate>();
 
-  constructor() {
-    super();
-    this.authService.logout$.subscribe(() => this.disconnect());
-  }
+  // Logout-on-disconnect is handled by BaseStompService.
 
   protected override buildBrokerUrl(): string {
     return BaseStompService.buildWsUrl();

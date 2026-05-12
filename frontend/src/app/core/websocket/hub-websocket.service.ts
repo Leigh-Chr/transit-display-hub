@@ -10,10 +10,7 @@ export class HubWebSocketService extends BaseStompService {
   private updateSubject = new Subject<DisplayState>();
   private stopIds: string[] = [];
 
-  constructor() {
-    super();
-    this.authService.logout$.subscribe(() => this.disconnect());
-  }
+  // Logout-on-disconnect is handled by BaseStompService.
 
   protected override buildBrokerUrl(): string {
     return BaseStompService.buildWsUrl();

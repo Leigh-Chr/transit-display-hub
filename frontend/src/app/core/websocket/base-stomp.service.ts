@@ -1,4 +1,5 @@
-import { computed, inject, Injectable, Signal, signal } from '@angular/core';
+import { computed, inject, Injectable, OnDestroy, Signal, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Client, IFrame, IMessage, StompConfig, StompSubscription } from '@stomp/stompjs';
 import { Subject } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
@@ -7,7 +8,7 @@ import { STOMP_CLIENT_FACTORY } from './stomp-client.factory';
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
 
 @Injectable()
-export abstract class BaseStompService {
+export abstract class BaseStompService implements OnDestroy {
   protected readonly authService = inject(AuthService);
   private readonly stompClientFactory = inject(STOMP_CLIENT_FACTORY);
 
@@ -21,6 +22,22 @@ export abstract class BaseStompService {
   private readonly reconnectedSubject = new Subject<void>();
   readonly reconnected$ = this.reconnectedSubject.asObservable();
   private stompSubscriptions: StompSubscription[] = [];
+
+  constructor() {
+    // Centralise the "log the user out → drop the socket" wiring. Tied to
+    // the service's lifetime via takeUntilDestroyed so the subscription
+    // collapses when the injector tearing down (HMR, test teardown, or a
+    // future provider scope change). Subclasses used to do this in their
+    // own constructor and leaked the subscription per instance.
+    this.authService.logout$
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.disconnect());
+  }
+
+  ngOnDestroy(): void {
+    this.disconnect();
+    this.reconnectedSubject.complete();
+  }
 
   protected abstract buildBrokerUrl(): string;
 
@@ -91,7 +108,11 @@ export abstract class BaseStompService {
     this.destroy$.complete();
     this.destroy$ = new Subject<void>();
     if (this.client) {
-      void this.client.deactivate();
+      // deactivate() returns a Promise that resolves once the broker
+      // acknowledges DISCONNECT. We don't await it (callers expect a
+      // synchronous teardown signal) but we do trap the rejection so a
+      // late socket error doesn't surface as an UnhandledPromiseRejection.
+      this.client.deactivate().catch(() => undefined);
       this.client = null;
     }
     this.hasConnectedOnce = false;
