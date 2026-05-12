@@ -44,6 +44,10 @@ jobs:
 
       - name: Boot Spring (dev profile / H2 in-memory) in background
         working-directory: backend
+        env:
+          # Generated per run — the dev profile now requires JWT_SECRET
+          # like prod/kiosk (audit 2026-05-12, no committed fallback).
+          JWT_SECRET: ci-jwt-secret-${{ github.run_id }}-padded-to-be-at-least-thirty-two-bytes
         run: |
           nohup ./gradlew bootRun --args='--spring.profiles.active=dev' > backend.log 2>&1 &
           echo $! > backend.pid
@@ -54,7 +58,9 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        # All three projects defined in playwright.config.ts so CI matches
+        # the local matrix (chromium / firefox / mobile-chrome).
+        run: npx playwright install --with-deps chromium firefox
 
       - name: Wait for backend health
         run: |
