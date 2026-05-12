@@ -312,9 +312,10 @@ export class DevicesComponent implements OnInit {
         title: this.transloco.translate('admin.devices.confirm.removeTitle'),
         message: this.transloco.translate('admin.devices.confirm.removeMessage', { stopName: device.stopName }),
         confirmText: this.transloco.translate('admin.common.remove'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
-      ariaLabel: `Confirm removal of device at ${device.stopName}`,
+      ariaLabel: this.transloco.translate('admin.devices.confirm.removeTitle'),
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {

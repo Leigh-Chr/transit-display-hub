@@ -458,6 +458,7 @@ export class LinesComponent {
         title: this.transloco.translate('admin.lines.confirm.deleteTitle'),
         message: this.transloco.translate('admin.lines.confirm.deleteMessage', { name: line.name }),
         confirmText: this.transloco.translate('common.delete'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
       ariaLabel: this.transloco.translate('admin.lines.confirm.deleteTitle'),

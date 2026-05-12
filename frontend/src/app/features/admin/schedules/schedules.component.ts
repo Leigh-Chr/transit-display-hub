@@ -373,6 +373,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
         title: this.transloco.translate('admin.schedules.confirm.deleteTitle'),
         message: this.transloco.translate('admin.schedules.confirm.deleteMessage', { time: this.formatTime(entry.time), terminus: terminusName }),
         confirmText: this.transloco.translate('common.delete'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
       ariaLabel: this.transloco.translate('admin.schedules.confirm.deleteTitle'),

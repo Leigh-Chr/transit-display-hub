@@ -9,8 +9,8 @@ import {
 export interface ConfirmDialogData {
   title: string;
   message: string;
-  confirmText?: string;
-  cancelText?: string;
+  confirmText: string;
+  cancelText: string;
   confirmColor?: 'primary' | 'warn';
 }
 
@@ -30,14 +30,14 @@ export interface ConfirmDialogData {
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>
-        {{ data.cancelText || 'Cancel' }}
+        {{ data.cancelText }}
       </button>
       <button
         mat-flat-button
         [color]="data.confirmColor || 'primary'"
         [mat-dialog-close]="true"
       >
-        {{ data.confirmText || 'Confirm' }}
+        {{ data.confirmText }}
       </button>
     </mat-dialog-actions>
   `,

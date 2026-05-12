@@ -545,6 +545,7 @@ export class MessagesComponent implements OnInit {
         title: this.transloco.translate('admin.messages.confirm.deleteTitle'),
         message: this.transloco.translate('admin.messages.confirm.deleteMessage', { title: message.title }),
         confirmText: this.transloco.translate('common.delete'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
       ariaLabel: this.transloco.translate('admin.messages.confirm.deleteTitle'),

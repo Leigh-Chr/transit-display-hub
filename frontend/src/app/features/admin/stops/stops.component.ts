@@ -555,6 +555,7 @@ export class StopsComponent {
         title: this.transloco.translate('admin.stops.confirm.deleteTitle'),
         message: this.transloco.translate('admin.stops.confirm.deleteMessage', { name: stop.name }),
         confirmText: this.transloco.translate('common.delete'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
       ariaLabel: this.transloco.translate('admin.stops.confirm.deleteTitle'),

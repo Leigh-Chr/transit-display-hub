@@ -10,7 +10,9 @@ describe('ConfirmDialogComponent', () => {
 
   const defaultData: ConfirmDialogData = {
     title: 'Confirm Delete',
-    message: 'Are you sure you want to delete this item?'
+    message: 'Are you sure you want to delete this item?',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel'
   };
 
   function createComponent(data: ConfirmDialogData = defaultData): void {
@@ -49,24 +51,8 @@ describe('ConfirmDialogComponent', () => {
     });
   });
 
-  describe('default button texts', () => {
-    it('should show default cancel text', () => {
-      createComponent();
-      const buttons = fixture.nativeElement.querySelectorAll('button');
-      const cancelBtn = buttons[0];
-      expect(cancelBtn.textContent.trim()).toContain('Cancel');
-    });
-
-    it('should show default confirm text', () => {
-      createComponent();
-      const buttons = fixture.nativeElement.querySelectorAll('button');
-      const confirmBtn = buttons[1];
-      expect(confirmBtn.textContent.trim()).toContain('Confirm');
-    });
-  });
-
-  describe('custom button texts', () => {
-    it('should show custom cancel and confirm texts', () => {
+  describe('button texts', () => {
+    it('should render the cancel and confirm texts provided by the caller', () => {
       createComponent({
         title: 'Custom Title',
         message: 'Custom message',
@@ -91,6 +77,8 @@ describe('ConfirmDialogComponent', () => {
       createComponent({
         title: 'Test',
         message: 'Test',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel',
         confirmColor: 'primary'
       });
 

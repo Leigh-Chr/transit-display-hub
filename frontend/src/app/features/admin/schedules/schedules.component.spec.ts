@@ -36,7 +36,7 @@ const translocoLang = {
     common: {},
     navigation: {},
   },
-  common: { delete: 'Delete' },
+  common: { delete: 'Delete', cancel: 'Cancel' },
 };
 
 const mockLine: Line = { id: 'l1', code: 'L1', name: 'Line 1', color: '#F00', type: null, stopCount: 2, itineraryCount: 1 };
@@ -297,6 +297,7 @@ describe('SchedulesComponent', () => {
           title: 'Delete Schedule Entry',
           message: 'Delete schedule entry at 08:30 to Terminal?',
           confirmText: 'Delete',
+          cancelText: 'Cancel',
           confirmColor: 'warn',
         },
         ariaLabel: 'Delete Schedule Entry',

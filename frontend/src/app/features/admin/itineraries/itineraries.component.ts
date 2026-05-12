@@ -475,6 +475,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         title: this.transloco.translate('admin.itineraries.confirm.deleteTitle'),
         message: this.transloco.translate('admin.itineraries.confirm.deleteMessage', { name: itinerary.name }),
         confirmText: this.transloco.translate('common.delete'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
       ariaLabel: this.transloco.translate('admin.itineraries.confirm.deleteTitle'),

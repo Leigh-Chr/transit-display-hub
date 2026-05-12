@@ -374,6 +374,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
         title: this.transloco.translate('admin.users.confirm.deleteTitle'),
         message: this.transloco.translate('admin.users.confirm.deleteMessage', { username: user.username }),
         confirmText: this.transloco.translate('common.delete'),
+        cancelText: this.transloco.translate('common.cancel'),
         confirmColor: 'warn',
       },
       ariaLabel: this.transloco.translate('admin.users.confirm.deleteTitle'),

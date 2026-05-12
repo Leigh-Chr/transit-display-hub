@@ -1,18 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslocoService } from '@jsverse/transloco';
 import { EMPTY, Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { SNACKBAR_DURATIONS } from '../../shared/utils/snackbar.constants';
 import { NotifyService } from './notify.service';
 
 describe('NotifyService', () => {
+  const ACTION_LABELS: Record<string, string> = {
+    'common.ok': 'OK',
+    'common.retry': 'Retry',
+  };
+
   function setup(): { service: NotifyService; open: ReturnType<typeof vi.fn>; actionSubject: Subject<void> } {
     const actionSubject = new Subject<void>();
     const open = vi.fn().mockReturnValue({ onAction: () => EMPTY });
+    const transloco = { translate: (key: string) => ACTION_LABELS[key] ?? key };
     TestBed.configureTestingModule({
       providers: [
         NotifyService,
         { provide: MatSnackBar, useValue: { open } },
+        { provide: TranslocoService, useValue: transloco },
       ],
     });
     return { service: TestBed.inject(NotifyService), open, actionSubject };
@@ -69,10 +77,12 @@ describe('NotifyService', () => {
   it('errorRetryable opens Retry snackbar and returns onAction observable', () => {
     const actionSubject = new Subject<void>();
     const open = vi.fn().mockReturnValue({ onAction: () => actionSubject.asObservable() });
+    const transloco = { translate: (key: string) => ACTION_LABELS[key] ?? key };
     TestBed.configureTestingModule({
       providers: [
         NotifyService,
         { provide: MatSnackBar, useValue: { open } },
+        { provide: TranslocoService, useValue: transloco },
       ],
     });
     const service = TestBed.inject(NotifyService);
