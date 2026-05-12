@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging configuration.
+
+  - Console appender for every profile (Docker captures stdout / stderr
+    so a separate file appender would be redundant on the kiosk and
+    cloud hosts that ship with the released images).
+  - Async wrapper so log emission doesn't pin a request thread on
+    flush — the queue is sized for short bursts (256 events) and
+    discards TRACE/DEBUG first if it ever fills.
+  - Pattern includes the X-Request-Id correlation id pushed by
+    com.transit.hub.infrastructure.observability.RequestIdFilter, plus
+    a short marker so a log aggregator can group on it without parsing.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name"
+                    defaultValue="transit-display-hub"/>
+
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] [%X{requestId:-}] %cyan(%logger{36}) - %msg%n%ex"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="CONSOLE"/>
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <!-- Application package: INFO by default, DEBUG when the profile
+         turns it on via logging.level.com.transit.hub. -->
+    <logger name="com.transit.hub" level="INFO"/>
+
+    <!-- Tame the verbose third-party defaults that otherwise drown
+         the request-id pattern in noise. -->
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.apache.tomcat" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+    </root>
+
+    <springProfile name="test">
+        <!-- Tests run with the synchronous appender so an assertion
+             that inspects captured log output sees the line before the
+             test method returns. -->
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+</configuration>
