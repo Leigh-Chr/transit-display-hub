@@ -205,37 +205,28 @@ public class ItineraryImporter {
             Itinerary itinerary = existingItinerariesByExternalId.get(externalId);
             if (itinerary == null) {
                 itinerary = Itinerary.builder()
-                        .externalId(externalId)
-                        .line(line)
-                        .name(truncate(itineraryName, LINE_NAME_MAX_LENGTH))
-                        .directionId(directionId)
-                        .wheelchairDefault(wheelchairDefault)
-                        .bikesAllowedDefault(bikesDefault)
-                        .carsAllowedDefault(carsDefault)
-                        .safeDurationFactor(info.safeDurationFactor())
-                        .safeDurationOffset(info.safeDurationOffset())
-                        .meanDurationFactor(info.meanDurationFactor())
-                        .meanDurationOffset(info.meanDurationOffset())
-                        .shape(shape)
                         .itineraryStops(new ArrayList<>())
                         .build();
             } else {
-                itinerary.setExternalId(externalId);
-                itinerary.setLine(line);
-                itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
-                itinerary.setDirectionId(directionId);
-                itinerary.setWheelchairDefault(wheelchairDefault);
-                itinerary.setCarsAllowedDefault(carsDefault);
-                itinerary.setSafeDurationFactor(info.safeDurationFactor());
-                itinerary.setSafeDurationOffset(info.safeDurationOffset());
-                itinerary.setMeanDurationFactor(info.meanDurationFactor());
-                itinerary.setMeanDurationOffset(info.meanDurationOffset());
-                itinerary.setBikesAllowedDefault(bikesDefault);
-                itinerary.setShape(shape);
                 // orphanRemoval=true on the OneToMany picks up the
                 // cleared rows when we save the parent again below.
                 itinerary.getItineraryStops().clear();
             }
+            // Single mutation site so a field added later can't silently
+            // miss either the create or the update path — the previous
+            // builder/setter split made that asymmetry too easy to hit.
+            itinerary.setExternalId(externalId);
+            itinerary.setLine(line);
+            itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
+            itinerary.setDirectionId(directionId);
+            itinerary.setWheelchairDefault(wheelchairDefault);
+            itinerary.setBikesAllowedDefault(bikesDefault);
+            itinerary.setCarsAllowedDefault(carsDefault);
+            itinerary.setSafeDurationFactor(info.safeDurationFactor());
+            itinerary.setSafeDurationOffset(info.safeDurationOffset());
+            itinerary.setMeanDurationFactor(info.meanDurationFactor());
+            itinerary.setMeanDurationOffset(info.meanDurationOffset());
+            itinerary.setShape(shape);
             itinerary = itineraryRepository.save(itinerary);
 
             int position = 0;
