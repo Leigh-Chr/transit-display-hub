@@ -142,6 +142,13 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    // ArchUnit — enforces layered architecture at test time. The
+    // LayeredArchitectureTest pins the package boundaries so a
+    // refactor that reintroduces an infrastructure import inside
+    // a domain class fails ./gradlew check rather than silently
+    // landing on main.
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
+
     // JMH-only — Mockito lets micro-benchmarks stub the Spring Data
     // repositories with constant-time fakes so the measurement stays
     // focused on the service code (not the JPA round-trip).
