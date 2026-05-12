@@ -104,7 +104,7 @@ abstract class AbstractRealtimeFeedCache<S> {
                 S parsed = parseSnapshot(feed);
                 snapshot.set(parsed);
                 headerRef.set(RealtimeAlertCache.parseHeader(feed));
-                log.info("GTFS-RT {}: refreshed snapshot with {} entries",
+                log.debug("GTFS-RT {}: refreshed snapshot with {} entries",
                         kindLabel(), countEntries(parsed));
             }
         } catch (InterruptedException e) {
