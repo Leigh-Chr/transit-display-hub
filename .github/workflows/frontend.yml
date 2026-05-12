@@ -42,6 +42,10 @@ jobs:
       - name: Knip dead code check
         run: npm run knip
 
+      - name: Duplication check (jscpd)
+        working-directory: ${{ github.workspace }}
+        run: npx -y jscpd@4.1.1
+
       - name: Test with coverage
         run: npm run test:coverage
 
