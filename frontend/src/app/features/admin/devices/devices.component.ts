@@ -64,6 +64,17 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             <app-card-skeleton [showIcon]="true" />
           }
         </div>
+      } @else if (loadError()) {
+        <mat-card>
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.devices.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadDevices()"
+          />
+        </mat-card>
       } @else if (devices().length === 0) {
         <mat-card>
           <app-empty-state
@@ -252,6 +263,7 @@ export class DevicesComponent implements OnInit {
   private readonly transloco = inject(TranslocoService);
 
   loading = signal(true);
+  loadError = signal<string | null>(null);
   devices = signal<Device[]>([]);
   lines = signal<Line[]>([]);
   statusFilter: DeviceStatus | '' = '';
@@ -266,6 +278,7 @@ export class DevicesComponent implements OnInit {
 
   loadDevices(): void {
     this.loading.set(true);
+    this.loadError.set(null);
     const status = this.statusFilter || undefined;
     this.deviceService.getAll(status).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (devices) => {
@@ -274,7 +287,7 @@ export class DevicesComponent implements OnInit {
       },
       error: (err: unknown) => {
         this.loading.set(false);
-        this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.loadFailed')));
+        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.devices.loadFailed')));
       },
     });
   }

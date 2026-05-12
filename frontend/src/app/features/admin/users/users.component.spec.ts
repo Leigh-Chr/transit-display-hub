@@ -178,14 +178,14 @@ describe('UsersComponent', () => {
       });
     });
 
-    it('should set loading to false and show error on error', () => {
+    it('should set loading to false and surface the error inline on error', () => {
       const error = { error: { message: 'Server error' } };
       mockUserService.getAllPaginated.mockReturnValue(throwError(() => error));
 
       component.ngOnInit();
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBe('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -193,7 +193,7 @@ describe('UsersComponent', () => {
 
       component.ngOnInit();
 
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load users');
+      expect(component.loadError()).toBe('Failed to load users');
     });
   });
 

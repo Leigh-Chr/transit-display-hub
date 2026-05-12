@@ -207,14 +207,14 @@ describe('ItinerariesComponent', () => {
       expect(component.loading()).toBe(false);
     });
 
-    it('should handle error and show error notification with server message', () => {
+    it('should handle error by surfacing the load error inline with the server message', () => {
       mockItineraryService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBe('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -224,7 +224,7 @@ describe('ItinerariesComponent', () => {
       fixture.detectChanges();
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load itineraries');
+      expect(component.loadError()).toBe('Failed to load itineraries');
     });
   });
 

@@ -69,6 +69,17 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
           [rows]="4"
           [columns]="[{ width: '150px' }, { width: '100px' }, { width: '80px' }, { width: '80px' }]"
         />
+      } @else if (loadError()) {
+        <mat-card animate.enter="fade-in">
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.users.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadUsers()"
+          />
+        </mat-card>
       } @else if (dataSource.data.length === 0 && !tableState.search) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
@@ -256,6 +267,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   readonly sort = viewChild(MatSort);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
   loading = signal(true);
+  loadError = signal<string | null>(null);
   dataSource = new MatTableDataSource<User>([]);
   displayedColumns = ['username', 'role', 'enabled', 'actions'];
 
@@ -280,6 +292,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
 
   loadUsers(): void {
     this.loading.set(true);
+    this.loadError.set(null);
     this.userService
       .getAllPaginated({
         page: this.tableState.page,
@@ -302,7 +315,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.loadFailed')));
+          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.users.loadFailed')));
         },
       });
   }

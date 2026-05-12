@@ -185,7 +185,7 @@ describe('MessagesComponent', () => {
       });
     });
 
-    it('should handle error by setting loading to false and showing snackbar', () => {
+    it('should handle error by setting loading to false and surfacing the error inline', () => {
       mockMessageService.getAllPaginated = vi.fn().mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
@@ -194,7 +194,7 @@ describe('MessagesComponent', () => {
       queryParamsSubject.next({});
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBe('Server error');
     });
 
     it('should show fallback error message when error has no message', () => {
@@ -205,7 +205,7 @@ describe('MessagesComponent', () => {
       fixture.detectChanges();
       queryParamsSubject.next({});
 
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load messages');
+      expect(component.loadError()).toBe('Failed to load messages');
     });
   });
 

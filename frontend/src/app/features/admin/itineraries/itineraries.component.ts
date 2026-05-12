@@ -96,6 +96,17 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
           [rows]="5"
           [columns]="[{ width: '80px' }, { width: '200px' }, { width: '150px' }, { width: '200px' }, { width: '80px' }]"
         />
+      } @else if (loadError()) {
+        <mat-card animate.enter="fade-in">
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.itineraries.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadItineraries()"
+          />
+        </mat-card>
       } @else if (lines().length === 0) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
@@ -325,6 +336,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
 
   readonly sort = viewChild(MatSort);
   loading = signal(true);
+  loadError = signal<string | null>(null);
   lines = signal<Line[]>([]);
   dataSource = new MatTableDataSource<Itinerary>([]);
 
@@ -369,6 +381,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
 
   loadItineraries(): void {
     this.loading.set(true);
+    this.loadError.set(null);
     this.itineraryService
       .getAllPaginated({
         page: this.tableState.page,
@@ -392,7 +405,7 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.loadFailed')));
+          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.itineraries.loadFailed')));
         },
       });
   }

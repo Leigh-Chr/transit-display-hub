@@ -148,14 +148,14 @@ describe('DevicesComponent', () => {
       expect(mockDeviceService.getAll).toHaveBeenCalledWith('ONLINE');
     });
 
-    it('should handle error by showing error notification', () => {
+    it('should handle error by surfacing the load error inline', () => {
       const error = { error: { message: 'Server error' } };
       mockDeviceService.getAll.mockReturnValue(throwError(() => error));
 
       component.loadDevices();
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBe('Server error');
     });
 
     it('should show fallback message when error has no message', () => {
@@ -163,7 +163,7 @@ describe('DevicesComponent', () => {
 
       component.loadDevices();
 
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load devices');
+      expect(component.loadError()).toBe('Failed to load devices');
     });
   });
 

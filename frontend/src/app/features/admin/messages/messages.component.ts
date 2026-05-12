@@ -92,6 +92,17 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             <app-card-skeleton [showIcon]="true" />
           }
         </div>
+      } @else if (loadError()) {
+        <mat-card>
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.messages.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadMessages()"
+          />
+        </mat-card>
       } @else if (messages().length === 0 && !tableState.search && !severity && !showActiveOnly) {
         <mat-card>
           <app-empty-state
@@ -415,6 +426,7 @@ export class MessagesComponent implements OnInit {
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
   loading = signal(true);
+  loadError = signal<string | null>(null);
   messages = signal<BroadcastMessage[]>([]);
   lines = signal<Line[]>([]);
 
@@ -448,6 +460,7 @@ export class MessagesComponent implements OnInit {
 
   loadMessages(): void {
     this.loading.set(true);
+    this.loadError.set(null);
     this.messageService
       .getAllPaginated({
         page: this.tableState.page,
@@ -472,7 +485,7 @@ export class MessagesComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.loading.set(false);
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.loadFailed')));
+          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.messages.loadFailed')));
         },
       });
   }
