@@ -6,10 +6,10 @@ import jakarta.validation.constraints.Pattern;
 import java.util.UUID;
 
 public record CreateScheduleRequest(
-        @NotNull(message = "Time is required")
-        @Pattern(regexp = "^([01]?[0-9]|2[0-3]):[0-5][0-9]$", message = "Time must be in HH:mm format")
+        @NotNull(message = "{validation.schedule.time.required}")
+        @Pattern(regexp = "^([01]?[0-9]|2[0-3]):[0-5][0-9]$", message = "{validation.schedule.time.pattern}")
         String time,
 
-        @NotNull(message = "Itinerary ID is required")
+        @NotNull(message = "{validation.itinerary.id.required}")
         UUID itineraryId
 ) {}

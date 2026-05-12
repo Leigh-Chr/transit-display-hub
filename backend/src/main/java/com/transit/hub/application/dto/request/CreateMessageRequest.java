@@ -10,24 +10,24 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record CreateMessageRequest(
-        @NotBlank(message = "Title is required")
-        @Size(max = 100, message = "Title must be at most 100 characters")
+        @NotBlank(message = "{validation.message.title.required}")
+        @Size(max = 100, message = "{validation.message.title.size}")
         String title,
 
-        @NotBlank(message = "Content is required")
-        @Size(max = 500, message = "Content must be at most 500 characters")
+        @NotBlank(message = "{validation.message.content.required}")
+        @Size(max = 500, message = "{validation.message.content.size}")
         String content,
 
-        @NotNull(message = "Severity is required")
+        @NotNull(message = "{validation.message.severity.required}")
         MessageSeverity severity,
 
-        @NotNull(message = "Start time is required")
+        @NotNull(message = "{validation.message.startTime.required}")
         Instant startTime,
 
-        @NotNull(message = "End time is required")
+        @NotNull(message = "{validation.message.endTime.required}")
         Instant endTime,
 
-        @NotNull(message = "Scope type is required")
+        @NotNull(message = "{validation.message.scopeType.required}")
         MessageScope scopeType,
 
         UUID scopeId

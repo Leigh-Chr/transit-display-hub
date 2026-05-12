@@ -7,18 +7,18 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateLineRequest(
-        @NotBlank(message = "Code is required")
-        @Size(max = 10, message = "Code must be at most 10 characters")
+        @NotBlank(message = "{validation.line.code.required}")
+        @Size(max = 10, message = "{validation.line.code.size}")
         String code,
 
-        @NotBlank(message = "Name is required")
-        @Size(max = 100, message = "Name must be at most 100 characters")
+        @NotBlank(message = "{validation.line.name.required}")
+        @Size(max = 100, message = "{validation.line.name.size}")
         String name,
 
-        @NotBlank(message = "Color is required")
-        @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Color must be a valid hex color (e.g., #FF5733)")
+        @NotBlank(message = "{validation.line.color.required}")
+        @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "{validation.line.color.pattern}")
         String color,
 
-        @NotNull(message = "Type is required")
+        @NotNull(message = "{validation.line.type.required}")
         LineType type
 ) {}

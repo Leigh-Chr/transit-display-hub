@@ -6,6 +6,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record UpdateItineraryStopsRequest(
-        @NotNull(message = "Stop IDs are required")
+        @NotNull(message = "{validation.stop.ids.required}")
         List<UUID> stopIds
 ) {}

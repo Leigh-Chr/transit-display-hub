@@ -5,12 +5,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record UpdateUserRequest(
-        @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
+        @Size(min = 6, max = 100, message = "{validation.password.size}")
         String password,
 
-        @NotNull(message = "Role is required")
+        @NotNull(message = "{validation.user.role.required}")
         UserRole role,
 
-        @NotNull(message = "Enabled status is required")
+        @NotNull(message = "{validation.user.enabled.required}")
         Boolean enabled
 ) {}

@@ -8,11 +8,11 @@ import java.util.Set;
 import java.util.UUID;
 
 public record CreateStopRequest(
-        @NotBlank(message = "Name is required")
-        @Size(max = 100, message = "Name must be at most 100 characters")
+        @NotBlank(message = "{validation.stop.name.required}")
+        @Size(max = 100, message = "{validation.stop.name.size}")
         String name,
 
-        @NotEmpty(message = "At least one line ID is required")
+        @NotEmpty(message = "{validation.stop.lineIds.required}")
         Set<UUID> lineIds,
 
         Double latitude,

@@ -3,9 +3,9 @@ package com.transit.hub.application.dto.request;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
-        @NotBlank(message = "Username is required")
+        @NotBlank(message = "{validation.username.required}")
         String username,
 
-        @NotBlank(message = "Password is required")
+        @NotBlank(message = "{validation.password.required}")
         String password
 ) {}

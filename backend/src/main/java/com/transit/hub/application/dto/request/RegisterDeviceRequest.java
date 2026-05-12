@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record RegisterDeviceRequest(
-        @NotNull(message = "Stop ID is required")
+        @NotNull(message = "{validation.stop.id.required}")
         UUID stopId
 ) {}

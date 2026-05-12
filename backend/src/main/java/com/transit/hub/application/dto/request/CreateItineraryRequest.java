@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateItineraryRequest(
-        @NotNull(message = "Line ID is required")
+        @NotNull(message = "{validation.line.id.required}")
         UUID lineId,
 
-        @NotBlank(message = "Name is required")
-        @Size(max = 100, message = "Name must be at most 100 characters")
+        @NotBlank(message = "{validation.itinerary.name.required}")
+        @Size(max = 100, message = "{validation.itinerary.name.size}")
         String name,
 
         List<UUID> stopIds
