@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.response.MessageResponse;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
@@ -17,6 +18,7 @@ import com.transit.hub.infrastructure.persistence.MessageSpecifications;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MessageService {
 
     private final BroadcastMessageRepository messageRepository;
@@ -48,7 +51,12 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getAllMessages() {
-        return toResponses(messageRepository.findAll());
+        // broadcast_messages is the one bound-less table flagged in
+        // audit 2026-05-12 P2 — every other findAll caller reads a
+        // GTFS-bounded source. The cap fails loud (via log warn)
+        // long before the result set risks heap pressure.
+        return toResponses(UnpaginatedCap.findAllCapped(
+                messageRepository, log, "MessageService.getAllMessages"));
     }
 
     @Transactional(readOnly = true)

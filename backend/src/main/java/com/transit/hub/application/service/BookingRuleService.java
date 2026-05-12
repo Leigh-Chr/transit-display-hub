@@ -1,8 +1,10 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.BookingRuleResponse;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingRuleService {
 
     private final BookingRuleRepository bookingRuleRepository;
@@ -20,7 +23,9 @@ public class BookingRuleService {
      *  admin browse experience. */
     @Transactional(readOnly = true)
     public List<BookingRuleResponse> browse() {
-        return bookingRuleRepository.findAll().stream()
+        return UnpaginatedCap.findAllCapped(
+                        bookingRuleRepository, log, "BookingRuleService.browse")
+                .stream()
                 .sorted(Comparator
                         .comparing((com.transit.hub.domain.model.BookingRule b) -> b.getBookingType().ordinal())
                         .thenComparing(com.transit.hub.domain.model.BookingRule::getExternalId))

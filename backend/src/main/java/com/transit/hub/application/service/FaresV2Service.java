@@ -1,6 +1,7 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.FaresV2Response;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.infrastructure.persistence.AreaRepository;
 import com.transit.hub.infrastructure.persistence.FareLegJoinRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
@@ -10,11 +11,13 @@ import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
 import com.transit.hub.infrastructure.persistence.NetworkRepository;
 import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FaresV2Service {
 
     private final AreaRepository areaRepository;
@@ -28,14 +31,23 @@ public class FaresV2Service {
 
     @Transactional(readOnly = true)
     public FaresV2Response browse() {
+        // Each repository read here is GTFS-bounded (fares v2 ships
+        // typically tens of rows per type) but we still cap them so a
+        // pathological feed can't blow the heap. The two repositories
+        // that already expose targeted JOIN-FETCH variants
+        // (areaRepository.findAllWithStops, etc.) stay as-is — they
+        // are the read-optimised path and the cap would defeat the
+        // join fetch.
         return new FaresV2Response(
                 areaRepository.findAllWithStops().stream()
                         .map(FaresV2Response.AreaSummary::from)
                         .toList(),
-                timeframeRepository.findAll().stream()
+                UnpaginatedCap.findAllCapped(timeframeRepository, log, "FaresV2Service.browse#timeframes")
+                        .stream()
                         .map(FaresV2Response.TimeframeSummary::from)
                         .toList(),
-                fareProductRepository.findAll().stream()
+                UnpaginatedCap.findAllCapped(fareProductRepository, log, "FaresV2Service.browse#fareProducts")
+                        .stream()
                         .map(FaresV2Response.ProductSummary::from)
                         .toList(),
                 fareLegRuleRepository.findAllWithRefs().stream()
@@ -47,7 +59,8 @@ public class FaresV2Service {
                 networkRepository.findAllWithRoutes().stream()
                         .map(FaresV2Response.NetworkSummary::from)
                         .toList(),
-                fareMediaRepository.findAll().stream()
+                UnpaginatedCap.findAllCapped(fareMediaRepository, log, "FaresV2Service.browse#fareMedia")
+                        .stream()
                         .map(FaresV2Response.FareMediaSummary::from)
                         .toList(),
                 fareLegJoinRuleRepository.findAllWithStops().stream()

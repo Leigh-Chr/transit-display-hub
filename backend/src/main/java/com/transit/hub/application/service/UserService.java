@@ -6,10 +6,12 @@ import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.UserResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +24,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -29,7 +32,8 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAll() {
-        return userRepository.findAll().stream()
+        return UnpaginatedCap.findAllCapped(userRepository, log, "UserService.getAll")
+                .stream()
                 .map(UserResponse::from)
                 .toList();
     }

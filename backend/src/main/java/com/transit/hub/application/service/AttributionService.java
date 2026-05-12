@@ -1,8 +1,10 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.AttributionResponse;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.infrastructure.persistence.AttributionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,13 +13,16 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AttributionService {
 
     private final AttributionRepository attributionRepository;
 
     @Transactional(readOnly = true)
     public List<AttributionResponse> getAllAttributions() {
-        return attributionRepository.findAll().stream()
+        return UnpaginatedCap.findAllCapped(
+                        attributionRepository, log, "AttributionService.getAllAttributions")
+                .stream()
                 .sorted(Comparator
                         // producers first (they own the data), then operators,
                         // then authorities — matches the conventional order
