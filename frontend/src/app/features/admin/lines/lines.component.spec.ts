@@ -173,21 +173,27 @@ describe('LinesComponent', () => {
       expect(component.totalElements()).toBe(1);
     });
 
-    it('should handle error and show snackbar', async () => {
+    it('should surface load errors via the resource error state (not swallow them into a snackbar)', async () => {
       mockLineService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
       await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(mockNotify.error).toHaveBeenCalledWith('Server error');
+      expect(component.loadError()).toBeTruthy();
+      // The old behavior swallowed errors into a snackbar and rendered an
+      // empty state — proving the regression: the snackbar must NOT fire
+      // for load errors, and the empty-state branch must NOT win the @else
+      // race over the new loadError() branch.
+      expect(mockNotify.error).not.toHaveBeenCalled();
     });
 
-    it('should show fallback error message when error has no message', async () => {
+    it('should render the error empty-state in the template when the resource errors', async () => {
       mockLineService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
       await detectAndFlush(fixture);
 
-      expect(mockNotify.error).toHaveBeenCalledWith('Failed to load lines');
+      const errorState = fixture.nativeElement.querySelector('app-empty-state[icon="error_outline"]');
+      expect(errorState).toBeTruthy();
     });
   });
 

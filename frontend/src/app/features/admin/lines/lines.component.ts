@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, computed } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, EMPTY } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -84,6 +83,17 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
             <app-card-skeleton />
           }
         </div>
+      } @else if (loadError()) {
+        <mat-card>
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.lines.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadLines()"
+          />
+        </mat-card>
       } @else if (lines().length === 0 && !tableState.search) {
         <mat-card>
           <app-empty-state
@@ -331,44 +341,54 @@ export class LinesComponent {
     return toSignal(this.route.queryParams, { initialValue: {} });
   })();
 
-  private readonly linesResource = rxResource<PageResponse<Line>, ReturnType<typeof this.queryParams>>({
-    params: () => {
-      const params = this.queryParams();
-      this.tableState.syncFromQueryParams(params);
-      return params;
-    },
-    stream: () => {
-      const [field, direction] = this.tableState.sortBy.includes(':')
-        ? this.tableState.sortBy.split(':')
-        : [this.tableState.sortBy, 'asc'];
+  constructor() {
+    // Mirror the URL → tableState for the UI bindings (paginator, search
+    // box, sort select). Kept out of rxResource.params so the resource
+    // contract stays pure — the resource derives its request from the
+    // queryParams snapshot directly, never from this mutable buffer.
+    effect(() => {
+      this.tableState.syncFromQueryParams(this.queryParams());
+    });
+
+    // When a delete on the last item of a non-first page leaves the page
+    // empty, the server still returns totalElements > 0 on an earlier
+    // page. Step the cursor back via the URL — that re-fires the resource
+    // through the normal queryParams pathway instead of mutating state
+    // from inside a computed.
+    effect(() => {
+      const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
+      if (page?.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
+        this.tableState.page = Math.max(0, page.totalPages - 1);
+        this.tableState.updateUrl();
+      }
+    });
+  }
+
+  private readonly linesResource = rxResource<PageResponse<Line>, Record<string, string | undefined>>({
+    params: () => this.queryParams(),
+    stream: ({ params: p }) => {
+      const rawSort = p['sortBy'] ?? 'code';
+      const [field, splitDir] = rawSort.includes(':')
+        ? rawSort.split(':') as [string, string]
+        : [rawSort, undefined];
+      const sortDir: 'asc' | 'desc' = (splitDir ?? p['sortDir']) === 'desc' ? 'desc' : 'asc';
       return this.lineService.getAllPaginated({
-        page: this.tableState.page,
-        size: this.tableState.size,
+        page: +(p['page'] ?? 0),
+        size: +(p['size'] ?? 12),
         sortBy: field,
-        sortDir: direction as 'asc' | 'desc',
-        search: this.tableState.search || undefined,
-      }).pipe(
-        catchError((err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.loadFailed')));
-          return EMPTY;
-        }),
-      );
+        sortDir,
+        search: p['search'] ?? undefined,
+      });
     },
   });
 
   readonly loading = computed(() => this.linesResource.isLoading());
 
+  readonly loadError = computed(() => this.linesResource.error());
+
   readonly lines = computed((): Line[] => {
     const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
-    if (!page) { return []; }
-    // After a delete on the last item of a page > 0, the server returns an
-    // empty page. Step back via URL update so the params signal re-fires.
-    if (page.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
-      this.tableState.page = Math.max(0, page.totalPages - 1);
-      this.tableState.updateUrl();
-      return [];
-    }
-    return page.content;
+    return page?.content ?? [];
   });
 
   readonly totalElements = computed((): number => {

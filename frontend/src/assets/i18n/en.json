@@ -151,7 +151,8 @@
       "sortBy": "Sort by",
       "actions": "Actions",
       "networkWide": "Entire Network",
-      "done": "Done"
+      "done": "Done",
+      "loadErrorDescription": "The server didn't respond as expected. Try again, or check your network."
     },
     "dashboard": {
       "title": "Dashboard",

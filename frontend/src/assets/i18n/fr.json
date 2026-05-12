@@ -151,7 +151,8 @@
       "sortBy": "Trier par",
       "actions": "Actions",
       "networkWide": "Réseau entier",
-      "done": "Terminé"
+      "done": "Terminé",
+      "loadErrorDescription": "Le serveur n'a pas répondu comme prévu. Réessayez ou vérifiez votre connexion."
     },
     "dashboard": {
       "title": "Tableau de bord",
