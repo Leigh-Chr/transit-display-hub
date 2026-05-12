@@ -12,6 +12,7 @@ import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 /**
  * Admin browser for the GTFS-Realtime caches. Two tabs (alerts and
@@ -68,7 +69,15 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
               }
             </div>
 
-            @if (alerts().length === 0) {
+            @if (alertsLoadError()) {
+              <app-empty-state
+                icon="error_outline"
+                [title]="t('admin.realtime.alertsLoadFailed')"
+                [description]="t('admin.common.loadErrorDescription')"
+                [actionLabel]="t('common.refresh')"
+                actionIcon="refresh"
+                (action)="loadAlerts()" />
+            } @else if (alerts().length === 0) {
               <app-empty-state
                 icon="cloud_off"
                 [title]="t('admin.realtime.noAlerts')"
@@ -143,7 +152,15 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
               }
             </div>
 
-            @if (vehicles().length === 0) {
+            @if (vehiclesLoadError()) {
+              <app-empty-state
+                icon="error_outline"
+                [title]="t('admin.realtime.vehiclesLoadFailed')"
+                [description]="t('admin.common.loadErrorDescription')"
+                [actionLabel]="t('common.refresh')"
+                actionIcon="refresh"
+                (action)="loadVehicles()" />
+            } @else if (vehicles().length === 0) {
               <app-empty-state
                 icon="cloud_off"
                 [title]="t('admin.realtime.noVehicles')"
@@ -375,6 +392,8 @@ export class RealtimeComponent implements OnInit {
   readonly vehicles = signal<VehiclePosition[]>([]);
   readonly alertsLoadedAt = signal<Date | null>(null);
   readonly vehiclesLoadedAt = signal<Date | null>(null);
+  readonly alertsLoadError = signal<string | null>(null);
+  readonly vehiclesLoadError = signal<string | null>(null);
   readonly refreshingAlerts = signal(false);
   readonly refreshingVehicles = signal(false);
 
@@ -464,23 +483,31 @@ export class RealtimeComponent implements OnInit {
     return metresPerSecond * 3.6;
   }
 
-  private loadAlerts(): void {
+  loadAlerts(): void {
+    this.alertsLoadError.set(null);
     this.realtime.getAlerts().subscribe({
       next: (data) => {
         this.alerts.set(data);
         this.alertsLoadedAt.set(new Date());
       },
-      error: () => {/* swallow — empty state covers it */},
+      error: (err: unknown) => {
+        this.alerts.set([]);
+        this.alertsLoadError.set(httpErrorMessage(err, this.transloco.translate('admin.realtime.alertsLoadFailed')));
+      },
     });
   }
 
-  private loadVehicles(): void {
+  loadVehicles(): void {
+    this.vehiclesLoadError.set(null);
     this.realtime.getVehicles().subscribe({
       next: (data) => {
         this.vehicles.set(data);
         this.vehiclesLoadedAt.set(new Date());
       },
-      error: () => {/* swallow */},
+      error: (err: unknown) => {
+        this.vehicles.set([]);
+        this.vehiclesLoadError.set(httpErrorMessage(err, this.transloco.translate('admin.realtime.vehiclesLoadFailed')));
+      },
     });
   }
 }

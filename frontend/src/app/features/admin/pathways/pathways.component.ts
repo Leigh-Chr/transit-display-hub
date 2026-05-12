@@ -14,7 +14,8 @@ import { StopService } from '@core/api/stop.service';
 import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
 import { Pathway, PathwayMode, StationLevelInfo, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 /**
  * Browse the indoor topology — pathways.txt — around any stop.
@@ -86,7 +87,15 @@ import { TranslocoDirective } from '@jsverse/transloco';
               }
             </div>
           }
-          @if (pathways().length === 0) {
+          @if (loadError()) {
+            <app-empty-state
+              icon="error_outline"
+              [title]="t('admin.pathways.loadFailed')"
+              [description]="t('admin.common.loadErrorDescription')"
+              [actionLabel]="t('common.refresh')"
+              actionIcon="refresh"
+              (action)="loadPathways()" />
+          } @else if (pathways().length === 0) {
             <app-empty-state
               icon="alt_route"
               [title]="t('admin.pathways.emptyPathwayTitle')"
@@ -397,6 +406,7 @@ export class PathwaysComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly stopService = inject(StopService);
   private readonly networkMapData = inject(NetworkMapDataService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly pathways = signal<Pathway[]>([]);
   readonly stationLevels = signal<StationLevelInfo[]>([]);
@@ -404,6 +414,7 @@ export class PathwaysComponent implements OnInit {
   readonly selectedStop = signal<Stop | null>(null);
   readonly stops = signal<Stop[]>([]);
   readonly filteredStops = signal<Stop[]>([]);
+  readonly loadError = signal<string | null>(null);
 
   search = '';
 
@@ -462,9 +473,19 @@ export class PathwaysComponent implements OnInit {
   onStopSelected(stop: Stop): void {
     this.selectedStop.set(stop);
     this.search = stop.name;
+    this.loadPathways();
+  }
+
+  loadPathways(): void {
+    const stop = this.selectedStop();
+    if (!stop) { return; }
+    this.loadError.set(null);
     this.gtfsData.getPathwaysForStop(stop.id).subscribe({
       next: (data) => this.pathways.set(data),
-      error: () => this.pathways.set([]),
+      error: (err: unknown) => {
+        this.pathways.set([]);
+        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.pathways.loadFailed')));
+      },
     });
     this.networkMapData.getStopPathwayGraph(stop.id).subscribe({
       next: (graph) => {

@@ -20,6 +20,7 @@ import { DashboardService, DashboardSummary } from '@core/api/dashboard.service'
 import { Line, BroadcastMessage } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { DataOverviewCardComponent } from './data-overview-card.component';
 import { FeedInfoCardComponent } from './feed-info-card.component';
@@ -56,6 +57,7 @@ type DashboardData = DashboardSummary | AgentView;
     FeedInfoCardComponent,
     DataOverviewCardComponent,
     FeedCreditsComponent,
+    EmptyStateComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,6 +73,16 @@ type DashboardData = DashboardSummary | AgentView;
 
       @if (loading()) {
         <app-stats-skeleton />
+      } @else if (loadError()) {
+        <mat-card animate.enter="fade-in">
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.dashboard.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="reload()" />
+        </mat-card>
       } @else {
         <!-- Stats Grid -->
         <div class="stats-grid" animate.enter="grid-stagger">
@@ -994,6 +1006,7 @@ export class DashboardComponent {
 
   // Expose loading/error state directly from the resource.
   readonly loading = computed(() => this.dashboardResource.isLoading());
+  readonly loadError = computed(() => this.dashboardResource.error() ?? null);
 
   // Safe accessor — returns undefined when the resource has no value yet or is
   // in an error state (where calling .value() would throw ResourceValueError).
@@ -1061,6 +1074,10 @@ export class DashboardComponent {
   });
 
   loadData(): void {
+    this.dashboardResource.reload();
+  }
+
+  reload(): void {
     this.dashboardResource.reload();
   }
 

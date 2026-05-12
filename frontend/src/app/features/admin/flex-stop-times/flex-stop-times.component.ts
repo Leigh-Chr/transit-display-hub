@@ -8,7 +8,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { FlexStopTime } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { httpErrorMessage } from '@shared/utils/http.utils';
 
 /**
  * Browse the GTFS-flex stop_times — the on-demand counterpart of
@@ -37,7 +38,17 @@ import { TranslocoDirective } from '@jsverse/transloco';
         <p class="page-subtitle">{{ t('admin.flexStopTimes.subtitle') }}</p>
       </div>
 
-      @if (rows().length === 0) {
+      @if (loadError()) {
+        <mat-card>
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.flexStopTimes.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadRows()" />
+        </mat-card>
+      } @else if (rows().length === 0) {
         <mat-card>
           <app-empty-state
             icon="phone_callback"
@@ -226,14 +237,27 @@ import { TranslocoDirective } from '@jsverse/transloco';
 })
 export class FlexStopTimesComponent implements OnInit {
   private readonly flexService = inject(FlexStopTimeService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly rows = signal<FlexStopTime[]>([]);
+  readonly loadError = signal<string | null>(null);
   readonly columns = ['line', 'itinerary', 'target', 'window', 'bookings', 'calendar'];
 
   readonly count = computed(() => this.rows().length);
 
   ngOnInit(): void {
-    this.flexService.browse().subscribe(rows => this.rows.set(rows));
+    this.loadRows();
+  }
+
+  loadRows(): void {
+    this.loadError.set(null);
+    this.flexService.browse().subscribe({
+      next: (rows) => this.rows.set(rows),
+      error: (err: unknown) => {
+        this.rows.set([]);
+        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.flexStopTimes.loadFailed')));
+      },
+    });
   }
 
   formatTime(iso: string): string {
