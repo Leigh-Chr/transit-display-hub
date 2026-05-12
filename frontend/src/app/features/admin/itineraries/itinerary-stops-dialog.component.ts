@@ -283,7 +283,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.notify.error('Failed to load stops');
+          this.notify.error(this.transloco.translate('admin.itineraries.stopsDialog.loadFailed'));
         },
       });
     } else {
