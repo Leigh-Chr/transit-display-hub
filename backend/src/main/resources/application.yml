@@ -5,6 +5,16 @@ spring:
     active: dev
   jackson:
     time-zone: ${APP_TIMEZONE:Europe/Paris}
+  messages:
+    basename: messages
+    encoding: UTF-8
+    # The default ResourceBundle behaviour falls back to the JVM default
+    # locale when the requested locale has no bundle (e.g. a hosting
+    # provider running fr_FR responding to an EN request would serve
+    # French strings). Pinning this to false means an unknown locale
+    # gets the EN default in messages.properties, which matches the
+    # frontend's behaviour.
+    fallback-to-system-locale: false
   jpa:
     # Disable Open-Session-In-View. Every controller path either reads
     # eagerly (JOIN FETCH on the repo query) or is wrapped by a service

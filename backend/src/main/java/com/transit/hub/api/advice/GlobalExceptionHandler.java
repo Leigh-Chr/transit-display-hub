@@ -2,7 +2,10 @@ package com.transit.hub.api.advice;
 
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -23,8 +26,17 @@ import java.util.List;
 import java.util.Locale;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 @Slf4j
 public class GlobalExceptionHandler {
+
+    private final MessageSource messageSource;
+
+    /** Resolve a key against the active locale (from the Accept-Language
+     *  header by default). Falls back to the EN default in messages.properties. */
+    private String t(String key, Object... args) {
+        return messageSource.getMessage(key, args, LocaleContextHolder.getLocale());
+    }
 
     public record ApiError(
             Instant timestamp,
@@ -59,16 +71,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,
                                                        WebRequest request) {
         log.warn("Missing required request parameter: {}", ex.getParameterName());
-        String message = "Required request parameter '" + ex.getParameterName() + "' is missing";
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST,
+                t("error.request.missingParam", ex.getParameterName()), null, request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
                                                        WebRequest request) {
         log.warn("Type mismatch on request parameter '{}': {}", ex.getName(), ex.getMessage());
-        String message = "Invalid value for parameter '" + ex.getName() + "'";
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, null, request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST,
+                t("error.request.typeMismatch", ex.getName()), null, request);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -77,7 +89,7 @@ public class GlobalExceptionHandler {
         // which raises NoResourceFoundException. The catch-all below
         // would render 500 for those — return 404 instead so a typo'd
         // path looks like a real not-found rather than a server bug.
-        return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", null, request);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, t("error.entity.notFound"), null, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -90,52 +102,48 @@ public class GlobalExceptionHandler {
                 .toList();
 
         log.warn("Validation failed: {} errors", fieldErrors.size());
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", fieldErrors, request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, t("error.validation.failed"), fieldErrors, request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, WebRequest request) {
         log.warn("Data integrity violation: {}", ex.getMessage());
-        String message = "Data conflict: a record with this value already exists";
+        String messageKey = "error.data.conflict";
         Throwable cause = ex.getMostSpecificCause();
         String causeMessage = cause.getMessage();
         if (causeMessage != null) {
             String lower = causeMessage.toLowerCase(Locale.ROOT);
             if (lower.contains("foreign key") || lower.contains("fk_") || lower.contains("references")) {
-                message = "Cannot complete operation: this record is referenced by other data";
+                messageKey = "error.data.foreignKey";
             } else if (lower.contains("not null") || lower.contains("not-null")) {
-                message = "A required field is missing";
+                messageKey = "error.data.notNull";
             }
         }
-        return buildErrorResponse(HttpStatus.CONFLICT, message, null, request);
+        return buildErrorResponse(HttpStatus.CONFLICT, t(messageKey), null, request);
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<ApiError> handleOptimisticLock(OptimisticLockingFailureException ex, WebRequest request) {
         log.warn("Optimistic lock conflict: {}", ex.getMessage());
-        return buildErrorResponse(
-                HttpStatus.CONFLICT,
-                "This record was modified by someone else. Reload to see the latest version and try again.",
-                null,
-                request);
+        return buildErrorResponse(HttpStatus.CONFLICT, t("error.data.optimisticLock"), null, request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
         log.warn("Access denied: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions", null, request);
+        return buildErrorResponse(HttpStatus.FORBIDDEN, t("error.security.accessDenied"), null, request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, WebRequest request) {
         log.warn("Authentication failed: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials", null, request);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, t("error.security.badCredentials"), null, request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGenericException(Exception ex, WebRequest request) {
         log.error("Unexpected error", ex);
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", null, request);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, t("error.generic"), null, request);
     }
 
     private ResponseEntity<ApiError> buildErrorResponse(

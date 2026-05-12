@@ -12,6 +12,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.WebRequest;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -32,7 +35,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("GlobalExceptionHandler")
 class GlobalExceptionHandlerTest {
 
-    @InjectMocks
     private GlobalExceptionHandler exceptionHandler;
 
     @Mock
@@ -43,6 +45,20 @@ class GlobalExceptionHandlerTest {
 
     @BeforeEach
     void setUp() {
+        // Real ResourceBundleMessageSource so the assertions in this suite
+        // can keep checking the rendered (EN) text instead of guessing what
+        // a stub would return per locale. Pin the thread locale to ENGLISH
+        // so the suite is deterministic on hosts whose default is fr_FR.
+        LocaleContextHolder.setLocale(Locale.ENGLISH);
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasename("messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        // Without this, ResourceBundle falls back to the JVM default
+        // locale (fr_FR on this host) when the requested locale has no
+        // bundle of its own, dragging French strings into the EN suite.
+        messageSource.setFallbackToSystemLocale(false);
+        exceptionHandler = new GlobalExceptionHandler(messageSource);
+
         when(webRequest.getDescription(false)).thenReturn("uri=/api/test");
     }
 
