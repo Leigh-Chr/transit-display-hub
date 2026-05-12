@@ -58,7 +58,12 @@ export abstract class BaseStompService implements OnDestroy {
     this.client = this.stompClientFactory({
       brokerURL: this.buildBrokerUrl(),
       connectHeaders: this.buildConnectHeaders(),
-      reconnectDelay: 5000,
+      // Jittered base delay so a fleet of kiosks that drop together
+      // (network blip, broker restart) doesn't reconverge in lock-step
+      // every five seconds — audit 2026-05-12 06-perf-observability P2.
+      // Range 4–7 s on the first retry; @stomp/stompjs handles further
+      // back-off automatically once the socket fails repeatedly.
+      reconnectDelay: 4000 + Math.floor(Math.random() * 3000),
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       onConnect: () => {

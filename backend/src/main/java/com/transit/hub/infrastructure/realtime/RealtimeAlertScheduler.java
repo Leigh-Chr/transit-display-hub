@@ -58,21 +58,26 @@ public class RealtimeAlertScheduler {
         }
     }
 
-    @Scheduled(cron = "${app.gtfs-rt.alerts-poll-cron:*/30 * * * * *}")
+    // Cron offsets are staggered so the three pollers don't fire on the
+    // same second and pile three outbound GTFS-RT GETs on top of each
+    // other (audit 2026-05-12 06-perf-observability P2). Each cron is
+    // still configurable via the matching property if an operator
+    // wants to align them deliberately.
+    @Scheduled(cron = "${app.gtfs-rt.alerts-poll-cron:5,35 * * * * *}")
     public void scheduledAlertRefresh() {
         if (alertCache.isEnabled()) {
             alertCache.refresh();
         }
     }
 
-    @Scheduled(cron = "${app.gtfs-rt.trip-updates-poll-cron:*/30 * * * * *}")
+    @Scheduled(cron = "${app.gtfs-rt.trip-updates-poll-cron:15,45 * * * * *}")
     public void scheduledTripUpdateRefresh() {
         if (tripUpdateCache.isEnabled()) {
             tripUpdateCache.refresh();
         }
     }
 
-    @Scheduled(cron = "${app.gtfs-rt.vehicle-positions-poll-cron:*/15 * * * * *}")
+    @Scheduled(cron = "${app.gtfs-rt.vehicle-positions-poll-cron:0,20,40 * * * * *}")
     public void scheduledVehiclePositionRefresh() {
         if (vehiclePositionCache.isEnabled()) {
             vehiclePositionCache.refresh();
