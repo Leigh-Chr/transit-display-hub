@@ -213,4 +213,210 @@ class GtfsParseTest {
             assertThat(GtfsParse.mapRouteType(routeType)).isEqualTo(LineType.OTHER);
         }
     }
+
+    @Nested
+    @DisplayName("isBlank")
+    class IsBlank {
+
+        @Test
+        @DisplayName("treats null, empty and whitespace-only strings as blank")
+        void blankCases() {
+            assertThat(GtfsParse.isBlank(null)).isTrue();
+            assertThat(GtfsParse.isBlank("")).isTrue();
+            assertThat(GtfsParse.isBlank("   ")).isTrue();
+            assertThat(GtfsParse.isBlank("\t\n ")).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns false for any string that contains a non-whitespace character")
+        void nonBlankCases() {
+            assertThat(GtfsParse.isBlank("a")).isFalse();
+            assertThat(GtfsParse.isBlank(" hello ")).isFalse();
+            assertThat(GtfsParse.isBlank("0")).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("firstNonBlank")
+    class FirstNonBlank {
+
+        @Test
+        @DisplayName("returns the first non-blank value trimmed")
+        void firstWins() {
+            assertThat(GtfsParse.firstNonBlank("hello", "world")).isEqualTo("hello");
+            assertThat(GtfsParse.firstNonBlank("  hello  ", "world")).isEqualTo("hello");
+        }
+
+        @Test
+        @DisplayName("skips blank entries and returns the next usable one")
+        void skipsBlanks() {
+            assertThat(GtfsParse.firstNonBlank(null, "", "  ", "found")).isEqualTo("found");
+        }
+
+        @Test
+        @DisplayName("returns empty string when every candidate is blank")
+        void allBlank() {
+            assertThat(GtfsParse.firstNonBlank()).isEqualTo("");
+            assertThat(GtfsParse.firstNonBlank((String) null)).isEqualTo("");
+            assertThat(GtfsParse.firstNonBlank(null, "", "   ")).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("truncate")
+    class Truncate {
+
+        @Test
+        @DisplayName("returns the input when it fits within the limit")
+        void noTruncationNeeded() {
+            assertThat(GtfsParse.truncate("hello", 10)).isEqualTo("hello");
+            assertThat(GtfsParse.truncate("hello", 5)).isEqualTo("hello");
+        }
+
+        @Test
+        @DisplayName("cuts the string to exactly max characters")
+        void cuts() {
+            assertThat(GtfsParse.truncate("abcdefghij", 4)).isEqualTo("abcd");
+            assertThat(GtfsParse.truncate("abcdefghij", 0)).isEqualTo("");
+        }
+
+        @Test
+        @DisplayName("returns empty string for null input rather than throwing")
+        void nullSafe() {
+            assertThat(GtfsParse.truncate(null, 5)).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("parseInt")
+    class ParseInt {
+
+        @Test
+        @DisplayName("parses well-formed integers and trims whitespace")
+        void parses() {
+            assertThat(GtfsParse.parseInt("42", 0)).isEqualTo(42);
+            assertThat(GtfsParse.parseInt("  42  ", 0)).isEqualTo(42);
+            assertThat(GtfsParse.parseInt("-7", 0)).isEqualTo(-7);
+        }
+
+        @Test
+        @DisplayName("returns the default value for blank input")
+        void blankReturnsDefault() {
+            assertThat(GtfsParse.parseInt(null, 99)).isEqualTo(99);
+            assertThat(GtfsParse.parseInt("", 99)).isEqualTo(99);
+            assertThat(GtfsParse.parseInt("   ", 99)).isEqualTo(99);
+        }
+
+        @Test
+        @DisplayName("returns the default value on garbage input rather than throwing")
+        void invalidReturnsDefault() {
+            assertThat(GtfsParse.parseInt("abc", 7)).isEqualTo(7);
+            assertThat(GtfsParse.parseInt("3.14", 7)).isEqualTo(7);
+        }
+    }
+
+    @Nested
+    @DisplayName("parseIntOrNull")
+    class ParseIntOrNull {
+
+        @Test
+        @DisplayName("returns the parsed value when input is a valid integer")
+        void parses() {
+            assertThat(GtfsParse.parseIntOrNull("123")).isEqualTo(123);
+            assertThat(GtfsParse.parseIntOrNull("  -5 ")).isEqualTo(-5);
+        }
+
+        @Test
+        @DisplayName("returns null for blank or invalid input")
+        void blankOrInvalid() {
+            assertThat(GtfsParse.parseIntOrNull(null)).isNull();
+            assertThat(GtfsParse.parseIntOrNull("")).isNull();
+            assertThat(GtfsParse.parseIntOrNull("   ")).isNull();
+            assertThat(GtfsParse.parseIntOrNull("abc")).isNull();
+            assertThat(GtfsParse.parseIntOrNull("3.14")).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("parseDoubleOrNull")
+    class ParseDoubleOrNull {
+
+        @Test
+        @DisplayName("parses both integer and decimal forms")
+        void parses() {
+            assertThat(GtfsParse.parseDoubleOrNull("3.14")).isEqualTo(3.14);
+            assertThat(GtfsParse.parseDoubleOrNull("42")).isEqualTo(42.0);
+            assertThat(GtfsParse.parseDoubleOrNull("  -0.5 ")).isEqualTo(-0.5);
+        }
+
+        @Test
+        @DisplayName("returns null for blank or invalid input")
+        void blankOrInvalid() {
+            assertThat(GtfsParse.parseDoubleOrNull(null)).isNull();
+            assertThat(GtfsParse.parseDoubleOrNull("")).isNull();
+            assertThat(GtfsParse.parseDoubleOrNull("not-a-number")).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("parseShortOrNull")
+    class ParseShortOrNull {
+
+        @Test
+        @DisplayName("parses values within the short range")
+        void parses() {
+            assertThat(GtfsParse.parseShortOrNull("0")).isEqualTo((short) 0);
+            assertThat(GtfsParse.parseShortOrNull("1")).isEqualTo((short) 1);
+            assertThat(GtfsParse.parseShortOrNull("  42 ")).isEqualTo((short) 42);
+        }
+
+        @Test
+        @DisplayName("returns null for blank input")
+        void blank() {
+            assertThat(GtfsParse.parseShortOrNull(null)).isNull();
+            assertThat(GtfsParse.parseShortOrNull("")).isNull();
+            assertThat(GtfsParse.parseShortOrNull("   ")).isNull();
+        }
+
+        @Test
+        @DisplayName("returns null on garbage or out-of-range values rather than throwing")
+        void invalidReturnsNull() {
+            assertThat(GtfsParse.parseShortOrNull("abc")).isNull();
+            // 100_000 is outside the short range
+            assertThat(GtfsParse.parseShortOrNull("100000")).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("parseDirectionId")
+    class ParseDirectionId {
+
+        @Test
+        @DisplayName("parses GTFS direction id 0 / 1")
+        void standard() {
+            assertThat(GtfsParse.parseDirectionId("0")).isEqualTo((short) 0);
+            assertThat(GtfsParse.parseDirectionId("1")).isEqualTo((short) 1);
+        }
+
+        @Test
+        @DisplayName("returns null for blank input (the GTFS column is optional)")
+        void blank() {
+            assertThat(GtfsParse.parseDirectionId(null)).isNull();
+            assertThat(GtfsParse.parseDirectionId("")).isNull();
+            assertThat(GtfsParse.parseDirectionId("   ")).isNull();
+        }
+
+        @Test
+        @DisplayName("returns null on garbage input rather than throwing")
+        void invalid() {
+            assertThat(GtfsParse.parseDirectionId("abc")).isNull();
+            assertThat(GtfsParse.parseDirectionId("2.5")).isNull();
+        }
+
+        @Test
+        @DisplayName("trims surrounding whitespace")
+        void trims() {
+            assertThat(GtfsParse.parseDirectionId("  1  ")).isEqualTo((short) 1);
+        }
+    }
 }
