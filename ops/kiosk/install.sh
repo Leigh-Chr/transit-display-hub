@@ -16,9 +16,9 @@
 # Usage (skip the chromium auto-launch — useful for headless servers):
 #   KIOSK_BROWSER=none ./install.sh
 #
-# Note: pre-built GHCR images are not yet published. The script clones
-# the repository and builds images locally. A future release will
-# restore the pull-only path once CI publishes multi-arch images.
+# The release workflow publishes multi-arch (amd64 + arm64) images to
+# ghcr.io/leigh-chr/transit-display-hub-{backend,frontend}. This script
+# clones the repository for the compose file but pulls the images.
 
 set -euo pipefail
 
