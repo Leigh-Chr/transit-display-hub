@@ -621,6 +621,17 @@
         "deleteMessage": "Supprimer l'itinéraire « {{ name }} » ? Les horaires associés seront également supprimés."
       }
     },
+    "hubDisplay": {
+      "title": "Ouvrir l'affichage hub",
+      "filterByLine": "Filtrer par ligne",
+      "allLines": "Toutes les lignes",
+      "searchStops": "Rechercher des arrêts…",
+      "loadingStops": "Chargement des arrêts…",
+      "noStopsMatch": "Aucun arrêt ne correspond aux filtres",
+      "selected": "Sélectionnés ({{ count }}) : {{ names }}",
+      "hubName": "Nom du hub",
+      "openHub": "Ouvrir l'affichage hub"
+    },
     "realtime": {
       "title": "Temps réel",
       "subtitle": "Caches GTFS-Realtime alimentés par le scheduler. Le bouton « Rafraîchir » force un poll immédiat de l'URL configurée.",

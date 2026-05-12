@@ -19,6 +19,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop } from '@shared/models';
 
@@ -44,101 +45,103 @@ export interface HubDisplayDialogResult {
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>Open Hub Display</h2>
+    <ng-container *transloco="let t">
+      <h2 mat-dialog-title>{{ t('admin.hubDisplay.title') }}</h2>
 
-    <mat-dialog-content>
-      <div class="filters">
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Filter by Line</mat-label>
-          <mat-select [value]="lineFilter()" (selectionChange)="lineFilter.set($event.value)">
-            <mat-option value="">All Lines</mat-option>
-            @for (line of data.lines; track line.id) {
-              <mat-option [value]="line.id">
-                {{ line.code }} - {{ line.name }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+      <mat-dialog-content>
+        <div class="filters">
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>{{ t('admin.hubDisplay.filterByLine') }}</mat-label>
+            <mat-select [value]="lineFilter()" (selectionChange)="lineFilter.set($event.value)">
+              <mat-option value="">{{ t('admin.hubDisplay.allLines') }}</mat-option>
+              @for (line of data.lines; track line.id) {
+                <mat-option [value]="line.id">
+                  {{ line.code }} - {{ line.name }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Search stops...</mat-label>
-          <input
-            matInput
-            [value]="searchFilter()"
-            (input)="searchFilter.set($any($event.target).value)"
-          />
-          @if (searchFilter()) {
-            <button matSuffix mat-icon-button (click)="searchFilter.set('')">
-              <mat-icon>close</mat-icon>
-            </button>
-          }
-        </mat-form-field>
-      </div>
-
-      <div class="stop-list">
-        @if (loading()) {
-          <div class="loading-state">Loading stops...</div>
-        } @else if (filteredStops().length === 0) {
-          <div class="empty-state">No stops match your filters</div>
-        } @else {
-          @for (stop of filteredStops(); track stop.id) {
-            <div
-              class="stop-item"
-              [class.selected]="selectedIds().has(stop.id)"
-              (click)="toggleStop(stop.id)"
-            >
-              <mat-checkbox
-                [checked]="selectedIds().has(stop.id)"
-                (click)="$event.stopPropagation()"
-                (change)="toggleStop(stop.id)"
-              />
-              <span class="stop-name">{{ stop.name }}</span>
-              <div class="stop-lines">
-                @for (line of stop.lines; track line.id) {
-                  <span class="line-badge" [style.backgroundColor]="line.color">
-                    {{ line.code }}
-                  </span>
-                }
-              </div>
-            </div>
-          }
-        }
-      </div>
-
-      @if (selectedStops().length > 0) {
-        <div class="selection-summary">
-          <div class="selected-label">
-            Selected ({{ selectedStops().length }}):
-            {{ selectedStopNames() }}
-          </div>
-
-          <mat-form-field appearance="outline" class="hub-name-field">
-            <mat-label>Hub name</mat-label>
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>{{ t('admin.hubDisplay.searchStops') }}</mat-label>
             <input
               matInput
-              [ngModel]="hubName()"
-              (ngModelChange)="hubName.set($event)"
+              [value]="searchFilter()"
+              (input)="searchFilter.set($any($event.target).value)"
             />
+            @if (searchFilter()) {
+              <button matSuffix mat-icon-button (click)="searchFilter.set('')">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
           </mat-form-field>
         </div>
-      }
-    </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="selectedStops().length < 2"
-        (click)="confirm()"
-      >
-        <mat-icon>hub</mat-icon>
-        Open Hub Display
-      </button>
-    </mat-dialog-actions>
+        <div class="stop-list">
+          @if (loading()) {
+            <div class="loading-state">{{ t('admin.hubDisplay.loadingStops') }}</div>
+          } @else if (filteredStops().length === 0) {
+            <div class="empty-state">{{ t('admin.hubDisplay.noStopsMatch') }}</div>
+          } @else {
+            @for (stop of filteredStops(); track stop.id) {
+              <div
+                class="stop-item"
+                [class.selected]="selectedIds().has(stop.id)"
+                (click)="toggleStop(stop.id)"
+              >
+                <mat-checkbox
+                  [checked]="selectedIds().has(stop.id)"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleStop(stop.id)"
+                />
+                <span class="stop-name">{{ stop.name }}</span>
+                <div class="stop-lines">
+                  @for (line of stop.lines; track line.id) {
+                    <span class="line-badge" [style.backgroundColor]="line.color">
+                      {{ line.code }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        @if (selectedStops().length > 0) {
+          <div class="selection-summary">
+            <div class="selected-label">
+              {{ t('admin.hubDisplay.selected', { count: selectedStops().length, names: selectedStopNames() }) }}
+            </div>
+
+            <mat-form-field appearance="outline" class="hub-name-field">
+              <mat-label>{{ t('admin.hubDisplay.hubName') }}</mat-label>
+              <input
+                matInput
+                [ngModel]="hubName()"
+                (ngModelChange)="hubName.set($event)"
+              />
+            </mat-form-field>
+          </div>
+        }
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="selectedStops().length < 2"
+          (click)="confirm()"
+        >
+          <mat-icon>hub</mat-icon>
+          {{ t('admin.hubDisplay.openHub') }}
+        </button>
+      </mat-dialog-actions>
+    </ng-container>
   `,
   styles: `
     mat-dialog-content {

@@ -621,6 +621,17 @@
         "deleteMessage": "Delete itinerary \"{{ name }}\"? Associated schedules will also be deleted."
       }
     },
+    "hubDisplay": {
+      "title": "Open Hub Display",
+      "filterByLine": "Filter by Line",
+      "allLines": "All Lines",
+      "searchStops": "Search stops…",
+      "loadingStops": "Loading stops…",
+      "noStopsMatch": "No stops match your filters",
+      "selected": "Selected ({{ count }}): {{ names }}",
+      "hubName": "Hub name",
+      "openHub": "Open Hub Display"
+    },
     "realtime": {
       "title": "Real-time",
       "subtitle": "GTFS-Realtime caches fed by the scheduler. The Refresh button forces an immediate poll of the configured URL.",
