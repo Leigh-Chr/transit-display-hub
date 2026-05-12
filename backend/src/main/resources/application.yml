@@ -21,13 +21,15 @@ app:
   # APP_TIMEZONE on networks running outside Europe/Paris.
   timezone: ${APP_TIMEZONE:Europe/Paris}
   auth:
-    # HttpOnly cookies dropped at /api/auth/login. The Secure flag must
-    # flip to true behind any HTTPS-terminating proxy (override via
-    # AUTH_COOKIE_SECURE). SameSite stays Strict so a cross-site form
-    # post cannot piggyback on an existing session.
+    # HttpOnly cookies dropped at /api/auth/login. Secure defaults to true
+    # so a misconfigured deployment fails closed (browser refuses to send
+    # the cookie over HTTP) instead of fail-open with a tappable session.
+    # The dev profile flips it back to false because Spring's H2 test rig
+    # serves over http://localhost. SameSite stays Strict so a cross-site
+    # form post cannot piggyback on an existing session.
     access-cookie-name: ${AUTH_ACCESS_COOKIE_NAME:ACCESS_TOKEN}
     refresh-cookie-name: ${AUTH_REFRESH_COOKIE_NAME:REFRESH_TOKEN}
-    cookie-secure: ${AUTH_COOKIE_SECURE:false}
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
     cookie-same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
     cookie-domain: ${AUTH_COOKIE_DOMAIN:}
 
@@ -86,6 +88,11 @@ spring:
     enabled: false
 
 app:
+  auth:
+    # `ng serve` proxies to http://localhost:8080; Secure cookies would
+    # never reach the browser. Override here keeps the dev loop friction-
+    # free without weakening the prod default.
+    cookie-secure: ${AUTH_COOKIE_SECURE:false}
   data-loader:
     source: ${DATA_LOADER_SOURCE:gtfs}    # gtfs | (omitted to disable)
     # GTFS feeds tested for layout-engine generality. Override with

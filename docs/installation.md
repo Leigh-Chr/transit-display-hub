@@ -95,9 +95,12 @@ The configuration file is located at
   (defaults `transit-display-hub` / `transit-display-hub-admin`).
 - `JWT_REFRESH_EXPIRATION_DAYS`: refresh token TTL (default 14).
   Drives the `REFRESH_TOKEN` cookie max-age.
-- `AUTH_COOKIE_SECURE`: `true` behind HTTPS, `false` for plain
-  localhost dev. Default `false` so a fresh checkout boots without
-  TLS plumbing.
+- `AUTH_COOKIE_SECURE`: defaults to `true` so a misconfigured
+  deployment fails closed (the browser refuses to send the cookie
+  over HTTP). The dev profile flips it back to `false` so the H2
+  loop boots on plain `http://localhost` without TLS plumbing.
+  Override with `AUTH_COOKIE_SECURE=false` if you genuinely need to
+  run prod/kiosk over HTTP — but think twice first.
 - `AUTH_COOKIE_SAME_SITE`: `Strict` (default), `Lax` or `None`.
 - `AUTH_COOKIE_DOMAIN`: cookie domain attribute, leave empty for
   same-host deployments.
