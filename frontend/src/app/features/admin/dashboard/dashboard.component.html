@@ -1,0 +1,334 @@
+<ng-container *transloco="let t">
+<div class="dashboard">
+  <h1 class="page-title">{{ t('admin.dashboard.title') }}</h1>
+
+  @if (isAdmin()) {
+    <app-feed-info-card />
+    <app-data-overview-card />
+  }
+
+  @if (loading()) {
+    <app-stats-skeleton />
+  } @else if (loadError()) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="error_outline"
+        [title]="t('admin.dashboard.loadFailed')"
+        [description]="t('admin.common.loadErrorDescription')"
+        [actionLabel]="t('common.refresh')"
+        actionIcon="refresh"
+        (action)="reload()" />
+    </mat-card>
+  } @else {
+    <!-- Stats Grid -->
+    <div class="stats-grid" animate.enter="grid-stagger">
+      @if (isAdmin()) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-icon lines-icon">
+              <mat-icon>subway</mat-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ lineCount() }}</div>
+              <div class="stat-label">{{ t('admin.dashboard.statLines') }}</div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-icon stops-icon">
+              <mat-icon>place</mat-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stopCount() }}</div>
+              <div class="stat-label">{{ t('admin.dashboard.statStops') }}</div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-icon routes-icon">
+              <mat-icon>alt_route</mat-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ itineraryCount() }}</div>
+              <div class="stat-label">{{ t('admin.dashboard.statItineraries') }}</div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-icon messages-icon">
+            <mat-icon>campaign</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ activeMessages().length }}</div>
+            <div class="stat-label">{{ t('admin.dashboard.statActiveMessages') }}</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      @if (isAdmin()) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-icon devices-icon" [class.warning]="totalDevicesCount() > 0 && deviceHealthPercent() < 100">
+              <mat-icon>{{ totalDevicesCount() === 0 || deviceHealthPercent() === 100 ? 'tv' : 'tv_off' }}</mat-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">
+                @if (totalDevicesCount() === 0) {
+                  —
+                } @else {
+                  {{ onlineDevicesCount() }}/{{ totalDevicesCount() }}
+                }
+              </div>
+              <div class="stat-label">{{ t('admin.dashboard.statDevicesOnline') }}</div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Network Overview -->
+    @if (isAdmin()) {
+    <div class="overview-grid" animate.enter="fade-in">
+      <!-- Lines Overview -->
+      <mat-card class="overview-card">
+        <mat-card-header>
+          <mat-card-title>{{ t('admin.dashboard.networkLines') }}</mat-card-title>
+          @if (hasMoreLines()) {
+            <a mat-button routerLink="/admin/lines" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
+          }
+        </mat-card-header>
+        <mat-card-content>
+          @if (lineCount() === 0) {
+            <div class="empty-state">
+              <mat-icon>subway</mat-icon>
+              <span>{{ t('admin.dashboard.noLinesConfigured') }}</span>
+            </div>
+          } @else {
+            <div class="lines-overview">
+              @for (line of displayedLines(); track line.id) {
+                <a
+                  [routerLink]="['/admin/stops']"
+                  [queryParams]="{ lineId: line.id }"
+                  class="line-item"
+                  [matTooltip]="line.name + ' - ' + line.stopCount + ' ' + t('admin.dashboard.stopsSuffix') + ', ' + line.itineraryCount + ' ' + t('admin.dashboard.statItineraries')"
+                >
+                  <span
+                    class="line-badge"
+                    [style.backgroundColor]="line.color"
+                    [style.color]="lineTextColor(line)"
+                  >
+                    {{ line.code }}
+                  </span>
+                  <span class="line-name">{{ line.name }}</span>
+                  <span class="line-stats">{{ line.stopCount }} {{ t('admin.dashboard.stopsSuffix') }}</span>
+                </a>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Device Health -->
+      <mat-card class="overview-card">
+        <mat-card-header>
+          <mat-card-title>{{ t('admin.dashboard.deviceHealth') }}</mat-card-title>
+          <a mat-button routerLink="/admin/devices" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
+        </mat-card-header>
+        <mat-card-content>
+          @if (totalDevicesCount() === 0) {
+            <div class="empty-state">
+              <mat-icon>tv</mat-icon>
+              <span>{{ t('admin.dashboard.noDevicesRegistered') }}</span>
+            </div>
+          } @else {
+            <div class="health-container">
+              <div class="health-summary">
+                <div class="health-ring" [class.healthy]="deviceHealthPercent() === 100" [class.warning]="deviceHealthPercent() < 100">
+                  <span class="health-percent">{{ deviceHealthPercent() }}%</span>
+                </div>
+                <div class="health-breakdown">
+                  <div class="health-stat online">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>{{ onlineDevicesCount() }} {{ t('admin.dashboard.online') }}</span>
+                  </div>
+                  <div class="health-stat offline">
+                    <mat-icon>cancel</mat-icon>
+                    <span>{{ totalDevicesCount() - onlineDevicesCount() }} {{ t('admin.dashboard.offline') }}</span>
+                  </div>
+                  <div class="health-stat total">
+                    <mat-icon>devices</mat-icon>
+                    <span>{{ totalDevicesCount() }} {{ t('admin.dashboard.total') }}</span>
+                  </div>
+                </div>
+              </div>
+              @if (totalDevicesCount() - onlineDevicesCount() > 0) {
+                <div class="offline-preview">
+                  <div class="offline-title">{{ t('admin.dashboard.offlineDevices') }}</div>
+                  @for (device of displayedOfflineDevices(); track device.id) {
+                    <div class="offline-device">
+                      <mat-icon>tv_off</mat-icon>
+                      <span>{{ device.stopName }}</span>
+                    </div>
+                  }
+                  @if (remainingOfflineCount() > 0) {
+                    <a routerLink="/admin/devices" class="offline-more">
+                      {{ t('admin.dashboard.more', { count: remainingOfflineCount() }) }}
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    }
+
+    <!-- Critical Messages Section -->
+    @if (criticalMessages().length > 0) {
+      <mat-card class="alerts-card" animate.enter="fade-in">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="title-icon critical">error</mat-icon>
+            {{ t('admin.dashboard.criticalMessages') }}
+            <span class="alert-count">({{ criticalMessages().length }})</span>
+          </mat-card-title>
+          <a mat-button routerLink="/admin/messages" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
+        </mat-card-header>
+        <mat-card-content>
+          @for (message of displayedCriticalMessages(); track message.id) {
+            <div class="alert alert-critical">
+              <mat-icon class="alert-icon">error</mat-icon>
+              <div class="alert-content">
+                <span class="alert-title">{{ message.title }}</span>
+                <span class="alert-scope">{{ message.scopeType === 'NETWORK' ? t('admin.dashboard.scopeNetworkWide') : message.scopeInfo?.name }}</span>
+              </div>
+            </div>
+          }
+          @if (remainingCriticalCount() > 0) {
+            <a routerLink="/admin/messages" class="alert-more">
+              {{ t('admin.dashboard.moreCritical', { count: remainingCriticalCount() }) }}
+            </a>
+          }
+        </mat-card-content>
+      </mat-card>
+    } @else if (!loading()) {
+      <mat-card class="ops-ok-card" animate.enter="fade-in">
+        <mat-icon class="ops-ok-icon">check_circle</mat-icon>
+        <span class="ops-ok-text">{{ t('admin.dashboard.allClear') }}</span>
+      </mat-card>
+    }
+
+    <!-- Recent Messages -->
+    @if (recentMessages().length > 0) {
+      <mat-card class="recent-card" animate.enter="fade-in">
+        <mat-card-header>
+          <mat-card-title>{{ t('admin.dashboard.recentMessages') }}</mat-card-title>
+          <a mat-button routerLink="/admin/messages" class="view-all">{{ t('admin.dashboard.viewAll') }}</a>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="messages-list">
+            @for (message of recentMessages(); track message.id) {
+              <div class="message-item">
+                <div
+                  class="message-severity"
+                  [class.critical]="message.severity === 'CRITICAL'"
+                  [class.warning]="message.severity === 'WARNING'"
+                  [class.info]="message.severity === 'INFO'"
+                >
+                  @switch (message.severity) {
+                    @case ('CRITICAL') {
+                      <mat-icon>error</mat-icon>
+                    }
+                    @case ('WARNING') {
+                      <mat-icon>warning</mat-icon>
+                    }
+                    @default {
+                      <mat-icon>info</mat-icon>
+                    }
+                  }
+                </div>
+                <div class="message-info">
+                  <div class="message-title">{{ message.title }}</div>
+                  <div class="message-meta">
+                    {{ message.scopeType === 'NETWORK' ? t('admin.dashboard.scopeNetworkWide') : message.scopeInfo?.name }}
+                    · {{ message.startTime | date: 'short' }}
+                  </div>
+                </div>
+                <span
+                  class="message-status"
+                  [class.active]="getMessageStatus(message) === 'active'"
+                  [class.expired]="getMessageStatus(message) === 'expired'"
+                >
+                  @switch (getMessageStatus(message)) {
+                    @case ('active') { {{ t('admin.dashboard.messageStatus.active') }} }
+                    @case ('scheduled') { {{ t('admin.dashboard.messageStatus.scheduled') }} }
+                    @case ('expired') { {{ t('admin.dashboard.messageStatus.expired') }} }
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Quick Actions -->
+    <mat-card class="quick-actions-card" animate.enter="fade-in">
+      <mat-card-header>
+        <mat-card-title>{{ t('admin.dashboard.quickActions') }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="actions-grid">
+          <a mat-stroked-button routerLink="/admin/messages" class="action-btn">
+            <mat-icon>campaign</mat-icon>
+            <span>{{ t('admin.dashboard.actionNewMessage') }}</span>
+          </a>
+          @if (isAdmin()) {
+            <a mat-stroked-button routerLink="/admin/lines" class="action-btn">
+              <mat-icon>subway</mat-icon>
+              <span>{{ t('admin.dashboard.actionManageLines') }}</span>
+            </a>
+            <a mat-stroked-button routerLink="/admin/stops" class="action-btn">
+              <mat-icon>place</mat-icon>
+              <span>{{ t('admin.dashboard.actionManageStops') }}</span>
+            </a>
+            <a mat-stroked-button routerLink="/admin/schedules" class="action-btn">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ t('admin.dashboard.actionEditSchedules') }}</span>
+            </a>
+            <a mat-stroked-button routerLink="/admin/devices" class="action-btn">
+              <mat-icon>tv</mat-icon>
+              <span>{{ t('admin.dashboard.actionRegisterDevice') }}</span>
+            </a>
+          }
+          <a mat-stroked-button routerLink="/map" class="action-btn">
+            <mat-icon>map</mat-icon>
+            <span>{{ t('admin.dashboard.actionNetworkMap') }}</span>
+          </a>
+          @if (isAdmin()) {
+            <button mat-stroked-button class="action-btn" (click)="openHubDisplay()">
+              <mat-icon>hub</mat-icon>
+              <span>{{ t('admin.dashboard.actionHubDisplay') }}</span>
+            </button>
+            <a mat-stroked-button routerLink="/admin/users" class="action-btn">
+              <mat-icon>people</mat-icon>
+              <span>{{ t('admin.dashboard.actionManageUsers') }}</span>
+            </a>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <app-feed-credits />
+</div>
+</ng-container>

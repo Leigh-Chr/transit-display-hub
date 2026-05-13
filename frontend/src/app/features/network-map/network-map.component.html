@@ -1,0 +1,170 @@
+<div class="network-map-page">
+  <header class="page-header">
+    <div class="title-row">
+      <img ngSrc="assets/logo.png" width="32" height="32" alt="Transit Display Hub" class="header-logo" priority>
+      <h1>{{ 'map.networkMap' | transloco }}</h1>
+    </div>
+    <p class="subtitle">{{ subtitle() }}</p>
+    <a routerLink="/map/list" class="list-alt-link"
+       [attr.aria-label]="'map.viewListAria' | transloco">
+      <mat-icon aria-hidden="true">view_list</mat-icon>
+      <span>{{ 'map.viewList' | transloco }}</span>
+    </a>
+    <button
+      class="lang-toggle"
+      type="button"
+      (click)="localeService.toggle()"
+      [attr.aria-label]="(localeService.current() === 'fr' ? 'common.switchToEnglish' : 'common.switchToFrench') | transloco"
+      [title]="(localeService.current() === 'fr' ? 'common.switchToEnglish' : 'common.switchToFrench') | transloco"
+    >
+      {{ localeService.current() === 'fr' ? 'EN' : 'FR' }}
+    </button>
+    <button
+      class="theme-toggle"
+      type="button"
+      (click)="themeService.toggleTheme()"
+      [title]="(themeService.isDarkMode() ? 'common.switchLight' : 'common.switchDark') | transloco"
+      [attr.aria-label]="(themeService.isDarkMode() ? 'common.switchLight' : 'common.switchDark') | transloco"
+      [attr.aria-pressed]="themeService.isDarkMode()"
+    >
+      <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+  </header>
+
+  @if (categories().length > 1) {
+    <nav class="category-tabs" role="tablist" [attr.aria-label]="'map.categoryNav' | transloco">
+      <button
+        type="button"
+        role="tab"
+        class="category-tab"
+        [class.active]="selectedCategory() === null"
+        [attr.aria-selected]="selectedCategory() === null"
+        (click)="setCategory(null)"
+      >
+        <span class="tab-label">{{ 'map.tabAll' | transloco }}</span>
+        <span class="tab-count">{{ allLines().length }}</span>
+      </button>
+      @for (cat of categories(); track cat.key) {
+        <button
+          type="button"
+          role="tab"
+          class="category-tab"
+          [class.active]="selectedCategory() === cat.key"
+          [attr.aria-selected]="selectedCategory() === cat.key"
+          (click)="setCategory(cat.key)"
+        >
+          <span class="tab-label">{{ cat.key }}</span>
+          <span class="tab-count">{{ cat.count }}</span>
+        </button>
+      }
+    </nav>
+  }
+
+  <main class="map-wrapper">
+    @if (attribution()) {
+      <span class="attribution" [attr.aria-label]="'map.dataAttribution' | transloco: { source: attribution() }">
+        {{ attribution() }}
+      </span>
+    }
+    @if (loading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="48" [attr.aria-label]="'map.loadingAria' | transloco"></mat-spinner>
+        <span>{{ 'map.loadingNetwork' | transloco }}</span>
+      </div>
+    } @else if (error()) {
+      <div class="error-state">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error() }}</span>
+        <button mat-flat-button (click)="loadNetwork()">{{ 'common.retry' | transloco }}</button>
+      </div>
+    } @else if (layoutStops().length === 0) {
+      <div class="empty-state">
+        <mat-icon>route</mat-icon>
+        <span>{{ 'map.emptyStops' | transloco }}</span>
+      </div>
+    } @else if (useIndexView()) {
+      <app-line-index
+        [lines]="lines()"
+        (lineSelected)="focusLine($event)"
+      />
+    } @else {
+      <app-schematic-map
+        [lines]="lines()"
+        [stops]="layoutStops()"
+        [lineColorMap]="lineColorMap()"
+        [visibleLineCodes]="visibleLineCodes()"
+        [alerts]="alerts()"
+        [routeResult]="routeResult()"
+        [departureStopId]="departureStop()?.id ?? null"
+        [arrivalStopId]="arrivalStop()?.id ?? null"
+        [highlightedStopId]="highlightedStopId()"
+        (stopSelected)="onStopSelected($event)"
+        (filterChange)="onFilterChange($event)"
+      />
+    }
+
+    <!-- Stop / route search panel. Stays mounted independently of the
+         schematic vs index view, so even on a 50+ line network the user
+         can pick a departure and an arrival, and the route-finder will
+         still consider every line in the map (the route-itself collapses
+         back to the schematic view since routeLineCodes is small). -->
+    @if (!loading() && !error() && layoutStops().length > 0) {
+      <div class="route-search-overlay">
+        <div class="stop-search-panel">
+          <div class="panel-header">
+            <mat-icon class="panel-icon">search</mat-icon>
+            <span class="panel-title">{{ 'map.findStop' | transloco }}</span>
+          </div>
+          <mat-form-field class="stop-search-field" appearance="fill" subscriptSizing="dynamic">
+            <mat-icon matPrefix class="field-icon">location_on</mat-icon>
+            <input matInput
+              [formControl]="stopSearchCtrl"
+              [matAutocomplete]="stopAuto"
+              [placeholder]="'map.stopNamePlaceholder' | transloco"
+            />
+            @if (stopSearchCtrl.value) {
+              <button matSuffix class="clear-btn" (click)="clearStopSearch()">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+            <mat-autocomplete #stopAuto="matAutocomplete"
+              [displayWith]="stopDisplayFn"
+              (optionSelected)="onStopSearchSelected($event)"
+            >
+              @for (stop of filteredStops(); track stop.id) {
+                <mat-option [value]="stop">
+                  {{ stop.name }}
+                </mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
+        <app-route-search-bar
+          [stops]="layoutStops()"
+          [departureStop]="departureStop()"
+          [arrivalStop]="arrivalStop()"
+          [routeResult]="routeResult()"
+          (searchRoute)="onRouteSearch($event)"
+          (clearRoute)="onRouteClear()"
+          (departureChanged)="onDepartureChanged($event)"
+          (arrivalChanged)="onArrivalChanged($event)"
+        />
+        <button class="view-toggle-btn"
+                [class.toggled]="accessibleOnly()"
+                (click)="toggleAccessibleOnly()"
+                [attr.aria-pressed]="accessibleOnly()"
+                [title]="'map.accessibleOnlyTitle' | transloco">
+          <mat-icon>{{ accessibleOnly() ? 'accessible_forward' : 'accessibility' }}</mat-icon>
+          <span>{{ (accessibleOnly() ? 'map.accessibleOnly' : 'map.allStops') | transloco }}</span>
+        </button>
+        @if (routeResult()) {
+          <button class="view-toggle-btn" (click)="toggleNetworkView()">
+            <mat-icon>{{ showFullNetwork() ? 'filter_alt' : 'public' }}</mat-icon>
+            <span>{{ (showFullNetwork() ? 'map.routeOnly' : 'map.fullNetwork') | transloco }}</span>
+          </button>
+        }
+      </div>
+    }
+  </main>
+  <app-feed-credits />
+</div>

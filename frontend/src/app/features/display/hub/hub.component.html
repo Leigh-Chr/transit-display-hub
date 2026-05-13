@@ -1,0 +1,200 @@
+<div class="kiosk">
+  @if (hubState()) {
+    <!-- Header: Hub name with line badges + Current time -->
+    <header class="header">
+      <img ngSrc="assets/logo.png" width="40" height="40" alt="" class="header-logo" priority>
+      <div class="stop-info">
+        <h1 class="stop-name">{{ hubState()!.hubName }}</h1>
+        <div class="header-lines">
+          @for (line of hubState()!.lines; track line.code) {
+            <span class="header-line-badge"
+                  [style.backgroundColor]="line.color"
+                  [style.color]="lineTextColor(line)">
+              {{ line.code }}
+            </span>
+          }
+        </div>
+      </div>
+      <div class="clock-container">
+        <div class="date">{{ currentDate() }}</div>
+        <div class="clock">{{ currentTime() }}</div>
+      </div>
+    </header>
+
+    <!-- Critical alert (scrolling banner) -->
+    @if (criticalMessages().length > 0) {
+      <div class="alert-banner">
+        <div class="alert-icon">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <div class="alert-wrapper">
+          <div class="alert-track" [style.animationDuration]="alertDuration()">
+            <div class="alert-content">
+              @for (message of criticalMessages(); track $index) {
+                <span class="alert-item">
+                  <strong>{{ message.title }}</strong>
+                  @if (message.content) {
+                    <span class="alert-detail">— {{ message.content }}</span>
+                  }
+                </span>
+                <span class="alert-separator">•</span>
+              }
+            </div>
+            <div class="alert-content">
+              @for (message of criticalMessages(); track $index) {
+                <span class="alert-item">
+                  <strong>{{ message.title }}</strong>
+                  @if (message.content) {
+                    <span class="alert-detail">— {{ message.content }}</span>
+                  }
+                </span>
+                <span class="alert-separator">•</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Main departures board (4 columns) -->
+    <main class="departures">
+      <div class="departures-header">
+        <span class="col-line">{{ 'kiosk.headerLine' | transloco }}</span>
+        <span class="col-platform">{{ 'kiosk.headerPlatform' | transloco }}</span>
+        <span class="col-destination">{{ 'kiosk.headerDestination' | transloco }}</span>
+        <span class="col-time">{{ 'kiosk.headerNextDeparture' | transloco }}</span>
+      </div>
+      <div class="departures-viewport">
+        <div class="departures-track"
+             [class.scrolling]="needsScrolling()"
+             [style.animationDuration]="scrollDuration()">
+          <div class="departures-list">
+            @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.platform + '-' + arrival.destinationName)) {
+              <div class="departure-row">
+                <span
+                  class="line-badge"
+                  [style.backgroundColor]="arrival.line.color"
+                  [style.color]="lineTextColor(arrival.line)"
+                >
+                  {{ arrival.line.code }}
+                </span>
+                <span class="platform">{{ arrival.platform }}</span>
+                <span class="destination">
+                  {{ arrival.destinationName }}
+                  @if (arrival.booking; as b) {
+                    <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
+                      <mat-icon class="booking-icon">phone_callback</mat-icon>
+                      @if (b.phone) { {{ b.phone }} } @else { {{ 'kiosk.booking.label' | transloco }} }
+                    </span>
+                  }
+                </span>
+                <span class="time-info">
+                  <span
+                    class="time-relative"
+                    [class.imminent]="isImminent(arrival.scheduledTime)"
+                  >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                  <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+                </span>
+              </div>
+            } @empty {
+              <div class="no-departures">
+                {{ 'kiosk.noScheduledDepartures' | transloco }}
+              </div>
+            }
+          </div>
+          <!-- Duplicate for seamless loop when scrolling -->
+          @if (needsScrolling()) {
+            <div class="list-divider"></div>
+            <div class="departures-list">
+              @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.platform + '-' + arrival.destinationName)) {
+                <div class="departure-row">
+                  <span
+                    class="line-badge"
+                    [style.backgroundColor]="arrival.line.color"
+                    [style.color]="lineTextColor(arrival.line)"
+                  >
+                    {{ arrival.line.code }}
+                  </span>
+                  <span class="platform">{{ arrival.platform }}</span>
+                  <span class="destination">
+                    {{ arrival.destinationName }}
+                    @if (arrival.booking; as b) {
+                      <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
+                        <mat-icon class="booking-icon">phone_callback</mat-icon>
+                        @if (b.phone) { {{ b.phone }} } @else { {{ 'kiosk.booking.label' | transloco }} }
+                      </span>
+                    }
+                  </span>
+                  <span class="time-info">
+                    <span
+                    class="time-relative"
+                    [class.imminent]="isImminent(arrival.scheduledTime)"
+                  >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
+                    <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
+                  </span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </main>
+
+    <!-- Info/Warning messages ticker -->
+    @if (infoMessages().length > 0) {
+      <aside class="info-ticker">
+        <div class="ticker-track" [style.animationDuration]="tickerDuration()">
+          <div class="ticker-content">
+            @for (message of infoMessages(); track $index) {
+              <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
+                <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
+                <strong>{{ message.title }}</strong>
+                @if (message.content) {
+                  <span class="ticker-detail">{{ message.content }}</span>
+                }
+              </span>
+              <span class="ticker-separator">•</span>
+            }
+          </div>
+          <!-- Duplicate for seamless loop -->
+          <div class="ticker-content">
+            @for (message of infoMessages(); track $index) {
+              <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
+                <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
+                <strong>{{ message.title }}</strong>
+                @if (message.content) {
+                  <span class="ticker-detail">{{ message.content }}</span>
+                }
+              </span>
+              <span class="ticker-separator">•</span>
+            }
+          </div>
+        </div>
+      </aside>
+    }
+
+    <!-- Connection status indicator -->
+    @if (!connected()) {
+      <div class="connection-warning" role="status" aria-live="polite">
+        <mat-icon aria-hidden="true">wifi_off</mat-icon>
+        {{ 'kiosk.connection.reconnecting' | transloco }}
+      </div>
+    } @else if (isStale()) {
+      <div class="connection-warning stale-warning" role="status" aria-live="polite">
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        {{ 'kiosk.connection.stale' | transloco:{ minutes: staleMinutes() } }}
+      </div>
+    }
+  } @else if (error()) {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <h1>{{ 'kiosk.error.title' | transloco }}</h1>
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+    <div class="loading-state">
+      <mat-spinner diameter="80" aria-label="Loading hub display"></mat-spinner>
+      <h1>{{ 'kiosk.loading' | transloco }}</h1>
+    </div>
+  }
+</div>

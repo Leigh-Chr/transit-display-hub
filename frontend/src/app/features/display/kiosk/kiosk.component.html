@@ -1,0 +1,272 @@
+<div class="kiosk">
+  @if (displayState()) {
+    <!-- Header: Stop name with line badges + Current time -->
+    <header class="header">
+      <img ngSrc="assets/logo.png" width="40" height="40" alt="" class="header-logo" priority>
+      <div class="stop-info">
+        <h1 class="stop-name">
+          {{ displayState()!.stopName }}
+          @if (displayState()!.stopShortCode; as code) {
+            <span class="stop-short-code">{{ code }}</span>
+          }
+        </h1>
+        <div class="header-lines">
+          @for (line of displayState()!.lines; track line.code) {
+            <span class="header-line-badge"
+                  [style.backgroundColor]="line.color"
+                  [style.color]="lineTextColor(line)">
+              {{ line.code }}
+            </span>
+          }
+        </div>
+      </div>
+      <div class="clock-container">
+        <div class="date">{{ currentDate() }}</div>
+        <div class="clock">{{ currentTime() }}</div>
+      </div>
+      <!-- Accessibility controls: high-contrast palette, large
+           text, vocal announcement of the next departure. The
+           buttons stay in the top-right corner so a passenger
+           can reach them whatever the layout. aria-pressed is
+           the canonical WAI-ARIA way to expose toggle state to
+           assistive tech. -->
+      <div class="a11y-controls" role="group" [attr.aria-label]="'kiosk.highContrast' | transloco">
+        <button
+          mat-icon-button
+          type="button"
+          [attr.aria-pressed]="themeService.isHighContrast()"
+          [attr.aria-label]="'kiosk.highContrast' | transloco"
+          [matTooltip]="'kiosk.highContrast' | transloco"
+          (click)="themeService.toggleHighContrast()">
+          <mat-icon>contrast</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          [attr.aria-pressed]="themeService.isLargeText()"
+          [attr.aria-label]="'kiosk.largeText' | transloco"
+          [matTooltip]="'kiosk.largeText' | transloco"
+          (click)="themeService.toggleLargeText()">
+          <mat-icon>format_size</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          [attr.aria-label]="'kiosk.speakNext' | transloco"
+          [matTooltip]="'kiosk.speakNext' | transloco"
+          [disabled]="!speechAvailable"
+          (click)="speakNextDeparture()">
+          <mat-icon>volume_up</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Critical alert (scrolling banner) -->
+    @if (criticalMessages().length > 0) {
+      <div class="alert-banner">
+        <div class="alert-icon">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <div class="alert-wrapper">
+          <div class="alert-track" [style.animationDuration]="alertDuration()">
+            <div class="alert-content">
+              @for (message of criticalMessages(); track $index) {
+                <span class="alert-item">
+                  <strong>{{ message.title }}</strong>
+                  @if (message.content) {
+                    <span class="alert-detail">— {{ message.content }}</span>
+                  }
+                </span>
+                <span class="alert-separator">•</span>
+              }
+            </div>
+            <div class="alert-content">
+              @for (message of criticalMessages(); track $index) {
+                <span class="alert-item">
+                  <strong>{{ message.title }}</strong>
+                  @if (message.content) {
+                    <span class="alert-detail">— {{ message.content }}</span>
+                  }
+                </span>
+                <span class="alert-separator">•</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Main departures board -->
+    <main class="departures">
+      <div class="departures-header">
+        <span class="col-line">{{ 'kiosk.headerLine' | transloco }}</span>
+        <span class="col-destination">{{ 'kiosk.headerDestination' | transloco }}</span>
+        <span class="col-time">{{ 'kiosk.headerNextDeparture' | transloco }}</span>
+      </div>
+      <div class="departures-viewport">
+        <div class="departures-track"
+             [class.scrolling]="needsScrolling()"
+             [class.reduced-motion]="reducedMotion()"
+             [style.animationDuration]="scrollDuration()">
+          <div class="departures-list">
+            @for (arrival of visibleArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
+              <div class="departure-row">
+                <span
+                  class="line-badge"
+                  [style.backgroundColor]="arrival.line.color"
+                  [style.color]="lineTextColor(arrival.line)"
+                >
+                  {{ arrival.line.code }}
+                </span>
+                @if (showPerArrivalPlatform(arrival)) {
+                  <span class="platform-badge"
+                        [attr.aria-label]="'kiosk.accessibility.platform' | transloco:{ code: arrival.platformCode }">
+                    {{ arrival.platformCode }}
+                  </span>
+                }
+                <span class="destination">
+                  {{ arrival.destinationName }}
+                  @if (arrival.wheelchairAccessible === 'ACCESSIBLE') {
+                    <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.wheelchairYes' | transloco">accessible_forward</mat-icon>
+                  } @else if (arrival.wheelchairAccessible === 'NOT_ACCESSIBLE') {
+                    <mat-icon class="access-icon access-no" [attr.aria-label]="'kiosk.accessibility.wheelchairNo' | transloco">do_not_disturb</mat-icon>
+                  }
+                  @if (arrival.bikesAllowed === 'ALLOWED') {
+                    <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.bikesAllowed' | transloco">directions_bike</mat-icon>
+                  }
+                  @if (pickupBadge(arrival.pickupKind); as badge) {
+                    <span class="pickup-badge">{{ badge }}</span>
+                  }
+                  @if (frequencyLabel(arrival.frequencyHeadwaySeconds); as freq) {
+                    <span class="pickup-badge frequency-badge">{{ freq }}</span>
+                  }
+                  @if (isLive(arrival.realtimeDelaySeconds)) {
+                    <span class="live-badge"
+                          [class.delay-late]="(arrival.realtimeDelaySeconds ?? 0) > 60"
+                          [class.delay-early]="(arrival.realtimeDelaySeconds ?? 0) < -60"
+                          [attr.aria-label]="'kiosk.accessibility.liveData' | transloco">
+                      ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
+                    </span>
+                  }
+                  @if (arrival.booking; as b) {
+                    <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
+                      <mat-icon class="booking-icon">phone_callback</mat-icon>
+                      @if (b.phone) {
+                        {{ b.phone }}
+                      } @else {
+                        {{ 'kiosk.booking.label' | transloco }}
+                      }
+                      @if (b.priorNoticeMinutes) {
+                        <span class="booking-notice">≥ {{ b.priorNoticeMinutes }} min</span>
+                      }
+                    </span>
+                  }
+                </span>
+                <span class="time-info">
+                  <span
+                    class="time-relative"
+                    [class.imminent]="isImminent(effectiveTime(arrival))"
+                  >{{ formatRelativeTime(effectiveTime(arrival)) }}</span>
+                  <span class="time-absolute">{{ formatDepartureTime(effectiveTime(arrival)) }}</span>
+                </span>
+              </div>
+            } @empty {
+              <div class="no-departures">
+                {{ 'kiosk.noScheduledDepartures' | transloco }}
+              </div>
+            }
+          </div>
+          <!-- Duplicate for seamless loop when scrolling.
+               Hidden under prefers-reduced-motion — the paginated view
+               replaces continuous scroll and requires no clone. -->
+          @if (needsScrolling() && !reducedMotion()) {
+            <div class="list-divider"></div>
+            <div class="departures-list">
+              @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
+                <div class="departure-row">
+                  <span
+                    class="line-badge"
+                    [style.backgroundColor]="arrival.line.color"
+                    [style.color]="lineTextColor(arrival.line)"
+                  >
+                    {{ arrival.line.code }}
+                  </span>
+                  <span class="destination">
+                    {{ arrival.destinationName }}
+                    @if (pickupBadge(arrival.pickupKind); as badge) {
+                      <span class="pickup-badge">{{ badge }}</span>
+                    }
+                  </span>
+                  <span class="time-info">
+                    <span
+                    class="time-relative"
+                    [class.imminent]="isImminent(effectiveTime(arrival))"
+                  >{{ formatRelativeTime(effectiveTime(arrival)) }}</span>
+                    <span class="time-absolute">{{ formatDepartureTime(effectiveTime(arrival)) }}</span>
+                  </span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </main>
+
+    <!-- Info/Warning messages ticker -->
+    @if (infoMessages().length > 0) {
+      <aside class="info-ticker">
+        <div class="ticker-track" [style.animationDuration]="tickerDuration()">
+          <div class="ticker-content">
+            @for (message of infoMessages(); track $index) {
+              <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
+                <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
+                <strong>{{ message.title }}</strong>
+                @if (message.content) {
+                  <span class="ticker-detail">{{ message.content }}</span>
+                }
+              </span>
+              <span class="ticker-separator">•</span>
+            }
+          </div>
+          <!-- Duplicate for seamless loop -->
+          <div class="ticker-content">
+            @for (message of infoMessages(); track $index) {
+              <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
+                <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
+                <strong>{{ message.title }}</strong>
+                @if (message.content) {
+                  <span class="ticker-detail">{{ message.content }}</span>
+                }
+              </span>
+              <span class="ticker-separator">•</span>
+            }
+          </div>
+        </div>
+      </aside>
+    }
+
+    <!-- Connection status indicator (minimal) -->
+    @if (!connected()) {
+      <div class="connection-warning" role="status" aria-live="polite">
+        <mat-icon aria-hidden="true">wifi_off</mat-icon>
+        {{ 'kiosk.connection.reconnecting' | transloco }}
+      </div>
+    } @else if (isStale()) {
+      <div class="connection-warning stale-warning" role="status" aria-live="polite">
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        {{ 'kiosk.connection.stale' | transloco:{ minutes: staleMinutes() } }}
+      </div>
+    }
+  } @else if (error()) {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <h1>{{ 'kiosk.error.title' | transloco }}</h1>
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+    <div class="loading-state">
+      <mat-spinner diameter="80" aria-label="Loading display"></mat-spinner>
+      <h1>{{ 'kiosk.loading' | transloco }}</h1>
+    </div>
+  }
+</div>
