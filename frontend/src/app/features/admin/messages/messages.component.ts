@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { type Params } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,7 +14,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
-import { Line, BroadcastMessage, MessageSeverity, PageResponse, CreateMessageRequest } from '@shared/models';
+import { Line, BroadcastMessage, MessageSeverity, CreateMessageRequest } from '@shared/models';
 import { MessageDialogComponent } from './message-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -24,6 +23,7 @@ import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -69,7 +69,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
         <mat-form-field appearance="outline" class="severity-filter">
           <mat-label>{{ t('admin.messages.filterSeverity') }}</mat-label>
-          <mat-select [value]="severity" (selectionChange)="onSeverityChange($event.value)">
+          <mat-select [value]="severity()" (selectionChange)="onSeverityChange($event.value)">
             <mat-option value="">{{ t('admin.messages.allSeverities') }}</mat-option>
             <mat-option value="CRITICAL">{{ t('admin.messages.severityCritical') }}</mat-option>
             <mat-option value="WARNING">{{ t('admin.messages.severityWarning') }}</mat-option>
@@ -78,7 +78,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
         </mat-form-field>
 
         <mat-checkbox
-          [checked]="showActiveOnly"
+          [checked]="showActiveOnly()"
           (change)="onActiveChange($event.checked)"
           class="active-checkbox"
         >
@@ -103,7 +103,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             (action)="loadMessages()"
           />
         </mat-card>
-      } @else if (messages().length === 0 && !tableState.search && !severity && !showActiveOnly) {
+      } @else if (messages().length === 0 && !tableState.search && !severity() && !showActiveOnly()) {
         <mat-card>
           <app-empty-state
             icon="campaign"
@@ -202,7 +202,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
         </div>
 
         <mat-paginator
-          [length]="totalElements"
+          [length]="totalElements()"
           [pageIndex]="tableState.page"
           [pageSize]="tableState.size"
           [pageSizeOptions]="pageSizeOptions"
@@ -414,92 +414,71 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
   `,
 })
-export class MessagesComponent implements OnInit {
+export class MessagesComponent {
   private readonly messageService = inject(MessageService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
-  loading = signal(true);
-  loadError = signal<string | null>(null);
-  messages = signal<BroadcastMessage[]>([]);
-  lines = signal<Line[]>([]);
+  readonly lines = signal<Line[]>([]);
 
-  // Extra filter state (pushed into URL via the extras supplier)
-  severity: MessageSeverity | '' = '';
-  showActiveOnly = false;
-  totalElements = 0;
+  // Extra filter state, persisted into the URL via the extras supplier
+  // and mirrored back from it by syncFromUrl.
+  readonly severity = signal<MessageSeverity | ''>('');
+  readonly showActiveOnly = signal(false);
 
-  ngOnInit(): void {
-    this.tableState.init({
-      sortBy: 'startTime',
-      sortDir: 'desc',
-      extras: () => ({
-        severity: this.severity || undefined,
-        active: this.showActiveOnly ? 'true' : undefined,
+  private readonly list = createAdminListResource<BroadcastMessage>({
+    tableState: this.tableState,
+    defaults: { sortBy: 'startTime', sortDir: 'desc' },
+    extras: {
+      supply: () => ({
+        severity: this.severity() || undefined,
+        active: this.showActiveOnly() ? 'true' : undefined,
       }),
-    });
+      syncFromUrl: (params: Params) => {
+        this.severity.set((params['severity'] as MessageSeverity | undefined) ?? '');
+        this.showActiveOnly.set(params['active'] === 'true');
+      },
+    },
+    fetch: (request, raw) =>
+      this.messageService.getAllPaginated({
+        page: request.page,
+        size: request.size,
+        search: request.search,
+        severity: (raw['severity'] as MessageSeverity | undefined) ?? undefined,
+        active: raw['active'] === 'true' ? true : undefined,
+        sortBy: request.sortBy,
+        sortDir: request.sortDir,
+      }),
+  });
 
+  readonly loading = this.list.loading;
+  readonly loadError = this.list.loadError;
+  readonly messages = this.list.items;
+  readonly totalElements = this.list.totalElements;
+
+  constructor() {
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
       error: () => this.notify.error(this.transloco.translate('admin.messages.loadLinesFailed')),
     });
-
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      this.tableState.syncFromQueryParams(params);
-      this.severity = (params['severity'] as MessageSeverity | undefined) ?? '';
-      this.showActiveOnly = params['active'] === 'true';
-      this.loadMessages();
-    });
   }
 
   loadMessages(): void {
-    this.loading.set(true);
-    this.loadError.set(null);
-    this.messageService
-      .getAllPaginated({
-        page: this.tableState.page,
-        size: this.tableState.size,
-        search: this.tableState.search || undefined,
-        severity: this.severity || undefined,
-        active: this.showActiveOnly || undefined,
-        sortBy: 'startTime',
-        sortDir: 'desc',
-      })
-      .subscribe({
-        next: (response: PageResponse<BroadcastMessage>) => {
-          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
-            this.tableState.page = Math.max(0, response.totalPages - 1);
-            this.tableState.updateUrl();
-            this.loadMessages();
-            return;
-          }
-          this.messages.set(response.content);
-          this.totalElements = response.totalElements;
-          this.loading.set(false);
-        },
-        error: (err: unknown) => {
-          this.loading.set(false);
-          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.messages.loadFailed')));
-        },
-      });
+    this.list.reload();
   }
 
   onSeverityChange(severity: MessageSeverity | ''): void {
-    this.severity = severity;
-    this.tableState.page = 0;
-    this.tableState.updateUrl();
+    this.severity.set(severity);
+    this.tableState.resetToFirstPage();
   }
 
   onActiveChange(active: boolean): void {
-    this.showActiveOnly = active;
-    this.tableState.page = 0;
-    this.tableState.updateUrl();
+    this.showActiveOnly.set(active);
+    this.tableState.resetToFirstPage();
   }
 
   isActive(message: BroadcastMessage): boolean {

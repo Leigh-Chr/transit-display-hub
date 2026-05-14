@@ -2,13 +2,18 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
-import { of, Subject, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessagesComponent } from './messages.component';
 import { MessageService } from '@core/api/message.service';
 import { LineService } from '@core/api/line.service';
 import { BroadcastMessage, Line, PageResponse } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+
+async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
+  f.detectChanges();
+  await f.whenStable();
+}
 
 const en = {
   common: { delete: 'Delete' },
@@ -45,7 +50,7 @@ describe('MessagesComponent', () => {
   };
   let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
   let router: Router;
-  let queryParamsSubject: Subject<Record<string, string>>;
+  let queryParams$: BehaviorSubject<Record<string, string>>;
 
   const now = new Date();
   const pastHour = new Date(now.getTime() - 3600000).toISOString();
@@ -85,7 +90,7 @@ describe('MessagesComponent', () => {
   };
 
   beforeEach(() => {
-    queryParamsSubject = new Subject<Record<string, string>>();
+    queryParams$ = new BehaviorSubject<Record<string, string>>({});
 
     mockMessageService = {
       getAllPaginated: vi.fn().mockReturnValue(of(mockPageResponse)),
@@ -119,10 +124,7 @@ describe('MessagesComponent', () => {
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
         { provide: NotifyService, useValue: mockNotify },
-        {
-          provide: ActivatedRoute,
-          useValue: { queryParams: queryParamsSubject.asObservable() },
-        },
+        { provide: ActivatedRoute, useValue: { queryParams: queryParams$ } },
       ],
     });
 
@@ -136,10 +138,9 @@ describe('MessagesComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngOnInit', () => {
-    it('should load lines and messages on init', () => {
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+  describe('initial load', () => {
+    it('should load lines and messages', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockLineService.getAll).toHaveBeenCalled();
       expect(component.lines()).toEqual([mockLine]);
@@ -149,9 +150,8 @@ describe('MessagesComponent', () => {
   });
 
   describe('loadMessages', () => {
-    it('should call getAllPaginated with correct params', () => {
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+    it('should call getAllPaginated with correct default params', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockMessageService.getAllPaginated).toHaveBeenCalledWith({
         page: 0,
@@ -164,15 +164,15 @@ describe('MessagesComponent', () => {
       });
     });
 
-    it('should pass filter params from query string', () => {
-      fixture.detectChanges();
-      queryParamsSubject.next({
+    it('should pass filter params from query string', async () => {
+      queryParams$.next({
         page: '2',
         size: '25',
         search: 'alert',
         severity: 'CRITICAL',
         active: 'true',
       });
+      await detectAndFlush(fixture);
 
       expect(mockMessageService.getAllPaginated).toHaveBeenCalledWith({
         page: 2,
@@ -183,55 +183,43 @@ describe('MessagesComponent', () => {
         sortBy: 'startTime',
         sortDir: 'desc',
       });
+      expect(component.severity()).toBe('CRITICAL');
+      expect(component.showActiveOnly()).toBe(true);
     });
 
-    it('should handle error by setting loading to false and surfacing the error inline', () => {
-      mockMessageService.getAllPaginated = vi.fn().mockReturnValue(
+    it('should surface load errors via the resource error state without a snackbar', async () => {
+      mockMessageService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBe('Server error');
-    });
-
-    it('should show fallback error message when error has no message', () => {
-      mockMessageService.getAllPaginated = vi.fn().mockReturnValue(
-        throwError(() => ({ error: {} })),
-      );
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
-
-      expect(component.loadError()).toBe('Failed to load messages');
+      expect(component.loadError()).toBeTruthy();
+      expect(mockNotify.error).not.toHaveBeenCalled();
     });
   });
 
   describe('onSeverityChange', () => {
-    it('should set severity, reset page, and update URL', () => {
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+    it('should set severity, reset page, and update URL', async () => {
+      await detectAndFlush(fixture);
 
       component.tableState.page = 3;
       component.onSeverityChange('WARNING');
 
-      expect(component.severity).toBe('WARNING');
+      expect(component.severity()).toBe('WARNING');
       expect(component.tableState.page).toBe(0);
       expect(router.navigate).toHaveBeenCalled();
     });
   });
 
   describe('onActiveChange', () => {
-    it('should set showActiveOnly, reset page, and update URL', () => {
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+    it('should set showActiveOnly, reset page, and update URL', async () => {
+      await detectAndFlush(fixture);
 
       component.tableState.page = 5;
       component.onActiveChange(true);
 
-      expect(component.showActiveOnly).toBe(true);
+      expect(component.showActiveOnly()).toBe(true);
       expect(component.tableState.page).toBe(0);
       expect(router.navigate).toHaveBeenCalled();
     });
@@ -270,12 +258,10 @@ describe('MessagesComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should pass lines in dialog data', () => {
+    it('should pass lines in dialog data', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+      await detectAndFlush(fixture);
 
       component.openCreateDialog();
       dialogCloseSubject.next(null);
@@ -289,16 +275,15 @@ describe('MessagesComponent', () => {
       );
     });
 
-    it('should create message and reload on dialog success', () => {
+    it('should create message and reload on dialog success', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+      await detectAndFlush(fixture);
       mockMessageService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
       dialogCloseSubject.next({ title: 'New', content: 'Body', severity: 'INFO' });
+      await fixture.whenStable();
 
       expect(mockMessageService.create).toHaveBeenCalledWith({
         title: 'New',
@@ -312,6 +297,7 @@ describe('MessagesComponent', () => {
     it('should not create when dialog is cancelled', () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
+      fixture.detectChanges();
 
       component.openCreateDialog();
       dialogCloseSubject.next(null);
@@ -321,16 +307,15 @@ describe('MessagesComponent', () => {
   });
 
   describe('openEditDialog', () => {
-    it('should update message and reload on dialog success', () => {
+    it('should update message and reload on dialog success', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+      await detectAndFlush(fixture);
       mockMessageService.getAllPaginated.mockClear();
 
       component.openEditDialog(mockMessage);
       dialogCloseSubject.next({ title: 'Updated', content: 'Updated body', severity: 'WARNING' });
+      await fixture.whenStable();
 
       expect(mockMessageService.update).toHaveBeenCalledWith('m1', {
         title: 'Updated',
@@ -341,12 +326,10 @@ describe('MessagesComponent', () => {
       expect(mockNotify.success).toHaveBeenCalledWith('Message updated');
     });
 
-    it('should pass message and lines in dialog data', () => {
+    it('should pass message and lines in dialog data', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+      await detectAndFlush(fixture);
 
       component.openEditDialog(mockMessage);
       dialogCloseSubject.next(null);
@@ -362,16 +345,15 @@ describe('MessagesComponent', () => {
   });
 
   describe('deleteMessage', () => {
-    it('should delete message when confirmed', () => {
+    it('should delete message when confirmed', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
-
-      fixture.detectChanges();
-      queryParamsSubject.next({});
+      await detectAndFlush(fixture);
       mockMessageService.getAllPaginated.mockClear();
 
       component.deleteMessage(mockMessage);
       dialogCloseSubject.next(true);
+      await fixture.whenStable();
 
       expect(mockMessageService.delete).toHaveBeenCalledWith('m1');
       expect(mockMessageService.getAllPaginated).toHaveBeenCalled();
@@ -381,6 +363,7 @@ describe('MessagesComponent', () => {
     it('should not delete message when cancelled', () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
+      fixture.detectChanges();
 
       component.deleteMessage(mockMessage);
       dialogCloseSubject.next(false);

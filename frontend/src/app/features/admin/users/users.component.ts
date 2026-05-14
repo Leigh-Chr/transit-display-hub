@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, viewChild, AfterViewInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -13,7 +11,7 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
-import { User, PageResponse, CreateUserRequest, UpdateUserRequest } from '@shared/models';
+import { User, CreateUserRequest, UpdateUserRequest } from '@shared/models';
 import { UserDialogComponent } from './user-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -22,6 +20,7 @@ import { TableSkeletonComponent } from '@shared/components/skeleton/table-skelet
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -80,7 +79,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             (action)="loadUsers()"
           />
         </mat-card>
-      } @else if (dataSource.data.length === 0 && !tableState.search) {
+      } @else if (users().length === 0 && !tableState.search) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="people"
@@ -92,7 +91,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             (action)="openCreateDialog()"
           />
         </mat-card>
-      } @else if (dataSource.data.length === 0 && tableState.search) {
+      } @else if (users().length === 0 && tableState.search) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
@@ -102,7 +101,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
-          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
+          <table mat-table [dataSource]="users()" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="username">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.users.colUsername') }}</th>
               <td mat-cell *matCellDef="let user">
@@ -158,7 +157,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
           </table>
 
           <mat-paginator
-            [length]="totalElements"
+            [length]="totalElements()"
             [pageIndex]="tableState.page"
             [pageSize]="tableState.size"
             [pageSizeOptions]="pageSizeOptions"
@@ -254,33 +253,28 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     /* Enter animations defined globally — see styles.scss section 13a */
   `,
 })
-export class UsersComponent implements OnInit, AfterViewInit {
+export class UsersComponent implements AfterViewInit {
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly transloco = inject(TranslocoService);
 
   readonly tableState = inject(AdminTableState);
   readonly sort = viewChild(MatSort);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
-  loading = signal(true);
-  loadError = signal<string | null>(null);
-  dataSource = new MatTableDataSource<User>([]);
   displayedColumns = ['username', 'role', 'enabled', 'actions'];
 
-  totalElements = 0;
+  private readonly list = createAdminListResource<User>({
+    tableState: this.tableState,
+    defaults: { sortBy: 'username' },
+    fetch: (request) => this.userService.getAllPaginated(request),
+  });
 
-  ngOnInit(): void {
-    this.tableState.init({ sortBy: 'username' });
-
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      this.tableState.syncFromQueryParams(params);
-      this.loadUsers();
-    });
-  }
+  readonly loading = this.list.loading;
+  readonly loadError = this.list.loadError;
+  readonly users = this.list.items;
+  readonly totalElements = this.list.totalElements;
 
   ngAfterViewInit(): void {
     const sortRef = this.sort();
@@ -291,33 +285,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   }
 
   loadUsers(): void {
-    this.loading.set(true);
-    this.loadError.set(null);
-    this.userService
-      .getAllPaginated({
-        page: this.tableState.page,
-        size: this.tableState.size,
-        sortBy: this.tableState.sortBy,
-        sortDir: this.tableState.sortDir,
-        search: this.tableState.search || undefined,
-      })
-      .subscribe({
-        next: (response: PageResponse<User>) => {
-          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
-            this.tableState.page = Math.max(0, response.totalPages - 1);
-            this.tableState.updateUrl();
-            this.loadUsers();
-            return;
-          }
-          this.dataSource.data = response.content;
-          this.totalElements = response.totalElements;
-          this.loading.set(false);
-        },
-        error: (err: unknown) => {
-          this.loading.set(false);
-          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.users.loadFailed')));
-        },
-      });
+    this.list.reload();
   }
 
   isCurrentUser(user: User): boolean {
@@ -330,7 +298,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
    *  still rely on the server's rejection. */
   isLastEnabledAdmin(user: User): boolean {
     if (user.role !== 'ADMIN' || !user.enabled) { return false; }
-    const enabledAdminsOnPage = this.dataSource.data.filter(
+    const enabledAdminsOnPage = this.users().filter(
       u => u.role === 'ADMIN' && u.enabled,
     );
     return enabledAdminsOnPage.length === 1 && enabledAdminsOnPage[0]?.id === user.id;

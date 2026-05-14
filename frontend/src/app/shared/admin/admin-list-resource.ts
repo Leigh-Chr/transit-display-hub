@@ -1,9 +1,9 @@
 import { Signal, computed, effect, inject } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, type Params } from '@angular/router';
 import { Observable } from 'rxjs';
 import { PageResponse } from '@shared/models';
-import { AdminTableState } from './admin-table-state.service';
+import { AdminTableState, type AdminTableExtras } from './admin-table-state.service';
 
 /** Normalised request shape handed to the page's fetch callback. */
 export interface AdminListRequest {
@@ -24,6 +24,20 @@ export interface AdminListResource<T> {
 }
 
 /**
+ * Page-specific extra filter dimension (lineId, severity, active…)
+ * layered on top of the standard page / size / sort / search set.
+ */
+export interface AdminListExtras {
+  /** Current extra-filter values, read fresh on every URL write so the
+   *  page can mutate its own signals without re-initialising. Passed
+   *  straight through to {@link AdminTableState.init}. */
+  supply: () => AdminTableExtras;
+  /** Mirrors the URL's extra params back into the page-local signals
+   *  the filter controls bind to. */
+  syncFromUrl: (params: Params) => void;
+}
+
+/**
  * Wires the boilerplate every paginated admin CRUD page repeats:
  *
  *  - bind the URL query params to a signal,
@@ -34,7 +48,8 @@ export interface AdminListResource<T> {
  *
  * The {@code sortBy} param accepts the {@code "field:desc"} shorthand
  * the sort selects emit; it is split into {@code sortBy} / {@code sortDir}
- * before reaching the fetch callback.
+ * before reaching the fetch callback. The callback also receives the
+ * raw params bag so a page can pull its own extra filters out of it.
  *
  * Must be called from an injection context (a field initialiser or the
  * constructor) — it injects {@link ActivatedRoute} and registers two
@@ -43,29 +58,36 @@ export interface AdminListResource<T> {
  */
 export function createAdminListResource<T>(config: {
   tableState: AdminTableState;
-  defaults: { sortBy: string; size?: number };
-  fetch: (request: AdminListRequest) => Observable<PageResponse<T>>;
+  defaults: { sortBy: string; sortDir?: 'asc' | 'desc'; size?: number };
+  fetch: (request: AdminListRequest, rawParams: Params) => Observable<PageResponse<T>>;
+  extras?: AdminListExtras;
 }): AdminListResource<T> {
   const route = inject(ActivatedRoute);
-  const { tableState, defaults, fetch } = config;
-  const defaultSize = defaults.size ?? 12;
+  const { tableState, defaults, fetch, extras } = config;
+  // Matches AdminTableState's own default so a page that omits `size`
+  // keeps the 10-row default the shared state already applies.
+  const defaultSize = defaults.size ?? 10;
 
-  // init() runs before the first queryParams emission so the default
-  // sort / size are in place when syncFromQueryParams() reconciles.
-  // size is passed only when set so the property stays absent rather
+  // init() runs before the first queryParams emission so the defaults
+  // are in place when syncFromQueryParams() reconciles. Optional fields
+  // are spread in only when set so the property stays absent rather
   // than explicitly undefined (exactOptionalPropertyTypes).
-  tableState.init(
-    defaults.size === undefined
-      ? { sortBy: defaults.sortBy }
-      : { sortBy: defaults.sortBy, size: defaults.size },
-  );
+  tableState.init({
+    sortBy: defaults.sortBy,
+    ...(defaults.size !== undefined ? { size: defaults.size } : {}),
+    ...(defaults.sortDir !== undefined ? { sortDir: defaults.sortDir } : {}),
+    ...(extras !== undefined ? { extras: extras.supply } : {}),
+  });
   const queryParams = toSignal(route.queryParams, { initialValue: {} });
 
-  // URL → tableState for the toolbar bindings. Kept out of the
-  // resource params so the resource contract stays pure — it derives
-  // its request from the queryParams snapshot directly.
+  // URL → tableState (+ page-local extra filters) for the toolbar
+  // bindings. Kept out of the resource params so the resource contract
+  // stays pure — it derives its request from the queryParams snapshot
+  // directly.
   effect(() => {
-    tableState.syncFromQueryParams(queryParams());
+    const params = queryParams();
+    tableState.syncFromQueryParams(params);
+    extras?.syncFromUrl(params);
   });
 
   const resource = rxResource<PageResponse<T>, Record<string, string | undefined>>({
@@ -76,14 +98,17 @@ export function createAdminListResource<T>(config: {
         ? (rawSort.split(':') as [string, string])
         : [rawSort, undefined];
       const sortDir: 'asc' | 'desc' =
-        (splitDir ?? p['sortDir']) === 'desc' ? 'desc' : 'asc';
-      return fetch({
-        page: +(p['page'] ?? 0),
-        size: +(p['size'] ?? defaultSize),
-        sortBy: field,
-        sortDir,
-        search: p['search'] ?? undefined,
-      });
+        (splitDir ?? p['sortDir'] ?? defaults.sortDir) === 'desc' ? 'desc' : 'asc';
+      return fetch(
+        {
+          page: +(p['page'] ?? 0),
+          size: +(p['size'] ?? defaultSize),
+          sortBy: field,
+          sortDir,
+          search: p['search'] ?? undefined,
+        },
+        p,
+      );
     },
   });
 

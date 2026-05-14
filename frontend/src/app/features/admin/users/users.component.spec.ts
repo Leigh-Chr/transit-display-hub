@@ -11,6 +11,11 @@ import { AuthService } from '@core/auth/auth.service';
 import { User, PageResponse } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
+async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
+  f.detectChanges();
+  await f.whenStable();
+}
+
 const translocoLang = {
   admin: {
     users: {
@@ -65,13 +70,7 @@ describe('UsersComponent', () => {
 
   let mockNotify: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> };
 
-  let mockRouter: {
-    navigate: ReturnType<typeof vi.fn>;
-  };
-
-  let mockRoute: {
-    queryParams: BehaviorSubject<Record<string, string>>;
-  };
+  let router: Router;
 
   beforeEach(() => {
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
@@ -94,14 +93,6 @@ describe('UsersComponent', () => {
 
     mockNotify = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
-    mockRouter = {
-      navigate: vi.fn(),
-    };
-
-    mockRoute = {
-      queryParams: queryParams$,
-    };
-
     TestBed.configureTestingModule({
       imports: [
         UsersComponent,
@@ -117,26 +108,28 @@ describe('UsersComponent', () => {
         { provide: AuthService, useValue: mockAuthService },
         { provide: MatDialog, useValue: mockDialog },
         { provide: NotifyService, useValue: mockNotify },
-        { provide: Router, useValue: mockRouter },
-        { provide: ActivatedRoute, useValue: mockRoute },
+        { provide: ActivatedRoute, useValue: { queryParams: queryParams$ } },
       ],
     });
 
     fixture = TestBed.createComponent(UsersComponent);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should start with loading true', () => {
+  it('should be loading after detectChanges (resource initiated)', () => {
+    fixture.detectChanges();
     expect(component.loading()).toBe(true);
   });
 
   describe('loadUsers', () => {
-    it('should call getAllPaginated with correct default params on init', () => {
-      component.ngOnInit();
+    it('should call getAllPaginated with correct default params', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockUserService.getAllPaginated).toHaveBeenCalledWith({
         page: 0,
@@ -147,22 +140,22 @@ describe('UsersComponent', () => {
       });
     });
 
-    it('should populate dataSource and totalElements from response', () => {
-      component.ngOnInit();
+    it('should populate users and totalElements from response', async () => {
+      await detectAndFlush(fixture);
 
-      expect(component.dataSource.data).toEqual([mockUser, mockOtherUser]);
-      expect(component.totalElements).toBe(2);
+      expect(component.users()).toEqual([mockUser, mockOtherUser]);
+      expect(component.totalElements()).toBe(2);
     });
 
-    it('should set loading to false after successful load', () => {
-      component.ngOnInit();
+    it('should set loading to false after successful load', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
     });
 
-    it('should read query params to set pagination state', () => {
+    it('should read query params to set pagination state', async () => {
       queryParams$.next({ page: '2', size: '25', sortBy: 'role', sortDir: 'desc', search: 'test' });
-      component.ngOnInit();
+      await detectAndFlush(fixture);
 
       expect(component.tableState.page).toBe(2);
       expect(component.tableState.size).toBe(25);
@@ -178,22 +171,23 @@ describe('UsersComponent', () => {
       });
     });
 
-    it('should set loading to false and surface the error inline on error', () => {
-      const error = { error: { message: 'Server error' } };
-      mockUserService.getAllPaginated.mockReturnValue(throwError(() => error));
-
-      component.ngOnInit();
+    it('should surface load errors via the resource error state without a snackbar', async () => {
+      mockUserService.getAllPaginated.mockReturnValue(
+        throwError(() => ({ error: { message: 'Server error' } })),
+      );
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBe('Server error');
+      expect(component.loadError()).toBeTruthy();
+      expect(mockNotify.error).not.toHaveBeenCalled();
     });
 
-    it('should show fallback error message when error has no message', () => {
+    it('should render the error empty-state in the template when the resource errors', async () => {
       mockUserService.getAllPaginated.mockReturnValue(throwError(() => ({ error: {} })));
+      await detectAndFlush(fixture);
 
-      component.ngOnInit();
-
-      expect(component.loadError()).toBe('Failed to load users');
+      const errorState = fixture.nativeElement.querySelector('app-empty-state[icon="error_outline"]');
+      expect(errorState).toBeTruthy();
     });
   });
 
@@ -208,11 +202,14 @@ describe('UsersComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should create user and reload on dialog success', () => {
+    it('should create user and reload on dialog success', async () => {
       const afterClosed$ = of({ username: 'newuser', password: 'pass123', role: 'AGENT' });
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
+      mockUserService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockUserService.create).toHaveBeenCalledWith({
@@ -227,6 +224,7 @@ describe('UsersComponent', () => {
     it('should do nothing when dialog is cancelled', () => {
       const afterClosed$ = of(undefined);
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
 
       component.openCreateDialog();
 
@@ -239,6 +237,7 @@ describe('UsersComponent', () => {
       mockUserService.create.mockReturnValue(
         throwError(() => ({ error: { message: 'Username already exists' } }))
       );
+      fixture.detectChanges();
 
       component.openCreateDialog();
 
@@ -249,6 +248,7 @@ describe('UsersComponent', () => {
       const afterClosed$ = of({ username: 'newuser', password: 'pass123', role: 'AGENT' });
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       mockUserService.create.mockReturnValue(throwError(() => ({ error: {} })));
+      fixture.detectChanges();
 
       component.openCreateDialog();
 
@@ -257,12 +257,15 @@ describe('UsersComponent', () => {
   });
 
   describe('openEditDialog', () => {
-    it('should update user and reload on dialog success', () => {
+    it('should update user and reload on dialog success', async () => {
       const updateData = { role: 'ADMIN', enabled: true };
       const afterClosed$ = of(updateData);
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
+      mockUserService.getAllPaginated.mockClear();
 
       component.openEditDialog(mockOtherUser);
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockUserService.update).toHaveBeenCalledWith(mockOtherUser.id, updateData);
@@ -273,6 +276,7 @@ describe('UsersComponent', () => {
     it('should do nothing when edit dialog is cancelled', () => {
       const afterClosed$ = of(undefined);
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
 
       component.openEditDialog(mockOtherUser);
 
@@ -285,6 +289,7 @@ describe('UsersComponent', () => {
       mockUserService.update.mockReturnValue(
         throwError(() => ({ error: { message: 'Update failed' } }))
       );
+      fixture.detectChanges();
 
       component.openEditDialog(mockOtherUser);
 
@@ -293,11 +298,12 @@ describe('UsersComponent', () => {
   });
 
   describe('search triggers reload', () => {
-    it('should reload users with search param when query params change', () => {
-      component.ngOnInit();
+    it('should reload users with search param when query params change', async () => {
+      await detectAndFlush(fixture);
       mockUserService.getAllPaginated.mockClear();
 
       queryParams$.next({ search: 'agent' });
+      await fixture.whenStable();
 
       expect(component.tableState.search).toBe('agent');
       expect(mockUserService.getAllPaginated).toHaveBeenCalledWith(
@@ -307,11 +313,12 @@ describe('UsersComponent', () => {
   });
 
   describe('pagination triggers reload', () => {
-    it('should reload users when page param changes', () => {
-      component.ngOnInit();
+    it('should reload users when page param changes', async () => {
+      await detectAndFlush(fixture);
       mockUserService.getAllPaginated.mockClear();
 
       queryParams$.next({ page: '2', size: '25' });
+      await fixture.whenStable();
 
       expect(component.tableState.page).toBe(2);
       expect(component.tableState.size).toBe(25);
@@ -322,11 +329,14 @@ describe('UsersComponent', () => {
   });
 
   describe('deleteUser', () => {
-    it('should delete user and reload when confirmed', () => {
+    it('should delete user and reload when confirmed', async () => {
       const afterClosed$ = of(true);
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      await detectAndFlush(fixture);
+      mockUserService.getAllPaginated.mockClear();
 
       component.deleteUser(mockOtherUser);
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockUserService.delete).toHaveBeenCalledWith(mockOtherUser.id);
@@ -337,6 +347,7 @@ describe('UsersComponent', () => {
     it('should not delete when dialog is cancelled', () => {
       const afterClosed$ = of(false);
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
 
       component.deleteUser(mockOtherUser);
 
@@ -349,6 +360,7 @@ describe('UsersComponent', () => {
       mockUserService.delete.mockReturnValue(
         throwError(() => ({ error: { message: 'Cannot delete last admin' } }))
       );
+      fixture.detectChanges();
 
       component.deleteUser(mockOtherUser);
 
