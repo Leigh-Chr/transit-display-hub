@@ -4,12 +4,8 @@
 # scripts/check-file-size.sh. Each entry should be removed in the same
 # commit as the refactor that brings the file back under threshold.
 #
-# Planned removals (see
-# .planning/refactors/2026-05-12-maintainability-guardrails.md) :
-#
-#   shared/models/index.ts — 895-line barrel of domain types; will
-#                            stay above 800 until split per domain.
+# The allowlist is currently EMPTY — every source file sits under its
+# ceiling. Keep it that way: a new entry is an admission of debt and
+# its PR description must reference the phase that will retire it.
 #
 # Lines starting with '#' and blank lines are ignored.
-
-frontend/src/app/shared/models/index.ts
