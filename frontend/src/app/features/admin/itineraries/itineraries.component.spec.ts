@@ -12,6 +12,11 @@ import { Itinerary, Line, PageResponse } from '@shared/models';
 import { ItinerariesComponent } from './itineraries.component';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
+async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
+  f.detectChanges();
+  await f.whenStable();
+}
+
 const translocoLang = {
   admin: {
     itineraries: {
@@ -47,7 +52,7 @@ const mockItinerary: Itinerary = {
   id: 'i1',
   name: 'North',
   terminusName: 'Terminal N',
-      directionId: null,
+  directionId: null,
   line: { id: 'line-1', code: 'L1', name: 'Line 1', color: '#FF0000' },
   stops: [{ id: 's1', name: 'Stop 1', position: 0 }],
 };
@@ -58,16 +63,6 @@ const mockPageResponse: PageResponse<Itinerary> = {
   size: 10,
   totalElements: 1,
   totalPages: 1,
-  first: true,
-  last: true,
-};
-
-const emptyPageResponse: PageResponse<Itinerary> = {
-  content: [],
-  page: 0,
-  size: 10,
-  totalElements: 0,
-  totalPages: 0,
   first: true,
   last: true,
 };
@@ -91,7 +86,7 @@ describe('ItinerariesComponent', () => {
 
   beforeEach(() => {
     mockItineraryService = {
-      getAllPaginated: vi.fn().mockReturnValue(of(emptyPageResponse)),
+      getAllPaginated: vi.fn().mockReturnValue(of(mockPageResponse)),
       create: vi.fn().mockReturnValue(of(mockItinerary)),
       update: vi.fn().mockReturnValue(of(mockItinerary)),
       updateStops: vi.fn().mockReturnValue(of(mockItinerary)),
@@ -134,17 +129,18 @@ describe('ItinerariesComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngOnInit', () => {
-    it('should load lines and itineraries', () => {
-      fixture.detectChanges();
+  describe('initial load', () => {
+    it('should load lines and itineraries', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockLineService.getAll).toHaveBeenCalled();
       expect(component.lines()).toEqual([mockLine]);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
+      expect(component.itineraries()).toEqual([mockItinerary]);
       expect(component.loading()).toBe(false);
     });
 
-    it('should initialize state from query params', () => {
+    it('should initialize state from query params', async () => {
       queryParams$.next({
         page: '2',
         size: '25',
@@ -153,31 +149,31 @@ describe('ItinerariesComponent', () => {
         search: 'north',
         lineId: 'l1',
       });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.tableState.page).toBe(2);
       expect(component.tableState.size).toBe(25);
       expect(component.tableState.sortBy).toBe('terminusName');
       expect(component.tableState.sortDir).toBe('desc');
       expect(component.tableState.search).toBe('north');
-      expect(component.lineId).toBe('l1');
+      expect(component.lineId()).toBe('l1');
     });
 
-    it('should use defaults when query params are empty', () => {
-      fixture.detectChanges();
+    it('should use defaults when query params are empty', async () => {
+      await detectAndFlush(fixture);
 
       expect(component.tableState.page).toBe(0);
       expect(component.tableState.size).toBe(10);
       expect(component.tableState.sortBy).toBe('name');
       expect(component.tableState.sortDir).toBe('asc');
       expect(component.tableState.search).toBe('');
-      expect(component.lineId).toBe('');
+      expect(component.lineId()).toBe('');
     });
   });
 
   describe('loadItineraries', () => {
-    it('should call getAllPaginated with correct params', () => {
-      fixture.detectChanges();
+    it('should call getAllPaginated with correct default params', async () => {
+      await detectAndFlush(fixture);
 
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalledWith({
         page: 0,
@@ -189,42 +185,32 @@ describe('ItinerariesComponent', () => {
       });
     });
 
-    it('should pass search and lineId when present', () => {
+    it('should pass search and lineId when present', async () => {
       queryParams$.next({ search: 'north', lineId: 'l1' });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ search: 'north', lineId: 'l1' }),
       );
     });
 
-    it('should populate dataSource and totalElements on success', () => {
-      mockItineraryService.getAllPaginated.mockReturnValue(of(mockPageResponse));
-      component.ngOnInit();
+    it('should populate itineraries and totalElements on success', async () => {
+      await detectAndFlush(fixture);
 
-      expect(component.dataSource.data).toEqual([mockItinerary]);
-      expect(component.totalElements).toBe(1);
+      expect(component.itineraries()).toEqual([mockItinerary]);
+      expect(component.totalElements()).toBe(1);
       expect(component.loading()).toBe(false);
     });
 
-    it('should handle error by surfacing the load error inline with the server message', () => {
+    it('should surface load errors via the resource error state without a snackbar', async () => {
       mockItineraryService.getAllPaginated.mockReturnValue(
         throwError(() => ({ error: { message: 'Server error' } })),
       );
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBe('Server error');
-    });
-
-    it('should show fallback error message when error has no message', () => {
-      mockItineraryService.getAllPaginated.mockReturnValue(
-        throwError(() => ({ error: {} })),
-      );
-      fixture.detectChanges();
-
-      expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBe('Failed to load itineraries');
+      expect(component.loadError()).toBeTruthy();
+      expect(mockNotify.error).not.toHaveBeenCalled();
     });
   });
 
@@ -247,9 +233,9 @@ describe('ItinerariesComponent', () => {
   });
 
   describe('tableState delegation', () => {
-    it('writes lineId from the extras supplier on URL updates', () => {
-      fixture.detectChanges();
-      component.lineId = 'l1';
+    it('writes lineId from the extras supplier on URL updates', async () => {
+      await detectAndFlush(fixture);
+      component.lineId.set('l1');
 
       component.tableState.updateUrl();
 
@@ -260,35 +246,36 @@ describe('ItinerariesComponent', () => {
   });
 
   describe('onLineChange', () => {
-    it('should set lineId and reset page to 0', () => {
-      fixture.detectChanges();
+    it('should set lineId and reset page to 0', async () => {
+      await detectAndFlush(fixture);
       component.tableState.page = 2;
 
       component.onLineChange('l1');
 
-      expect(component.lineId).toBe('l1');
+      expect(component.lineId()).toBe('l1');
       expect(component.tableState.page).toBe(0);
       expect(router.navigate).toHaveBeenCalled();
     });
 
-    it('should clear lineId when empty string is provided', () => {
-      fixture.detectChanges();
-      component.lineId = 'l1';
+    it('should clear lineId when empty string is provided', async () => {
+      await detectAndFlush(fixture);
+      component.lineId.set('l1');
 
       component.onLineChange('');
 
-      expect(component.lineId).toBe('');
+      expect(component.lineId()).toBe('');
     });
   });
 
   describe('openCreateDialog', () => {
-    it('should call create and reload on success', () => {
+    it('should call create and reload on success', async () => {
       const dialogResult = { lineId: 'l1', name: 'South' };
       mockDialog.open.mockReturnValue({ afterClosed: () => of(dialogResult) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
       expect(mockItineraryService.create).toHaveBeenCalledWith(dialogResult);
@@ -317,13 +304,14 @@ describe('ItinerariesComponent', () => {
   });
 
   describe('openEditDialog', () => {
-    it('should call update and reload on success', () => {
+    it('should call update and reload on success', async () => {
       const editResult = { lineId: 'l1', name: 'Updated North' };
       mockDialog.open.mockReturnValue({ afterClosed: () => of(editResult) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
       component.openEditDialog(mockItinerary);
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
@@ -358,13 +346,14 @@ describe('ItinerariesComponent', () => {
   });
 
   describe('openStopsDialog', () => {
-    it('should call updateStops and reload on success', () => {
+    it('should call updateStops and reload on success', async () => {
       const stopsResult = { stopIds: ['s1', 's2'] };
       mockDialog.open.mockReturnValue({ afterClosed: () => of(stopsResult) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
       component.openStopsDialog(mockItinerary);
+      await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
@@ -401,12 +390,13 @@ describe('ItinerariesComponent', () => {
   });
 
   describe('deleteItinerary', () => {
-    it('should call delete and show success notification when confirmed', () => {
+    it('should call delete and show success notification when confirmed', async () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(true) });
-      fixture.detectChanges();
+      await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
       component.deleteItinerary(mockItinerary);
+      await fixture.whenStable();
 
       expect(mockItineraryService.delete).toHaveBeenCalledWith('i1');
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();

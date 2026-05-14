@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, effect, inject, computed, signal } from '@angular/core';
-import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { catchError, EMPTY } from 'rxjs';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,7 +15,7 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
-import { Line, Stop, PageResponse, CreateStopRequest } from '@shared/models';
+import { Line, Stop, CreateStopRequest } from '@shared/models';
 import { StopDialogComponent } from './stop-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -29,6 +28,7 @@ import { TableSkeletonComponent } from '@shared/components/skeleton/table-skelet
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -400,25 +400,14 @@ export class StopsComponent {
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
-  private readonly route = inject(ActivatedRoute);
 
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
   readonly displayedColumns = ['line', 'name', 'schedules', 'device', 'actions'];
 
-  // lineId is a writable signal so onLineChange() can update it reactively and
-  // the stopsResource params() function picks up the change automatically.
+  // lineId is a writable signal so onLineChange() can update it and the
+  // extras supplier picks the change up on the next URL write.
   readonly lineId = signal('');
-
-  // Convert queryParams Observable to a Signal. tableState.init() runs first
-  // so defaults are applied before the first emission is processed.
-  private readonly queryParams = (() => {
-    this.tableState.init({
-      sortBy: 'name',
-      extras: () => ({ lineId: this.lineId() }),
-    });
-    return toSignal(this.route.queryParams, { initialValue: {} });
-  })();
 
   // Lines are loaded once and do not depend on pagination state.
   private readonly linesResource = rxResource<Line[], undefined>({
@@ -435,62 +424,36 @@ export class StopsComponent {
     this.linesResource.hasValue() ? this.linesResource.value() : [],
   );
 
-  constructor() {
-    // URL → tableState + lineId mirror, kept out of the resource so its
-    // params stays pure. queryParams is the single source of truth; this
-    // effect just shovels the same bag into the UI-facing buffers.
-    effect(() => {
-      const params = this.queryParams() as Record<string, string | undefined>;
-      this.tableState.syncFromQueryParams(params);
-      const qpLineId = params['lineId'] ?? '';
-      if (qpLineId !== this.lineId()) {
-        this.lineId.set(qpLineId);
-      }
-    });
-
-    // Snap the cursor back when a delete leaves a non-first page empty.
-    // Effect — not a computed — because this writes to tableState; signal
-    // computed values must stay pure.
-    effect(() => {
-      const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
-      if (page?.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
-        this.tableState.page = Math.max(0, page.totalPages - 1);
-        this.tableState.updateUrl();
-      }
-    });
-  }
-
-  // Stops reload whenever the URL-derived query bag (incl. lineId) changes.
-  private readonly stopsResource = rxResource<PageResponse<Stop>, Record<string, string | undefined>>({
-    params: () => this.queryParams(),
-    stream: ({ params: p }) =>
-      this.stopService
-        .getAllPaginated({
-          page: +(p['page'] ?? 0),
-          size: +(p['size'] ?? 10),
-          sortBy: p['sortBy'] ?? 'name',
-          sortDir: p['sortDir'] === 'desc' ? 'desc' : 'asc',
-          search: p['search'] ?? undefined,
-          lineId: p['lineId'] ?? undefined,
-        }),
+  private readonly list = createAdminListResource<Stop>({
+    tableState: this.tableState,
+    defaults: { sortBy: 'name' },
+    extras: {
+      supply: () => ({ lineId: this.lineId() }),
+      syncFromUrl: (params) => {
+        const qpLineId = (params['lineId'] as string | undefined) ?? '';
+        if (qpLineId !== this.lineId()) {
+          this.lineId.set(qpLineId);
+        }
+      },
+    },
+    fetch: (request, raw) =>
+      this.stopService.getAllPaginated({
+        page: request.page,
+        size: request.size,
+        sortBy: request.sortBy,
+        sortDir: request.sortDir,
+        search: request.search,
+        lineId: (raw['lineId'] as string | undefined) ?? undefined,
+      }),
   });
 
-  readonly loading = computed(() => this.stopsResource.isLoading());
-
-  readonly loadError = computed(() => this.stopsResource.error());
-
-  readonly stops = computed((): Stop[] => {
-    const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
-    return page?.content ?? [];
-  });
-
-  readonly totalElements = computed((): number => {
-    const page = this.stopsResource.hasValue() ? this.stopsResource.value() : undefined;
-    return page?.totalElements ?? 0;
-  });
+  readonly loading = this.list.loading;
+  readonly loadError = this.list.loadError;
+  readonly stops = this.list.items;
+  readonly totalElements = this.list.totalElements;
 
   loadStops(): void {
-    this.stopsResource.reload();
+    this.list.reload();
   }
 
   onLineChange(lineId: string): void {

@@ -1,9 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild, AfterViewInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
@@ -17,7 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
-import { Itinerary, Line, PageResponse, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
+import { Itinerary, Line, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
 import { ItineraryDialogComponent } from './itinerary-dialog.component';
 import { ItineraryStopsDialogComponent } from './itinerary-stops-dialog.component';
 import {
@@ -27,6 +25,7 @@ import { TableSkeletonComponent } from '@shared/components/skeleton/table-skelet
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -74,7 +73,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       <div class="toolbar">
         <mat-form-field appearance="outline" class="line-filter">
           <mat-label>{{ t('admin.itineraries.filterByLine') }}</mat-label>
-          <mat-select [value]="lineId" (selectionChange)="onLineChange($event.value)">
+          <mat-select [value]="lineId()" (selectionChange)="onLineChange($event.value)">
             <mat-option value="">{{ t('admin.itineraries.allLines') }}</mat-option>
             @for (line of lines(); track line.id) {
               <mat-option [value]="line.id">
@@ -116,7 +115,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             [description]="t('admin.itineraries.emptyNoLinesDesc')"
           />
         </mat-card>
-      } @else if (dataSource.data.length === 0 && !tableState.search && !lineId) {
+      } @else if (itineraries().length === 0 && !tableState.search && !lineId()) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="route"
@@ -128,7 +127,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             (action)="openCreateDialog()"
           />
         </mat-card>
-      } @else if (dataSource.data.length === 0) {
+      } @else if (itineraries().length === 0) {
         <mat-card animate.enter="fade-in">
           <app-empty-state
             icon="search_off"
@@ -138,7 +137,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
         </mat-card>
       } @else {
         <mat-card animate.enter="fade-in">
-          <table mat-table [dataSource]="dataSource" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
+          <table mat-table [dataSource]="itineraries()" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
             <ng-container matColumnDef="line">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colLine') }}</th>
               <td mat-cell *matCellDef="let itinerary">
@@ -211,7 +210,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
           </table>
 
           <mat-paginator
-            [length]="totalElements"
+            [length]="totalElements()"
             [pageIndex]="tableState.page"
             [pageSize]="tableState.size"
             [pageSizeOptions]="pageSizeOptions"
@@ -320,14 +319,12 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
   `,
 })
-export class ItinerariesComponent implements OnInit, AfterViewInit {
+export class ItinerariesComponent implements AfterViewInit {
   private readonly itineraryService = inject(ItineraryService);
   private readonly lineService = inject(LineService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly transloco = inject(TranslocoService);
 
   readonly isAdmin = this.authService.isAdmin;
@@ -335,13 +332,33 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
 
   readonly sort = viewChild(MatSort);
-  loading = signal(true);
-  loadError = signal<string | null>(null);
-  lines = signal<Line[]>([]);
-  dataSource = new MatTableDataSource<Itinerary>([]);
+  readonly lines = signal<Line[]>([]);
+  readonly lineId = signal('');
 
-  lineId = '';
-  totalElements = 0;
+  private readonly list = createAdminListResource<Itinerary>({
+    tableState: this.tableState,
+    defaults: { sortBy: 'name' },
+    extras: {
+      supply: () => ({ lineId: this.lineId() }),
+      syncFromUrl: (params) => {
+        this.lineId.set((params['lineId'] as string | undefined) ?? '');
+      },
+    },
+    fetch: (request, raw) =>
+      this.itineraryService.getAllPaginated({
+        page: request.page,
+        size: request.size,
+        sortBy: request.sortBy,
+        sortDir: request.sortDir,
+        search: request.search,
+        lineId: (raw['lineId'] as string | undefined) ?? undefined,
+      }),
+  });
+
+  readonly loading = this.list.loading;
+  readonly loadError = this.list.loadError;
+  readonly itineraries = this.list.items;
+  readonly totalElements = this.list.totalElements;
 
   get displayedColumns(): string[] {
     const columns = ['line', 'name', 'terminusName', 'direction', 'stops', 'amenities'];
@@ -351,21 +368,10 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
     return columns;
   }
 
-  ngOnInit(): void {
-    this.tableState.init({
-      sortBy: 'name',
-      extras: () => ({ lineId: this.lineId }),
-    });
-
+  constructor() {
     this.lineService.getAll().subscribe({
       next: (lines) => this.lines.set(lines),
       error: () => this.notify.error(this.transloco.translate('admin.itineraries.loadLinesFailed')),
-    });
-
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      this.tableState.syncFromQueryParams(params);
-      this.lineId = (params['lineId'] as string | undefined) ?? '';
-      this.loadItineraries();
     });
   }
 
@@ -377,41 +383,12 @@ export class ItinerariesComponent implements OnInit, AfterViewInit {
     }
   }
 
-
-
   loadItineraries(): void {
-    this.loading.set(true);
-    this.loadError.set(null);
-    this.itineraryService
-      .getAllPaginated({
-        page: this.tableState.page,
-        size: this.tableState.size,
-        sortBy: this.tableState.sortBy,
-        sortDir: this.tableState.sortDir,
-        search: this.tableState.search || undefined,
-        lineId: this.lineId || undefined,
-      })
-      .subscribe({
-        next: (response: PageResponse<Itinerary>) => {
-          if (response.content.length === 0 && this.tableState.page > 0 && response.totalElements > 0) {
-            this.tableState.page = Math.max(0, response.totalPages - 1);
-            this.tableState.updateUrl();
-            this.loadItineraries();
-            return;
-          }
-          this.dataSource.data = response.content;
-          this.totalElements = response.totalElements;
-          this.loading.set(false);
-        },
-        error: (err: unknown) => {
-          this.loading.set(false);
-          this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.itineraries.loadFailed')));
-        },
-      });
+    this.list.reload();
   }
 
   onLineChange(lineId: string): void {
-    this.lineId = lineId;
+    this.lineId.set(lineId);
     this.tableState.resetToFirstPage();
   }
 
