@@ -1,7 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, inject, computed } from '@angular/core';
-import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { LineService } from '@core/api/line.service';
-import { Line, PageResponse, CreateLineRequest } from '@shared/models';
+import { Line, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
 import {
   ConfirmDialogComponent,
@@ -22,6 +20,7 @@ import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
+import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 
@@ -327,77 +326,23 @@ export class LinesComponent {
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
-  private readonly route = inject(ActivatedRoute);
 
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
 
-  // Convert the route's query params Observable to a Signal so rxResource
-  // can track them reactively and re-fire the loader on navigation changes.
-  // tableState.init() is called first so default sort/size are set before
-  // the first emission of queryParams is processed.
-  private readonly queryParams = (() => {
-    this.tableState.init({ sortBy: 'code', size: 12 });
-    return toSignal(this.route.queryParams, { initialValue: {} });
-  })();
-
-  constructor() {
-    // Mirror the URL → tableState for the UI bindings (paginator, search
-    // box, sort select). Kept out of rxResource.params so the resource
-    // contract stays pure — the resource derives its request from the
-    // queryParams snapshot directly, never from this mutable buffer.
-    effect(() => {
-      this.tableState.syncFromQueryParams(this.queryParams());
-    });
-
-    // When a delete on the last item of a non-first page leaves the page
-    // empty, the server still returns totalElements > 0 on an earlier
-    // page. Step the cursor back via the URL — that re-fires the resource
-    // through the normal queryParams pathway instead of mutating state
-    // from inside a computed.
-    effect(() => {
-      const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
-      if (page?.content.length === 0 && this.tableState.page > 0 && page.totalElements > 0) {
-        this.tableState.page = Math.max(0, page.totalPages - 1);
-        this.tableState.updateUrl();
-      }
-    });
-  }
-
-  private readonly linesResource = rxResource<PageResponse<Line>, Record<string, string | undefined>>({
-    params: () => this.queryParams(),
-    stream: ({ params: p }) => {
-      const rawSort = p['sortBy'] ?? 'code';
-      const [field, splitDir] = rawSort.includes(':')
-        ? rawSort.split(':') as [string, string]
-        : [rawSort, undefined];
-      const sortDir: 'asc' | 'desc' = (splitDir ?? p['sortDir']) === 'desc' ? 'desc' : 'asc';
-      return this.lineService.getAllPaginated({
-        page: +(p['page'] ?? 0),
-        size: +(p['size'] ?? 12),
-        sortBy: field,
-        sortDir,
-        search: p['search'] ?? undefined,
-      });
-    },
+  private readonly list = createAdminListResource<Line>({
+    tableState: this.tableState,
+    defaults: { sortBy: 'code', size: 12 },
+    fetch: (request) => this.lineService.getAllPaginated(request),
   });
 
-  readonly loading = computed(() => this.linesResource.isLoading());
-
-  readonly loadError = computed(() => this.linesResource.error());
-
-  readonly lines = computed((): Line[] => {
-    const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
-    return page?.content ?? [];
-  });
-
-  readonly totalElements = computed((): number => {
-    const page = this.linesResource.hasValue() ? this.linesResource.value() : undefined;
-    return page?.totalElements ?? 0;
-  });
+  readonly loading = this.list.loading;
+  readonly loadError = this.list.loadError;
+  readonly lines = this.list.items;
+  readonly totalElements = this.list.totalElements;
 
   loadLines(): void {
-    this.linesResource.reload();
+    this.list.reload();
   }
 
   onSortChange(): void {
