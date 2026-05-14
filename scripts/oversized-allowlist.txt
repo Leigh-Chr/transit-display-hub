@@ -7,14 +7,9 @@
 # Planned removals (see
 # .planning/refactors/2026-05-12-maintainability-guardrails.md) :
 #
-#   schematic-map.component.ts — class logic (Dijkstra + SVG layout +
-#                                 pan/zoom) needs decomposition into
-#                                 services before it falls under 1000.
-#                                 Tracked for a later minor.
-#   shared/models/index.ts     — 895-line barrel of domain types; will
-#                                 stay above 800 until split per domain.
+#   shared/models/index.ts — 895-line barrel of domain types; will
+#                            stay above 800 until split per domain.
 #
 # Lines starting with '#' and blank lines are ignored.
 
-frontend/src/app/features/network-map/components/schematic-map/schematic-map.component.ts
 frontend/src/app/shared/models/index.ts

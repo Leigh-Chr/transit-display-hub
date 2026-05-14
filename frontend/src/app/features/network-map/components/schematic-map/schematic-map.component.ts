@@ -13,7 +13,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { linkedQueryParam } from 'ngxtension/linked-query-param';
-import { MessageSeverity, NetworkLine, NetworkMapAlerts } from '@shared/models';
+import { NetworkLine, NetworkMapAlerts } from '@shared/models';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
@@ -27,32 +27,21 @@ import {
   lineBadgeWidth,
   getTransportIconPath,
   readableTextColor,
-  severityRank,
 } from './schematic-map.utils';
-
-interface NetworkLineRow {
-  line: NetworkLine;
-  y: number;
-  stops: { stop: LayoutStop; x: number }[];
-  path: string;
-}
-
-interface InterchangeConnector {
-  stopId: string;
-  name: string;
-  /** SVG path data for the straight vertical line between the topmost
-   *  and bottommost row that hosts this interchange. */
-  path: string;
-}
-
-interface NetworkStopLabel {
-  stop: LayoutStop;
-  lineId: string;
-  x: number;
-  y: number;
-  /** Whether the rotated label fans up-right (above the row) or down-right (below). */
-  orientation: 'up' | 'down';
-}
+import {
+  buildRouteActiveEdges,
+  buildRouteStopsByLine,
+  buildRouteOverlayPaths,
+  buildRouteDirectionArrows,
+  buildInterchangeConnectors,
+  buildStopLabels,
+  buildSeverityMap,
+  buildHiddenLinesMap,
+  buildTerminusIds,
+  type InterchangeConnector,
+  type NetworkLineRow,
+  type NetworkStopLabel,
+} from './schematic-geometry';
 
 @Component({
   selector: 'app-schematic-map',
@@ -221,118 +210,18 @@ export class SchematicMapComponent {
   routeTransferIds = computed(() => new Set(this.routeResult()?.transferStopIds ?? []));
 
   /** Map<lineId, Set<edgeKey>> where edgeKey = "stopA|stopB" (sorted) */
-  routeActiveEdges = computed(() => {
-    const result = this.routeResult();
-    if (!result) {return new Map<string, Set<string>>();}
-
-    const map = new Map<string, Set<string>>();
-    for (const segment of result.segments) {
-      if (!map.has(segment.lineId)) {map.set(segment.lineId, new Set());}
-      const edges = map.get(segment.lineId) ?? new Set<string>();
-      for (let i = 0; i < segment.stopIds.length - 1; i++) {
-        const a = segment.stopIds[i];
-        const b = segment.stopIds[i + 1];
-        if (a === undefined || b === undefined) {continue;}
-        edges.add(a < b ? `${a}|${b}` : `${b}|${a}`);
-      }
-    }
-    return map;
-  });
+  routeActiveEdges = computed(() => buildRouteActiveEdges(this.routeResult()));
 
   /** Map<lineId, Set<stopId>> — stops that touch an active edge on that line */
-  routeStopsByLine = computed(() => {
-    const result = this.routeResult();
-    if (!result) {return new Map<string, Set<string>>();}
-
-    const map = new Map<string, Set<string>>();
-    for (const segment of result.segments) {
-      if (!map.has(segment.lineId)) {map.set(segment.lineId, new Set());}
-      const stops = map.get(segment.lineId) ?? new Set<string>();
-      for (const id of segment.stopIds) {
-        stops.add(id);
-      }
-    }
-    return map;
-  });
+  routeStopsByLine = computed(() => buildRouteStopsByLine(this.routeResult()));
 
   /** For each visible line row, build a path covering only the route edges */
-  routeOverlayPaths = computed(() => {
-    const activeEdges = this.routeActiveEdges();
-    const rows = this.networkLineRows();
-    const result: { lineId: string; color: string; path: string }[] = [];
-
-    for (const row of rows) {
-      const lineEdges = activeEdges.get(row.line.id);
-      if (!lineEdges || lineEdges.size === 0) {continue;}
-
-      // Find consecutive segments of active edges in this row
-      let pathD = '';
-      let inSegment = false;
-
-      for (let i = 0; i < row.stops.length - 1; i++) {
-        const curr = row.stops[i];
-        const next = row.stops[i + 1];
-        if (!curr || !next) {continue;}
-        const a = curr.stop.id;
-        const b = next.stop.id;
-        const key = a < b ? `${a}|${b}` : `${b}|${a}`;
-
-        if (lineEdges.has(key)) {
-          if (!inSegment) {
-            pathD += `M ${curr.x},${row.y} `;
-            inSegment = true;
-          }
-          pathD += `L ${next.x},${row.y} `;
-        } else {
-          inSegment = false;
-        }
-      }
-
-      if (pathD) {
-        result.push({ lineId: row.line.id, color: row.line.color, path: pathD.trim() });
-      }
-    }
-
-    return result;
-  });
+  routeOverlayPaths = computed(() =>
+    buildRouteOverlayPaths(this.routeActiveEdges(), this.networkLineRows()));
 
   /** Direction arrows placed along each route segment */
-  routeDirectionArrows = computed(() => {
-    const result = this.routeResult();
-    if (!result) {return [];}
-
-    const rows = this.networkLineRows();
-    const rowByLine = new Map(rows.map(r => [r.line.id, r]));
-    const arrows: { x: number; y: number; right: boolean; color: string }[] = [];
-    const ARROW_INTERVAL = 120;
-
-    for (const segment of result.segments) {
-      const row = rowByLine.get(segment.lineId);
-      if (!row || segment.stopIds.length < 2) {continue;}
-
-      const stopXMap = new Map(row.stops.map(s => [s.stop.id, s.x]));
-      const firstStopId = segment.stopIds[0];
-      const lastStopId = segment.stopIds[segment.stopIds.length - 1];
-      if (!firstStopId || !lastStopId) {continue;}
-      const firstX = stopXMap.get(firstStopId);
-      const lastX = stopXMap.get(lastStopId);
-      if (firstX === undefined || lastX === undefined) {continue;}
-
-      const right = lastX > firstX;
-      const minX = Math.min(firstX, lastX);
-      const maxX = Math.max(firstX, lastX);
-      const span = maxX - minX;
-
-      // Place arrows at regular intervals, at least one at the midpoint
-      const count = Math.max(1, Math.floor(span / ARROW_INTERVAL));
-      for (let i = 0; i < count; i++) {
-        const t = (i + 1) / (count + 1);
-        arrows.push({ x: minX + span * t, y: row.y, right, color: segment.lineColor });
-      }
-    }
-
-    return arrows;
-  });
+  routeDirectionArrows = computed(() =>
+    buildRouteDirectionArrows(this.routeResult(), this.networkLineRows()));
 
   stopsMap = computed(() => {
     const map = new Map<string, LayoutStop>();
@@ -517,53 +406,14 @@ export class SchematicMapComponent {
    *  track minY/maxY incrementally so a network with 50+ visible rows
    *  stays O(rows × stops) instead of paying an extra O(rows) spread on
    *  Math.min/max per interchange. */
-  interchangeConnectors = computed<InterchangeConnector[]>(() => {
-    const rows = this.networkLineRows();
-    const positions = new Map<string, { name: string; x: number; minY: number; maxY: number; count: number }>();
-
-    for (const row of rows) {
-      for (const { stop, x } of row.stops) {
-        const existing = positions.get(stop.id);
-        if (existing) {
-          if (row.y < existing.minY) {existing.minY = row.y;}
-          if (row.y > existing.maxY) {existing.maxY = row.y;}
-          existing.count++;
-        } else {
-          positions.set(stop.id, { name: stop.name, x, minY: row.y, maxY: row.y, count: 1 });
-        }
-      }
-    }
-
-    const result: InterchangeConnector[] = [];
-    for (const [stopId, v] of positions) {
-      if (v.count <= 1) {continue;}
-      result.push({
-        stopId,
-        name: v.name,
-        path: `M ${v.x},${v.minY} L ${v.x},${v.maxY}`,
-      });
-    }
-    return result;
-  });
+  interchangeConnectors = computed<InterchangeConnector[]>(() =>
+    buildInterchangeConnectors(this.networkLineRows()));
 
   /** Labels for stops. All labels go up so the area below each stop is
    *  reserved for the hidden-line correspondence badges. Each stop gets a
    *  single label, anchored on the top-most row that hosts it. */
-  networkStopLabels = computed<NetworkStopLabel[]>(() => {
-    const rows = this.networkLineRows();
-    const seen = new Set<string>();
-    const labels: NetworkStopLabel[] = [];
-
-    for (const row of rows) {
-      for (const { stop, x } of row.stops) {
-        if (seen.has(stop.id)) {continue;}
-        seen.add(stop.id);
-        labels.push({ stop, lineId: row.line.id, x, y: row.y, orientation: 'up' });
-      }
-    }
-
-    return labels;
-  });
+  networkStopLabels = computed<NetworkStopLabel[]>(() =>
+    buildStopLabels(this.networkLineRows()));
 
   /** Greedy decluttering: drop labels that would overlap a higher-priority
    *  label already placed. Distance threshold scales inversely with zoom so
@@ -606,48 +456,13 @@ export class SchematicMapComponent {
   }
 
   /** Precomputed map: stopId -> hidden line codes (lines not currently visible) */
-  hiddenLinesMap = computed(() => {
-    const visible = this.visibleCodeSet();
-    const map = new Map<string, string[]>();
-    for (const stop of this.stops()) {
-      const hidden = stop.lineCodes.filter(code => !visible.has(code));
-      if (hidden.length > 0) {
-        map.set(stop.id, hidden);
-      }
-    }
-    return map;
-  });
+  hiddenLinesMap = computed(() => buildHiddenLinesMap(this.stops(), this.visibleCodeSet()));
 
   /** Precomputed map: stopId -> highest alert severity */
-  alertSeverityMap = computed<Map<string, MessageSeverity>>(() => {
-    const stopAlerts = this.alerts().stopAlerts;
-    const map = new Map<string, MessageSeverity>();
-    for (const [stopId, alerts] of Object.entries(stopAlerts)) {
-      if (alerts.length === 0) {continue;}
-      const max = alerts.reduce<MessageSeverity | null>((best, m) =>
-        best === null || severityRank(m.severity) > severityRank(best) ? m.severity : best,
-        null,
-      );
-      if (max) {map.set(stopId, max);}
-    }
-    return map;
-  });
+  alertSeverityMap = computed(() => buildSeverityMap(this.alerts().stopAlerts));
 
   /** Set of stop IDs that are terminus in at least one visible line's itinerary */
-  private readonly networkTerminusIds = computed(() => {
-    const ids = new Set<string>();
-    for (const line of this.visibleLines()) {
-      for (const itinerary of line.itineraries) {
-        if (itinerary.length > 0) {
-          const first = itinerary[0];
-          const last = itinerary[itinerary.length - 1];
-          if (first) {ids.add(first);}
-          if (last) {ids.add(last);}
-        }
-      }
-    }
-    return ids;
-  });
+  private readonly networkTerminusIds = computed(() => buildTerminusIds(this.visibleLines()));
 
   /** A coarse-grained fingerprint of the current layout. The view is
    *  recentered only when this signature changes — a simple toggle in
@@ -931,18 +746,7 @@ export class SchematicMapComponent {
   }
 
   /** lineId → highest severity for any active alert on that line */
-  lineAlertSeverityMap = computed<Map<string, MessageSeverity>>(() => {
-    const map = new Map<string, MessageSeverity>();
-    for (const [lineId, messages] of Object.entries(this.alerts().lineAlerts)) {
-      if (!messages.length) {continue;}
-      const max = messages.reduce<MessageSeverity | null>((best, m) =>
-        best === null || severityRank(m.severity) > severityRank(best) ? m.severity : best,
-        null,
-      );
-      if (max) {map.set(lineId, max);}
-    }
-    return map;
-  });
+  lineAlertSeverityMap = computed(() => buildSeverityMap(this.alerts().lineAlerts));
 
   visibleLineAlerts = computed<VisibleLineAlert[]>(() => {
     const lineAlerts = this.alerts().lineAlerts;
