@@ -14,6 +14,9 @@ import java.util.Set;
  */
 public final class Pageables {
 
+    /** Hard cap so {@code ?size=10_000_000} cannot DoS the JPA layer. */
+    public static final int MAX_PAGE_SIZE = 200;
+
     private Pageables() {
     }
 
@@ -21,7 +24,12 @@ public final class Pageables {
         Sort sort = "desc".equalsIgnoreCase(sortDir)
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
-        return PageRequest.of(page, size, sort);
+        return PageRequest.of(Math.max(page, 0), clampSize(size), sort);
+    }
+
+    private static int clampSize(int size) {
+        if (size <= 0) { return 1; }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 
     public static Pageable fromWhitelisted(int page, int size, String sortBy, String sortDir,
