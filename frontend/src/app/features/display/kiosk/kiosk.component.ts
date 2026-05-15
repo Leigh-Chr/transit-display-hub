@@ -138,11 +138,12 @@ export class KioskComponent implements OnInit, OnDestroy {
   /** Wraps {@code window.speechSynthesis} so the speak handlers stay
    *  one-liners. Cancels any in-flight utterance first so a rapid
    *  double-press never queues two spoken announcements on top of
-   *  each other. */
+   *  each other. The BCP-47 tag is sourced from the active i18n
+   *  bundle so an EN-resolved kiosk doesn't get a French voice. */
   private speak(text: string): void {
     if (!this.speechAvailable) {return;}
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'fr-FR';
+    utterance.lang = this.transloco.translate('kiosk.speak.bcp47');
     utterance.rate = 0.95;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
@@ -150,12 +151,13 @@ export class KioskComponent implements OnInit, OnDestroy {
 
   /** Pretty-prints a GTFS time string (HH:mm:ss or HH:mm) for vocal
    *  output. The synthesiser handles bare digits poorly ("zero
-   *  eight forty-two"), but reading "08:42" via French locale yields
-   *  the natural "huit heures quarante-deux" without the seconds. */
+   *  eight forty-two"); the localised template wraps them in the
+   *  natural-sounding wording for the active language ("huit heures
+   *  quarante-deux" / "08:42"). */
   private formatScheduledTime(raw: string): string {
     const trimmed = raw.length >= 5 ? raw.substring(0, 5) : raw;
     const [hh = '0', mm = '00'] = trimmed.split(':');
-    return `${parseInt(hh, 10)} heures ${mm}`;
+    return this.transloco.translate('kiosk.speak.time', { hh: parseInt(hh, 10), mm });
   }
 
   /** True when the per-arrival platform_code adds information vs.
@@ -175,7 +177,9 @@ export class KioskComponent implements OnInit, OnDestroy {
   bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
     const parts: string[] = [this.transloco.translate('kiosk.booking.aria')];
     if (b.phone) {parts.push(b.phone);}
-    if (b.priorNoticeMinutes) {parts.push(`${b.priorNoticeMinutes} minutes minimum`);}
+    if (b.priorNoticeMinutes) {
+      parts.push(this.transloco.translate('kiosk.booking.minMinutes', { minutes: b.priorNoticeMinutes }));
+    }
     return parts.join(', ');
   }
 

@@ -71,7 +71,8 @@
     },
     "booking": {
       "label": "Reservation",
-      "aria": "Reservation required"
+      "aria": "Reservation required",
+      "minMinutes": "{{ minutes }} minutes minimum"
     },
     "accessibility": {
       "wheelchairYes": "Wheelchair accessible",
@@ -89,6 +90,8 @@
     },
     "loading": "Loading…",
     "speak": {
+      "bcp47": "en-US",
+      "time": "{{ hh }}:{{ mm }}",
       "noArrivals": "No upcoming departure to announce.",
       "next": "Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}.",
       "nextOnTime": "Next departure: line {{ line }}, towards {{ destination }}, at {{ time }}, on time.",
