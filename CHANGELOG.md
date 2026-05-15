@@ -278,7 +278,7 @@ migration Flyway (`V51__add_user_token_version.sql`) est nécessaire.
 - **Caffeine** déjà présent en dep — réutilisé par `LoginRateLimitFilter`
   et `ServiceCalendarCache`.
 
-
+## [1.6.0] — 2026-05-12
 
 Release majeure double-volet : ferme intégralement le re-audit du
 2026-05-12 (6 P0 + 3 P1 critiques + 9 P1 i18n + 5 P2 sécu) et livre
@@ -416,7 +416,7 @@ le défaut vide « fail-safe »).
 - **jscpd** lance désormais avec `--threshold 6` dans `frontend.yml`.
 - **knip** workflow utilise `--reporter github-actions`.
 
-
+## [1.5.1] — 2026-05-12
 
 Patch defensif autour du dernier P2 de l'audit du 12/05 (pagination
 findAll). Aucun changement de signature publique — les méthodes
