@@ -186,8 +186,26 @@
     "lineIndex": {
       "title": "Lines",
       "subtitle": "Pick a line to view its full route",
+      "searchPlaceholder": "Search a line by code or name",
+      "clearAria": "Clear search",
+      "summaryLinesAll": "lines",
+      "summaryLinesMatching": "matching lines",
+      "emptyState": "No line matches \"{{ query }}\"",
       "tooManyLines": "Too many lines for the index — use the filters",
       "showAll": "Show all lines"
+    },
+    "transit": {
+      "lineType": {
+        "METRO": "Subway",
+        "BUS": "Bus",
+        "TRAM": "Tram",
+        "TRAIN": "Train",
+        "FERRY": "Ferry",
+        "FUNICULAR": "Funicular",
+        "CABLE_CAR": "Cable car",
+        "TROLLEYBUS": "Trolleybus",
+        "MONORAIL": "Monorail"
+      }
     },
     "accessibility": {
       "accessible": "Wheelchair accessible",
@@ -731,6 +749,9 @@
       "tabAlerts": "Alerts",
       "tabVehicles": "Vehicles",
       "refresh": "Refresh",
+      "severityCritical": "Critical",
+      "severityWarning": "Warning",
+      "severityInfo": "Info",
       "lastRead": "Last read {{ time }}",
       "noAlerts": "No active alerts",
       "noAlertsDesc": "The GTFS-RT alerts cache is empty. Either no alerts are in effect or the URL is not configured.",

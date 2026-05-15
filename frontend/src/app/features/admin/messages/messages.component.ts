@@ -157,7 +157,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
                         [class.badge-warning]="message.severity === 'WARNING'"
                         [class.badge-info]="message.severity === 'INFO'"
                       >
-                        {{ message.severity }}
+                        {{ severityLabel(message.severity, t) }}
                       </span>
                       @if (isActive(message)) {
                         <span class="badge badge-active">{{ t('admin.messages.badgeActive') }}</span>
@@ -424,6 +424,16 @@ export class MessagesComponent {
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
   readonly lines = signal<Line[]>([]);
+
+  severityLabel(severity: 'CRITICAL' | 'WARNING' | 'INFO',
+                t: (key: string) => string): string {
+    switch (severity) {
+      case 'CRITICAL': return t('admin.messages.severityCritical');
+      case 'WARNING': return t('admin.messages.severityWarning');
+      case 'INFO': return t('admin.messages.severityInfo');
+      default: return severity;
+    }
+  }
 
   // Extra filter state, persisted into the URL via the extras supplier
   // and mirrored back from it by syncFromUrl.

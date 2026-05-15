@@ -90,7 +90,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
                     <mat-card-content>
                       <div class="alert-head">
                         @if (alert.severity) {
-                          <mat-chip class="severity-chip">{{ alert.severity }}</mat-chip>
+                          <mat-chip class="severity-chip">{{ severityLabel(alert.severity, t) }}</mat-chip>
                         }
                         @if (alert.effect) {
                           <span class="muted">{{ alert.effect }}</span>
@@ -387,6 +387,15 @@ export class RealtimeComponent implements OnInit {
   private readonly realtime = inject(RealtimeService);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
+
+  severityLabel(severity: string | null | undefined, t: (key: string) => string): string {
+    switch (severity) {
+      case 'CRITICAL': return t('admin.realtime.severityCritical');
+      case 'WARNING': return t('admin.realtime.severityWarning');
+      case 'INFO': return t('admin.realtime.severityInfo');
+      default: return severity ?? '';
+    }
+  }
 
   readonly alerts = signal<RealtimeAlert[]>([]);
   readonly vehicles = signal<VehiclePosition[]>([]);

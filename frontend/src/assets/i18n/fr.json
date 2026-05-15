@@ -186,8 +186,26 @@
     "lineIndex": {
       "title": "Lignes",
       "subtitle": "Choisissez une ligne pour voir son tracé complet",
+      "searchPlaceholder": "Rechercher une ligne par code ou nom",
+      "clearAria": "Effacer la recherche",
+      "summaryLinesAll": "lignes",
+      "summaryLinesMatching": "lignes correspondantes",
+      "emptyState": "Aucune ligne ne correspond à \"{{ query }}\"",
       "tooManyLines": "Trop de lignes pour l'index — utilisez les filtres",
       "showAll": "Afficher toutes les lignes"
+    },
+    "transit": {
+      "lineType": {
+        "METRO": "Métro",
+        "BUS": "Bus",
+        "TRAM": "Tramway",
+        "TRAIN": "Train",
+        "FERRY": "Bateau",
+        "FUNICULAR": "Funiculaire",
+        "CABLE_CAR": "Téléphérique",
+        "TROLLEYBUS": "Trolley",
+        "MONORAIL": "Monorail"
+      }
     },
     "accessibility": {
       "accessible": "Accessible PMR",
@@ -731,6 +749,9 @@
       "tabAlerts": "Alertes",
       "tabVehicles": "Véhicules",
       "refresh": "Rafraîchir",
+      "severityCritical": "Critique",
+      "severityWarning": "Avertissement",
+      "severityInfo": "Info",
       "lastRead": "Dernière lecture {{ time }}",
       "noAlerts": "Aucune alerte active",
       "noAlertsDesc": "Le cache GTFS-RT alerts est vide. Soit aucune alerte n'est en vigueur, soit l'URL n'est pas configurée.",

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { NetworkLine } from '@shared/models';
 
 /**
@@ -11,16 +12,16 @@ import { NetworkLine } from '@shared/models';
 @Component({
   selector: 'app-line-index',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatIconModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="index-wrapper">
+    <div class="index-wrapper" *transloco="let t; read: 'map.lineIndex'">
       <div class="index-header">
         <div class="search-field">
           <mat-icon>search</mat-icon>
           <input
             type="text"
-            placeholder="Search a line by code or name"
+            [placeholder]="t('searchPlaceholder')"
             [formControl]="searchCtrl"
             autocomplete="off"
           />
@@ -29,7 +30,7 @@ import { NetworkLine } from '@shared/models';
               type="button"
               class="clear-btn"
               (click)="searchCtrl.setValue('')"
-              aria-label="Clear search"
+              [attr.aria-label]="t('clearAria')"
             >
               <mat-icon>close</mat-icon>
             </button>
@@ -37,13 +38,17 @@ import { NetworkLine } from '@shared/models';
         </div>
         <div class="header-summary">
           <span class="summary-count">{{ filteredLines().length }}</span>
-          <span class="summary-label">{{ filteredLines().length === lines().length ? 'lines' : 'matching lines' }}</span>
+          <span class="summary-label">{{
+            filteredLines().length === lines().length
+              ? t('summaryLinesAll')
+              : t('summaryLinesMatching')
+          }}</span>
         </div>
       </div>
 
       <p class="hint">
         <mat-icon class="hint-icon">touch_app</mat-icon>
-        Pick a line to view its full route
+        {{ t('subtitle') }}
       </p>
 
       <div class="index-grid" role="list">
@@ -67,7 +72,7 @@ import { NetworkLine } from '@shared/models';
         @if (filteredLines().length === 0) {
           <div class="empty-state">
             <mat-icon>search_off</mat-icon>
-            <span>No line matches "{{ searchCtrl.value }}"</span>
+            <span>{{ t('emptyState', { query: searchCtrl.value }) }}</span>
           </div>
         }
       </div>
