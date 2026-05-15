@@ -628,8 +628,16 @@ mat-card {
   }
 }
 
-// Icon buttons - M3 spring hover with scale
+// Icon buttons - M3 spring hover with scale.
+// WCAG 2.5.5 (Level AAA) target size: ≥ 44×44 CSS pixels. Material's
+// default is 40×40 — bump it globally and let the public displays
+// (kiosk, hub) opt out below since their density is intentional.
 .mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+
   // Fallback for browsers without linear() support
   transition:
     background-color var(--m3-duration-short3) var(--m3-easing-standard),
@@ -651,6 +659,16 @@ mat-card {
     transform: scale(0.95);
     transition-duration: var(--m3-duration-short1);
   }
+}
+
+// Public displays keep their compact density (operated by remote
+// kiosks and large-screen hubs where touch isn't the primary input).
+app-kiosk .mat-mdc-icon-button,
+app-hub .mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 40px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
 }
 
 // Chips - consistent sizing
