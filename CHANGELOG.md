@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-05-15
+
+Plonge dans les six dernières méthodes à cyclomatic 22-27 qui
+maintenaient le plancher PMD à 28. Chacune devient un orchestrateur
+court qui délègue à des helpers nommés ; le plancher du projet
+descend à 18 (`FlexStopTime.from`), `methodReportLevel` rotaté
+**28 → 19**.
+
+### Changed
+
+- **`GtfsParse.mapRouteType`** cyclo 27 → 3 : la cascade `switch` se
+  replie sur deux `Map.ofEntries` (basic + extended TPEG-PTI buckets)
+  consultées via `get` / `getOrDefault`.
+- **`RealtimeVehiclePositionCache.parseVehicles`** cyclo 25 → ~5 :
+  `toSnapshot()` plus quinze accessors `vehicleId / vehicleLabel /
+  tripId / routeId / latitude / longitude / bearing / speed /
+  currentStatus / stopId / stopSequence / congestion / occupancyStatus
+  / occupancyPct / timestamp`.
+- **`RealtimeTripUpdateCache.parseTripUpdates`** cyclo 22 → ~5 :
+  `toTripAdjustment()` + `toStopAdjustment()` + helpers
+  `vehicleId/Label` factorisés.
+- **`LocationImporter.importLocations`** cyclo 25 → ~6 : `buildLocation`
+  retourne `null` sur feature inutilisable et trois helpers
+  `resolveExternalId/StopExternalId/Name` couvrent les fallbacks
+  `properties.name` vs `properties.stop_name`.
+- **`ItineraryImporter.importItineraries`** cyclo 22 → ~6 :
+  `loadTripInfos`, `loadStopTimes`, `pickRepresentativeTrips`,
+  `buildItineraries`, `upsertItinerary`, `attachStops` et
+  `removeOrphanedItineraries` portent chacune une responsabilité
+  identifiable. Le record privé `TimedStop` quitte la portée
+  inline pour être réutilisable.
+- **`NetworkMapService.getNetworkMap`** cyclo 27 → ~9 : neuf helpers
+  dédiés — `buildPlatformToParentMap`, `buildScheduleCountByLine`,
+  `collectOnDemandStopIds`, `buildAreaNamesByStopId`,
+  `buildChildrenByParentId`, `buildNetworkStops`,
+  `buildNetworkTransfers`. L'orchestrateur tient maintenant en
+  vingt lignes.
+- **PMD `methodReportLevel`** : 28 → **19** (nouveau plancher
+  `FlexStopTime.from` à 18, marge 1).
+
 ## [1.10.0] — 2026-05-15
 
 Clôture de la session. Casse la dernière friction côté maintenabilité
