@@ -8,6 +8,29 @@ import { NotifyService } from '@core/services/notify.service';
 import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
+const gtfsDataDict = {
+  admin: {
+    gtfsData: {
+      payment: { onBoard: 'À bord', advance: 'À l\'avance' },
+      transfer: { unlimited: 'Illimitées', none: 'Aucune', duration: '{{ minutes }} min' },
+      rule: { unconditional: 'Tarif unitaire sans condition', fallback: 'tarif applicable' },
+      bookingType: { REAL_TIME: 'Temps réel', SAME_DAY: 'Jour même', PRIOR_DAYS: 'À l\'avance' },
+      transferType: {
+        '0': 'A + transfer combinés', '1': 'A puis transfer séparé',
+        '2': 'Transfer remplace A', unknown: 'Type {{ type }}',
+      },
+      mediaType: {
+        '0': 'Aucun', '1': 'Papier', '2': 'Carte transport',
+        '3': 'Sans contact (EMV)', '4': 'Mobile', unknown: 'Type {{ type }}',
+      },
+      notice: {
+        range: '{{ min }}–{{ max }} min', minOnly: '≥ {{ min }} min',
+        lastDay: 'J−{{ day }}', lastDayWithTime: 'J−{{ day }} à {{ time }}',
+      },
+    },
+  },
+};
+
 describe('GtfsDataComponent', () => {
   let component: GtfsDataComponent;
   let fixture: ComponentFixture<GtfsDataComponent>;
@@ -79,7 +102,7 @@ describe('GtfsDataComponent', () => {
       imports: [
         GtfsDataComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: {} },
+          langs: { en: gtfsDataDict, fr: gtfsDataDict },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

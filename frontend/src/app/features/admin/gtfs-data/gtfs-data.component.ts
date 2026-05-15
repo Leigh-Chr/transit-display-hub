@@ -603,67 +603,77 @@ export class GtfsDataComponent implements OnInit {
 
   paymentLabel(method: string | null): string {
     if (!method) {return '—';}
-    return method === 'ON_BOARD' ? 'À bord' : 'À l\'avance';
+    return this.transloco.translate(
+      method === 'ON_BOARD' ? 'admin.gtfsData.payment.onBoard' : 'admin.gtfsData.payment.advance');
   }
 
   transferLabel(f: FareAttribute): string {
-    if (f.transfers === null) {return 'Illimitées';}
-    if (f.transfers === 0) {return 'Aucune';}
-    const dur = f.transferDuration ? ` (${Math.round(f.transferDuration / 60)} min)` : '';
+    if (f.transfers === null) {return this.transloco.translate('admin.gtfsData.transfer.unlimited');}
+    if (f.transfers === 0) {return this.transloco.translate('admin.gtfsData.transfer.none');}
+    const dur = f.transferDuration
+      ? ` (${this.transloco.translate('admin.gtfsData.transfer.duration', {
+          minutes: Math.round(f.transferDuration / 60),
+        })})`
+      : '';
     return `${f.transfers}${dur}`;
   }
 
   ruleTooltip(f: FareAttribute): string {
-    if (f.rules.length === 0) {return 'Tarif unitaire sans condition';}
+    if (f.rules.length === 0) {return this.transloco.translate('admin.gtfsData.rule.unconditional');}
     return f.rules.map(r => {
       const parts: string[] = [];
       if (r.routeCode) {parts.push(`route=${r.routeCode}`);}
       if (r.originId) {parts.push(`origin=${r.originId}`);}
       if (r.destinationId) {parts.push(`dest=${r.destinationId}`);}
       if (r.containsId) {parts.push(`contains=${r.containsId}`);}
-      return parts.join(', ') || 'tarif applicable';
+      return parts.join(', ') || this.transloco.translate('admin.gtfsData.rule.fallback');
     }).join('\n');
   }
 
   bookingTypeLabel(t: string): string {
-    switch (t) {
-      case 'REAL_TIME': return 'Temps réel';
-      case 'SAME_DAY': return 'Jour même';
-      case 'PRIOR_DAYS': return 'À l\'avance';
-      default: return t;
-    }
+    const key = `admin.gtfsData.bookingType.${t}`;
+    const translated = this.transloco.translate(key);
+    return translated === key ? t : translated;
   }
 
   transferTypeLabel(t: number): string {
-    switch (t) {
-      case 0: return 'A + transfer combinés';
-      case 1: return 'A puis transfer séparé';
-      case 2: return 'Transfer remplace A';
-      default: return `Type ${t}`;
-    }
+    const key = `admin.gtfsData.transferType.${t}`;
+    const translated = this.transloco.translate(key);
+    return translated === key
+      ? this.transloco.translate('admin.gtfsData.transferType.unknown', { type: t })
+      : translated;
   }
 
   mediaTypeLabel(t: number | null): string {
-    switch (t) {
-      case 0: return 'Aucun';
-      case 1: return 'Papier';
-      case 2: return 'Carte transport';
-      case 3: return 'Sans contact (EMV)';
-      case 4: return 'Mobile';
-      default: return t === null ? '—' : `Type ${t}`;
-    }
+    if (t === null) {return '—';}
+    const key = `admin.gtfsData.mediaType.${t}`;
+    const translated = this.transloco.translate(key);
+    return translated === key
+      ? this.transloco.translate('admin.gtfsData.mediaType.unknown', { type: t })
+      : translated;
   }
 
   noticeLabel(b: BookingRule): string {
     if (b.priorNoticeDurationMin !== null && b.priorNoticeDurationMax !== null) {
-      return `${b.priorNoticeDurationMin}–${b.priorNoticeDurationMax} min`;
+      return this.transloco.translate('admin.gtfsData.notice.range', {
+        min: b.priorNoticeDurationMin,
+        max: b.priorNoticeDurationMax,
+      });
     }
     if (b.priorNoticeDurationMin !== null) {
-      return `≥ ${b.priorNoticeDurationMin} min`;
+      return this.transloco.translate('admin.gtfsData.notice.minOnly', {
+        min: b.priorNoticeDurationMin,
+      });
     }
     if (b.priorNoticeLastDay !== null) {
-      const t = b.priorNoticeLastTime ? ` à ${b.priorNoticeLastTime.slice(0, 5)}` : '';
-      return `J−${b.priorNoticeLastDay}${t}`;
+      const tm = b.priorNoticeLastTime
+        ? this.transloco.translate('admin.gtfsData.notice.lastDayWithTime', {
+            day: b.priorNoticeLastDay, time: b.priorNoticeLastTime.slice(0, 5),
+          })
+        : this.transloco.translate('admin.gtfsData.notice.lastDay', {
+            day: b.priorNoticeLastDay,
+          });
+      return tm;
     }
     return '—';
   }

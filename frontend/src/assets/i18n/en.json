@@ -810,6 +810,41 @@
       "vehiclesNotConfigured": "Vehicles feed not configured (app.gtfs-rt.vehicle-positions-url empty)"
     },
     "gtfsData": {
+      "payment": { "onBoard": "On board", "advance": "In advance" },
+      "transfer": {
+        "unlimited": "Unlimited",
+        "none": "None",
+        "duration": "{{ minutes }} min"
+      },
+      "rule": {
+        "unconditional": "Flat fare with no condition",
+        "fallback": "applicable fare"
+      },
+      "bookingType": {
+        "REAL_TIME": "Real-time",
+        "SAME_DAY": "Same day",
+        "PRIOR_DAYS": "In advance"
+      },
+      "transferType": {
+        "0": "A + transfer combined",
+        "1": "A then separate transfer",
+        "2": "Transfer replaces A",
+        "unknown": "Type {{ type }}"
+      },
+      "mediaType": {
+        "0": "None",
+        "1": "Paper",
+        "2": "Transit card",
+        "3": "Contactless (EMV)",
+        "4": "Mobile",
+        "unknown": "Type {{ type }}"
+      },
+      "notice": {
+        "range": "{{ min }}–{{ max }} min",
+        "minOnly": "≥ {{ min }} min",
+        "lastDay": "D−{{ day }}",
+        "lastDayWithTime": "D−{{ day }} at {{ time }}"
+      },
       "title": "GTFS Data",
       "subtitle": "Read-only browser for supplementary tables populated by the GTFS import — fares, on-demand transport, translations.",
       "loadFaresFailed": "Failed to load fares",
