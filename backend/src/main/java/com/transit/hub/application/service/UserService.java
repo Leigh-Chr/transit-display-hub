@@ -81,13 +81,25 @@ public class UserService {
             ensureAtLeastOneOtherActiveAdmin();
         }
 
-        // Update password only if provided
-        if (request.password() != null && !request.password().isBlank()) {
+        boolean passwordChanged = request.password() != null && !request.password().isBlank();
+        boolean roleChanged = user.getRole() != request.role();
+        boolean disabling = user.isEnabled() && !request.enabled();
+
+        if (passwordChanged) {
             user.setPassword(passwordEncoder.encode(request.password()));
         }
 
         user.setRole(request.role());
         user.setEnabled(request.enabled());
+
+        // Bump the access-token version whenever the change must take
+        // effect before the existing JWT expires — password reset, role
+        // change (privilege drift in either direction) and account
+        // disable each warrant immediate revocation of any token already
+        // out there.
+        if (passwordChanged || roleChanged || disabling) {
+            user.setTokenVersion(user.getTokenVersion() + 1);
+        }
 
         return UserResponse.from(userRepository.save(user));
     }

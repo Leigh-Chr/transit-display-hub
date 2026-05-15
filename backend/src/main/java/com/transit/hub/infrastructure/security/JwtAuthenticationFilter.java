@@ -70,6 +70,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         return;
                     }
 
+                    // Token version mismatch ⇒ a privileged operation
+                    // (disable, role change, password reset, refresh-chain
+                    // revoke) bumped the user counter after this access
+                    // token was minted. Treat the token as revoked.
+                    long jwtTokenVersion = jwtService.extractTokenVersion(source.token());
+                    if (snapshot.get().getTokenVersion() != jwtTokenVersion) {
+                        if (source.fromBearer()) {
+                            response.setHeader(
+                                    "WWW-Authenticate",
+                                    "Bearer error=\"invalid_token\", error_description=\"Token revoked\"");
+                        }
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
                     List<SimpleGrantedAuthority> authorities = List.of(
                             new SimpleGrantedAuthority("ROLE_" + role.name())
                     );

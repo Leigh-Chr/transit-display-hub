@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -43,10 +44,12 @@ public class JwtService {
         Instant expiration = now.plus(props.expirationHours(), ChronoUnit.HOURS);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(user.getUsername())
                 .issuer(props.issuer())
                 .audience().add(props.audience()).and()
                 .claim("role", user.getRole().name())
+                .claim("tv", user.getTokenVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(getSigningKey())
@@ -60,6 +63,18 @@ public class JwtService {
     public UserRole extractRole(String token) {
         String role = extractClaim(token, claims -> claims.get("role", String.class));
         return UserRole.valueOf(role);
+    }
+
+    public long extractTokenVersion(String token) {
+        Number tv = extractClaim(token, claims -> claims.get("tv", Number.class));
+        // Tokens minted before V51 carry no "tv" claim; treat them as
+        // version 0 so existing sessions stay valid until they expire
+        // naturally rather than logging every active user out at once.
+        return tv == null ? 0L : tv.longValue();
+    }
+
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
     }
 
     public Instant extractExpiration(String token) {

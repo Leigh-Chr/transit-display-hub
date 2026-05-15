@@ -77,6 +77,30 @@ class JwtServiceTest {
 
             assertThat(expiration).isBetween(expectedMin, expectedMax);
         }
+
+        @Test
+        @DisplayName("includes a unique jti claim on every token")
+        void includesJti() {
+            User user = TestDataFactory.createAdmin("testuser");
+
+            String first = jwtService.generateToken(user);
+            String second = jwtService.generateToken(user);
+
+            assertThat(jwtService.extractJti(first)).isNotBlank();
+            assertThat(jwtService.extractJti(second)).isNotBlank();
+            assertThat(jwtService.extractJti(first)).isNotEqualTo(jwtService.extractJti(second));
+        }
+
+        @Test
+        @DisplayName("includes the user's current tokenVersion claim")
+        void includesTokenVersion() {
+            User user = TestDataFactory.createAdmin("testuser");
+            user.setTokenVersion(42L);
+
+            String token = jwtService.generateToken(user);
+
+            assertThat(jwtService.extractTokenVersion(token)).isEqualTo(42L);
+        }
     }
 
     @Nested

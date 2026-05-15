@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.security;
 import com.transit.hub.domain.model.RefreshToken;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.infrastructure.persistence.RefreshTokenRepository;
+import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.testutil.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,9 @@ class RefreshTokenServiceTest {
     @Mock
     private RefreshTokenRepository repository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private RefreshTokenService service;
     private User user;
 
@@ -48,7 +52,8 @@ class RefreshTokenServiceTest {
         var jwtProps = new com.transit.hub.infrastructure.config.JwtProperties(
                 "secret-only-validated-by-JwtService-not-this-test-but-must-be-32-chars",
                 1, "transit-display-hub", "transit-display-hub-admin", 14);
-        service = new RefreshTokenService(repository, Clock.fixed(FIXED_NOW, ZoneOffset.UTC), jwtProps);
+        service = new RefreshTokenService(repository, userRepository,
+                Clock.fixed(FIXED_NOW, ZoneOffset.UTC), jwtProps);
         user = TestDataFactory.createAdmin("alice");
     }
 
@@ -215,13 +220,29 @@ class RefreshTokenServiceTest {
     class RevokeAllForUser {
 
         @Test
-        @DisplayName("delegates to the repository update")
+        @DisplayName("delegates to the repository update and bumps the user's token version")
         void delegatesToRepository() {
             when(repository.revokeAllActiveByUserId(user.getId(), FIXED_NOW)).thenReturn(3);
+            long startVersion = user.getTokenVersion();
+            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
             int count = service.revokeAllForUser(user.getId());
 
             assertThat(count).isEqualTo(3);
+            assertThat(user.getTokenVersion()).isEqualTo(startVersion + 1);
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("still revokes refresh tokens when the user is gone")
+        void revokesEvenIfUserMissing() {
+            when(repository.revokeAllActiveByUserId(user.getId(), FIXED_NOW)).thenReturn(2);
+            when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+            int count = service.revokeAllForUser(user.getId());
+
+            assertThat(count).isEqualTo(2);
+            verify(userRepository, never()).save(any(User.class));
         }
     }
 

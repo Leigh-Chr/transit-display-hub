@@ -56,7 +56,7 @@ class JwtAuthenticationFilterTest {
     }
 
     private static User enabledUser(String username, UserRole role) {
-        return User.builder().username(username).role(role).enabled(true).build();
+        return User.builder().username(username).role(role).enabled(true).tokenVersion(0L).build();
     }
 
     @AfterEach
@@ -142,6 +142,44 @@ class JwtAuthenticationFilterTest {
             assertThat(auth.getAuthorities())
                     .extracting(a -> a.getAuthority())
                     .containsExactly("ROLE_AGENT");
+        }
+
+        @Test
+        @DisplayName("rejects the token when its embedded tokenVersion is stale (S-09)")
+        void staleTokenVersion_LeavesContextAnonymous() throws ServletException, IOException {
+            request.addHeader("Authorization", "Bearer stale-token");
+            when(jwtService.isValidToken("stale-token")).thenReturn(true);
+            when(jwtService.extractUsername("stale-token")).thenReturn("alice");
+            when(jwtService.extractRole("stale-token")).thenReturn(UserRole.ADMIN);
+            User user = User.builder()
+                    .username("alice").role(UserRole.ADMIN).enabled(true).tokenVersion(7L).build();
+            when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+            when(jwtService.extractTokenVersion("stale-token")).thenReturn(5L);
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+            assertThat(response.getHeader("WWW-Authenticate"))
+                    .isEqualTo("Bearer error=\"invalid_token\", error_description=\"Token revoked\"");
+            verify(filterChain).doFilter(request, response);
+        }
+
+        @Test
+        @DisplayName("accepts the token when its tokenVersion matches the user's current value")
+        void matchingTokenVersion_PopulatesSecurityContext() throws ServletException, IOException {
+            request.addHeader("Authorization", "Bearer good-token");
+            when(jwtService.isValidToken("good-token")).thenReturn(true);
+            when(jwtService.extractUsername("good-token")).thenReturn("bob");
+            when(jwtService.extractRole("good-token")).thenReturn(UserRole.AGENT);
+            User user = User.builder()
+                    .username("bob").role(UserRole.AGENT).enabled(true).tokenVersion(3L).build();
+            when(userRepository.findByUsername("bob")).thenReturn(Optional.of(user));
+            when(jwtService.extractTokenVersion("good-token")).thenReturn(3L);
+
+            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+            verify(filterChain).doFilter(request, response);
         }
     }
 

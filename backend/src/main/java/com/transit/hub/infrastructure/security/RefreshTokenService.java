@@ -4,6 +4,7 @@ import com.transit.hub.domain.model.RefreshToken;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.infrastructure.config.JwtProperties;
 import com.transit.hub.infrastructure.persistence.RefreshTokenRepository;
+import com.transit.hub.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,6 +41,7 @@ public class RefreshTokenService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RefreshTokenRepository repository;
+    private final UserRepository userRepository;
     private final Clock clock;
     private final JwtProperties jwtProperties;
 
@@ -110,6 +112,14 @@ public class RefreshTokenService {
 
     @Transactional
     public int revokeAllForUser(UUID userId) {
+        // Bump the user's token_version so any access token still in
+        // flight is rejected immediately by JwtAuthenticationFilter, not
+        // just refresh tokens. Walk through the repository so we get an
+        // UPDATE rather than a select-then-save round-trip.
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            userRepository.save(user);
+        });
         return repository.revokeAllActiveByUserId(userId, clock.instant());
     }
 

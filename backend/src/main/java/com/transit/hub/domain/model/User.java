@@ -54,4 +54,13 @@ public class User {
     @Column(nullable = false)
     @Builder.Default
     private boolean enabled = true;
+
+    /**
+     * Monotonic counter embedded inside every access token at mint time.
+     * Bumping it invalidates every JWT this user currently holds — used
+     * by disable, role change, password reset and revokeAllForUser.
+     */
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private long tokenVersion = 0L;
 }

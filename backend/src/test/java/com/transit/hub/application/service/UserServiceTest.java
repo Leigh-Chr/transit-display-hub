@@ -277,6 +277,60 @@ class UserServiceTest {
 
             verify(userRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("bumps tokenVersion when the password changes (S-09)")
+        void bumpsTokenVersionOnPasswordReset() {
+            long startVersion = testAdmin.getTokenVersion();
+            UpdateUserRequest request = new UpdateUserRequest("brand-new-password", UserRole.ADMIN, true);
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(passwordEncoder.encode("brand-new-password")).thenReturn("encoded");
+            when(userRepository.save(any(User.class))).thenReturn(testAdmin);
+
+            userService.update(testAdminId, request);
+
+            assertThat(testAdmin.getTokenVersion()).isEqualTo(startVersion + 1);
+        }
+
+        @Test
+        @DisplayName("bumps tokenVersion when the role changes (S-09)")
+        void bumpsTokenVersionOnRoleChange() {
+            long startVersion = testAdmin.getTokenVersion();
+            UpdateUserRequest request = new UpdateUserRequest(null, UserRole.AGENT, true);
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(userRepository.save(any(User.class))).thenReturn(testAdmin);
+
+            userService.update(testAdminId, request);
+
+            assertThat(testAdmin.getTokenVersion()).isEqualTo(startVersion + 1);
+        }
+
+        @Test
+        @DisplayName("bumps tokenVersion when the user is disabled (S-09)")
+        void bumpsTokenVersionOnDisable() {
+            long startVersion = testAdmin.getTokenVersion();
+            UpdateUserRequest request = new UpdateUserRequest(null, UserRole.ADMIN, false);
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(userRepository.save(any(User.class))).thenReturn(testAdmin);
+
+            userService.update(testAdminId, request);
+
+            assertThat(testAdmin.getTokenVersion()).isEqualTo(startVersion + 1);
+        }
+
+        @Test
+        @DisplayName("leaves tokenVersion untouched on a no-op update")
+        void preservesTokenVersionOnNoop() {
+            long startVersion = testAdmin.getTokenVersion();
+            // Same role and same enabled flag, no password provided.
+            UpdateUserRequest request = new UpdateUserRequest(null, testAdmin.getRole(), testAdmin.isEnabled());
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+            when(userRepository.save(any(User.class))).thenReturn(testAdmin);
+
+            userService.update(testAdminId, request);
+
+            assertThat(testAdmin.getTokenVersion()).isEqualTo(startVersion);
+        }
     }
 
     @Nested
