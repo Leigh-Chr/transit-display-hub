@@ -8,11 +8,11 @@
 #
 # Thresholds (block = build fails, warn = printed but green):
 #
-#   *.component.ts                         block > 1000   warn > 600
-#   *.ts (non-spec, non-component)         block >  800   warn > 500
-#   *.scss                                 block > 1500   warn > 700
-#   *Importer.java / *Calculator.java      block >  700   warn > 500
-#   *Service.java / *Controller.java       block >  600   warn > 400
+#   *.component.ts                         block >  950   warn > 600
+#   *.ts (non-spec, non-component)         block >  700   warn > 500
+#   *.scss                                 block > 1100   warn > 700
+#   *Importer.java / *Calculator.java      block >  650   warn > 500
+#   *Service.java / *Controller.java       block >  500   warn > 400
 #
 # Files listed in scripts/oversized-allowlist.txt are exempt from
 # the block but still printed (as INFO when they fall back under the
@@ -62,16 +62,16 @@ check_path() {
 
 echo "Checking frontend components and TypeScript modules…"
 while IFS= read -r f; do
-    check_path "$f" 1000 600
+    check_path "$f" 950 600
 done < <(find frontend/src -type f -name '*.component.ts' ! -name '*.spec.ts' 2>/dev/null)
 
 while IFS= read -r f; do
-    check_path "$f" 800 500
+    check_path "$f" 700 500
 done < <(find frontend/src -type f -name '*.ts' ! -name '*.spec.ts' ! -name '*.component.ts' 2>/dev/null)
 
 echo "Checking frontend stylesheets…"
 while IFS= read -r f; do
-    check_path "$f" 1500 700
+    check_path "$f" 1100 700
 done < <(find frontend/src -type f -name '*.scss' 2>/dev/null)
 
 echo "Checking backend Java sources…"
@@ -79,10 +79,10 @@ while IFS= read -r f; do
     case "$f" in
         */build/*|*/generated/*) continue ;;
         *Importer.java|*Calculator.java)
-            check_path "$f" 700 500
+            check_path "$f" 650 500
             ;;
         *Service.java|*Controller.java)
-            check_path "$f" 600 400
+            check_path "$f" 500 400
             ;;
     esac
 done < <(find backend/src/main/java -type f -name '*.java' 2>/dev/null)

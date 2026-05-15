@@ -60,13 +60,12 @@
          pin the current ceiling so any growth past 30 cyclo on a method
          or 110 cumulative on a class fails ./gradlew check. Thresholds
          match the current high-water marks (ScheduleImporter.importSchedules
-         at 29, DisplayStateCalculator class total at 107) — both classes
-         are scheduled to be refactored / relocated in phase 1.7.0, after
-         which the thresholds should drop. -->
+         at 29 sets the method floor; DisplayStateCalculator class total
+         dropped to 106 once relocated, classReportLevel rotated 110→107). -->
     <rule ref="category/java/design.xml/CyclomaticComplexity">
         <properties>
             <property name="methodReportLevel" value="30"/>
-            <property name="classReportLevel" value="110"/>
+            <property name="classReportLevel" value="107"/>
         </properties>
     </rule>
 </ruleset>
