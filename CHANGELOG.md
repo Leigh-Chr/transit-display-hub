@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.12.0] — 2026-05-15
+
+Cross-axis cleanup release driven by the post-1.11.1 audit. Closes
+the highest-impact i18n holes on the public map, the two passive-
+listener UX bugs, decomposes the `DataOverviewService` god service,
+joins the Spring `Clock` bean across the application layer, and
+sweeps every patch-level dependency that was at least one bump
+behind. No feature work, no migrations.
+
+### Fixed
+
+- **Map subtitle + route panel i18n**: `network-map`'s subtitle
+  ("Direct route — N stops", "Departure: X — pick an arrival
+  stop", "Click on a stop to see upcoming departures",
+  "Route is stale: …") and the entire `route-search-bar`
+  (panel title, both placeholders, swap / clear ARIA labels,
+  same-stop and no-route hints, segment "dir. … · N stops" meta)
+  now flow through Transloco. New keys live under `map.subtitle.*`
+  and `map.route.*`. Singular / plural handled by sibling keys
+  (`stopOne` / `stopOther`, `transferOne` / `transferOther`)
+  since the project does not ship the messageformat plugin.
+- **Kiosk vocal announcer**: `speak()` no longer hardcodes
+  `utterance.lang = 'fr-FR'`, `formatScheduledTime` no longer
+  returns `'X heures Y'` and `bookingAria` no longer appends
+  `' minutes minimum'` in French. Three new keys
+  (`kiosk.speak.bcp47`, `kiosk.speak.time`,
+  `kiosk.booking.minMinutes`) ship per language, so an EN-resolved
+  kiosk gets an English voice reading an English template.
+- **Role guard** uses the existing `common.errors.accessDenied`
+  key instead of a hardcoded English fallback.
+- **Schematic map wheel + touchmove**: Angular 21 binds template
+  events as passive listeners by default, silently ignoring any
+  `event.preventDefault()`. Pan / zoom now attaches its handlers
+  imperatively in `afterNextRender` with `{ passive: false }` so
+  the surrounding page no longer scrolls when the user pans the
+  diagram on a trackpad or mobile screen.
+- **Hub display dialog**: each stop selector is now a real
+  `<button>` with `aria-pressed` instead of a `<div (click)>`.
+  Keyboard-only users can finally pick stops via Enter / Space.
+  SCSS resets the native button look so the visual stays unchanged.
+- **Stop-popup HTTP teardown**: six `subscribe` sites (TAD zone,
+  booking rules, pathway graph, fare calculation, flex windows,
+  schedules) now pipe through `takeUntilDestroyed` so a fast popup
+  close cancels the late callbacks instead of trying to
+  `signal.set` on a destroyed view.
+- **`WebSocketService.disconnect`** now `complete()`s its
+  `displayStateSubject` and re-instantiates a fresh one, mirroring
+  the two cousin services. A logout-then-reconnect in the same
+  page no longer feeds late values to the previous subscribers.
+
+### Changed
+
+- **`DataOverviewService` decomposed** into two cohesive providers
+  under `application.service.overview/`:
+  `StaticGtfsOverviewProvider` (sixteen GTFS-Schedule + extension
+  repositories) and `RealtimeOverviewProvider` (the three GTFS-RT
+  caches, now reading "now" through the injected `Clock`). The
+  aggregator drops from 19 dependencies to 2.
+- **Nine services + the calendar loader inject `Clock`**
+  (`MessageService`, `DeviceService`, `HubDisplayService`,
+  `NetworkMapService`, `DisplayStateService`, `DashboardService`,
+  `GtfsValidatorService`, `GtfsImportOrchestrator`,
+  `ServiceCalendarLoader`). Closes the 48 sites of
+  `verify(any(Instant.class))` the audit flagged as imprecise.
+- **`docker-compose.yml` aligned on `postgres:17-alpine`** so dev
+  matches kiosk / prod (the previous 15-alpine drift could mask
+  Postgres-only behaviour around the V6/V7 `pg_trgm` GIN indexes).
+- **Frontend nginx base image pinned** to `nginx:1.27-alpine`.
+
+### Tests
+
+- **BCrypt strength externalised** via `app.security.bcrypt-strength`
+  (default 12 in prod). `application-test.yml` overrides to 4
+  (BCrypt minimum) — backend test runtime drops from ~1 min to
+  ~45 s on the same hardware.
+
+### Build
+
+- **Backend** patches: `commons-csv` 1.12.0 → 1.14.1,
+  `commons-validator` 1.10.0 → 1.10.1,
+  `archunit-junit5` 1.3.0 → 1.4.2.
+- **Frontend** patches: `@angular/*` 21.2.10/.12 → 21.2.11/.13,
+  `@vitest/*` + `vitest` 4.1.5 → 4.1.6, `@playwright/test` 1.59.1
+  → 1.60.0, `knip` 6.12.2 → 6.14.0, `eslint` 10.3.0 → 10.4.0,
+  `angular-eslint` 21.3.1 → 21.4.0, `typescript-eslint` 8.59.2
+  → 8.59.3.
+
+### Known limitations carried over to 1.13+
+
+- Roughly 70 hardcoded strings remain in `network-map/components/*`
+  (schematic-map overlays, line-index, line-filter-chips,
+  alert-overlay, map-legend, zoom-controls), `stop-popup` and the
+  `pathway-list` enum labels. The audit flagged them as P0; the
+  five biggest user-visible holes are closed in this release, the
+  rest is mechanical sweep work scheduled for 1.13.
+- Several admin pages still surface enum labels in French only
+  (`gtfs-data`, `pathways` divergent `MODE_LABEL`,
+  `messages.severity` rendered raw, `itineraries.lineTypeLabel`).
+
 ## [1.11.1] — 2026-05-15
 
 Hot-fix release that unblocks the CI pipeline (red on every push
