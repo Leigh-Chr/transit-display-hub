@@ -43,6 +43,31 @@ const translocoLang = {
   common: { delete: 'Delete' },
 };
 
+const translocoLangFr = {
+  admin: {
+    dashboard: {
+      feedInfo: {},
+      messageStatus: { active: 'Actif', scheduled: 'Programmé', expired: 'Expiré' },
+      statActiveMessages: 'Messages actifs',
+      statLines: 'Lignes',
+      statStops: 'Arrêts',
+      statItineraries: 'Itinéraires',
+      statDevicesOnline: 'Bornes en ligne',
+      actionNewMessage: 'Nouveau message',
+      actionNetworkMap: 'Carte du réseau',
+      actionManageLines: 'Gérer les lignes',
+      actionManageStops: 'Gérer les arrêts',
+      actionEditSchedules: 'Éditer les horaires',
+      actionRegisterDevice: 'Enregistrer une borne',
+      actionManageUsers: 'Gérer les utilisateurs',
+      actionHubDisplay: 'Affichage pôle',
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Supprimer' },
+};
+
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
@@ -111,7 +136,7 @@ describe('DashboardComponent', () => {
       imports: [
         DashboardComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

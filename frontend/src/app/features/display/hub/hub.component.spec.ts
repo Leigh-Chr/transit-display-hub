@@ -27,6 +27,23 @@ const translocoLangs = {
       loading: 'Loading…',
     },
   },
+  fr: {
+    kiosk: {
+      noArrivals: 'Aucun prochain départ',
+      noScheduledDepartures: 'Aucun départ programmé',
+      imminent: 'Imminent',
+      minutesShort: '{{ minutes }} min',
+      onTime: "à l'heure",
+      headerLine: 'Ligne',
+      headerPlatform: 'Quai',
+      headerDestination: 'Destination',
+      headerNextDeparture: 'Prochain départ',
+      booking: { label: 'Réservation', aria: 'Réservation requise' },
+      connection: { reconnecting: 'Reconnexion…', stale: 'Dernière mise à jour il y a {{ minutes }} min' },
+      error: { title: "Erreur d'affichage" },
+      loading: 'Chargement…',
+    },
+  },
 };
 
 const mockHubState: HubDisplayState = {
@@ -80,7 +97,7 @@ describe('HubComponent', () => {
       imports: [
         HubComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLangs.en, fr: translocoLangs.en },
+          langs: { en: translocoLangs.en, fr: translocoLangs.fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

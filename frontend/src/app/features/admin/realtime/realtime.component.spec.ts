@@ -9,6 +9,7 @@ import { RealtimeAlert, VehiclePosition } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
 const translocoLang = { admin: { realtime: { occupancy: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
+const translocoLangFr = { admin: { realtime: { occupancy: {} }, common: {}, navigation: {} }, common: { delete: 'Supprimer' } };
 
 describe('RealtimeComponent', () => {
   let component: RealtimeComponent;
@@ -66,7 +67,7 @@ describe('RealtimeComponent', () => {
       imports: [
         RealtimeComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

@@ -47,6 +47,46 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler', delete: 'Supprimer' },
+  admin: {
+    messages: {
+      severityInfo: 'Info',
+      severityWarning: 'Avertissement',
+      severityCritical: 'Critique',
+      dialog: {
+        titleCreate: 'Nouveau message de diffusion',
+        titleEdit: 'Modifier le message',
+        fieldTitle: 'Titre',
+        fieldTitlePlaceholder: 'ex. Interruption de service',
+        fieldTitleRequired: 'Le titre est requis',
+        fieldContent: 'Contenu',
+        fieldContentPlaceholder: 'Contenu détaillé du message…',
+        fieldContentRequired: 'Le contenu est requis',
+        fieldSeverity: 'Gravité',
+        fieldSeverityRequired: 'La gravité est requise',
+        fieldScope: 'Portée',
+        fieldScopeRequired: 'La portée est requise',
+        scopeNetwork: 'Réseau entier',
+        scopeLine: 'Ligne spécifique',
+        scopeStop: 'Arrêt spécifique',
+        fieldLine: 'Ligne',
+        fieldLineRequired: 'La ligne est requise pour cette portée',
+        fieldStop: 'Arrêt',
+        fieldStopRequired: "L'arrêt est requis pour cette portée",
+        fieldStopHint: "Choisissez d'abord une ligne",
+        fieldStartTime: 'Heure de début',
+        fieldStartTimeRequired: "L'heure de début est requise",
+        fieldEndTime: 'Heure de fin',
+        fieldEndTimeRequired: "L'heure de fin est requise",
+        fieldEndTimeInvalid: "L'heure de fin doit être postérieure à l'heure de début",
+        actionCreate: 'Créer le message',
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 const savedMessage: BroadcastMessage = {
   id: 'm1',
   title: 'Saved',
@@ -82,7 +122,7 @@ describe('MessageDialogComponent', () => {
       imports: [
         MessageDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

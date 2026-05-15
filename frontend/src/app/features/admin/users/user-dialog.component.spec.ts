@@ -37,6 +37,37 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler' },
+  admin: {
+    users: {
+      dialog: {
+        titleCreate: 'Nouvel utilisateur',
+        titleEdit: "Modifier l'utilisateur",
+        fieldUsername: "Nom d'utilisateur",
+        fieldUsernamePlaceholder: "Saisissez le nom d'utilisateur",
+        fieldUsernameHint: 'Entre 3 et 50 caractères',
+        fieldUsernameRequired: "Le nom d'utilisateur doit comporter entre 3 et 50 caractères",
+        fieldPassword: 'Mot de passe',
+        fieldPasswordPlaceholderCreate: 'Saisissez le mot de passe',
+        fieldPasswordPlaceholderEdit: 'Laisser vide pour conserver le mot de passe actuel',
+        fieldPasswordHintCreate: 'Au minimum 6 caractères',
+        fieldPasswordHintEdit: 'Laisser vide pour conserver le mot de passe actuel',
+        fieldPasswordErrorCreate: 'Le mot de passe est requis (min. 6 caractères)',
+        fieldPasswordErrorEdit: 'Le mot de passe doit comporter au moins 6 caractères',
+        fieldRole: 'Rôle',
+        fieldRoleRequired: 'Le rôle est requis',
+        roleAdminDesc: 'Accès complet à toutes les fonctionnalités',
+        roleAgentDesc: 'Peut uniquement gérer les messages',
+        fieldEnabled: 'Compte activé',
+        fieldEnabledHint: 'Les comptes désactivés ne peuvent pas se connecter',
+        actionCreate: "Créer l'utilisateur",
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 const savedUser: User = {
   id: 'u1',
   username: 'newuser',
@@ -60,7 +91,7 @@ describe('UserDialogComponent', () => {
       imports: [
         UserDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

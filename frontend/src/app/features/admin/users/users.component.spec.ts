@@ -34,6 +34,24 @@ const translocoLang = {
   common: { delete: 'Delete' },
 };
 
+const translocoLangFr = {
+  admin: {
+    users: {
+      loadFailed: 'Échec du chargement des utilisateurs',
+      createSuccess: 'Utilisateur créé',
+      updateSuccess: 'Utilisateur mis à jour',
+      deleteSuccess: 'Utilisateur supprimé',
+      createFailed: "Échec de la création de l'utilisateur",
+      updateFailed: "Échec de la mise à jour de l'utilisateur",
+      deleteFailed: "Échec de la suppression de l'utilisateur",
+      confirm: { deleteTitle: "Supprimer l'utilisateur", deleteMessage: "Supprimer l'utilisateur ?" },
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Supprimer' },
+};
+
 const mockUser: User = { id: '1', username: 'admin', role: 'ADMIN', enabled: true };
 const mockOtherUser: User = { id: '2', username: 'agent', role: 'AGENT', enabled: true };
 
@@ -97,7 +115,7 @@ describe('UsersComponent', () => {
       imports: [
         UsersComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

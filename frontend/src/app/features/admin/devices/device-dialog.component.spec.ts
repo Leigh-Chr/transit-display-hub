@@ -24,6 +24,23 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler' },
+  admin: {
+    devices: {
+      dialog: {
+        title: 'Enregistrer une nouvelle borne',
+        fieldLine: 'Ligne',
+        fieldLineRequired: 'La ligne est requise',
+        fieldStop: 'Arrêt',
+        fieldStopRequired: "L'arrêt est requis",
+        fieldStopHint: "Choisissez d'abord une ligne",
+        actionRegister: 'Enregistrer la borne',
+      },
+    },
+  },
+};
+
 const savedRegistration: DeviceRegistration = {
   id: 'd1',
   token: 'jwt-token-123',
@@ -59,7 +76,7 @@ describe('DeviceDialogComponent', () => {
       imports: [
         DeviceDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

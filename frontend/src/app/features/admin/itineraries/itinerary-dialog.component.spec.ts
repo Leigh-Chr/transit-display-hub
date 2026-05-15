@@ -32,6 +32,32 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler' },
+  admin: {
+    itineraries: {
+      dialog: {
+        titleCreate: 'Nouvel itinéraire',
+        titleEdit: "Modifier l'itinéraire",
+        fieldLine: 'Ligne',
+        fieldLineHint: 'La ligne ne peut pas être modifiée après création',
+        fieldLineRequired: 'La ligne est requise',
+        fieldName: "Nom de l'itinéraire",
+        fieldNamePlaceholder: 'ex. Direction terminus Est',
+        fieldNameHint: "Nom de cette direction / cet itinéraire",
+        fieldNameRequired: 'Le nom est requis',
+        fieldTerminus: 'Terminus',
+        fieldTerminusPlaceholder: 'ex. Terminus Nord',
+        infoAfterCreate: "Après création de l'itinéraire, vous pourrez ajouter des arrêts pour définir le terminus.",
+        terminusLabel: 'Terminus :',
+        terminusHint: 'Le terminus est automatiquement déduit du dernier arrêt.',
+        actionCreate: "Créer l'itinéraire",
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 const savedItinerary: Itinerary = {
   id: 'it1',
   name: 'Direction East',
@@ -62,7 +88,7 @@ describe('ItineraryDialogComponent', () => {
       imports: [
         ItineraryDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

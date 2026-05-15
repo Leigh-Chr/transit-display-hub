@@ -10,6 +10,7 @@ import { ImportAudit } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
 const translocoLang = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
+const translocoLangFr = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Supprimer' } };
 
 describe('ImportAuditComponent', () => {
   let component: ImportAuditComponent;
@@ -44,7 +45,7 @@ describe('ImportAuditComponent', () => {
       imports: [
         ImportAuditComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

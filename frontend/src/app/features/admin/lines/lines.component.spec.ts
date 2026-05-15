@@ -33,6 +33,25 @@ const en = {
   },
 };
 
+const fr = {
+  common: { delete: 'Supprimer' },
+  admin: {
+    lines: {
+      loadFailed: 'Échec du chargement des lignes',
+      createSuccess: 'Ligne créée',
+      updateSuccess: 'Ligne mise à jour',
+      deleteSuccess: 'Ligne supprimée',
+      createFailed: 'Échec de la création de la ligne',
+      updateFailed: 'Échec de la mise à jour de la ligne',
+      deleteFailed: 'Échec de la suppression de la ligne',
+      dialog: { titleCreate: 'Nouvelle ligne', titleEdit: 'Modifier la ligne' },
+      confirm: { deleteTitle: 'Supprimer la ligne', deleteMessage: 'Supprimer la ligne "{{ name }}" ?' },
+    },
+    dashboard: { stopsSuffix: 'arrêts' },
+    navigation: { itineraries: 'Itinéraires' },
+  },
+};
+
 const mockPageResponse: PageResponse<Line> = {
   content: [
     { id: '1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 },
@@ -76,7 +95,7 @@ describe('LinesComponent', () => {
       imports: [
         LinesComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

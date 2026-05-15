@@ -55,6 +55,51 @@ const translocoLangs = {
       },
     },
   },
+  fr: {
+    kiosk: {
+      errors: {
+        missingDeviceOrStop: "Jeton de borne ou identifiant d'arrêt manquant. Configurez l'URL d'affichage avec /display/:stopId, ?token=<jeton>, ou ?stopId=<id-arrêt>",
+        invalidToken: 'Jeton de borne invalide ou borne introuvable.',
+        stopNotFound: 'Arrêt introuvable.',
+      },
+      noArrivals: 'Aucun prochain départ',
+      noScheduledDepartures: 'Aucun départ programmé',
+      imminent: 'Imminent',
+      minutesShort: '{{ minutes }} min',
+      onTime: "à l'heure",
+      pickup: {
+        dropOffOnly: 'Descente uniquement',
+        pickupOnly: 'Montée uniquement',
+        onRequestAgency: 'Sur réservation — appelez la centrale',
+        onRequestDriver: "Sur demande — faites signe au conducteur",
+      },
+      frequency: { everyMinute: 'Toutes les minutes', everyMinutes: 'Toutes les {{ minutes }} min' },
+      booking: { label: 'Réservation', aria: 'Réservation requise' },
+      accessibility: {
+        wheelchairYes: 'Accessible en fauteuil roulant',
+        wheelchairNo: 'Non accessible en fauteuil roulant',
+        bikesAllowed: 'Vélos autorisés',
+        platform: 'Quai {{ code }}',
+        liveData: 'Données temps réel',
+      },
+      connection: { reconnecting: 'Reconnexion…', stale: 'Dernière mise à jour il y a {{ minutes }} min' },
+      error: { title: "Erreur d'affichage" },
+      loading: 'Chargement…',
+      highContrast: 'Mode contraste élevé',
+      largeText: 'Texte plus grand',
+      speakNext: 'Lire le prochain départ à voix haute',
+      headerLine: 'Ligne',
+      headerDestination: 'Destination',
+      headerNextDeparture: 'Prochain départ',
+      speak: {
+        noArrivals: "Aucun prochain départ à annoncer.",
+        next: 'Prochain départ : ligne {{ line }}, vers {{ destination }}, à {{ time }}.',
+        nextOnTime: "Prochain départ : ligne {{ line }}, vers {{ destination }}, à {{ time }}, à l'heure.",
+        nextDelayed: 'Prochain départ : ligne {{ line }}, vers {{ destination }}, à {{ time }}, en retard de {{ minutes }} minutes.',
+        nextEarly: 'Prochain départ : ligne {{ line }}, vers {{ destination }}, à {{ time }}, en avance de {{ minutes }} minutes.',
+      },
+    },
+  },
 };
 
 describe('KioskComponent', () => {
@@ -123,7 +168,7 @@ describe('KioskComponent', () => {
       imports: [
         KioskComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLangs.en, fr: translocoLangs.en },
+          langs: { en: translocoLangs.en, fr: translocoLangs.fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

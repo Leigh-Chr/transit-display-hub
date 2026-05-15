@@ -29,6 +29,26 @@ const translocoLang = {
   common: { delete: 'Delete' },
 };
 
+const translocoLangFr = {
+  admin: {
+    devices: {
+      loadFailed: 'Échec du chargement des bornes',
+      loadLinesFailed: 'Échec du chargement des lignes',
+      registerFailed: "Échec de l'enregistrement de la borne",
+      removeSuccess: 'Borne supprimée',
+      removeFailed: 'Échec de la suppression de la borne',
+      tokenCopied: 'Jeton copié dans le presse-papier',
+      tokenCopyFailed: 'Échec de la copie du jeton',
+      tokenTitle: 'Borne enregistrée',
+      dialog: { title: 'Enregistrer une nouvelle borne' },
+      confirm: { removeTitle: 'Supprimer la borne', removeMessage: 'Supprimer la borne ?' },
+    },
+    common: { remove: 'Supprimer', done: 'Terminé' },
+    navigation: {},
+  },
+  common: { delete: 'Supprimer' },
+};
+
 describe('DevicesComponent', () => {
   let component: DevicesComponent;
   let fixture: ComponentFixture<DevicesComponent>;
@@ -96,7 +116,7 @@ describe('DevicesComponent', () => {
       imports: [
         DevicesComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

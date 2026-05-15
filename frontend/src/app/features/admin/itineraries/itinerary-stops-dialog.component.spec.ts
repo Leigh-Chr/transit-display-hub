@@ -34,6 +34,33 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler' },
+  admin: {
+    itineraries: {
+      stopsDialog: {
+        title: 'Gérer les arrêts - {{ name }}',
+        addStop: 'Ajouter un arrêt',
+        addStopHint: 'Sélectionnez un arrêt à ajouter à cet itinéraire',
+        noMoreStops: 'Plus aucun arrêt disponible',
+        noStopsYet: "Aucun arrêt pour l'instant. Ajoutez des arrêts pour définir l'itinéraire.",
+        terminusLabel: 'Terminus :',
+        loadFailed: 'Échec du chargement des arrêts',
+        available: 'Arrêts disponibles',
+        selected: 'Arrêts sélectionnés',
+        searchPlaceholder: 'Rechercher un arrêt…',
+        noStopsAvailable: 'Plus aucun arrêt disponible',
+        noStopsSelected: "Aucun arrêt pour l'instant. Ajoutez des arrêts pour définir l'itinéraire.",
+        addTooltip: "Ajouter l'arrêt",
+        removeTooltip: "Retirer l'arrêt",
+        moveUpTooltip: 'Monter',
+        moveDownTooltip: 'Descendre',
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 describe('ItineraryStopsDialogComponent', () => {
   let component: ItineraryStopsDialogComponent;
   let fixture: ComponentFixture<ItineraryStopsDialogComponent>;
@@ -80,7 +107,7 @@ describe('ItineraryStopsDialogComponent', () => {
       imports: [
         ItineraryStopsDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],
@@ -253,7 +280,7 @@ describe('ItineraryStopsDialogComponent', () => {
         imports: [
           ItineraryStopsDialogComponent,
           TranslocoTestingModule.forRoot({
-            langs: { en, fr: en },
+            langs: { en, fr },
             translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           }),
         ],

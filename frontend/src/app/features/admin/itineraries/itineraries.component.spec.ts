@@ -38,6 +38,27 @@ const translocoLang = {
   common: { delete: 'Delete' },
 };
 
+const translocoLangFr = {
+  admin: {
+    itineraries: {
+      loadFailed: 'Échec du chargement des itinéraires',
+      loadLinesFailed: 'Échec du chargement des lignes',
+      createSuccess: 'Itinéraire créé',
+      updateSuccess: 'Itinéraire mis à jour',
+      deleteSuccess: 'Itinéraire supprimé',
+      stopsUpdated: 'Arrêts mis à jour',
+      createFailed: "Échec de la création de l'itinéraire",
+      updateFailed: "Échec de la mise à jour de l'itinéraire",
+      deleteFailed: "Échec de la suppression de l'itinéraire",
+      stopsUpdateFailed: 'Échec de la mise à jour des arrêts',
+      confirm: { deleteTitle: "Supprimer l'itinéraire", deleteMessage: "Supprimer l'itinéraire ?" },
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Supprimer' },
+};
+
 const mockLine: Line = {
   id: 'l1',
   code: 'L1',
@@ -103,7 +124,7 @@ describe('ItinerariesComponent', () => {
       imports: [
         ItinerariesComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

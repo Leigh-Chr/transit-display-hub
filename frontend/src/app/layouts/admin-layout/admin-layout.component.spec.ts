@@ -42,6 +42,40 @@ const en = {
   },
 };
 
+const fr = {
+  admin: {
+    navigation: {
+      dashboard: 'Tableau de bord',
+      sectionNetwork: 'Réseau',
+      sectionCommunication: 'Communication',
+      sectionAdministration: 'Administration',
+      lines: 'Lignes',
+      stops: 'Arrêts',
+      itineraries: 'Itinéraires',
+      schedules: 'Horaires',
+      networkMap: 'Carte du réseau',
+      hubDisplay: 'Affichage pôle',
+      messages: 'Messages',
+      devices: 'Bornes',
+      realtime: 'Temps réel',
+      gtfsData: 'Données GTFS',
+      importAudit: 'Historique des imports',
+      pathways: 'Cheminements',
+      shapes: 'Tracés',
+      tadZones: 'Zones TAD',
+      flexStopTimes: 'Horaires TAD',
+      fareCalculator: 'Calcul tarif',
+      users: 'Utilisateurs',
+      skipToMain: 'Aller au contenu principal',
+      toggleSidebar: 'Afficher / masquer la barre latérale',
+      toggleMenu: 'Menu',
+      switchLight: 'Passer en mode clair',
+      switchDark: 'Passer en mode sombre',
+      logout: 'Déconnexion',
+    },
+  },
+};
+
 describe('AdminLayoutComponent', () => {
   let component: AdminLayoutComponent;
   let fixture: ComponentFixture<AdminLayoutComponent>;
@@ -82,7 +116,7 @@ describe('AdminLayoutComponent', () => {
       imports: [
         AdminLayoutComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

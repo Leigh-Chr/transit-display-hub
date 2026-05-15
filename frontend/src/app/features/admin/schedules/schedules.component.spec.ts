@@ -39,6 +39,33 @@ const translocoLang = {
   common: { delete: 'Delete', cancel: 'Cancel' },
 };
 
+const translocoLangFr = {
+  admin: {
+    schedules: {
+      loadLinesFailed: 'Échec du chargement des lignes',
+      loadStopsFailed: 'Échec du chargement des arrêts',
+      loadFailed: 'Échec du chargement des horaires',
+      createSuccess: 'Horaire créé',
+      updateSuccess: 'Horaire mis à jour',
+      deleteSuccess: 'Horaire supprimé',
+      createFailed: "Échec de la création de l'horaire",
+      updateFailed: "Échec de la mise à jour de l'horaire",
+      deleteFailed: "Échec de la suppression de l'horaire",
+      dialog: {
+        titleCreate: 'Nouvel horaire',
+        titleEdit: "Modifier l'horaire",
+      },
+      confirm: {
+        deleteTitle: "Supprimer l'horaire",
+        deleteMessage: "Supprimer l'horaire à {{time}} vers {{terminus}} ?",
+      },
+    },
+    common: {},
+    navigation: {},
+  },
+  common: { delete: 'Supprimer', cancel: 'Annuler' },
+};
+
 const mockLine: Line = { id: 'l1', code: 'L1', name: 'Line 1', color: '#F00', type: null, stopCount: 2, itineraryCount: 1 };
 const mockStop: Stop = { id: 's1', name: 'Central', latitude: 48.8, longitude: 2.3, lines: [{ id: 'line-1', code: 'L1', name: 'Line 1', color: '#F00' }], scheduleCount: 3, hasDevice: false };
 const mockSchedule: Schedule = {
@@ -76,7 +103,7 @@ describe('SchedulesComponent', () => {
       imports: [
         SchedulesComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLang },
+          langs: { en: translocoLang, fr: translocoLangFr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

@@ -33,6 +33,24 @@ const en = {
   },
 };
 
+const fr = {
+  common: { delete: 'Supprimer' },
+  admin: {
+    messages: {
+      loadFailed: 'Échec du chargement des messages',
+      loadLinesFailed: 'Échec du chargement des lignes',
+      createSuccess: 'Message créé',
+      updateSuccess: 'Message mis à jour',
+      deleteSuccess: 'Message supprimé',
+      createFailed: 'Échec de la création du message',
+      updateFailed: 'Échec de la mise à jour du message',
+      deleteFailed: 'Échec de la suppression du message',
+      dialog: { titleCreate: 'Nouveau message de diffusion', titleEdit: 'Modifier le message' },
+      confirm: { deleteTitle: 'Supprimer le message', deleteMessage: 'Supprimer le message "{{ title }}" ?' },
+    },
+  },
+};
+
 describe('MessagesComponent', () => {
   let component: MessagesComponent;
   let fixture: ComponentFixture<MessagesComponent>;
@@ -113,7 +131,7 @@ describe('MessagesComponent', () => {
       imports: [
         MessagesComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

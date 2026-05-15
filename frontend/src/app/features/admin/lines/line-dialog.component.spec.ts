@@ -30,6 +30,30 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler', delete: 'Supprimer' },
+  admin: {
+    lines: {
+      dialog: {
+        titleCreate: 'Nouvelle ligne',
+        titleEdit: 'Modifier la ligne',
+        fieldCode: 'Code',
+        fieldCodePlaceholder: 'ex. L1, M2, T3',
+        fieldCodeRequired: 'Le code est requis',
+        fieldName: 'Nom',
+        fieldNamePlaceholder: 'ex. Ligne 1 - Centre-ville',
+        fieldNameRequired: 'Le nom est requis',
+        fieldType: 'Type',
+        fieldTypeRequired: 'Le type est requis',
+        fieldColor: 'Couleur',
+        fieldColorRequired: 'La couleur est requise',
+        actionCreate: 'Créer la ligne',
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 const savedLine: Line = {
   id: '1',
   code: 'L1',
@@ -56,7 +80,7 @@ describe('LineDialogComponent', () => {
       imports: [
         LineDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

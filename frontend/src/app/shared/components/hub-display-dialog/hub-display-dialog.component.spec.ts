@@ -27,6 +27,23 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler' },
+  admin: {
+    hubDisplay: {
+      title: "Ouvrir l'affichage pôle",
+      filterByLine: 'Filtrer par ligne',
+      allLines: 'Toutes les lignes',
+      searchStops: 'Rechercher des arrêts…',
+      loadingStops: 'Chargement des arrêts…',
+      noStopsMatch: 'Aucun arrêt ne correspond aux filtres',
+      selected: 'Sélectionnés ({{ count }}) : {{ names }}',
+      hubName: 'Nom du pôle',
+      openHub: "Ouvrir l'affichage pôle",
+    },
+  },
+};
+
 const lineA: Line = { id: 'line-a', code: 'A', name: 'Line A', color: '#FF0000', type: null, stopCount: 2, itineraryCount: 1 };
 const lineB: Line = { id: 'line-b', code: 'B', name: 'Line B', color: '#00FF00', type: null, stopCount: 1, itineraryCount: 1 };
 
@@ -70,7 +87,7 @@ describe('HubDisplayDialogComponent', () => {
       imports: [
         HubDisplayDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

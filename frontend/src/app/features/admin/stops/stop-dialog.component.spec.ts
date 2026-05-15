@@ -28,6 +28,28 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler', delete: 'Supprimer' },
+  admin: {
+    stops: {
+      dialog: {
+        titleCreate: 'Nouvel arrêt',
+        titleEdit: "Modifier l'arrêt",
+        fieldLines: 'Lignes',
+        fieldLinesHint: 'Sélectionnez une ou plusieurs lignes desservant cet arrêt',
+        fieldLinesRequired: 'Au moins une ligne est requise',
+        fieldName: 'Nom',
+        fieldNamePlaceholder: 'ex. Gare centrale',
+        fieldNameRequired: 'Le nom est requis',
+        fieldLatitude: 'Latitude',
+        fieldLongitude: 'Longitude',
+        actionCreate: "Créer l'arrêt",
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 const savedStop: Stop = {
   id: 's1',
   name: 'Central Station',
@@ -59,7 +81,7 @@ describe('StopDialogComponent', () => {
       imports: [
         StopDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],

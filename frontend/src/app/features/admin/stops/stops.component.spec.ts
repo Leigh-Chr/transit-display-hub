@@ -33,6 +33,24 @@ const en = {
   },
 };
 
+const fr = {
+  common: { delete: 'Supprimer' },
+  admin: {
+    stops: {
+      loadFailed: 'Échec du chargement des arrêts',
+      loadLinesFailed: 'Échec du chargement des lignes',
+      createSuccess: 'Arrêt créé',
+      updateSuccess: 'Arrêt mis à jour',
+      deleteSuccess: 'Arrêt supprimé',
+      createFailed: "Échec de la création de l'arrêt",
+      updateFailed: "Échec de la mise à jour de l'arrêt",
+      deleteFailed: "Échec de la suppression de l'arrêt",
+      dialog: { titleCreate: 'Nouvel arrêt', titleEdit: "Modifier l'arrêt" },
+      confirm: { deleteTitle: "Supprimer l'arrêt", deleteMessage: 'Supprimer l\'arrêt "{{ name }}" ?' },
+    },
+  },
+};
+
 const mockLine: Line = {
   id: 'l1',
   code: 'L1',
@@ -110,7 +128,7 @@ describe('StopsComponent', () => {
       imports: [
         StopsComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           preloadLangs: true,
         }),

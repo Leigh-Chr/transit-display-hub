@@ -25,6 +25,24 @@ const en = {
   },
 };
 
+const fr = {
+  common: { cancel: 'Annuler' },
+  admin: {
+    schedules: {
+      dialog: {
+        titleCreate: 'Nouvel horaire',
+        titleEdit: "Modifier l'horaire",
+        fieldItinerary: 'Itinéraire',
+        fieldItineraryRequired: "L'itinéraire est requis",
+        fieldTime: 'Heure',
+        fieldTimeRequired: "L'heure est requise",
+        actionCreate: "Créer l'horaire",
+        actionSave: 'Enregistrer',
+      },
+    },
+  },
+};
+
 const savedSchedule: Schedule = {
   id: 'sch1',
   time: '08:30',
@@ -79,7 +97,7 @@ describe('ScheduleDialogComponent', () => {
       imports: [
         ScheduleDialogComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],
@@ -202,7 +220,7 @@ describe('ScheduleDialogComponent', () => {
         imports: [
           ScheduleDialogComponent,
           TranslocoTestingModule.forRoot({
-            langs: { en, fr: en },
+            langs: { en, fr },
             translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
           }),
         ],

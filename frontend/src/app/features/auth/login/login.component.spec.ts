@@ -26,6 +26,25 @@ const en = {
   },
 };
 
+const fr = {
+  common: { appName: 'Transit Display Hub' },
+  auth: {
+    login: {
+      logoAlt: 'Logo Transit Display Hub',
+      usernameLabel: "Nom d'utilisateur",
+      passwordLabel: 'Mot de passe',
+      submit: 'Connexion',
+      loadingAriaLabel: 'Connexion en cours',
+      devHint: 'Identifiants par défaut : admin / admin123',
+      error: {
+        invalidCredentials: 'Identifiants invalides',
+        tooManyAttempts: 'Trop de tentatives. Réessayez dans quelques minutes.',
+        generic: "Une erreur s'est produite. Veuillez réessayer.",
+      },
+    },
+  },
+};
+
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
@@ -46,7 +65,7 @@ describe('LoginComponent', () => {
       imports: [
         LoginComponent,
         TranslocoTestingModule.forRoot({
-          langs: { en, fr: en },
+          langs: { en, fr },
           translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
         }),
       ],
