@@ -1,6 +1,13 @@
 # ADR 0027 — Prometheus scrape via Micrometer, no in-house metrics layer
 
-**Status:** Accepted
+**Status:** Accepted — **Updated v1.5.0:** `/actuator/prometheus`,
+`/actuator/metrics` and `/actuator/info` now require the `ADMIN` role
+(`SecurityConfig.requestMatchers(...).hasRole("ADMIN")`). Only
+`/actuator/health` stays public. The "unauthenticated inside the
+deployment" stance below is therefore obsolete — Prometheus needs to
+scrape with admin credentials (basic-auth at the proxy or a
+service-account JWT). See the *Consequences* section for the updated
+trust posture.
 
 ## Context
 
@@ -26,9 +33,9 @@ Grafana on top.
 ## Decision
 
 **Add `io.micrometer:micrometer-registry-prometheus` as a runtime
-dependency** and expose `/actuator/prometheus` publicly (the same
-trust posture as `/actuator/health`, since the scrape side never
-carries credentials).
+dependency** and expose `/actuator/prometheus` (originally as a public
+endpoint sharing the trust posture of `/actuator/health`; tightened to
+`hasRole("ADMIN")` in v1.5.0 — see the status banner above).
 
 Wire one custom instrumentation point on top of the auto-discovery
 covers: a `GtfsImportMetrics` component owning a `Timer` for
@@ -75,11 +82,15 @@ so a multi-deployment Grafana instance can disambiguate.
   meter names with the same tag schema. A Grafana dashboard built
   against one environment works against another after switching the
   `instance` tag.
-- **Production-side trust.** `/actuator/prometheus` is unauthenticated
-  *inside the deployment*; production deployments are expected to
-  fence it off at the reverse-proxy / network layer (the same way
-  `/actuator/health` is treated). The endpoint contains no
-  business data — only meter names, tag values and counters / gauges.
+- **Production-side trust (v1.5.0+).** `/actuator/prometheus`,
+  `/actuator/metrics` and `/actuator/info` require the `ADMIN` role.
+  Prometheus scrapes must therefore carry admin credentials — either
+  basic-auth handled at the reverse proxy or a service-account JWT
+  cookie attached to the scrape request. Only `/actuator/health`
+  stays public for load-balancer probes. The endpoint contains no
+  business data, but the meter values can leak operational signal
+  (request volume, error rate) so the lock-down is a defence-in-depth
+  measure, not a confidentiality one.
 - **Loss: no Grafana board shipped with this ADR.** Building the
   initial dashboards is intentionally out of scope. The metric
   catalogue is documented here; a follow-up will provision the JSON.
