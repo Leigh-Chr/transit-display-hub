@@ -45,9 +45,16 @@ export abstract class BaseStompService implements OnDestroy {
    *  to their topics here. Guaranteed to be called with `this.client` non-null. */
   protected abstract onConnect(): void;
 
+  /**
+   * Hook for subclasses that need to inject extra native headers into
+   * the STOMP CONNECT frame (e.g. a kiosk identification header). The
+   * JWT authentication ride along the httpOnly ACCESS_TOKEN cookie —
+   * the browser attaches it to the WebSocket upgrade automatically and
+   * the server's HandshakeInterceptor (v1.7.0) lifts it from there —
+   * so no Authorization header is pushed by default.
+   */
   protected buildConnectHeaders(): Record<string, string> {
-    const token = this.authService.getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
   }
 
   protected activateClient(extraConfig?: Partial<StompConfig>): void {
