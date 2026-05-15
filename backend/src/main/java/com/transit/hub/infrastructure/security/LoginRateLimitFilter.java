@@ -1,5 +1,7 @@
 package com.transit.hub.infrastructure.security;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -16,8 +18,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +49,18 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     @Value("${app.security.trusted-proxies:}")
     private String trustedProxiesCsv;
 
-    private final ConcurrentMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    /**
+     * Per-IP token buckets. Caffeine evicts an idle entry after
+     * {@code expireAfterAccess(15 min)} so a distributed brute-force
+     * attack rotating through the IPv4 space can't grow the map without
+     * bound — buckets that nobody is hitting any more die off. Capacity
+     * cap is a defence-in-depth backstop for the same scenario; on a
+     * single VM the realistic working set is in the low thousands.
+     */
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(15))
+            .maximumSize(100_000)
+            .build();
 
     private Set<String> trustedProxies = Set.of();
 
@@ -71,7 +82,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         }
         String ip = clientIp(request);
         Duration window = Duration.ofMinutes(windowMinutes);
-        Bucket bucket = buckets.computeIfAbsent(ip, k -> Bucket.builder()
+        Bucket bucket = buckets.get(ip, k -> Bucket.builder()
                 .addLimit(Bandwidth.classic(maxAttempts, Refill.greedy(maxAttempts, window)))
                 .build());
         if (bucket.tryConsume(1)) {
@@ -86,7 +97,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
 
     /** Resets all per-IP buckets. Intended for use in integration tests only. */
     public void clearBuckets() {
-        buckets.clear();
+        buckets.invalidateAll();
     }
 
     private boolean isLogin(HttpServletRequest req) {
