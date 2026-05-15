@@ -192,13 +192,19 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
               <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.itineraries.colActions') }}</th>
               <td mat-cell *matCellDef="let itinerary" class="actions-column">
                 @if (isAdmin()) {
-                  <button mat-icon-button color="primary" (click)="openEditDialog(itinerary)" [matTooltip]="t('admin.itineraries.editTooltip')">
+                  <button mat-icon-button color="primary" (click)="openEditDialog(itinerary)"
+                          [matTooltip]="t('admin.itineraries.editTooltip')"
+                          [attr.aria-label]="t('admin.itineraries.editTooltip')">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="accent" (click)="openStopsDialog(itinerary)" [matTooltip]="t('admin.itineraries.editStopsTooltip')">
+                  <button mat-icon-button color="accent" (click)="openStopsDialog(itinerary)"
+                          [matTooltip]="t('admin.itineraries.editStopsTooltip')"
+                          [attr.aria-label]="t('admin.itineraries.editStopsTooltip')">
                     <mat-icon>reorder</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteItinerary(itinerary)" [matTooltip]="t('admin.itineraries.deleteTooltip')">
+                  <button mat-icon-button color="warn" (click)="deleteItinerary(itinerary)"
+                          [matTooltip]="t('admin.itineraries.deleteTooltip')"
+                          [attr.aria-label]="t('admin.itineraries.deleteTooltip')">
                     <mat-icon>delete</mat-icon>
                   </button>
                 }

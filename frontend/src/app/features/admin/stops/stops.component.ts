@@ -214,13 +214,19 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.common.actions') }}</th>
               <td mat-cell *matCellDef="let stop" class="actions-column">
-                <button mat-icon-button (click)="openKioskPreview(stop.id)" [matTooltip]="t('admin.stops.previewTooltip')">
+                <button mat-icon-button (click)="openKioskPreview(stop.id)"
+                        [matTooltip]="t('admin.stops.previewTooltip')"
+                        [attr.aria-label]="t('admin.stops.previewTooltip')">
                   <mat-icon>visibility</mat-icon>
                 </button>
-                <button mat-icon-button color="primary" (click)="openEditDialog(stop)" [matTooltip]="t('admin.stops.editTooltip')">
+                <button mat-icon-button color="primary" (click)="openEditDialog(stop)"
+                        [matTooltip]="t('admin.stops.editTooltip')"
+                        [attr.aria-label]="t('admin.stops.editTooltip')">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteStop(stop)" [matTooltip]="t('admin.stops.deleteTooltip')">
+                <button mat-icon-button color="warn" (click)="deleteStop(stop)"
+                        [matTooltip]="t('admin.stops.deleteTooltip')"
+                        [attr.aria-label]="t('admin.stops.deleteTooltip')">
                   <mat-icon>delete</mat-icon>
                 </button>
               </td>

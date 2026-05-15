@@ -165,7 +165,8 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
                     <a mat-icon-button class="report-link"
                        [href]="reportHtmlUrl(a.id)"
                        target="_blank" rel="noopener noreferrer"
-                       [matTooltip]="t('admin.importAudit.openReport')">
+                       [matTooltip]="t('admin.importAudit.openReport')"
+                       [attr.aria-label]="t('admin.importAudit.openReport')">
                       <mat-icon>open_in_new</mat-icon>
                     </a>
                   </div>
