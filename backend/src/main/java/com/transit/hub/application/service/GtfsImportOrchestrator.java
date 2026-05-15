@@ -104,6 +104,20 @@ public class GtfsImportOrchestrator {
             String hash = sha256(feed);
             audit.setSourceHash(hash);
 
+            // Short-circuit when the feed bytes haven't moved since the
+            // last successful import. Reparse + reinsert + cache evict
+            // can run for minutes on a 200 MB feed and would only end up
+            // rewriting the same rows. The audit row stays so the admin
+            // timeline still shows the scheduler woke up.
+            if (hash != null && hashMatchesLastSuccess(hash)) {
+                log.info("GTFS import skipped by {}: feed hash unchanged ({})",
+                        triggeredBy, hash);
+                finalizeAudit(audit, ImportStatus.SKIPPED_UNCHANGED, null, null);
+                metrics.recordSkipped();
+                return new ImportOutcome(ImportStatus.SKIPPED_UNCHANGED, null,
+                        "Feed hash unchanged");
+            }
+
             GtfsImportService.ImportResult result = importer.importFromZip(feed, feedUrl, hash);
 
             evictNetworkCaches();
@@ -131,6 +145,13 @@ public class GtfsImportOrchestrator {
         } finally {
             importLock.unlock();
         }
+    }
+
+    private boolean hashMatchesLastSuccess(String currentHash) {
+        return auditRepository.findLastSuccessfulWithHash()
+                .map(ImportAudit::getSourceHash)
+                .filter(currentHash::equals)
+                .isPresent();
     }
 
     private void finalizeAudit(ImportAudit audit, ImportStatus status,
