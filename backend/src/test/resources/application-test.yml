@@ -20,3 +20,10 @@ app:
     expiration-hours: 24
   data-loader:
     source: ""
+  security:
+    # Drop BCrypt cost from the prod default (12 → 4 = ~250 ms vs ~3 ms
+    # per encode). Hundreds of @BeforeEach user seeds otherwise spend
+    # ~10 s of every backend run on hashing. Strength 4 is the BCrypt
+    # minimum and is fine for tests that never authenticate against an
+    # external attacker.
+    bcrypt-strength: 4

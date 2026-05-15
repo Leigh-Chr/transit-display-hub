@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.transit.hub.infrastructure.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -191,9 +192,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        // pinned cost — revisit every 24 months as hardware speeds up.
-        return new BCryptPasswordEncoder(12);
+    public PasswordEncoder passwordEncoder(@Value("${app.security.bcrypt-strength:12}") int strength) {
+        // Production cost = 12 — revisit every 24 months as hardware speeds up.
+        // Tests override the property to 4 (the BCrypt minimum) so the suite
+        // does not spend ~250 ms per encode call across hundreds of @BeforeEach
+        // user seeds.
+        return new BCryptPasswordEncoder(strength);
     }
 
     @Bean
