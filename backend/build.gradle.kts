@@ -78,7 +78,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
     // GTFS import (CSV parsing)
-    implementation("org.apache.commons:commons-csv:1.12.0")
+    implementation("org.apache.commons:commons-csv:1.14.1")
 
     // OpenAPI / Swagger UI — exposes /swagger-ui.html and /v3/api-docs
     // for admins and frontend devs. Keeps the bundled Swagger UI rather
@@ -116,7 +116,7 @@ dependencies {
     // out-of-scope CVEs). Pin both ahead so the runtime classpath uses
     // current patched releases.
     implementation("commons-beanutils:commons-beanutils:1.11.0")
-    implementation("commons-validator:commons-validator:1.10.0")
+    implementation("commons-validator:commons-validator:1.10.1")
 
     // Database. Versions pinned ahead of the Spring Boot BOM defaults to
     // pull in the latest patch releases (CVE bumps, JDBC fixes).
@@ -147,7 +147,7 @@ dependencies {
     // refactor that reintroduces an infrastructure import inside
     // a domain class fails ./gradlew check rather than silently
     // landing on main.
-    testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
 
     // JMH-only — Mockito lets micro-benchmarks stub the Spring Data
     // repositories with constant-time fakes so the measurement stays
