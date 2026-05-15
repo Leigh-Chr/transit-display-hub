@@ -78,17 +78,16 @@
        diagram. Keyboard users can still pan/zoom via the focusable wrapper;
        the long-form instructions in aria-label remain available. -->
   <div
+    #diagramWrapper
     class="line-diagram-wrapper"
     tabindex="0"
     aria-label="Network schematic. Drag or scroll to pan. Hold Ctrl and scroll, or pinch, to zoom. Arrow keys pan; plus and minus zoom; 0 resets the view."
-    (wheel)="onWheel($event)"
     (keydown)="onKeyDown($event)"
     (mousedown)="onPointerDown($event)"
     (mousemove)="onPointerMove($event)"
     (mouseup)="onPointerUp()"
     (mouseleave)="onPointerUp()"
     (touchstart)="onTouchStart($event)"
-    (touchmove)="onTouchMove($event)"
     (touchend)="onPointerUp()"
     [class.grabbing]="isPanning()"
   >

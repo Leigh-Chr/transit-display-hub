@@ -73,6 +73,7 @@ export class SchematicMapComponent {
 
   svgElement = viewChild<ElementRef<SVGSVGElement>>('svgElement');
   container = viewChild<ElementRef<HTMLDivElement>>('container');
+  diagramWrapper = viewChild<ElementRef<HTMLDivElement>>('diagramWrapper');
 
   /** "Accessible only" filter: dims stops whose wheelchairBoarding is
    *  NOT_ACCESSIBLE or unknown. Doesn't rebuild the layout — the
@@ -526,6 +527,26 @@ export class SchematicMapComponent {
 
     destroyRef.onDestroy(() => {
       if (this.wheelHintTimer) {clearTimeout(this.wheelHintTimer);}
+    });
+
+    // Angular 21 attaches template (wheel) and (touchmove) bindings as
+    // passive listeners by default, which silently ignores any
+    // event.preventDefault() inside the handlers — without this the
+    // browser keeps scrolling the page when the user pans the diagram
+    // on a trackpad / mobile screen. Bind imperatively with
+    // { passive: false } so onWheel / onTouchMove can stop the
+    // surrounding scroll.
+    afterNextRender(() => {
+      const wrapper = this.diagramWrapper()?.nativeElement;
+      if (!wrapper) {return;}
+      const wheelHandler = (e: Event): void => this.onWheel(e as WheelEvent);
+      const touchHandler = (e: Event): void => this.onTouchMove(e as TouchEvent);
+      wrapper.addEventListener('wheel', wheelHandler, { passive: false });
+      wrapper.addEventListener('touchmove', touchHandler, { passive: false });
+      destroyRef.onDestroy(() => {
+        wrapper.removeEventListener('wheel', wheelHandler);
+        wrapper.removeEventListener('touchmove', touchHandler);
+      });
     });
   }
 
