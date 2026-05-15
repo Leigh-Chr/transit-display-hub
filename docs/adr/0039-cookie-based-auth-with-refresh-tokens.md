@@ -139,6 +139,27 @@ cannot be CSRF-tricked.
   follow-up; the matcher would then collapse to the default Spring
   rule.
 
+## Update — v1.7.0, v1.9.0, v1.11.0
+
+The migration window mentioned above has closed:
+
+- **v1.7.0** added a Spring `HandshakeInterceptor` that lifts the
+  `ACCESS_TOKEN` cookie out of the WebSocket upgrade and stashes it in
+  the STOMP session attributes — the broker no longer needs the
+  Bearer header to authenticate CONNECT frames (S-12 hardening).
+- **v1.9.0** dropped the Angular client's in-memory JWT mirror and
+  the `Authorization: Bearer …` push on STOMP CONNECT. The signal
+  that hydrated the WebSocket header is gone; browsers now run
+  exclusively on the httpOnly cookie pair.
+- **v1.7.0** also added `tokenVersion` (V51 Flyway) + `jti` claims so
+  that disable / role-change / password-reset / refresh-chain revoke
+  all invalidate outstanding access tokens within one request instead
+  of waiting for the 8 h expiry (S-09).
+
+The server `JwtAuthenticationFilter` still accepts an
+`Authorization: Bearer …` header so Swagger UI and CLI consumers
+keep working — that's now the only legitimate Bearer caller path.
+
 ## What this supersedes
 
 - Implicit "Bearer + `localStorage`" agreement that lived in

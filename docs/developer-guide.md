@@ -886,7 +886,7 @@ rotation roadmap (`.planning/refactors/2026-05-12-maintainability-guardrails.md`
 | Gate                     | Where                                       | Enforced via                                  |
 |--------------------------|---------------------------------------------|-----------------------------------------------|
 | Layered architecture     | `backend/src/test/java/com/transit/hub/architecture/LayeredArchitectureTest.java` | ArchUnit, runs as part of `./gradlew check`   |
-| Cyclomatic complexity    | `backend/config/pmd/ruleset.xml`            | PMD `design/CyclomaticComplexity`, method 30 / class 110 |
+| Cyclomatic complexity    | `backend/config/pmd/ruleset.xml`            | PMD `design/CyclomaticComplexity`, method 19 / class 107 (rotated v1.11.0) |
 | Source file size         | `scripts/check-file-size.sh`                | `.github/workflows/file-size.yml`             |
 | Duplication              | `.jscpd.json` (threshold 6 %)               | `npx jscpd` step in `.github/workflows/frontend.yml` |
 | Dead code (front)        | `frontend/knip.json`                        | `npm run knip -- --reporter github-actions`   |
