@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -8,12 +8,17 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { Line, CreateLineRequest, LineType } from '@shared/models';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface LineDialogData {
   line?: Line;
+  submit: (request: CreateLineRequest) => Observable<Line>;
+  onError?: (err: unknown) => void;
 }
 
 interface LineForm {
@@ -32,6 +37,7 @@ interface LineForm {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     TranslocoDirective,
   ],
@@ -97,13 +103,16 @@ interface LineForm {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!lineForm.valid"
+        [disabled]="!lineForm.valid || submitting()"
         (click)="save()"
       >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
         {{ data.line ? t('admin.lines.dialog.actionSave') : t('admin.lines.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
@@ -177,6 +186,8 @@ export class LineDialogComponent {
     type: this.data.line?.type ?? null,
   };
 
+  readonly submitting = signal(false);
+
   save(): void {
     if (!this.form.type) { return; } // belt-and-suspenders; the form is `required`
     const request: CreateLineRequest = {
@@ -185,6 +196,6 @@ export class LineDialogComponent {
       color: this.form.color,
       type: this.form.type,
     };
-    this.dialogRef.close(request);
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 }

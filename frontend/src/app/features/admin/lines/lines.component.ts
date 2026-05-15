@@ -352,47 +352,44 @@ export class LinesComponent {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(LineDialogComponent, {
-      data: {},
+      data: {
+        submit: (request: CreateLineRequest) => this.lineService.create(request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.createFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.lines.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.lineService.create(result as CreateLineRequest).subscribe({
-          next: () => {
-            // Jump back to page 0 so the user actually sees the new item
-            // (which sorts wherever the active sort dictates).
-            this.tableState.resetToFirstPage();
-            this.loadLines();
-            this.notify.success(this.transloco.translate('admin.lines.createSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.createFailed')));
-          },
-        });
+        // Jump back to page 0 so the user actually sees the new item
+        // (which sorts wherever the active sort dictates).
+        this.tableState.resetToFirstPage();
+        this.loadLines();
+        this.notify.success(this.transloco.translate('admin.lines.createSuccess'));
       }
     });
   }
 
   openEditDialog(line: Line): void {
     const dialogRef = this.dialog.open(LineDialogComponent, {
-      data: { line },
+      data: {
+        line,
+        submit: (request: CreateLineRequest) => this.lineService.update(line.id, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.updateFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.lines.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.lineService.update(line.id, result as CreateLineRequest).subscribe({
-          next: () => {
-            this.loadLines();
-            this.notify.success(this.transloco.translate('admin.lines.updateSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.updateFailed')));
-          },
-        });
+        this.loadLines();
+        this.notify.success(this.transloco.translate('admin.lines.updateSuccess'));
       }
     });
   }

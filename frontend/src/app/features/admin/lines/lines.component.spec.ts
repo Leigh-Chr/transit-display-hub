@@ -282,9 +282,9 @@ describe('LinesComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should call create and reload on success', async () => {
-      const dialogResult = { code: 'L2', name: 'New', color: '#00F' };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(dialogResult) });
+    it('should reload and notify on success', async () => {
+      const createdLine = { id: '2', code: 'L2', name: 'New', color: '#00F', type: null, stopCount: 0, itineraryCount: 0 };
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(createdLine) });
       await detectAndFlush(fixture);
       mockLineService.getAllPaginated.mockClear();
 
@@ -292,26 +292,37 @@ describe('LinesComponent', () => {
       await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
-      expect(mockLineService.create).toHaveBeenCalledWith(dialogResult);
       expect(mockLineService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Line created');
     });
 
-    it('should not call create when dialog is cancelled', () => {
+    it('should pass a submit callback that calls lineService.create', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
 
-      expect(mockLineService.create).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.submit({ code: 'L2', name: 'New', color: '#00F', type: 'METRO' });
+      expect(mockLineService.create).toHaveBeenCalledWith({ code: 'L2', name: 'New', color: '#00F', type: 'METRO' });
     });
 
-    it('should show error snackbar when create fails', () => {
-      mockDialog.open.mockReturnValue({ afterClosed: () => of({ code: 'L2', name: 'New', color: '#00F' }) });
-      mockLineService.create.mockReturnValue(throwError(() => ({ error: { message: 'Duplicate code' } })));
+    it('should not notify success when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Duplicate code' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Duplicate code');
     });
@@ -320,9 +331,9 @@ describe('LinesComponent', () => {
   describe('openEditDialog', () => {
     const existingLine: Line = { id: '1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 };
 
-    it('should call update and reload on success', async () => {
-      const editResult = { code: 'L1', name: 'Updated', color: '#0F0' };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(editResult) });
+    it('should reload and notify on success', async () => {
+      const updatedLine = { ...existingLine, name: 'Updated' };
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(updatedLine) });
       await detectAndFlush(fixture);
       mockLineService.getAllPaginated.mockClear();
 
@@ -331,28 +342,42 @@ describe('LinesComponent', () => {
 
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ data: { line: existingLine }, width: '450px' }),
+        expect.objectContaining({
+          data: expect.objectContaining({ line: existingLine }),
+          width: '450px',
+        }),
       );
-      expect(mockLineService.update).toHaveBeenCalledWith('1', editResult);
       expect(mockLineService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Line updated');
     });
 
-    it('should not call update when dialog is cancelled', () => {
+    it('should pass a submit callback that calls lineService.update', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openEditDialog(existingLine);
 
-      expect(mockLineService.update).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.submit({ code: 'L1', name: 'Updated', color: '#0F0', type: 'METRO' });
+      expect(mockLineService.update).toHaveBeenCalledWith('1', { code: 'L1', name: 'Updated', color: '#0F0', type: 'METRO' });
     });
 
-    it('should show error snackbar when update fails', () => {
-      mockDialog.open.mockReturnValue({ afterClosed: () => of({ code: 'L1', name: 'Updated', color: '#0F0' }) });
-      mockLineService.update.mockReturnValue(throwError(() => ({ error: { message: 'Conflict' } })));
+    it('should not notify success when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openEditDialog(existingLine);
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openEditDialog(existingLine);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Conflict' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });

@@ -1,8 +1,9 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { of, Subject, throwError } from 'rxjs';
 import { LineDialogComponent, LineDialogData } from './line-dialog.component';
-import { Line } from '@shared/models';
+import { Line, CreateLineRequest } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
 const en = {
@@ -29,13 +30,26 @@ const en = {
   },
 };
 
+const savedLine: Line = {
+  id: '1',
+  code: 'L1',
+  name: 'Line 1',
+  color: '#FF0000',
+  type: 'METRO',
+  stopCount: 0,
+  itineraryCount: 0,
+};
+
 describe('LineDialogComponent', () => {
   let component: LineDialogComponent;
   let fixture: ComponentFixture<LineDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
+  let submit: LineDialogData['submit'] & ReturnType<typeof vi.fn>;
 
-  function createComponent(data: LineDialogData = {}): void {
+  function createComponent(overrides: Partial<LineDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
+    submit = vi.fn().mockReturnValue(of(savedLine)) as typeof submit;
+    const data: LineDialogData = { submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -83,7 +97,6 @@ describe('LineDialogComponent', () => {
     });
 
     it('should have empty required fields in create mode making form invalid', () => {
-      // code and name are required and empty in create mode
       expect(component.form.code).toBe('');
       expect(component.form.name).toBe('');
     });
@@ -93,13 +106,12 @@ describe('LineDialogComponent', () => {
       component.form.name = 'Line 1';
       component.form.color = '#FF0000';
 
-      // All required fields are now populated
       expect(component.form.code).toBeTruthy();
       expect(component.form.name).toBeTruthy();
       expect(component.form.color).toBeTruthy();
     });
 
-    it('should close dialog with form data on save', () => {
+    it('should call submit with the form payload and close with the server response', () => {
       component.form.code = 'L1';
       component.form.name = 'Line 1';
       component.form.color = '#FF0000';
@@ -107,15 +119,16 @@ describe('LineDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         code: 'L1',
         name: 'Line 1',
         color: '#FF0000',
         type: 'METRO',
-      });
+      } satisfies CreateLineRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedLine);
     });
 
-    it('should not close dialog when type is null', () => {
+    it('should not call submit when type is null', () => {
       component.form.code = 'L1';
       component.form.name = 'Line 1';
       component.form.color = '#FF0000';
@@ -123,7 +136,41 @@ describe('LineDialogComponent', () => {
 
       component.save();
 
+      expect(submit).not.toHaveBeenCalled();
       expect(mockDialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+      component.form.code = 'L1';
+      component.form.name = 'Line 1';
+      component.form.color = '#FF0000';
+      component.form.type = 'METRO';
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<Line>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+      component.form.code = 'L1';
+      component.form.name = 'Line 1';
+      component.form.color = '#FF0000';
+      component.form.type = 'METRO';
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedLine);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
 
     it('should close dialog without data when cancel is clicked', () => {
@@ -183,17 +230,18 @@ describe('LineDialogComponent', () => {
       expect(submitBtn.textContent).toContain('Save Changes');
     });
 
-    it('should close dialog with updated data on save', () => {
+    it('should call submit with the updated payload on save', () => {
       component.form.name = 'Updated Name';
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         code: 'M1',
         name: 'Updated Name',
         color: '#FF0000',
         type: 'METRO',
-      });
+      } satisfies CreateLineRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedLine);
     });
   });
 });
