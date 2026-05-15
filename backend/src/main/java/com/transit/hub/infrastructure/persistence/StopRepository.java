@@ -28,24 +28,33 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT s.id FROM Stop s WHERE s.parentStop.id = :parentId AND s.disabled = false")
     List<UUID> findChildIds(UUID parentId);
 
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices")
+    // The LEFT JOIN FETCH on l.agency below avoids the N+1 that
+    // bit DisplayStateCalculator hot path: it reads
+    // line.getAgency().getTimezone() / .getExternalId() for every
+    // line of the polled stop, and without the eager fetch each call
+    // re-issued a SELECT agency per line at the kiosk's 60 s tick.
+
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines l " +
+           "LEFT JOIN FETCH l.agency LEFT JOIN FETCH s.devices")
     List<Stop> findAllWithLinesAndDevices();
 
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines " +
-           "LEFT JOIN FETCH s.parentStop ORDER BY s.name")
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines l " +
+           "LEFT JOIN FETCH l.agency LEFT JOIN FETCH s.parentStop ORDER BY s.name")
     List<Stop> findAllWithLines();
 
-    @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices WHERE s.id = :id")
+    @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH s.devices WHERE s.id = :id")
     Optional<Stop> findByIdWithLinesAndDevices(UUID id);
 
-    @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines WHERE s.id = :id")
+    @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines l LEFT JOIN FETCH l.agency WHERE s.id = :id")
     Optional<Stop> findByIdWithLines(UUID id);
 
     @Query("SELECT DISTINCT s FROM Stop s JOIN s.lines l WHERE l.id = :lineId")
     List<Stop> findByLineId(UUID lineId);
 
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices WHERE s IN " +
-           "(SELECT s2 FROM Stop s2 JOIN s2.lines l WHERE l.id = :lineId)")
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH s.devices WHERE s IN " +
+           "(SELECT s2 FROM Stop s2 JOIN s2.lines l2 WHERE l2.id = :lineId)")
     List<Stop> findByLineIdWithLinesAndDevices(UUID lineId);
 
     @Query("SELECT s.id FROM Stop s")
@@ -79,8 +88,8 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     Page<UUID> findIdsByLineIdAndSearch(UUID lineId, String search, Pageable pageable);
 
     /** Two-step pagination, step 2: hydrate the page's entities with
-     *  lines + devices in one round-trip. */
-    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines LEFT JOIN FETCH s.devices " +
-           "WHERE s.id IN :ids")
+     *  lines + agency + devices in one round-trip. */
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH s.devices WHERE s.id IN :ids")
     List<Stop> findAllByIdInWithLinesAndDevices(List<UUID> ids);
 }

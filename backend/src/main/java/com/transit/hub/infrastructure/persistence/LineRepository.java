@@ -16,13 +16,21 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
     Optional<Line> findByCode(String code);
     boolean existsByCode(String code);
 
-    @Query("SELECT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE l.id = :id")
+    // LEFT JOIN FETCH l.agency keeps LineResponse.from() from
+    // re-issuing a SELECT agency per row when the controller
+    // serialises the response (line.agency.id / .name).
+
+    @Query("SELECT l FROM Line l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE l.id = :id")
     Optional<Line> findByIdWithStopsAndRoutes(UUID id);
 
-    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries ORDER BY l.code")
+    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries ORDER BY l.code")
     List<Line> findAllWithStopsAndRoutes();
 
-    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.itineraries i LEFT JOIN FETCH i.itineraryStops ist LEFT JOIN FETCH ist.stop ORDER BY l.code")
+    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH l.itineraries i LEFT JOIN FETCH i.itineraryStops ist " +
+           "LEFT JOIN FETCH ist.stop ORDER BY l.code")
     List<Line> findAllWithItineraryStops();
 
     /** Two-step pagination, step 1: page Line ids matching the search.
@@ -44,10 +52,10 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
     Page<UUID> findAllIds(Pageable pageable);
 
     /** Two-step pagination, step 2: hydrate the page's entities together
-     *  with the collections the response needs, in one round-trip but
-     *  bounded by the id list. */
-    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries " +
-           "WHERE l.id IN :ids")
+     *  with the collections + agency the response needs, in one round-trip
+     *  but bounded by the id list. */
+    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.agency " +
+           "LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE l.id IN :ids")
     List<Line> findAllByIdInWithStopsAndRoutes(List<UUID> ids);
 
     @Query("SELECT l FROM Line l WHERE " +
