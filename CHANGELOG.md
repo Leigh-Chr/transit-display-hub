@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.11.1] — 2026-05-15
+
+Hot-fix release that unblocks the CI pipeline (red on every push
+since 2026-05-10), republishes the frontend Docker image (skipped on
+v1.10.0 and v1.11.0 because of the same bug), and closes four
+production-affecting issues that the cross-axis audit surfaced.
+
+### Fixed
+
+- **CI pipeline unblocked** — `frontend/.npmrc` now pins
+  `legacy-peer-deps=true` so both `npm ci` (CI + Dockerfile) and
+  `npm install` (local) honour the Angular 21 ↔ TypeScript 6 peer
+  warning the same way. Frontend CI, E2E (Playwright) and the
+  Release frontend Docker stage have been failing silently for five
+  days as a result. Dockerfile was updated to copy `.npmrc`
+  alongside `package*.json`.
+- **`ScheduleImporter` extracted into `ServiceCalendarLoader` +
+  `FlexStopTimeMapper`** so the file drops from 709 to 488 lines —
+  back under the maintainability guardrail (`*Importer.java` block
+  threshold = 650), which had been red since v1.10.0.
+- **`TransferImporter` now wipes the table before re-importing**.
+  Without this, the daily `GtfsRefreshScheduler` tick was
+  duplicating every transfer row in the database — silent data
+  corruption that grew until the route-finder choked.
+- **`Pageables.from(page, size, ...)` clamps `size` to `[1, 200]`**
+  and floors `page` at 0. The five paginated admin endpoints can
+  no longer be DoS'd via `?size=10000000`.
+- **Message editor preserves the local time** during round-trips
+  (`message-dialog.component.ts:toLocalDatetime`). The previous
+  implementation fed an ISO-8601 string into a
+  `<input type="datetime-local">` field, shifting `start_time` and
+  `end_time` by the user's UTC offset on every save.
+- **`StopRepository` and `LineRepository` join-fetch `agency`** on
+  every query that the kiosk hot path or `LineResponse.from` use.
+  Closes the N+1 that `DisplayStateCalculator` issued every 60 s
+  per active kiosk while reading `line.getAgency().getTimezone()`.
+- **`spring.task.scheduling.pool.size = 4`** in `application.yml`.
+  The default pool of 1 was serialising all 7 `@Scheduled` ticks,
+  so a long GTFS import would freeze WebSocket display refresh
+  and device-offline detection.
+- **`test-setup.ts` polyfills `MediaQueryList.addListener`** for
+  the newer jsdom that CI fetches on a fresh `npm ci` (and which
+  drops the deprecated method that Angular CDK's
+  `BreakpointObserver` still calls).
+
+### Security
+
+- **`npm audit fix` on the root tooling lockfile** clears four
+  transitive dev-only CVEs (fast-uri high path traversal +
+  host confusion, picomatch high ReDoS, ajv moderate ReDoS,
+  yaml moderate stack overflow). No runtime impact, but
+  CodeQL / Dependabot were noisy.
+
+### Docs
+
+- **CHANGELOG headers added** for v1.5.1 and v1.6.0 so the
+  release.yml awk extractor stops falling back to a generic
+  `Release {tag}` body for both releases.
+- **ADR 0027 (Prometheus)** annotated with an *Updated v1.5.0*
+  banner: `/actuator/prometheus`, `/metrics` and `/info` require
+  the ADMIN role. The README, `api.md`, `deployment.md` and
+  `developer-guide.md` lines that documented the endpoint as
+  public are now consistent with the live `SecurityConfig`.
+- **ADR 0037 (Quality gates)** notes that E2E runs on every push
+  via `e2e.yml` with a `webServer` block across three Playwright
+  projects (Chromium / Firefox / Mobile Chrome) and 12 specs —
+  not the manual Chromium-only smoke the *Decision* still
+  describes.
+- **ADR 0040 (Maintainability guardrails)** notes the rotated PMD
+  cyclomatic thresholds (method 19, class 107).
+- **ADR 0011 (Springdoc)** notes the bumped 2.8.6 version (from
+  2.7).
+- **`.env.example`** documents the twelve runtime variables the
+  backend actually consumes (was four), grouped into seven labelled
+  sections with REQUIRED / DEV-ONLY annotations.
+- **README** ADR count corrected (40, not 38; the badge was
+  already right) and the "Stable 1.0.0 is tagged" blurb replaced
+  by a forward-pointing reference to the version badge.
+
 ## [1.11.0] — 2026-05-15
 
 Plonge dans les six dernières méthodes à cyclomatic 22-27 qui
