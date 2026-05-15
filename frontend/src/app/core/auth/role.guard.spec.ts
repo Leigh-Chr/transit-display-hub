@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { NotifyService } from '@core/services/notify.service';
+import { TranslocoService } from '@jsverse/transloco';
 import { roleGuard } from './role.guard';
 import { AuthService } from './auth.service';
 import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
@@ -9,6 +10,7 @@ describe('roleGuard', () => {
   let authServiceSpy: { getRole: MockedFunction<() => string | null> };
   let routerSpy: { navigate: MockedFunction<Router['navigate']> };
   let notifySpy: { error: MockedFunction<NotifyService['error']> };
+  let translocoSpy: { translate: MockedFunction<(key: string) => string> };
   let mockRoute: ActivatedRouteSnapshot;
   let mockState: RouterStateSnapshot;
 
@@ -16,12 +18,18 @@ describe('roleGuard', () => {
     authServiceSpy = { getRole: vi.fn() };
     routerSpy = { navigate: vi.fn() };
     notifySpy = { error: vi.fn() };
+    translocoSpy = {
+      translate: vi.fn((key: string) =>
+        key === 'common.errors.accessDenied' ? 'Access denied: insufficient permissions' : key,
+      ),
+    };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Router, useValue: routerSpy },
-        { provide: NotifyService, useValue: notifySpy }
+        { provide: NotifyService, useValue: notifySpy },
+        { provide: TranslocoService, useValue: translocoSpy },
       ]
     });
 
