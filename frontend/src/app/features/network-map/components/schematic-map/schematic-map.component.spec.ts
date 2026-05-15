@@ -1,9 +1,15 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { SchematicMapComponent } from './schematic-map.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkLine } from '@shared/models';
+
+// Empty dict is enough — every t() inside the children just renders the
+// key as fallback, but the TRANSLOCO_TRANSPILER provider still has to be
+// wired or Angular DI throws on module import.
+const emptyDict = { map: {} };
 
 describe('SchematicMapComponent', () => {
   let component: SchematicMapComponent;
@@ -44,7 +50,14 @@ describe('SchematicMapComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [SchematicMapComponent],
+      imports: [
+        SchematicMapComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: emptyDict, fr: emptyDict },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [provideRouter([])], // ngxtension's linkedQueryParam needs ActivatedRoute
     });
 
