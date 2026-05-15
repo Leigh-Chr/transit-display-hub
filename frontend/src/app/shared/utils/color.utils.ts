@@ -1,3 +1,9 @@
+/** Mid-grey we paint a line in when its row carries no color at all
+ *  (legacy data, fixture with the color stripped). Picked once so the
+ *  three consumers — schematic, stop-popup, network map — can't drift
+ *  to different mid-greys over time. */
+export const LINE_COLOR_FALLBACK = '#666';
+
 /** Pick a foreground that stays legible on top of {bgHex}. Uses the YIQ
  *  perceived-luminance formula so light brand colors (RATP yellow,
  *  pastel pinks, lime greens) get black text and dark ones keep white.

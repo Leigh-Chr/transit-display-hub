@@ -28,6 +28,7 @@ import {
   getTransportIconPath,
   readableTextColor,
 } from './schematic-map.utils';
+import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import {
   buildRouteActiveEdges,
   buildRouteStopsByLine,
@@ -721,7 +722,7 @@ export class SchematicMapComponent {
   }
 
   getLineColor(code: string): string {
-    return this.lineColorMap().get(code) ?? '#666';
+    return this.lineColorMap().get(code) ?? LINE_COLOR_FALLBACK;
   }
 
   /** Black or white text for a given line color, picked so it stays

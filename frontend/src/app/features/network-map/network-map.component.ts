@@ -27,6 +27,7 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
+import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 
 @Component({
   selector: 'app-network-map',
@@ -594,7 +595,7 @@ export class NetworkMapComponent implements OnInit {
       if (!lineId) {continue;}
       const alerts = lineAlerts[lineId];
       if (!alerts?.length) {continue;}
-      const color = colorMap.get(code) ?? '#666';
+      const color = colorMap.get(code) ?? LINE_COLOR_FALLBACK;
       for (const a of alerts) {
         result.push({ lineCode: code, lineColor: color, title: a.title, content: a.content, severity: a.severity });
       }

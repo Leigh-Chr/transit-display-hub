@@ -19,6 +19,7 @@ import {
 } from '@shared/utils/flex-locations.utils';
 import { LocaleService } from '@core/i18n/locale.service';
 import { bcp47 } from '@shared/utils/locale-date.utils';
+import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import { NetworkMapDataService } from '../../services/network-map-data.service';
 import { LayoutStop } from '../../services/schematic-layout.service';
 
@@ -376,7 +377,7 @@ export class StopPopupComponent implements OnInit {
   }
 
   getLineColor(code: string): string {
-    return this.data.lineColorMap.get(code) ?? '#666';
+    return this.data.lineColorMap.get(code) ?? LINE_COLOR_FALLBACK;
   }
 
   /** True when the stop has at least one accessibility / TAD / zone
