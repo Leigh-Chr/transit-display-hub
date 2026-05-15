@@ -42,6 +42,12 @@ public class TransferImporter {
      * @param stopImport    stop index built by {@link StopImporter}
      */
     public void importTransfers(Path transfersFile, StopImport stopImport) throws IOException {
+        // Wipe before re-importing — Transfer has no externalId/UNIQUE
+        // constraint, so without this each daily refresh would duplicate
+        // every row in the table.
+        transferRepository.deleteAllInBatch();
+        transferRepository.flush();
+
         if (!Files.exists(transfersFile)) {
             log.info("GTFS import: transfers.txt missing, skipping");
             return;
