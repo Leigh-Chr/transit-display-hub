@@ -70,8 +70,9 @@ Three reasons:
   schemas and tags from the controller methods. Annotation hygiene
   (`@Operation`, `@ApiResponse`, `@Tag`) is a follow-up; the spec
   is already useful as-is.
-- **Springdoc 2.7 against Spring Boot 4.0.2.** Springdoc's matrix
-  formally tracks Spring Boot 3.x, but the 2.7 release boots cleanly
-  against Spring Boot 4.0.2 in our test suite. We accept the minor
-  risk of a future Springdoc/Spring Boot regression and will pin a
-  newer version if needed.
+- **Springdoc 2.8.6 against Spring Boot 4.0.2** (originally 2.7,
+  bumped during the dependency sweep). Springdoc's matrix formally
+  tracks Spring Boot 3.x, but the 2.8.x line boots cleanly against
+  Spring Boot 4.0.2 in our test suite. We accept the minor risk of a
+  future Springdoc / Spring Boot regression and will pin a newer
+  version if needed.

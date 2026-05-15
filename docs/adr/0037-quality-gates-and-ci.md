@@ -1,6 +1,18 @@
 ## ADR 0037 — Quality gates and continuous integration
 
-**Status:** Accepted
+**Status:** Accepted — **Updated v1.11.0:** the E2E section below
+described a manual, Chromium-only smoke that "CI doesn't run". That
+stopped being true in v1.0.x: `.github/workflows/e2e.yml` boots Spring
+Boot in the dev profile and runs Playwright across **3 projects**
+(Chromium, Firefox, Mobile Chrome) on every push and PR via a
+`webServer` block in `frontend/playwright.config.ts`. The suite is up
+to **12 specs** (admin CRUD, gtfs-reimport, hub paired, kiosk happy
+path, i18n public pages, locale persistence, login, network-list,
+network-map, role-gating, visual schematic, axe-core a11y). Two more
+gates — **CodeQL** and **No tracked .env** — also run alongside
+`backend.yml` / `frontend.yml`. The "Decision" wording is left intact
+for archival fidelity; the *Status* banner is the source of truth for
+the actual posture.
 
 ## Context
 

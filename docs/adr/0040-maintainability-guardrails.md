@@ -1,6 +1,15 @@
 # ADR 0040 — Maintainability guardrails as a CI gate, with a frozen allowlist
 
-**Status:** Accepted (2026-05-12, shipped in v1.6.0)
+**Status:** Accepted (2026-05-12, shipped in v1.6.0) — **Updated v1.11.0:**
+the rotation cadence has lowered the active thresholds. PMD
+CyclomaticComplexity now runs at **method = 19, class = 107** (the
+high-water marks after v1.11.0 splits, see `backend/config/pmd/ruleset.xml`).
+The `*Importer.java` / `*Calculator.java` file-size block ceiling moved
+from 700 to 650 lines and now sits comfortably above the live HWM
+(488 for `ScheduleImporter` after the v1.11.1 split). Both the ArchUnit
+allowlist and `scripts/oversized-allowlist.txt` remain empty — the
+"30 / 110" numbers in the *Decision* section are kept for archival
+fidelity; the live values are in the linked config files.
 
 ## Context
 
