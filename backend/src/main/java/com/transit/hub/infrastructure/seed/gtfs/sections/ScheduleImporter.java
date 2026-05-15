@@ -128,14 +128,11 @@ public class ScheduleImporter {
             return 0;
         }
 
-        // Wipe schedules before re-importing. See ADR 0013.
+        // Wipe the schedule tables before re-importing. See ADR 0013.
         scheduleRepository.deleteAllInBatch();
         scheduleRepository.flush();
-
-        // Fan-out anchor: every stop_time of a frequency-mode trip is replicated
-        // for every (window, k) departure as windowStart + (stopTime - tripStart).
-        Map<String, LocalTime> tripStartTimes = loadTripStartTimes(
-                stopTimesFile, frequencies.keySet());
+        flexStopTimeRepository.deleteAllInBatch();
+        flexStopTimeRepository.flush();
 
         Map<String, ServiceCalendarSnapshot> snapshots = loadServiceCalendars(workDir);
         if (snapshots.isEmpty()) {
@@ -143,211 +140,322 @@ public class ScheduleImporter {
             return 0;
         }
         Map<String, ServiceCalendar> services = persistServiceCalendars(snapshots);
-        // Log the "representative day" for ops-grade visibility.
         logReferenceDate(snapshots);
 
-        Map<String, TripInfo> tripInfos = itineraryImport.tripInfos();
-        Map<RouteDirKey, Itinerary> itineraries = itineraryImport.itinerariesByRouteDir();
+        // Fan-out anchor: every stop_time of a frequency-mode trip is replicated
+        // for every (window, k) departure as windowStart + (stopTime - tripStart).
+        ImportContext ctx = new ImportContext(
+                indexLocationsByExternalId(),
+                indexLocationGroupsByExternalId(),
+                services,
+                itineraryImport.tripInfos(),
+                itineraryImport.itinerariesByRouteDir(),
+                bookingRules,
+                frequencies,
+                loadTripStartTimes(stopTimesFile, frequencies.keySet()),
+                stopImport);
 
-        record ScheduleKey(UUID stopId, UUID itineraryId, LocalTime time, UUID calendarId) {}
-        Set<ScheduleKey> seen = new HashSet<>();
-        List<Schedule> batch = new ArrayList<>(MAX_SCHEDULE_BATCH);
-        List<FlexStopTime> flexBatch = new ArrayList<>(MAX_SCHEDULE_BATCH);
+        streamStopTimes(stopTimesFile, ctx);
+        drainPendingBatches(ctx);
 
-        // Wipe flex_stop_times on every reimport.
-        flexStopTimeRepository.deleteAllInBatch();
-        flexStopTimeRepository.flush();
-
-        Map<String, Location> locationsByExternalId =
-                locationRepository.findAll().stream()
-                        .filter(l -> l.getExternalId() != null)
-                        .collect(java.util.stream.Collectors.toMap(
-                                Location::getExternalId,
-                                java.util.function.Function.identity(),
-                                (a, b) -> a));
-        Map<String, LocationGroup> locationGroupsByExternalId =
-                locationGroupRepository.findAll().stream()
-                        .filter(l -> l.getExternalId() != null)
-                        .collect(java.util.stream.Collectors.toMap(
-                                LocationGroup::getExternalId,
-                                java.util.function.Function.identity(),
-                                (a, b) -> a));
-        int total = 0;
-        int flexTotal = 0;
-        int skippedNoCalendar = 0;
-
-        try (CSVParser parser = openCsv(stopTimesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                TripInfo trip = tripInfos.get(tripId);
-                if (trip == null) { continue; }
-                ServiceCalendar calendar = services.get(trip.serviceId());
-                if (calendar == null) {
-                    skippedNoCalendar++;
-                    continue;
-                }
-
-                Itinerary itinerary = itineraries.get(new RouteDirKey(trip.routeId(), trip.directionId()));
-                if (itinerary == null) { continue; }
-
-                // GTFS-flex: route rows with pickup/drop-off windows to flex_stop_times.
-                String flexLocationId = optional(record, "location_id");
-                String flexLocationGroupId = optional(record, "location_group_id");
-                String flexStopId = optional(record, "stop_id");
-                LocalTime flexStartWindow = GtfsParse.parseGtfsTime(
-                        optional(record, "start_pickup_drop_off_window"));
-                LocalTime flexEndWindow = GtfsParse.parseGtfsTime(
-                        optional(record, "end_pickup_drop_off_window"));
-                LocalTime flexArrival = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
-                boolean isFlexRow = flexStartWindow != null && flexEndWindow != null
-                        && (!isBlank(flexLocationId)
-                            || !isBlank(flexLocationGroupId)
-                            || (!isBlank(flexStopId) && flexArrival == null));
-                if (isFlexRow) {
-                    flexBatch.add(buildFlexStopTime(record, itinerary, calendar,
-                            stopImport, locationsByExternalId, locationGroupsByExternalId,
-                            bookingRules, flexStartWindow, flexEndWindow));
-                    if (flexBatch.size() >= MAX_SCHEDULE_BATCH) {
-                        flexStopTimeRepository.saveAll(flexBatch);
-                        flushAndDetach(flexBatch);
-                        flexTotal += flexBatch.size();
-                        flexBatch.clear();
-                    }
-                    continue;
-                }
-
-                Stop stop = stopImport.stopsByGtfsId().get(record.get("stop_id"));
-                if (stop == null) { continue; }
-
-                LocalTime arrivalTime = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
-                LocalTime departureTime = GtfsParse.parseGtfsTime(optional(record, "departure_time"));
-                LocalTime time = arrivalTime != null ? arrivalTime : departureTime;
-                if (time == null) { continue; }
-                LocalTime distinctDeparture =
-                        (departureTime != null && !departureTime.equals(time)) ? departureTime : null;
-
-                short pickupType = (short) parseInt(optional(record, "pickup_type"), 0);
-                short dropOffType = (short) parseInt(optional(record, "drop_off_type"), 0);
-                if (pickupType == 1 && dropOffType == 1) { continue; }
-
-                Short continuousPickup = parseShortOrNull(optional(record, "continuous_pickup"));
-                Short continuousDropOff = parseShortOrNull(optional(record, "continuous_drop_off"));
-                Double shapeDistTraveled = parseDoubleOrNull(optional(record, "shape_dist_traveled"));
-
-                Boolean wheelchairOverride = computeWheelchairOverride(trip.wheelchairAccessible(),
-                        itinerary.getWheelchairDefault()).orElse(null);
-                Boolean bikesOverride = computeBikesOverride(trip.bikesAllowed(),
-                        itinerary.getBikesAllowedDefault()).orElse(null);
-                String timepointRaw = optional(record, "timepoint");
-                boolean timepoint = isBlank(timepointRaw) || !"0".equals(timepointRaw.trim());
-
-                BookingRule pickupBooking = bookingRules.get(optional(record, "pickup_booking_rule_id"));
-                BookingRule dropOffBooking = bookingRules.get(optional(record, "drop_off_booking_rule_id"));
-
-                List<FrequencyWindow> windows = frequencies.get(tripId);
-
-                if (windows == null || windows.isEmpty()) {
-                    // Fixed timetable: persist the stop_time as-is.
-                    ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(), time, calendar.getId());
-                    if (!seen.add(key)) { continue; }
-                    batch.add(Schedule.builder()
-                            .time(time)
-                            .departureTime(distinctDeparture)
-                            .stop(stop)
-                            .itinerary(itinerary)
-                            .pickupType(pickupType)
-                            .dropOffType(dropOffType)
-                            .wheelchairOverride(wheelchairOverride)
-                            .bikesAllowedOverride(bikesOverride)
-                            .timepoint(timepoint)
-                            .frequencyHeadwaySeconds(null)
-                            .frequencyExactTimes(null)
-                            .blockId(trip.blockId())
-                            .serviceCalendar(calendar)
-                            .pickupBookingRule(pickupBooking)
-                            .dropOffBookingRule(dropOffBooking)
-                            .continuousPickup(continuousPickup)
-                            .continuousDropOff(continuousDropOff)
-                            .shapeDistTraveled(shapeDistTraveled)
-                            .build());
-                    if (batch.size() >= MAX_SCHEDULE_BATCH) {
-                        scheduleRepository.saveAll(batch);
-                        flushAndDetach(batch);
-                        total += batch.size();
-                        batch.clear();
-                        log.debug("GTFS import: {} schedules persisted so far", total);
-                    }
-                    continue;
-                }
-
-                // Fan-out: replicate the stop_time across every frequency window.
-                LocalTime tripStart = tripStartTimes.get(tripId);
-                if (tripStart == null) { continue; }
-                long deltaSeconds = ((long) time.toSecondOfDay() - tripStart.toSecondOfDay() + DAY_SECONDS)
-                        % DAY_SECONDS;
-
-                for (FrequencyWindow window : windows) {
-                    long winStart = window.start().toSecondOfDay();
-                    long winEnd = window.end().toSecondOfDay();
-                    // Window crossing midnight: end falls earlier than start
-                    // because parseGtfsTime folds hours mod 24. Shift end up
-                    // by a full day so the iterator emits the right count.
-                    if (winEnd <= winStart) { winEnd += DAY_SECONDS; }
-
-                    for (long ts = winStart; ts < winEnd; ts += window.headwaySeconds()) {
-                        LocalTime stopTime = LocalTime.ofSecondOfDay((ts + deltaSeconds) % DAY_SECONDS);
-                        ScheduleKey key = new ScheduleKey(stop.getId(), itinerary.getId(),
-                                stopTime, calendar.getId());
-                        if (!seen.add(key)) { continue; }
-                        batch.add(Schedule.builder()
-                                .time(stopTime)
-                                .stop(stop)
-                                .itinerary(itinerary)
-                                .pickupType(pickupType)
-                                .dropOffType(dropOffType)
-                                .wheelchairOverride(wheelchairOverride)
-                                .bikesAllowedOverride(bikesOverride)
-                                .timepoint(timepoint)
-                                .frequencyHeadwaySeconds(window.headwaySeconds())
-                                .frequencyExactTimes(window.exactTimes())
-                                .blockId(trip.blockId())
-                                .serviceCalendar(calendar)
-                                .pickupBookingRule(pickupBooking)
-                                .dropOffBookingRule(dropOffBooking)
-                                .continuousPickup(continuousPickup)
-                                .continuousDropOff(continuousDropOff)
-                                .shapeDistTraveled(shapeDistTraveled)
-                                .build());
-                        if (batch.size() >= MAX_SCHEDULE_BATCH) {
-                            scheduleRepository.saveAll(batch);
-                            flushAndDetach(batch);
-                            total += batch.size();
-                            batch.clear();
-                            log.debug("GTFS import: {} schedules persisted so far", total);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!batch.isEmpty()) {
-            scheduleRepository.saveAll(batch);
-            flushAndDetach(batch);
-            total += batch.size();
-        }
-        if (!flexBatch.isEmpty()) {
-            flexStopTimeRepository.saveAll(flexBatch);
-            flushAndDetach(flexBatch);
-            flexTotal += flexBatch.size();
-        }
-
-        if (skippedNoCalendar > 0) {
+        if (ctx.skippedNoCalendar > 0) {
             log.warn("GTFS import: skipped {} stop_times rows whose trip references an unknown service_id",
-                    skippedNoCalendar);
+                    ctx.skippedNoCalendar);
         }
         log.info("GTFS import: {} schedules + {} flex stop_times created across {} service calendars",
-                total, flexTotal, services.size());
-        return total;
+                ctx.total, ctx.flexTotal, services.size());
+        return ctx.total;
+    }
+
+    private record ScheduleKey(UUID stopId, UUID itineraryId, LocalTime time, UUID calendarId) {}
+
+    /** Bag of state threaded through {@link #importSchedules} and its
+     *  per-row helpers — split out so the main loop body stays under
+     *  PMD's cyclomatic threshold without losing the inline context. */
+    private static final class ImportContext {
+        final Set<ScheduleKey> seen = new HashSet<>();
+        final List<Schedule> batch = new ArrayList<>(MAX_SCHEDULE_BATCH);
+        final List<FlexStopTime> flexBatch = new ArrayList<>(MAX_SCHEDULE_BATCH);
+        final Map<String, Location> locationsByExternalId;
+        final Map<String, LocationGroup> locationGroupsByExternalId;
+        final Map<String, ServiceCalendar> services;
+        final Map<String, TripInfo> tripInfos;
+        final Map<RouteDirKey, Itinerary> itineraries;
+        final Map<String, BookingRule> bookingRules;
+        final Map<String, List<FrequencyWindow>> frequencies;
+        final Map<String, LocalTime> tripStartTimes;
+        final StopImport stopImport;
+        int total;
+        int flexTotal;
+        int skippedNoCalendar;
+
+        ImportContext(Map<String, Location> locations,
+                      Map<String, LocationGroup> locationGroups,
+                      Map<String, ServiceCalendar> services,
+                      Map<String, TripInfo> tripInfos,
+                      Map<RouteDirKey, Itinerary> itineraries,
+                      Map<String, BookingRule> bookingRules,
+                      Map<String, List<FrequencyWindow>> frequencies,
+                      Map<String, LocalTime> tripStartTimes,
+                      StopImport stopImport) {
+            this.locationsByExternalId = locations;
+            this.locationGroupsByExternalId = locationGroups;
+            this.services = services;
+            this.tripInfos = tripInfos;
+            this.itineraries = itineraries;
+            this.bookingRules = bookingRules;
+            this.frequencies = frequencies;
+            this.tripStartTimes = tripStartTimes;
+            this.stopImport = stopImport;
+        }
+    }
+
+    private Map<String, Location> indexLocationsByExternalId() {
+        return locationRepository.findAll().stream()
+                .filter(l -> l.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        Location::getExternalId,
+                        java.util.function.Function.identity(),
+                        (a, b) -> a));
+    }
+
+    private Map<String, LocationGroup> indexLocationGroupsByExternalId() {
+        return locationGroupRepository.findAll().stream()
+                .filter(l -> l.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        LocationGroup::getExternalId,
+                        java.util.function.Function.identity(),
+                        (a, b) -> a));
+    }
+
+    private void streamStopTimes(Path stopTimesFile, ImportContext ctx) throws IOException {
+        try (CSVParser parser = openCsv(stopTimesFile)) {
+            for (CSVRecord record : parser) {
+                handleRow(record, ctx);
+            }
+        }
+    }
+
+    private void handleRow(CSVRecord record, ImportContext ctx) {
+        String tripId = record.get("trip_id");
+        TripInfo trip = ctx.tripInfos.get(tripId);
+        if (trip == null) {
+            return;
+        }
+        ServiceCalendar calendar = ctx.services.get(trip.serviceId());
+        if (calendar == null) {
+            ctx.skippedNoCalendar++;
+            return;
+        }
+        Itinerary itinerary = ctx.itineraries.get(new RouteDirKey(trip.routeId(), trip.directionId()));
+        if (itinerary == null) {
+            return;
+        }
+        if (handleFlexRowIfApplicable(record, itinerary, calendar, ctx)) {
+            return;
+        }
+        handleFixedRow(record, tripId, trip, itinerary, calendar, ctx);
+    }
+
+    /** Returns true when the row was a GTFS-flex pickup/drop-off window
+     *  and has been routed to the flex_stop_times bucket. The caller
+     *  bails out without falling through to the fixed-schedule path. */
+    private boolean handleFlexRowIfApplicable(CSVRecord record, Itinerary itinerary,
+                                              ServiceCalendar calendar, ImportContext ctx) {
+        LocalTime flexStartWindow = GtfsParse.parseGtfsTime(
+                optional(record, "start_pickup_drop_off_window"));
+        LocalTime flexEndWindow = GtfsParse.parseGtfsTime(
+                optional(record, "end_pickup_drop_off_window"));
+        if (flexStartWindow == null || flexEndWindow == null) {
+            return false;
+        }
+        String flexLocationId = optional(record, "location_id");
+        String flexLocationGroupId = optional(record, "location_group_id");
+        String flexStopId = optional(record, "stop_id");
+        LocalTime flexArrival = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
+        boolean isFlexRow = !isBlank(flexLocationId)
+                || !isBlank(flexLocationGroupId)
+                || (!isBlank(flexStopId) && flexArrival == null);
+        if (!isFlexRow) {
+            return false;
+        }
+        ctx.flexBatch.add(buildFlexStopTime(record, itinerary, calendar,
+                ctx.stopImport, ctx.locationsByExternalId, ctx.locationGroupsByExternalId,
+                ctx.bookingRules, flexStartWindow, flexEndWindow));
+        if (ctx.flexBatch.size() >= MAX_SCHEDULE_BATCH) {
+            flexStopTimeRepository.saveAll(ctx.flexBatch);
+            flushAndDetach(ctx.flexBatch);
+            ctx.flexTotal += ctx.flexBatch.size();
+            ctx.flexBatch.clear();
+        }
+        return true;
+    }
+
+    private void handleFixedRow(CSVRecord record, String tripId, TripInfo trip,
+                                Itinerary itinerary, ServiceCalendar calendar, ImportContext ctx) {
+        Stop stop = ctx.stopImport.stopsByGtfsId().get(record.get("stop_id"));
+        if (stop == null) {
+            return;
+        }
+        LocalTime arrivalTime = GtfsParse.parseGtfsTime(optional(record, "arrival_time"));
+        LocalTime departureTime = GtfsParse.parseGtfsTime(optional(record, "departure_time"));
+        LocalTime time = arrivalTime != null ? arrivalTime : departureTime;
+        if (time == null) {
+            return;
+        }
+        short pickupType = (short) parseInt(optional(record, "pickup_type"), 0);
+        short dropOffType = (short) parseInt(optional(record, "drop_off_type"), 0);
+        if (pickupType == 1 && dropOffType == 1) {
+            return;
+        }
+        ScheduleRowContext row = new ScheduleRowContext(record, trip, itinerary, calendar, stop,
+                time, departureTime, pickupType, dropOffType, ctx.bookingRules);
+        List<FrequencyWindow> windows = ctx.frequencies.get(tripId);
+        if (windows == null || windows.isEmpty()) {
+            persistFixedSchedule(row, ctx);
+        } else {
+            expandFrequencyWindows(row, windows, ctx.tripStartTimes.get(tripId), ctx);
+        }
+    }
+
+    /** Bundle of per-row fields plus a few lazy accessors that read the
+     *  remaining CSV columns once. Keeps the two persistence helpers
+     *  ({@link #persistFixedSchedule}, {@link #expandFrequencyWindows})
+     *  short and identical in argument shape. */
+    private record ScheduleRowContext(CSVRecord record, TripInfo trip, Itinerary itinerary,
+                                      ServiceCalendar calendar, Stop stop,
+                                      LocalTime time, LocalTime departureTime,
+                                      short pickupType, short dropOffType,
+                                      Map<String, BookingRule> bookingRules) {
+        LocalTime distinctDeparture() {
+            return (departureTime != null && !departureTime.equals(time)) ? departureTime : null;
+        }
+        Short continuousPickup() {
+            return parseShortOrNull(optional(record, "continuous_pickup"));
+        }
+        Short continuousDropOff() {
+            return parseShortOrNull(optional(record, "continuous_drop_off"));
+        }
+        Double shapeDistTraveled() {
+            return parseDoubleOrNull(optional(record, "shape_dist_traveled"));
+        }
+        boolean timepoint() {
+            String raw = optional(record, "timepoint");
+            return isBlank(raw) || !"0".equals(raw.trim());
+        }
+        BookingRule pickupBooking() {
+            return bookingRules.get(optional(record, "pickup_booking_rule_id"));
+        }
+        BookingRule dropOffBooking() {
+            return bookingRules.get(optional(record, "drop_off_booking_rule_id"));
+        }
+        Boolean wheelchairOverride() {
+            return computeWheelchairOverride(trip.wheelchairAccessible(),
+                    itinerary.getWheelchairDefault()).orElse(null);
+        }
+        Boolean bikesOverride() {
+            return computeBikesOverride(trip.bikesAllowed(),
+                    itinerary.getBikesAllowedDefault()).orElse(null);
+        }
+    }
+
+    private void persistFixedSchedule(ScheduleRowContext row, ImportContext ctx) {
+        ScheduleKey key = new ScheduleKey(row.stop.getId(), row.itinerary.getId(),
+                row.time, row.calendar.getId());
+        if (!ctx.seen.add(key)) {
+            return;
+        }
+        ctx.batch.add(Schedule.builder()
+                .time(row.time)
+                .departureTime(row.distinctDeparture())
+                .stop(row.stop)
+                .itinerary(row.itinerary)
+                .pickupType(row.pickupType)
+                .dropOffType(row.dropOffType)
+                .wheelchairOverride(row.wheelchairOverride())
+                .bikesAllowedOverride(row.bikesOverride())
+                .timepoint(row.timepoint())
+                .frequencyHeadwaySeconds(null)
+                .frequencyExactTimes(null)
+                .blockId(row.trip.blockId())
+                .serviceCalendar(row.calendar)
+                .pickupBookingRule(row.pickupBooking())
+                .dropOffBookingRule(row.dropOffBooking())
+                .continuousPickup(row.continuousPickup())
+                .continuousDropOff(row.continuousDropOff())
+                .shapeDistTraveled(row.shapeDistTraveled())
+                .build());
+        flushBatchIfFull(ctx);
+    }
+
+    private void expandFrequencyWindows(ScheduleRowContext row, List<FrequencyWindow> windows,
+                                        LocalTime tripStart, ImportContext ctx) {
+        if (tripStart == null) {
+            return;
+        }
+        long deltaSeconds = ((long) row.time.toSecondOfDay() - tripStart.toSecondOfDay() + DAY_SECONDS)
+                % DAY_SECONDS;
+        for (FrequencyWindow window : windows) {
+            long winStart = window.start().toSecondOfDay();
+            long winEnd = window.end().toSecondOfDay();
+            // Window crossing midnight: end falls earlier than start
+            // because parseGtfsTime folds hours mod 24. Shift end up
+            // by a full day so the iterator emits the right count.
+            if (winEnd <= winStart) {
+                winEnd += DAY_SECONDS;
+            }
+            for (long ts = winStart; ts < winEnd; ts += window.headwaySeconds()) {
+                LocalTime stopTime = LocalTime.ofSecondOfDay((ts + deltaSeconds) % DAY_SECONDS);
+                ScheduleKey key = new ScheduleKey(row.stop.getId(), row.itinerary.getId(),
+                        stopTime, row.calendar.getId());
+                if (!ctx.seen.add(key)) {
+                    continue;
+                }
+                ctx.batch.add(Schedule.builder()
+                        .time(stopTime)
+                        .stop(row.stop)
+                        .itinerary(row.itinerary)
+                        .pickupType(row.pickupType)
+                        .dropOffType(row.dropOffType)
+                        .wheelchairOverride(row.wheelchairOverride())
+                        .bikesAllowedOverride(row.bikesOverride())
+                        .timepoint(row.timepoint())
+                        .frequencyHeadwaySeconds(window.headwaySeconds())
+                        .frequencyExactTimes(window.exactTimes())
+                        .blockId(row.trip.blockId())
+                        .serviceCalendar(row.calendar)
+                        .pickupBookingRule(row.pickupBooking())
+                        .dropOffBookingRule(row.dropOffBooking())
+                        .continuousPickup(row.continuousPickup())
+                        .continuousDropOff(row.continuousDropOff())
+                        .shapeDistTraveled(row.shapeDistTraveled())
+                        .build());
+                flushBatchIfFull(ctx);
+            }
+        }
+    }
+
+    private void flushBatchIfFull(ImportContext ctx) {
+        if (ctx.batch.size() >= MAX_SCHEDULE_BATCH) {
+            scheduleRepository.saveAll(ctx.batch);
+            flushAndDetach(ctx.batch);
+            ctx.total += ctx.batch.size();
+            ctx.batch.clear();
+            log.debug("GTFS import: {} schedules persisted so far", ctx.total);
+        }
+    }
+
+    private void drainPendingBatches(ImportContext ctx) {
+        if (!ctx.batch.isEmpty()) {
+            scheduleRepository.saveAll(ctx.batch);
+            flushAndDetach(ctx.batch);
+            ctx.total += ctx.batch.size();
+        }
+        if (!ctx.flexBatch.isEmpty()) {
+            flexStopTimeRepository.saveAll(ctx.flexBatch);
+            flushAndDetach(ctx.flexBatch);
+            ctx.flexTotal += ctx.flexBatch.size();
+        }
     }
 
     /** Drain pending inserts and evict the batch from the persistence

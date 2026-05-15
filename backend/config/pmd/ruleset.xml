@@ -64,7 +64,7 @@
          dropped to 106 once relocated, classReportLevel rotated 110→107). -->
     <rule ref="category/java/design.xml/CyclomaticComplexity">
         <properties>
-            <property name="methodReportLevel" value="30"/>
+            <property name="methodReportLevel" value="28"/>
             <property name="classReportLevel" value="107"/>
         </properties>
     </rule>
