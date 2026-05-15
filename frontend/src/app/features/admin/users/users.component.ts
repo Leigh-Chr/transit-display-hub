@@ -306,45 +306,46 @@ export class UsersComponent implements AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: { isEdit: false },
+      data: {
+        isEdit: false,
+        submit: (request: CreateUserRequest | UpdateUserRequest) =>
+          this.userService.create(request as CreateUserRequest),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.createFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.users.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.userService.create(result as CreateUserRequest).subscribe({
-          next: () => {
-            this.tableState.resetToFirstPage();
-            this.loadUsers();
-            this.notify.success(this.transloco.translate('admin.users.createSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.createFailed')));
-          },
-        });
+        this.tableState.resetToFirstPage();
+        this.loadUsers();
+        this.notify.success(this.transloco.translate('admin.users.createSuccess'));
       }
     });
   }
 
   openEditDialog(user: User): void {
     const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: { user, isEdit: true },
+      data: {
+        user,
+        isEdit: true,
+        submit: (request: CreateUserRequest | UpdateUserRequest) =>
+          this.userService.update(user.id, request as UpdateUserRequest),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.updateFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.users.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.userService.update(user.id, result as UpdateUserRequest).subscribe({
-          next: () => {
-            this.loadUsers();
-            this.notify.success(this.transloco.translate('admin.users.updateSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.updateFailed')));
-          },
-        });
+        this.loadUsers();
+        this.notify.success(this.transloco.translate('admin.users.updateSuccess'));
       }
     });
   }

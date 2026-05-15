@@ -1,11 +1,11 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ScheduleDialogComponent, ScheduleDialogData } from './schedule-dialog.component';
 import { ItineraryService } from '@core/api/itinerary.service';
-import { Schedule, LineInfo, Itinerary } from '@shared/models';
+import { CreateScheduleRequest, Schedule, LineInfo, Itinerary } from '@shared/models';
 
 const en = {
   common: { cancel: 'Cancel' },
@@ -25,11 +25,25 @@ const en = {
   },
 };
 
+const savedSchedule: Schedule = {
+  id: 'sch1',
+  time: '08:30',
+  stopId: 'stop1',
+  itinerary: {
+    id: 'it1',
+    name: 'Direction East',
+    terminusName: 'East Terminal',
+    directionId: null,
+    line: { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000' },
+  },
+};
+
 describe('ScheduleDialogComponent', () => {
   let component: ScheduleDialogComponent;
   let fixture: ComponentFixture<ScheduleDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
   let mockItineraryService: { getAll: ReturnType<typeof vi.fn> };
+  let submit: ScheduleDialogData['submit'] & ReturnType<typeof vi.fn>;
 
   const mockLines: LineInfo[] = [
     { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000' },
@@ -54,9 +68,11 @@ describe('ScheduleDialogComponent', () => {
     },
   ];
 
-  function createComponent(data: ScheduleDialogData = { lines: mockLines }): void {
+  function createComponent(overrides: Partial<ScheduleDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
     mockItineraryService = { getAll: vi.fn().mockReturnValue(of(mockItineraries)) };
+    submit = vi.fn().mockReturnValue(of(savedSchedule)) as typeof submit;
+    const data: ScheduleDialogData = { lines: mockLines, submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -113,16 +129,46 @@ describe('ScheduleDialogComponent', () => {
       expect(submitBtn.disabled).toBe(true);
     });
 
-    it('should close dialog with form data on save', () => {
+    it('should call submit with the form payload and close with the server response', () => {
       component.form.time = '08:30';
       component.form.itineraryId = 'it1';
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         time: '08:30',
         itineraryId: 'it1',
-      });
+      } satisfies CreateScheduleRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedSchedule);
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+      component.form.time = '08:30';
+      component.form.itineraryId = 'it1';
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<Schedule>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+      component.form.time = '08:30';
+      component.form.itineraryId = 'it1';
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedSchedule);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
 
     it('should close dialog without data when cancel is clicked', () => {
@@ -149,6 +195,7 @@ describe('ScheduleDialogComponent', () => {
       const singleItinerary: Itinerary[] = [mockItineraries[0]!];
       mockDialogRef = { close: vi.fn() };
       mockItineraryService = { getAll: vi.fn().mockReturnValue(of(singleItinerary)) };
+      submit = vi.fn().mockReturnValue(of(savedSchedule)) as typeof submit;
 
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
@@ -160,7 +207,7 @@ describe('ScheduleDialogComponent', () => {
           }),
         ],
         providers: [
-          { provide: MAT_DIALOG_DATA, useValue: { lines: mockLines } },
+          { provide: MAT_DIALOG_DATA, useValue: { lines: mockLines, submit } },
           { provide: MatDialogRef, useValue: mockDialogRef },
           { provide: ItineraryService, useValue: mockItineraryService },
         ],
@@ -188,7 +235,7 @@ describe('ScheduleDialogComponent', () => {
       },
     };
 
-    beforeEach(() => createComponent({ entry: existingEntry, lines: mockLines }));
+    beforeEach(() => createComponent({ entry: existingEntry }));
 
     it('should display "Edit Schedule Entry" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
@@ -206,15 +253,16 @@ describe('ScheduleDialogComponent', () => {
       expect(submitBtn.textContent).toContain('Save Changes');
     });
 
-    it('should close dialog with updated data on save', () => {
+    it('should call submit with the updated payload on save', () => {
       component.form.time = '15:00';
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         time: '15:00',
         itineraryId: 'it1',
-      });
+      } satisfies CreateScheduleRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedSchedule);
     });
   });
 });

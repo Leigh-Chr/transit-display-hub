@@ -334,22 +334,21 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     if (!stop) {return;}
 
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: { lines: stop.lines },
+      data: {
+        lines: stop.lines,
+        submit: (request: CreateScheduleRequest) => this.scheduleService.create(this.selectedStopId, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.createFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.schedules.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.scheduleService.create(this.selectedStopId, result as CreateScheduleRequest).subscribe({
-          next: () => {
-            this.loadSchedules();
-            this.notify.success(this.transloco.translate('admin.schedules.createSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.createFailed')));
-          },
-        });
+        this.loadSchedules();
+        this.notify.success(this.transloco.translate('admin.schedules.createSuccess'));
       }
     });
   }
@@ -359,22 +358,22 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
     if (!stop) {return;}
 
     const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: { entry, lines: stop.lines },
+      data: {
+        entry,
+        lines: stop.lines,
+        submit: (request: CreateScheduleRequest) => this.scheduleService.update(entry.id, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.updateFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.schedules.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.scheduleService.update(entry.id, result as CreateScheduleRequest).subscribe({
-          next: () => {
-            this.loadSchedules();
-            this.notify.success(this.transloco.translate('admin.schedules.updateSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.updateFailed')));
-          },
-        });
+        this.loadSchedules();
+        this.notify.success(this.transloco.translate('admin.schedules.updateSuccess'));
       }
     });
   }

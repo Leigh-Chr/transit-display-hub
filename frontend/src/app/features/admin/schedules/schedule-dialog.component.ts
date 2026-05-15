@@ -8,14 +8,19 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { Schedule, CreateScheduleRequest, LineInfo, Itinerary } from '@shared/models';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface ScheduleDialogData {
   entry?: Schedule;
   lines: LineInfo[];
+  submit: (request: CreateScheduleRequest) => Observable<Schedule>;
+  onError?: (err: unknown) => void;
 }
 
 @Component({
@@ -27,6 +32,7 @@ export interface ScheduleDialogData {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     TranslocoDirective,
   ],
@@ -77,13 +83,16 @@ export interface ScheduleDialogData {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!scheduleForm.valid || !form.itineraryId"
+        [disabled]="!scheduleForm.valid || !form.itineraryId || submitting()"
         (click)="save()"
       >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
         {{ data.entry ? t('admin.schedules.dialog.actionSave') : t('admin.schedules.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
@@ -124,6 +133,7 @@ export class ScheduleDialogComponent implements OnInit {
   private readonly itineraryService = inject(ItineraryService);
 
   itineraries = signal<Itinerary[]>([]);
+  readonly submitting = signal(false);
 
   form: CreateScheduleRequest = {
     time: this.data.entry?.time ?? '',
@@ -155,6 +165,6 @@ export class ScheduleDialogComponent implements OnInit {
   }
 
   save(): void {
-    this.dialogRef.close(this.form);
+    runDialogSubmit(this.submitting, () => this.data.submit(this.form), this.dialogRef, this.data.onError);
   }
 }

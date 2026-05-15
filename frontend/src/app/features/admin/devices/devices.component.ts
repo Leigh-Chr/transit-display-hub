@@ -11,7 +11,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
-import { Line, Device, DeviceStatus, RegisterDeviceRequest } from '@shared/models';
+import { Line, Device, DeviceStatus, DeviceRegistration, RegisterDeviceRequest } from '@shared/models';
 import { DeviceDialogComponent } from './device-dialog.component';
 import { DeviceTokenDialogComponent } from './device-token-dialog.component';
 import {
@@ -294,26 +294,25 @@ export class DevicesComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(DeviceDialogComponent, {
-      data: { lines: this.lines() },
+      data: {
+        lines: this.lines(),
+        submit: (request: RegisterDeviceRequest) => this.deviceService.register(request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.registerFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.devices.dialog.title'),
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.deviceService.register(result as RegisterDeviceRequest).subscribe({
-          next: (registration) => {
-            this.loadDevices();
-            this.dialog.open(DeviceTokenDialogComponent, {
-              data: { token: registration.token },
-              disableClose: false,
-              autoFocus: '[data-copy-button]',
-              ariaLabel: this.transloco.translate('admin.devices.tokenTitle'),
-            });
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.registerFailed')));
-          },
+    dialogRef.afterClosed().subscribe((registration: DeviceRegistration | undefined) => {
+      if (registration) {
+        this.loadDevices();
+        this.dialog.open(DeviceTokenDialogComponent, {
+          data: { token: registration.token },
+          disableClose: false,
+          autoFocus: '[data-copy-button]',
+          ariaLabel: this.transloco.translate('admin.devices.tokenTitle'),
         });
       }
     });

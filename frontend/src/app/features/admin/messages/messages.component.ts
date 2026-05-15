@@ -488,45 +488,44 @@ export class MessagesComponent {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(MessageDialogComponent, {
-      data: { lines: this.lines() },
+      data: {
+        lines: this.lines(),
+        submit: (request: CreateMessageRequest) => this.messageService.create(request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.createFailed')));
+        },
+      },
       width: '500px',
       ariaLabel: this.transloco.translate('admin.messages.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.messageService.create(result as CreateMessageRequest).subscribe({
-          next: () => {
-            this.tableState.resetToFirstPage();
-            this.loadMessages();
-            this.notify.success(this.transloco.translate('admin.messages.createSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.createFailed')));
-          },
-        });
+        this.tableState.resetToFirstPage();
+        this.loadMessages();
+        this.notify.success(this.transloco.translate('admin.messages.createSuccess'));
       }
     });
   }
 
   openEditDialog(message: BroadcastMessage): void {
     const dialogRef = this.dialog.open(MessageDialogComponent, {
-      data: { message, lines: this.lines() },
+      data: {
+        message,
+        lines: this.lines(),
+        submit: (request: CreateMessageRequest) => this.messageService.update(message.id, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.updateFailed')));
+        },
+      },
       width: '500px',
       ariaLabel: this.transloco.translate('admin.messages.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.messageService.update(message.id, result as CreateMessageRequest).subscribe({
-          next: () => {
-            this.loadMessages();
-            this.notify.success(this.transloco.translate('admin.messages.updateSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.updateFailed')));
-          },
-        });
+        this.loadMessages();
+        this.notify.success(this.transloco.translate('admin.messages.updateSuccess'));
       }
     });
   }

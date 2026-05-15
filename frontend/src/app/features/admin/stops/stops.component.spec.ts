@@ -268,33 +268,44 @@ describe('StopsComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.any(Function),
         expect.objectContaining({
-          data: {
+          data: expect.objectContaining({
             lines: [mockLine],
             selectedLineId: 'l1',
-          },
+          }),
           width: '450px',
           ariaLabel: 'New Stop',
         }),
       );
     });
 
-    it('should create stop and reload on dialog success', async () => {
+    it('should reload and notify on dialog success', async () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       await detectAndFlush(fixture);
       mockStopService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
-      const createRequest = { name: 'New Stop', lineIds: ['l1'] };
-      afterClosed$.next(createRequest);
+      afterClosed$.next(mockStop);
       await fixture.whenStable();
 
-      expect(mockStopService.create).toHaveBeenCalledWith(createRequest);
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Stop created');
     });
 
-    it('should do nothing when dialog is cancelled', () => {
+    it('should pass a submit callback that calls stopService.create', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const createRequest = { name: 'New Stop', lineIds: ['l1'] };
+      passedData.submit(createRequest);
+      expect(mockStopService.create).toHaveBeenCalledWith(createRequest);
+    });
+
+    it('should not notify success when dialog is cancelled', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       fixture.detectChanges();
@@ -302,12 +313,24 @@ describe('StopsComponent', () => {
       component.openCreateDialog();
       afterClosed$.next(undefined);
 
-      expect(mockStopService.create).not.toHaveBeenCalled();
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Duplicate stop' } });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Duplicate stop');
     });
   });
 
   describe('openEditDialog', () => {
-    it('should update stop and reload on dialog success', async () => {
+    it('should reload and notify on dialog success', async () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       await detectAndFlush(fixture);
@@ -318,25 +341,36 @@ describe('StopsComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.any(Function),
         expect.objectContaining({
-          data: {
+          data: expect.objectContaining({
             stop: mockStop,
             lines: [mockLine],
-          },
+          }),
           width: '450px',
           ariaLabel: 'Edit Stop',
         }),
       );
 
-      const updateRequest = { name: 'Updated Stop', lineIds: ['l1'] };
-      afterClosed$.next(updateRequest);
+      afterClosed$.next(mockStop);
       await fixture.whenStable();
 
-      expect(mockStopService.update).toHaveBeenCalledWith('s1', updateRequest);
       expect(mockStopService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Stop updated');
     });
 
-    it('should not call update when dialog is cancelled', () => {
+    it('should pass a submit callback that calls stopService.update', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockStop);
+
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const updateRequest = { name: 'Updated Stop', lineIds: ['l1'] };
+      passedData.submit(updateRequest);
+      expect(mockStopService.update).toHaveBeenCalledWith('s1', updateRequest);
+    });
+
+    it('should not notify success when dialog is cancelled', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
       fixture.detectChanges();
@@ -344,7 +378,19 @@ describe('StopsComponent', () => {
       component.openEditDialog(mockStop);
       afterClosed$.next(undefined);
 
-      expect(mockStopService.update).not.toHaveBeenCalled();
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockStop);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Conflict' } });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 

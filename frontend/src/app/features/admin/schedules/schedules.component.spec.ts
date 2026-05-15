@@ -220,66 +220,119 @@ describe('SchedulesComponent', () => {
       expect(mockDialog.open).not.toHaveBeenCalled();
     });
 
-    it('should create schedule and reload on dialog success', () => {
+    it('should reload and notify on dialog success', () => {
       fixture.detectChanges();
       component.selectedStop.set(mockStop);
       component.stops.set([mockStop]);
       component.selectedStopId = 's1';
-      const dialogResult = { time: '09:00', itineraryId: 'i1' };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(dialogResult) });
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockSchedule) });
 
       component.openCreateDialog();
 
-      expect(mockDialog.open).toHaveBeenCalledWith(ScheduleDialogComponent, {
-        data: { lines: mockStop.lines },
-        width: '450px',
-        ariaLabel: 'New Schedule Entry',
-      });
-      expect(mockScheduleService.create).toHaveBeenCalledWith('s1', dialogResult);
+      expect(mockDialog.open).toHaveBeenCalledWith(
+        ScheduleDialogComponent,
+        expect.objectContaining({
+          data: expect.objectContaining({ lines: mockStop.lines }),
+          width: '450px',
+          ariaLabel: 'New Schedule Entry',
+        }),
+      );
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
       expect(mockNotify.success).toHaveBeenCalledWith('Schedule entry created');
     });
 
-    it('should not call create when dialog is cancelled', () => {
+    it('should pass a submit callback that calls scheduleService.create', () => {
+      fixture.detectChanges();
+      component.selectedStop.set(mockStop);
+      component.selectedStopId = 's1';
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+
+      component.openCreateDialog();
+
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { time: '09:00', itineraryId: 'i1' };
+      passedData.submit(request);
+      expect(mockScheduleService.create).toHaveBeenCalledWith('s1', request);
+    });
+
+    it('should not notify success when dialog is cancelled', () => {
       fixture.detectChanges();
       component.selectedStop.set(mockStop);
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
 
       component.openCreateDialog();
 
-      expect(mockScheduleService.create).not.toHaveBeenCalled();
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      fixture.detectChanges();
+      component.selectedStop.set(mockStop);
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+
+      component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Conflict' } });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 
   describe('openEditDialog', () => {
-    it('should update schedule and reload on dialog success', () => {
+    it('should reload and notify on dialog success', () => {
       fixture.detectChanges();
       component.selectedStop.set(mockStop);
       component.stops.set([mockStop]);
       component.selectedStopId = 's1';
-      const editResult = { time: '10:00', itineraryId: 'i1' };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(editResult) });
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockSchedule) });
 
       component.openEditDialog(mockSchedule);
 
-      expect(mockDialog.open).toHaveBeenCalledWith(ScheduleDialogComponent, {
-        data: { entry: mockSchedule, lines: mockStop.lines },
-        width: '450px',
-        ariaLabel: 'Edit Schedule Entry',
-      });
-      expect(mockScheduleService.update).toHaveBeenCalledWith('sc1', editResult);
+      expect(mockDialog.open).toHaveBeenCalledWith(
+        ScheduleDialogComponent,
+        expect.objectContaining({
+          data: expect.objectContaining({ entry: mockSchedule, lines: mockStop.lines }),
+          width: '450px',
+          ariaLabel: 'Edit Schedule Entry',
+        }),
+      );
       expect(mockScheduleService.getForStop).toHaveBeenCalledWith('s1');
       expect(mockNotify.success).toHaveBeenCalledWith('Schedule entry updated');
     });
 
-    it('should not call update when dialog is cancelled', () => {
+    it('should pass a submit callback that calls scheduleService.update', () => {
       fixture.detectChanges();
       component.selectedStop.set(mockStop);
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
 
       component.openEditDialog(mockSchedule);
 
-      expect(mockScheduleService.update).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { time: '10:00', itineraryId: 'i1' };
+      passedData.submit(request);
+      expect(mockScheduleService.update).toHaveBeenCalledWith('sc1', request);
+    });
+
+    it('should not notify success when dialog is cancelled', () => {
+      fixture.detectChanges();
+      component.selectedStop.set(mockStop);
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+
+      component.openEditDialog(mockSchedule);
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      fixture.detectChanges();
+      component.selectedStop.set(mockStop);
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+
+      component.openEditDialog(mockSchedule);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Conflict' } });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 

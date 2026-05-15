@@ -168,49 +168,58 @@ describe('DevicesComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should open token dialog and reload on registration success', () => {
+    it('should open token dialog and reload when the dialog closes with a registration', () => {
       const afterClosed$ = new Subject<unknown>();
       // First open() call = DeviceDialogComponent; second = DeviceTokenDialogComponent
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
 
       component.openCreateDialog();
-      afterClosed$.next({ stopId: 's1' });
+      afterClosed$.next(mockRegistration);
 
-      expect(mockDeviceService.register).toHaveBeenCalledWith({ stopId: 's1' });
-      // Token dialog opened with the token from the registration response
       expect(mockDialog.open).toHaveBeenCalledTimes(2);
       expect(mockDeviceService.getAll).toHaveBeenCalled();
     });
 
-    it('should do nothing when dialog is cancelled', () => {
+    it('should pass a submit callback that calls deviceService.register', () => {
+      const afterClosed$ = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
+
+      component.openCreateDialog();
+
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.submit({ stopId: 's1' });
+      expect(mockDeviceService.register).toHaveBeenCalledWith({ stopId: 's1' });
+    });
+
+    it('should not open the token dialog when dialog is cancelled', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
 
       component.openCreateDialog();
       afterClosed$.next(undefined);
 
-      expect(mockDeviceService.register).not.toHaveBeenCalled();
+      // Only the device dialog was opened, never the token dialog
+      expect(mockDialog.open).toHaveBeenCalledTimes(1);
     });
 
-    it('should show error notification on registration error', () => {
+    it('should expose an onError that surfaces the failure via notify', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
-      const error = { error: { message: 'Stop already has a device' } };
-      mockDeviceService.register.mockReturnValue(throwError(() => error));
 
       component.openCreateDialog();
-      afterClosed$.next({ stopId: 's1' });
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Stop already has a device' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Stop already has a device');
     });
 
-    it('should show fallback message on registration error without message', () => {
+    it('should expose an onError with fallback message when error has no message', () => {
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
-      mockDeviceService.register.mockReturnValue(throwError(() => ({ error: {} })));
 
       component.openCreateDialog();
-      afterClosed$.next({ stopId: 's1' });
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: {} });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Failed to register device');
     });

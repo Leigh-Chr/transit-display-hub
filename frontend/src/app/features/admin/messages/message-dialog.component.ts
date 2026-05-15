@@ -8,7 +8,9 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import {
   BroadcastMessage,
   Line,
@@ -19,10 +21,13 @@ import {
 } from '@shared/models';
 import { StopService } from '@core/api/stop.service';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface MessageDialogData {
   message?: BroadcastMessage;
   lines: Line[];
+  submit: (request: CreateMessageRequest) => Observable<BroadcastMessage>;
+  onError?: (err: unknown) => void;
 }
 
 interface MessageForm {
@@ -45,6 +50,7 @@ interface MessageForm {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     TranslocoDirective,
   ],
@@ -177,13 +183,16 @@ interface MessageForm {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!messageForm.valid || !isDateRangeValid()"
+        [disabled]="!messageForm.valid || !isDateRangeValid() || submitting()"
         (click)="save()"
       >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
         {{ data.message ? t('admin.messages.dialog.actionSave') : t('admin.messages.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
@@ -219,6 +228,7 @@ export class MessageDialogComponent implements OnInit {
   readonly data = inject<MessageDialogData>(MAT_DIALOG_DATA);
 
   stops = signal<Stop[]>([]);
+  readonly submitting = signal(false);
 
   form: MessageForm = this.initForm();
 
@@ -305,7 +315,7 @@ export class MessageDialogComponent implements OnInit {
       endTime: new Date(this.form.endTime).toISOString(),
     };
 
-    this.dialogRef.close(request);
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 
   private toLocalDatetime(date: Date): string {

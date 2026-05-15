@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -8,14 +8,19 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { User, UserRole, CreateUserRequest, UpdateUserRequest } from '@shared/models';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface UserDialogData {
   user?: User;
   isEdit: boolean;
+  submit: (request: CreateUserRequest | UpdateUserRequest) => Observable<User>;
+  onError?: (err: unknown) => void;
 }
 
 @Component({
@@ -27,6 +32,7 @@ export interface UserDialogData {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     MatSlideToggleModule,
     TranslocoDirective,
@@ -105,13 +111,16 @@ export interface UserDialogData {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!isFormValid()"
+        [disabled]="!isFormValid() || submitting()"
         (click)="save()"
       >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
         {{ data.user ? t('admin.users.dialog.actionSave') : t('admin.users.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
@@ -171,6 +180,8 @@ export class UserDialogComponent {
     enabled: this.data.user?.enabled ?? true,
   };
 
+  readonly submitting = signal(false);
+
   isFormValid(): boolean {
     if (this.data.isEdit) {
       // For edit: role is required, password optional
@@ -188,20 +199,17 @@ export class UserDialogComponent {
   }
 
   save(): void {
-    if (this.data.isEdit) {
-      const request: UpdateUserRequest = {
-        password: this.form.password || undefined,
-        role: this.form.role,
-        enabled: this.form.enabled,
-      };
-      this.dialogRef.close(request);
-    } else {
-      const request: CreateUserRequest = {
-        username: this.form.username,
-        password: this.form.password,
-        role: this.form.role,
-      };
-      this.dialogRef.close(request);
-    }
+    const request: CreateUserRequest | UpdateUserRequest = this.data.isEdit
+      ? {
+          password: this.form.password || undefined,
+          role: this.form.role,
+          enabled: this.form.enabled,
+        }
+      : {
+          username: this.form.username,
+          password: this.form.password,
+          role: this.form.role,
+        };
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 }

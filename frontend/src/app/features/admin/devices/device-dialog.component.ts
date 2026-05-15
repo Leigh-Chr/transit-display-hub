@@ -7,13 +7,18 @@ import {
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
-import { Line, Stop, RegisterDeviceRequest } from '@shared/models';
+import { Line, Stop, RegisterDeviceRequest, DeviceRegistration } from '@shared/models';
 import { StopService } from '@core/api/stop.service';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface DeviceDialogData {
   lines: Line[];
+  submit: (request: RegisterDeviceRequest) => Observable<DeviceRegistration>;
+  onError?: (err: unknown) => void;
 }
 
 interface DeviceForm {
@@ -29,6 +34,7 @@ interface DeviceForm {
     MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     TranslocoDirective,
   ],
@@ -75,13 +81,16 @@ interface DeviceForm {
         </form>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+        <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
         <button
           mat-flat-button
           color="primary"
-          [disabled]="!deviceForm.valid"
+          [disabled]="!deviceForm.valid || submitting()"
           (click)="save()"
         >
+          @if (submitting()) {
+            <mat-progress-spinner mode="indeterminate" diameter="18" />
+          }
           {{ t('admin.devices.dialog.actionRegister') }}
         </button>
       </mat-dialog-actions>
@@ -107,6 +116,7 @@ export class DeviceDialogComponent {
   readonly data = inject<DeviceDialogData>(MAT_DIALOG_DATA);
 
   stops = signal<Stop[]>([]);
+  readonly submitting = signal(false);
 
   form: DeviceForm = {
     lineId: '',
@@ -126,6 +136,6 @@ export class DeviceDialogComponent {
     const request: RegisterDeviceRequest = {
       stopId: this.form.stopId,
     };
-    this.dialogRef.close(request);
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 }

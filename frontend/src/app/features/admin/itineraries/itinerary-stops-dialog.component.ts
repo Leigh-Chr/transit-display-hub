@@ -10,13 +10,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { NotifyService } from '@core/services/notify.service';
 import { StopService } from '@core/api/stop.service';
 import { Itinerary, Stop, UpdateItineraryStopsRequest } from '@shared/models';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface ItineraryStopsDialogData {
   itinerary: Itinerary;
+  submit: (request: UpdateItineraryStopsRequest) => Observable<Itinerary>;
+  onError?: (err: unknown) => void;
 }
 
 interface StopItem {
@@ -104,13 +108,18 @@ interface StopItem {
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
         (click)="save()"
-        [disabled]="loading() || selectedStops().length === 0"
-      >{{ t('admin.itineraries.stopsDialog.actionSave') }}</button>
+        [disabled]="loading() || selectedStops().length === 0 || submitting()"
+      >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
+        {{ t('admin.itineraries.stopsDialog.actionSave') }}
+      </button>
     </mat-dialog-actions>
     </ng-container>
   `,
@@ -260,6 +269,7 @@ export class ItineraryStopsDialogComponent implements OnInit {
   private readonly transloco = inject(TranslocoService);
 
   readonly loading = signal(true);
+  readonly submitting = signal(false);
   readonly availableStops = signal<Stop[]>([]);
   readonly selectedStops = signal<StopItem[]>([]);
 
@@ -322,6 +332,6 @@ export class ItineraryStopsDialogComponent implements OnInit {
     const request: UpdateItineraryStopsRequest = {
       stopIds: this.selectedStops().map(s => s.id),
     };
-    this.dialogRef.close(request);
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 }

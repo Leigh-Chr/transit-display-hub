@@ -1,11 +1,11 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ItineraryStopsDialogComponent, ItineraryStopsDialogData } from './itinerary-stops-dialog.component';
 import { StopService } from '@core/api/stop.service';
-import { Itinerary, Stop } from '@shared/models';
+import { Itinerary, Stop, UpdateItineraryStopsRequest } from '@shared/models';
 
 const en = {
   common: { cancel: 'Cancel' },
@@ -39,6 +39,7 @@ describe('ItineraryStopsDialogComponent', () => {
   let fixture: ComponentFixture<ItineraryStopsDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
   let mockStopService: { getAll: ReturnType<typeof vi.fn> };
+  let submit: ItineraryStopsDialogData['submit'] & ReturnType<typeof vi.fn>;
 
   const mockItinerary: Itinerary = {
     id: 'it1',
@@ -52,6 +53,15 @@ describe('ItineraryStopsDialogComponent', () => {
     ],
   };
 
+  const savedItinerary: Itinerary = {
+    ...mockItinerary,
+    stops: [
+      { id: 's1', name: 'First Stop', position: 0 },
+      { id: 's2', name: 'Second Stop', position: 1 },
+      { id: 's3', name: 'Third Stop', position: 2 },
+    ],
+  };
+
   const mockLineStops: Stop[] = [
     { id: 's1', name: 'First Stop', latitude: null, longitude: null, lines: [], scheduleCount: 0, hasDevice: false },
     { id: 's2', name: 'Second Stop', latitude: null, longitude: null, lines: [], scheduleCount: 0, hasDevice: false },
@@ -59,9 +69,11 @@ describe('ItineraryStopsDialogComponent', () => {
     { id: 's4', name: 'Fourth Stop', latitude: null, longitude: null, lines: [], scheduleCount: 0, hasDevice: false },
   ];
 
-  function createComponent(data: ItineraryStopsDialogData = { itinerary: mockItinerary }): void {
+  function createComponent(overrides: Partial<ItineraryStopsDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
     mockStopService = { getAll: vi.fn().mockReturnValue(of(mockLineStops)) };
+    submit = vi.fn().mockReturnValue(of(savedItinerary)) as typeof submit;
+    const data: ItineraryStopsDialogData = { itinerary: mockItinerary, submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -148,21 +160,48 @@ describe('ItineraryStopsDialogComponent', () => {
   describe('save and cancel', () => {
     beforeEach(() => createComponent());
 
-    it('should close dialog with stopIds on save', () => {
+    it('should call submit with the stopIds and close with the server response', () => {
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         stopIds: ['s1', 's2'],
-      });
+      } satisfies UpdateItineraryStopsRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedItinerary);
     });
 
-    it('should close dialog with updated stopIds after adding a stop', () => {
+    it('should call submit with updated stopIds after adding a stop', () => {
       component.addStop('s3');
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         stopIds: ['s1', 's2', 's3'],
-      });
+      } satisfies UpdateItineraryStopsRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedItinerary);
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<Itinerary>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedItinerary);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
 
     it('should close dialog without data when cancel is clicked', () => {
@@ -207,6 +246,7 @@ describe('ItineraryStopsDialogComponent', () => {
     it('should set loading to false when stop loading fails', () => {
       mockDialogRef = { close: vi.fn() };
       mockStopService = { getAll: vi.fn().mockReturnValue(throwError(() => new Error('Network error'))) };
+      submit = vi.fn().mockReturnValue(of(savedItinerary)) as typeof submit;
 
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
@@ -218,7 +258,7 @@ describe('ItineraryStopsDialogComponent', () => {
           }),
         ],
         providers: [
-          { provide: MAT_DIALOG_DATA, useValue: { itinerary: mockItinerary } },
+          { provide: MAT_DIALOG_DATA, useValue: { itinerary: mockItinerary, submit } },
           { provide: MatDialogRef, useValue: mockDialogRef },
           { provide: StopService, useValue: mockStopService },
         ],

@@ -1,9 +1,10 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UserDialogComponent, UserDialogData } from './user-dialog.component';
-import { User } from '@shared/models';
+import { CreateUserRequest, UpdateUserRequest, User } from '@shared/models';
 
 const en = {
   common: { cancel: 'Cancel' },
@@ -36,13 +37,23 @@ const en = {
   },
 };
 
+const savedUser: User = {
+  id: 'u1',
+  username: 'newuser',
+  role: 'AGENT',
+  enabled: true,
+};
+
 describe('UserDialogComponent', () => {
   let component: UserDialogComponent;
   let fixture: ComponentFixture<UserDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
+  let submit: UserDialogData['submit'] & ReturnType<typeof vi.fn>;
 
-  function createComponent(data: UserDialogData = { isEdit: false }): void {
+  function createComponent(overrides: Partial<UserDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
+    submit = vi.fn().mockReturnValue(of(savedUser)) as typeof submit;
+    const data: UserDialogData = { isEdit: false, submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -117,18 +128,50 @@ describe('UserDialogComponent', () => {
       expect(component.isFormValid()).toBe(true);
     });
 
-    it('should close dialog with CreateUserRequest on save', () => {
+    it('should call submit with a CreateUserRequest payload and close with the server response', () => {
       component.form.username = 'newuser';
       component.form.password = 'password123';
       component.form.role = 'AGENT';
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         username: 'newuser',
         password: 'password123',
         role: 'AGENT',
-      });
+      } satisfies CreateUserRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedUser);
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+      component.form.username = 'newuser';
+      component.form.password = 'password123';
+      component.form.role = 'AGENT';
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<User>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+      component.form.username = 'newuser';
+      component.form.password = 'password123';
+      component.form.role = 'AGENT';
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedUser);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
 
     it('should close dialog without data when cancel is clicked', () => {
@@ -179,17 +222,18 @@ describe('UserDialogComponent', () => {
       expect(component.isFormValid()).toBe(true);
     });
 
-    it('should close dialog with UpdateUserRequest on save', () => {
+    it('should call submit with an UpdateUserRequest payload on save', () => {
       component.form.role = 'AGENT';
       component.form.enabled = false;
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         password: undefined,
         role: 'AGENT',
         enabled: false,
-      });
+      } satisfies UpdateUserRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedUser);
     });
 
     it('should include password in UpdateUserRequest when provided', () => {
@@ -199,11 +243,12 @@ describe('UserDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         password: 'newpassword123',
         role: 'ADMIN',
         enabled: true,
-      });
+      } satisfies UpdateUserRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedUser);
     });
   });
 });

@@ -269,32 +269,40 @@ describe('MessagesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          data: { lines: [mockLine] },
+          data: expect.objectContaining({ lines: [mockLine] }),
           width: '500px',
         }),
       );
     });
 
-    it('should create message and reload on dialog success', async () => {
+    it('should reload and notify on dialog success', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
       await detectAndFlush(fixture);
       mockMessageService.getAllPaginated.mockClear();
 
       component.openCreateDialog();
-      dialogCloseSubject.next({ title: 'New', content: 'Body', severity: 'INFO' });
+      dialogCloseSubject.next(mockMessage);
       await fixture.whenStable();
 
-      expect(mockMessageService.create).toHaveBeenCalledWith({
-        title: 'New',
-        content: 'Body',
-        severity: 'INFO',
-      });
       expect(mockMessageService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Message created');
     });
 
-    it('should not create when dialog is cancelled', () => {
+    it('should pass a submit callback that calls messageService.create', () => {
+      const dialogCloseSubject = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { title: 'New', content: 'Body', severity: 'INFO' };
+      passedData.submit(request);
+      expect(mockMessageService.create).toHaveBeenCalledWith(request);
+    });
+
+    it('should not notify success when dialog is cancelled', () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
       fixture.detectChanges();
@@ -302,28 +310,48 @@ describe('MessagesComponent', () => {
       component.openCreateDialog();
       dialogCloseSubject.next(null);
 
-      expect(mockMessageService.create).not.toHaveBeenCalled();
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      const dialogCloseSubject = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Boom' } });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Boom');
     });
   });
 
   describe('openEditDialog', () => {
-    it('should update message and reload on dialog success', async () => {
+    it('should reload and notify on dialog success', async () => {
       const dialogCloseSubject = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
       await detectAndFlush(fixture);
       mockMessageService.getAllPaginated.mockClear();
 
       component.openEditDialog(mockMessage);
-      dialogCloseSubject.next({ title: 'Updated', content: 'Updated body', severity: 'WARNING' });
+      dialogCloseSubject.next(mockMessage);
       await fixture.whenStable();
 
-      expect(mockMessageService.update).toHaveBeenCalledWith('m1', {
-        title: 'Updated',
-        content: 'Updated body',
-        severity: 'WARNING',
-      });
       expect(mockMessageService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Message updated');
+    });
+
+    it('should pass a submit callback that calls messageService.update', () => {
+      const dialogCloseSubject = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockMessage);
+
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { title: 'Updated', content: 'Updated body', severity: 'WARNING' };
+      passedData.submit(request);
+      expect(mockMessageService.update).toHaveBeenCalledWith('m1', request);
     });
 
     it('should pass message and lines in dialog data', async () => {
@@ -337,10 +365,22 @@ describe('MessagesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          data: { message: mockMessage, lines: [mockLine] },
+          data: expect.objectContaining({ message: mockMessage, lines: [mockLine] }),
           width: '500px',
         }),
       );
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      const dialogCloseSubject = new Subject<unknown>();
+      mockDialog.open.mockReturnValue({ afterClosed: () => dialogCloseSubject.asObservable() });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockMessage);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Conflict' } });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -9,13 +9,18 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Itinerary, Line, CreateItineraryRequest } from '@shared/models';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface ItineraryDialogData {
   itinerary?: Itinerary;
   lines: Line[];
+  submit: (request: CreateItineraryRequest) => Observable<Itinerary>;
+  onError?: (err: unknown) => void;
 }
 
 interface ItineraryForm {
@@ -33,6 +38,7 @@ interface ItineraryForm {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     TranslocoDirective,
   ],
@@ -98,13 +104,16 @@ interface ItineraryForm {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!itineraryForm.valid"
+        [disabled]="!itineraryForm.valid || submitting()"
         (click)="save()"
       >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
         {{ data.itinerary ? t('admin.itineraries.dialog.actionSave') : t('admin.itineraries.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
@@ -180,11 +189,13 @@ export class ItineraryDialogComponent {
     name: this.data.itinerary?.name ?? '',
   };
 
+  readonly submitting = signal(false);
+
   save(): void {
     const request: CreateItineraryRequest = {
       lineId: this.form.lineId,
       name: this.form.name,
     };
-    this.dialogRef.close(request);
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 }

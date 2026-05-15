@@ -466,6 +466,10 @@ export class StopsComponent {
       data: {
         lines: this.lines(),
         selectedLineId: this.lineId(),
+        submit: (request: CreateStopRequest) => this.stopService.create(request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.createFailed')));
+        },
       },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.stops.dialog.titleCreate'),
@@ -473,16 +477,9 @@ export class StopsComponent {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.stopService.create(result as CreateStopRequest).subscribe({
-          next: () => {
-            this.tableState.resetToFirstPage();
-            this.loadStops();
-            this.notify.success(this.transloco.translate('admin.stops.createSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.createFailed')));
-          },
-        });
+        this.tableState.resetToFirstPage();
+        this.loadStops();
+        this.notify.success(this.transloco.translate('admin.stops.createSuccess'));
       }
     });
   }
@@ -492,6 +489,10 @@ export class StopsComponent {
       data: {
         stop,
         lines: this.lines(),
+        submit: (request: CreateStopRequest) => this.stopService.update(stop.id, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.updateFailed')));
+        },
       },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.stops.dialog.titleEdit'),
@@ -499,15 +500,8 @@ export class StopsComponent {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.stopService.update(stop.id, result as CreateStopRequest).subscribe({
-          next: () => {
-            this.loadStops();
-            this.notify.success(this.transloco.translate('admin.stops.updateSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.updateFailed')));
-          },
-        });
+        this.loadStops();
+        this.notify.success(this.transloco.translate('admin.stops.updateSuccess'));
       }
     });
   }

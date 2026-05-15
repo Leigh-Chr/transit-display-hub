@@ -1,8 +1,9 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { of, Subject, throwError } from 'rxjs';
 import { StopDialogComponent, StopDialogData } from './stop-dialog.component';
-import { Line, Stop } from '@shared/models';
+import { CreateStopRequest, Line, Stop } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
 const en = {
@@ -27,18 +28,31 @@ const en = {
   },
 };
 
+const savedStop: Stop = {
+  id: 's1',
+  name: 'Central Station',
+  latitude: 48.8566,
+  longitude: 2.3522,
+  lines: [{ id: '1', code: 'L1', name: 'Line 1', color: '#FF0000' }],
+  scheduleCount: 0,
+  hasDevice: false,
+};
+
 describe('StopDialogComponent', () => {
   let component: StopDialogComponent;
   let fixture: ComponentFixture<StopDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
+  let submit: StopDialogData['submit'] & ReturnType<typeof vi.fn>;
 
   const mockLines: Line[] = [
     { id: '1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 },
     { id: '2', code: 'L2', name: 'Line 2', color: '#00FF00', type: null, stopCount: 3, itineraryCount: 1 },
   ];
 
-  function createComponent(data: StopDialogData = { lines: mockLines }): void {
+  function createComponent(overrides: Partial<StopDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
+    submit = vi.fn().mockReturnValue(of(savedStop)) as typeof submit;
+    const data: StopDialogData = { lines: mockLines, submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -100,7 +114,7 @@ describe('StopDialogComponent', () => {
       expect(component.form.lineIds.length).toBeGreaterThan(0);
     });
 
-    it('should close dialog with form data on save', () => {
+    it('should call submit with the form payload and close with the server response', () => {
       component.form.name = 'Central Station';
       component.form.lineIds = ['1', '2'];
       component.form.latitude = 48.8566;
@@ -108,26 +122,57 @@ describe('StopDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         name: 'Central Station',
         lineIds: ['1', '2'],
         latitude: 48.8566,
         longitude: 2.3522,
-      });
+      } satisfies CreateStopRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedStop);
     });
 
-    it('should close dialog with undefined coordinates when not provided', () => {
+    it('should call submit with undefined coordinates when not provided', () => {
       component.form.name = 'Simple Stop';
       component.form.lineIds = ['1'];
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         name: 'Simple Stop',
         lineIds: ['1'],
         latitude: undefined,
         longitude: undefined,
-      });
+      } satisfies CreateStopRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedStop);
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+      component.form.name = 'Central Station';
+      component.form.lineIds = ['1'];
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<Stop>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+      component.form.name = 'Central Station';
+      component.form.lineIds = ['1'];
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedStop);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
 
     it('should close dialog without data when cancel is clicked', () => {
@@ -143,7 +188,7 @@ describe('StopDialogComponent', () => {
 
   describe('create mode with preselected line', () => {
     it('should pre-populate lineIds from selectedLineId', () => {
-      createComponent({ lines: mockLines, selectedLineId: '2' });
+      createComponent({ selectedLineId: '2' });
       expect(component.form.lineIds).toEqual(['2']);
     });
   });
@@ -159,7 +204,7 @@ describe('StopDialogComponent', () => {
       hasDevice: false,
     };
 
-    beforeEach(() => createComponent({ stop: existingStop, lines: mockLines }));
+    beforeEach(() => createComponent({ stop: existingStop }));
 
     it('should display "Edit Stop" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
@@ -179,17 +224,18 @@ describe('StopDialogComponent', () => {
       expect(submitBtn.textContent).toContain('Save Changes');
     });
 
-    it('should close dialog with updated data on save', () => {
+    it('should call submit with the updated payload on save', () => {
       component.form.name = 'Updated Downtown';
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         name: 'Updated Downtown',
         lineIds: ['1'],
         latitude: 40.7128,
         longitude: -74.006,
-      });
+      } satisfies CreateStopRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedStop);
     });
   });
 });

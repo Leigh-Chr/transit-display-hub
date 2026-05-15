@@ -1,11 +1,11 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
 import { StopService } from '@core/api/stop.service';
-import { Line, Stop } from '@shared/models';
+import { DeviceRegistration, Line, RegisterDeviceRequest, Stop } from '@shared/models';
 
 const en = {
   common: { cancel: 'Cancel' },
@@ -24,11 +24,19 @@ const en = {
   },
 };
 
+const savedRegistration: DeviceRegistration = {
+  id: 'd1',
+  token: 'jwt-token-123',
+  stopId: 'stop1',
+  stopName: 'Central',
+};
+
 describe('DeviceDialogComponent', () => {
   let component: DeviceDialogComponent;
   let fixture: ComponentFixture<DeviceDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
   let mockStopService: { getAll: ReturnType<typeof vi.fn> };
+  let submit: DeviceDialogData['submit'] & ReturnType<typeof vi.fn>;
 
   const mockLines: Line[] = [
     { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 },
@@ -40,9 +48,11 @@ describe('DeviceDialogComponent', () => {
     { id: 'stop2', name: 'North', latitude: null, longitude: null, lines: [], scheduleCount: 0, hasDevice: false },
   ];
 
-  function createComponent(data: DeviceDialogData = { lines: mockLines }): void {
+  function createComponent(overrides: Partial<DeviceDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
     mockStopService = { getAll: vi.fn().mockReturnValue(of(mockStops)) };
+    submit = vi.fn().mockReturnValue(of(savedRegistration)) as typeof submit;
+    const data: DeviceDialogData = { lines: mockLines, submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -104,14 +114,42 @@ describe('DeviceDialogComponent', () => {
       expect(mockDialogRef.close).toHaveBeenCalled();
     });
 
-    it('should close dialog with stopId on save', () => {
+    it('should call submit with the stopId payload and close with the server response', () => {
       component.form.stopId = 'stop1';
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith({
+      expect(submit).toHaveBeenCalledWith({
         stopId: 'stop1',
-      });
+      } satisfies RegisterDeviceRequest);
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedRegistration);
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+      component.form.stopId = 'stop1';
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<DeviceRegistration>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+      component.form.stopId = 'stop1';
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedRegistration);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
   });
 

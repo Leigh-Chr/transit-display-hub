@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -8,14 +8,19 @@ import {
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { Stop, Line, CreateStopRequest } from '@shared/models';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { runDialogSubmit } from '@shared/admin/dialog-submit';
 
 export interface StopDialogData {
   stop?: Stop;
   lines: Line[];
   selectedLineId?: string;
+  submit: (request: CreateStopRequest) => Observable<Stop>;
+  onError?: (err: unknown) => void;
 }
 
 interface StopForm {
@@ -34,6 +39,7 @@ interface StopForm {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     TranslocoDirective,
   ],
@@ -101,13 +107,16 @@ interface StopForm {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ t('common.cancel') }}</button>
+      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="!stopForm.valid || form.lineIds.length === 0"
+        [disabled]="!stopForm.valid || form.lineIds.length === 0 || submitting()"
         (click)="save()"
       >
+        @if (submitting()) {
+          <mat-progress-spinner mode="indeterminate" diameter="18" />
+        }
         {{ data.stop ? t('admin.stops.dialog.actionSave') : t('admin.stops.dialog.actionCreate') }}
       </button>
     </mat-dialog-actions>
@@ -148,6 +157,8 @@ export class StopDialogComponent {
     longitude: this.data.stop?.longitude ?? null,
   };
 
+  readonly submitting = signal(false);
+
   save(): void {
     const request: CreateStopRequest = {
       lineIds: this.form.lineIds,
@@ -155,6 +166,6 @@ export class StopDialogComponent {
       latitude: this.form.latitude ?? undefined,
       longitude: this.form.longitude ?? undefined,
     };
-    this.dialogRef.close(request);
+    runDialogSubmit(this.submitting, () => this.data.submit(request), this.dialogRef, this.data.onError);
   }
 }

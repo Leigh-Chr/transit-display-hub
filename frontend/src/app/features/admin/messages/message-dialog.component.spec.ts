@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
 import { StopService } from '@core/api/stop.service';
@@ -47,19 +47,35 @@ const en = {
   },
 };
 
+const savedMessage: BroadcastMessage = {
+  id: 'm1',
+  title: 'Saved',
+  content: 'Saved content',
+  severity: 'INFO',
+  startTime: '2024-01-01T08:00:00Z',
+  endTime: '2024-01-02T08:00:00Z',
+  scopeType: 'NETWORK',
+  scopeId: null,
+  scopeInfo: null,
+  active: true,
+};
+
 describe('MessageDialogComponent', () => {
   let component: MessageDialogComponent;
   let fixture: ComponentFixture<MessageDialogComponent>;
   let mockDialogRef: { close: ReturnType<typeof vi.fn> };
   let mockStopService: { getAll: ReturnType<typeof vi.fn> };
+  let submit: MessageDialogData['submit'] & ReturnType<typeof vi.fn>;
 
   const mockLines: Line[] = [
     { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, stopCount: 5, itineraryCount: 2 },
   ];
 
-  function createComponent(data: MessageDialogData = { lines: mockLines }): void {
+  function createComponent(overrides: Partial<MessageDialogData> = {}): void {
     mockDialogRef = { close: vi.fn() };
     mockStopService = { getAll: vi.fn().mockReturnValue(of([])) };
+    submit = vi.fn().mockReturnValue(of(savedMessage)) as typeof submit;
+    const data: MessageDialogData = { lines: mockLines, submit, ...overrides };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -121,7 +137,7 @@ describe('MessageDialogComponent', () => {
       expect(submitBtn.disabled).toBe(true);
     });
 
-    it('should close dialog with form data on save', () => {
+    it('should call submit with the form payload and close with the server response', () => {
       component.form.title = 'Service Alert';
       component.form.content = 'Line delayed';
       component.form.severity = 'WARNING';
@@ -131,7 +147,7 @@ describe('MessageDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith(
+      expect(submit).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Service Alert',
           content: 'Line delayed',
@@ -140,6 +156,44 @@ describe('MessageDialogComponent', () => {
           scopeId: undefined,
         }),
       );
+      expect(mockDialogRef.close).toHaveBeenCalledWith(savedMessage);
+    });
+
+    it('should keep the dialog open and surface the error when submit fails', () => {
+      const onError = vi.fn();
+      createComponent({ submit: vi.fn().mockReturnValue(throwError(() => new Error('boom'))), onError });
+      component.form.title = 'Service Alert';
+      component.form.content = 'Line delayed';
+      component.form.severity = 'WARNING';
+      component.form.scopeType = 'NETWORK';
+      component.form.startTime = '2024-01-01T08:00';
+      component.form.endTime = '2024-01-01T18:00';
+
+      component.save();
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
+      expect(component.submitting()).toBe(false);
+    });
+
+    it('should ignore subsequent save clicks while the submit is in flight', () => {
+      const inFlight = new Subject<BroadcastMessage>();
+      createComponent({ submit: vi.fn().mockReturnValue(inFlight) });
+      component.form.title = 'Service Alert';
+      component.form.content = 'Line delayed';
+      component.form.severity = 'WARNING';
+      component.form.scopeType = 'NETWORK';
+      component.form.startTime = '2024-01-01T08:00';
+      component.form.endTime = '2024-01-01T18:00';
+
+      component.save();
+      component.save();
+      component.save();
+
+      expect(component.submitting()).toBe(true);
+      inFlight.next(savedMessage);
+      inFlight.complete();
+      expect(mockDialogRef.close).toHaveBeenCalledTimes(1);
     });
 
     it('should close dialog without data when cancel is clicked', () => {
@@ -222,7 +276,7 @@ describe('MessageDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith(
+      expect(submit).toHaveBeenCalledWith(
         expect.objectContaining({
           scopeType: 'LINE',
           scopeId: 'line1',
@@ -241,7 +295,7 @@ describe('MessageDialogComponent', () => {
 
       component.save();
 
-      expect(mockDialogRef.close).toHaveBeenCalledWith(
+      expect(submit).toHaveBeenCalledWith(
         expect.objectContaining({
           scopeType: 'STOP',
           scopeId: 'stop1',
@@ -264,7 +318,7 @@ describe('MessageDialogComponent', () => {
       active: true,
     };
 
-    beforeEach(() => createComponent({ message: existingMessage, lines: mockLines }));
+    beforeEach(() => createComponent({ message: existingMessage }));
 
     it('should display "Edit Message" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');

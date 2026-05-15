@@ -202,9 +202,8 @@ describe('UsersComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should create user and reload on dialog success', async () => {
-      const afterClosed$ = of({ username: 'newuser', password: 'pass123', role: 'AGENT' });
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+    it('should reload and notify on dialog success', async () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockUser) });
       await detectAndFlush(fixture);
       mockUserService.getAllPaginated.mockClear();
 
@@ -212,55 +211,57 @@ describe('UsersComponent', () => {
       await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
-      expect(mockUserService.create).toHaveBeenCalledWith({
-        username: 'newuser',
-        password: 'pass123',
-        role: 'AGENT',
-      });
       expect(mockUserService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('User created');
     });
 
-    it('should do nothing when dialog is cancelled', () => {
-      const afterClosed$ = of(undefined);
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+    it('should pass a submit callback that calls userService.create', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
 
-      expect(mockUserService.create).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { username: 'newuser', password: 'pass123', role: 'AGENT' };
+      passedData.submit(request);
+      expect(mockUserService.create).toHaveBeenCalledWith(request);
     });
 
-    it('should show error when API create fails', () => {
-      const afterClosed$ = of({ username: 'newuser', password: 'pass123', role: 'AGENT' });
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
-      mockUserService.create.mockReturnValue(
-        throwError(() => ({ error: { message: 'Username already exists' } }))
-      );
+    it('should not notify success when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Username already exists' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Username already exists');
     });
 
-    it('should show fallback error message when API error has no message', () => {
-      const afterClosed$ = of({ username: 'newuser', password: 'pass123', role: 'AGENT' });
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
-      mockUserService.create.mockReturnValue(throwError(() => ({ error: {} })));
+    it('should expose an onError with fallback message when error has no message', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: {} });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Failed to create user');
     });
   });
 
   describe('openEditDialog', () => {
-    it('should update user and reload on dialog success', async () => {
-      const updateData = { role: 'ADMIN', enabled: true };
-      const afterClosed$ = of(updateData);
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+    it('should reload and notify on dialog success', async () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockUser) });
       await detectAndFlush(fixture);
       mockUserService.getAllPaginated.mockClear();
 
@@ -268,30 +269,38 @@ describe('UsersComponent', () => {
       await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
-      expect(mockUserService.update).toHaveBeenCalledWith(mockOtherUser.id, updateData);
       expect(mockUserService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('User updated');
     });
 
-    it('should do nothing when edit dialog is cancelled', () => {
-      const afterClosed$ = of(undefined);
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
+    it('should pass a submit callback that calls userService.update', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openEditDialog(mockOtherUser);
 
-      expect(mockUserService.update).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { role: 'ADMIN', enabled: true };
+      passedData.submit(request);
+      expect(mockUserService.update).toHaveBeenCalledWith(mockOtherUser.id, request);
     });
 
-    it('should show error when API update fails', () => {
-      const afterClosed$ = of({ role: 'ADMIN', enabled: true });
-      mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$ });
-      mockUserService.update.mockReturnValue(
-        throwError(() => ({ error: { message: 'Update failed' } }))
-      );
+    it('should not notify success when edit dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openEditDialog(mockOtherUser);
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockOtherUser);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Update failed' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Update failed');
     });

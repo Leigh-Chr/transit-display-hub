@@ -268,9 +268,8 @@ describe('ItinerariesComponent', () => {
   });
 
   describe('openCreateDialog', () => {
-    it('should call create and reload on success', async () => {
-      const dialogResult = { lineId: 'l1', name: 'South' };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(dialogResult) });
+    it('should reload and notify on success', async () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockItinerary) });
       await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
@@ -278,35 +277,46 @@ describe('ItinerariesComponent', () => {
       await fixture.whenStable();
 
       expect(mockDialog.open).toHaveBeenCalled();
-      expect(mockItineraryService.create).toHaveBeenCalledWith(dialogResult);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Itinerary created');
     });
 
-    it('should not call create when dialog is cancelled', () => {
+    it('should pass a submit callback that calls itineraryService.create', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
 
-      expect(mockItineraryService.create).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { lineId: 'l1', name: 'South' };
+      passedData.submit(request);
+      expect(mockItineraryService.create).toHaveBeenCalledWith(request);
     });
 
-    it('should show error notification when create fails', () => {
-      mockDialog.open.mockReturnValue({ afterClosed: () => of({ lineId: 'l1', name: 'South' }) });
-      mockItineraryService.create.mockReturnValue(throwError(() => ({ error: { message: 'Duplicate name' } })));
+    it('should not notify success when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openCreateDialog();
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openCreateDialog();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Duplicate name' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Duplicate name');
     });
   });
 
   describe('openEditDialog', () => {
-    it('should call update and reload on success', async () => {
-      const editResult = { lineId: 'l1', name: 'Updated North' };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(editResult) });
+    it('should reload and notify on success', async () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockItinerary) });
       await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
@@ -316,39 +326,50 @@ describe('ItinerariesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          data: { itinerary: mockItinerary, lines: [mockLine] },
+          data: expect.objectContaining({ itinerary: mockItinerary, lines: [mockLine] }),
           width: '450px',
         }),
       );
-      expect(mockItineraryService.update).toHaveBeenCalledWith('i1', editResult);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Itinerary updated');
     });
 
-    it('should not call update when dialog is cancelled', () => {
+    it('should pass a submit callback that calls itineraryService.update', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openEditDialog(mockItinerary);
 
-      expect(mockItineraryService.update).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { lineId: 'l1', name: 'Updated North' };
+      passedData.submit(request);
+      expect(mockItineraryService.update).toHaveBeenCalledWith('i1', request);
     });
 
-    it('should show error notification when update fails', () => {
-      mockDialog.open.mockReturnValue({ afterClosed: () => of({ lineId: 'l1', name: 'Updated' }) });
-      mockItineraryService.update.mockReturnValue(throwError(() => ({ error: { message: 'Conflict' } })));
+    it('should not notify success when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openEditDialog(mockItinerary);
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openEditDialog(mockItinerary);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Conflict' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Conflict');
     });
   });
 
   describe('openStopsDialog', () => {
-    it('should call updateStops and reload on success', async () => {
-      const stopsResult = { stopIds: ['s1', 's2'] };
-      mockDialog.open.mockReturnValue({ afterClosed: () => of(stopsResult) });
+    it('should reload and notify on success', async () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(mockItinerary) });
       await detectAndFlush(fixture);
       mockItineraryService.getAllPaginated.mockClear();
 
@@ -358,32 +379,42 @@ describe('ItinerariesComponent', () => {
       expect(mockDialog.open).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          data: { itinerary: mockItinerary },
+          data: expect.objectContaining({ itinerary: mockItinerary }),
           width: '500px',
         }),
       );
-      expect(mockItineraryService.updateStops).toHaveBeenCalledWith('i1', stopsResult);
       expect(mockItineraryService.getAllPaginated).toHaveBeenCalled();
       expect(mockNotify.success).toHaveBeenCalledWith('Stops updated');
     });
 
-    it('should not call updateStops when dialog is cancelled', () => {
+    it('should pass a submit callback that calls itineraryService.updateStops', () => {
       mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openStopsDialog(mockItinerary);
 
-      expect(mockItineraryService.updateStops).not.toHaveBeenCalled();
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      const request = { stopIds: ['s1', 's2'] };
+      passedData.submit(request);
+      expect(mockItineraryService.updateStops).toHaveBeenCalledWith('i1', request);
     });
 
-    it('should show error notification when updateStops fails', () => {
-      mockDialog.open.mockReturnValue({ afterClosed: () => of({ stopIds: ['s1'] }) });
-      mockItineraryService.updateStops.mockReturnValue(
-        throwError(() => ({ error: { message: 'Invalid stop' } })),
-      );
+    it('should not notify success when dialog is cancelled', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
       fixture.detectChanges();
 
       component.openStopsDialog(mockItinerary);
+
+      expect(mockNotify.success).not.toHaveBeenCalled();
+    });
+
+    it('should expose an onError that surfaces the failure via notify', () => {
+      mockDialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+      fixture.detectChanges();
+
+      component.openStopsDialog(mockItinerary);
+      const passedData = mockDialog.open.mock.calls[0]![1].data;
+      passedData.onError({ error: { message: 'Invalid stop' } });
 
       expect(mockNotify.error).toHaveBeenCalledWith('Invalid stop');
     });

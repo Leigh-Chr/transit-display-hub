@@ -394,67 +394,65 @@ export class ItinerariesComponent implements AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(ItineraryDialogComponent, {
-      data: { lines: this.lines() },
+      data: {
+        lines: this.lines(),
+        submit: (request: CreateItineraryRequest) => this.itineraryService.create(request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.createFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.itineraries.dialog.titleCreate'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.itineraryService.create(result as CreateItineraryRequest).subscribe({
-          next: () => {
-            this.tableState.resetToFirstPage();
-            this.loadItineraries();
-            this.notify.success(this.transloco.translate('admin.itineraries.createSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.createFailed')));
-          },
-        });
+        this.tableState.resetToFirstPage();
+        this.loadItineraries();
+        this.notify.success(this.transloco.translate('admin.itineraries.createSuccess'));
       }
     });
   }
 
   openEditDialog(itinerary: Itinerary): void {
     const dialogRef = this.dialog.open(ItineraryDialogComponent, {
-      data: { itinerary, lines: this.lines() },
+      data: {
+        itinerary,
+        lines: this.lines(),
+        submit: (request: CreateItineraryRequest) => this.itineraryService.update(itinerary.id, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.updateFailed')));
+        },
+      },
       width: '450px',
       ariaLabel: this.transloco.translate('admin.itineraries.dialog.titleEdit'),
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.itineraryService.update(itinerary.id, result as CreateItineraryRequest).subscribe({
-          next: () => {
-            this.loadItineraries();
-            this.notify.success(this.transloco.translate('admin.itineraries.updateSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.updateFailed')));
-          },
-        });
+        this.loadItineraries();
+        this.notify.success(this.transloco.translate('admin.itineraries.updateSuccess'));
       }
     });
   }
 
   openStopsDialog(itinerary: Itinerary): void {
     const dialogRef = this.dialog.open(ItineraryStopsDialogComponent, {
-      data: { itinerary },
+      data: {
+        itinerary,
+        submit: (request: UpdateItineraryStopsRequest) => this.itineraryService.updateStops(itinerary.id, request),
+        onError: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.stopsUpdateFailed')));
+        },
+      },
       width: '500px',
       ariaLabel: this.transloco.translate('admin.itineraries.stopsDialog.title', { name: itinerary.name }),
     });
 
-    dialogRef.afterClosed().subscribe((result: UpdateItineraryStopsRequest | undefined) => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.itineraryService.updateStops(itinerary.id, result).subscribe({
-          next: () => {
-            this.loadItineraries();
-            this.notify.success(this.transloco.translate('admin.itineraries.stopsUpdated'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.stopsUpdateFailed')));
-          },
-        });
+        this.loadItineraries();
+        this.notify.success(this.transloco.translate('admin.itineraries.stopsUpdated'));
       }
     });
   }
