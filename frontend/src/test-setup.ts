@@ -7,29 +7,55 @@ import { provideZonelessChangeDetection, Provider } from '@angular/core';
 // any spec that bootstraps a Material component throw the moment it
 // touches matchMedia. Provide a noop polyfill once for every test.
 /* eslint-disable @typescript-eslint/no-deprecated --
- * The polyfill below intentionally restores the deprecated
+ * The polyfill below intentionally exposes the deprecated
  * MediaQueryList.addListener / removeListener pair so that the
  * Angular CDK BreakpointObserver, which still uses them for
- * back-compat, does not blow up under newer jsdom builds that
- * shipped without them.
+ * back-compat, does not blow up under jsdom (which dropped them)
+ * nor in environments where matchMedia is missing entirely.
  */
-if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-  const original = window.matchMedia.bind(window);
-  window.matchMedia = (query: string): MediaQueryList => {
-    const mql = original(query);
-    type LegacyMql = MediaQueryList & {
-      addListener?: (cb: unknown) => void;
-      removeListener?: (cb: unknown) => void;
-    };
-    const legacy = mql as LegacyMql;
-    if (typeof legacy.addListener !== 'function') {
-      legacy.addListener = () => undefined;
-    }
-    if (typeof legacy.removeListener !== 'function') {
-      legacy.removeListener = () => undefined;
-    }
-    return mql;
+if (typeof window !== 'undefined') {
+  type LegacyMql = MediaQueryList & {
+    addListener?: (cb: unknown) => void;
+    removeListener?: (cb: unknown) => void;
   };
+
+  const buildMql = (query: string): MediaQueryList => {
+    const listeners = new Set<EventListener>();
+    const stub: LegacyMql = {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: ((_t: string, cb: EventListener) => {
+        listeners.add(cb);
+      }) as MediaQueryList['addEventListener'],
+      removeEventListener: ((_t: string, cb: EventListener) => {
+        listeners.delete(cb);
+      }) as MediaQueryList['removeEventListener'],
+      dispatchEvent: (event: Event) => {
+        listeners.forEach((cb) => cb(event));
+        return true;
+      },
+    };
+    return stub;
+  };
+
+  if (typeof window.matchMedia !== 'function') {
+    window.matchMedia = buildMql;
+  } else {
+    const original = window.matchMedia.bind(window);
+    window.matchMedia = (query: string): MediaQueryList => {
+      const mql = original(query) as unknown as LegacyMql;
+      if (typeof mql.addListener !== 'function') {
+        mql.addListener = () => undefined;
+      }
+      if (typeof mql.removeListener !== 'function') {
+        mql.removeListener = () => undefined;
+      }
+      return mql;
+    };
+  }
 }
 /* eslint-enable @typescript-eslint/no-deprecated */
 
