@@ -22,6 +22,16 @@ spring:
     # the session open for the view layer would mask a missing fetch
     # by quietly issuing N+1 lazy loads at JSON-serialization time.
     open-in-view: false
+  task:
+    scheduling:
+      # Default pool is 1 thread, which serialises every @Scheduled
+      # method. We run 7 of them today (3 GTFS-RT pollers, daily GTFS
+      # refresh, daily refresh-token purge, kiosk DisplayState 60s,
+      # device-offline 30s) — a single sluggish import would freeze
+      # the whole scheduler. 4 leaves headroom without spawning more
+      # threads than concurrent ticks ever need.
+      pool:
+        size: 4
 
 server:
   port: 8080
