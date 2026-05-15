@@ -512,7 +512,7 @@ export class PathwaysComponent implements OnInit {
   }
 
   modeLabel(mode: PathwayMode): string {
-    return this.transloco.translate(`transit.pathwayMode.${mode}`);
+    return this.transloco.translate(`map.transit.pathwayMode.${mode}`);
   }
 
   /** Pure helper kept static so unit tests can call it without a TestBed.
@@ -692,7 +692,7 @@ export class PathwaysComponent implements OnInit {
   }
 
   private static modeLabelStatic(mode: PathwayMode, transloco?: TranslocoService): string {
-    return transloco ? transloco.translate(`transit.pathwayMode.${mode}`) : mode;
+    return transloco ? transloco.translate(`map.transit.pathwayMode.${mode}`) : mode;
   }
 
   /** Build a triangle polygon pointing from (x1,y1) toward (x2,y2),

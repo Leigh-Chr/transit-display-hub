@@ -236,12 +236,40 @@
         "default": "Booking"
       },
       "priorNoticeHours": "at least {{ hours }}h in advance",
-      "priorNoticeMinutes": "at least {{ minutes }} min in advance"
+      "priorNoticeMinutes": "at least {{ minutes }} min in advance",
+      "bookingRequired": "Booking required",
+      "tadZoneTitle": "Pick-up area — {{ name }}",
+      "tadZoneSvgAria": "On-demand zone polygon {{ name }}",
+      "fareFromOrigin": "Trip from {{ origin }}",
+      "nextFlexTitle": "On-demand booking today",
+      "howToBook": "How to book",
+      "bookOnline": "Book online",
+      "moreInfo": "More info",
+      "loadingSchedules": "Loading schedules…",
+      "loadingSchedulesAria": "Loading schedules",
+      "noDepartures": "No scheduled departures"
     },
     "accessibility": {
       "accessible": "Wheelchair accessible",
       "notAccessible": "Not accessible",
       "unknown": "Not declared"
+    },
+    "schematic": {
+      "accessibilityToggle": {
+        "enable": "Wheelchair filter — dim non-accessible stops",
+        "disable": "Disable wheelchair filter — show every stop"
+      },
+      "zoneOverlayToggle": {
+        "show": "Show fare-zone colours as halos around stops",
+        "hide": "Hide fare-zone colours"
+      },
+      "zoneOverlayLabel": "Zones",
+      "zoneRowLabel": "Zones:",
+      "zoneRowAll": "All",
+      "emptySelection": "Select a line to display it on the map",
+      "diagramAriaLabel": "Network schematic. Drag or scroll to pan. Hold Ctrl and scroll, or pinch, to zoom. Arrow keys pan; plus and minus zoom; 0 resets the view.",
+      "svgAriaLabel": "Network schematic diagram — see /map/list for the accessible text alternative",
+      "wheelHint": "<kbd>Ctrl</kbd> + scroll to zoom"
     }
   },
   "hub": {

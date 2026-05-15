@@ -12,6 +12,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { linkedQueryParam } from 'ngxtension/linked-query-param';
 import { NetworkLine, NetworkMapAlerts } from '@shared/models';
 import { LayoutStop } from '../../services/schematic-layout.service';
@@ -52,6 +53,7 @@ import {
     LineFilterChipsComponent,
     MapLegendComponent,
     ZoomControlsComponent,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './schematic-map.component.html',

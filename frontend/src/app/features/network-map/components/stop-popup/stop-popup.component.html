@@ -13,18 +13,18 @@
         @if (data.stop.hasOnDemand) {
           <span class="meta-pill meta-tad">
             <mat-icon>phone_callback</mat-icon>
-            Réservation requise
+            {{ 'map.stopPopup.bookingRequired' | transloco }}
           </span>
         }
         @if (data.stop.wheelchairBoarding === 'ACCESSIBLE') {
           <span class="meta-pill meta-access">
             <mat-icon>accessible_forward</mat-icon>
-            Accessible PMR
+            {{ 'map.accessibility.accessible' | transloco }}
           </span>
         } @else if (data.stop.wheelchairBoarding === 'NOT_ACCESSIBLE') {
           <span class="meta-pill meta-no-access">
             <mat-icon>do_not_disturb</mat-icon>
-            Non accessible
+            {{ 'map.accessibility.notAccessible' | transloco }}
           </span>
         }
         @for (zone of data.stop.fareAreaNames ?? []; track zone) {
@@ -36,7 +36,7 @@
       </div>
     }
   </div>
-  <button mat-icon-button mat-dialog-close aria-label="Close">
+  <button mat-icon-button mat-dialog-close [attr.aria-label]="'common.close' | transloco">
     <mat-icon>close</mat-icon>
   </button>
 </div>
@@ -67,14 +67,14 @@
     <div class="tad-zone-section">
       <h3 class="section-title">
         <mat-icon>layers</mat-icon>
-        Zone de prise en charge — {{ zone.name || zone.externalId }}
+        {{ 'map.stopPopup.tadZoneTitle' | transloco: { name: zone.name || zone.externalId } }}
       </h3>
       <svg
         class="tad-zone-canvas"
         [attr.viewBox]="tadZoneViewBox()"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        [attr.aria-label]="'Polygone de la zone TAD ' + (zone.name || zone.externalId)">
+        [attr.aria-label]="'map.stopPopup.tadZoneSvgAria' | transloco: { name: zone.name || zone.externalId }">
         @for (ring of tadZoneRings(); track $index) {
           <path
             [attr.d]="ring.path"
@@ -100,7 +100,7 @@
     <div class="fare-section">
       <h3 class="section-title">
         <mat-icon>local_atm</mat-icon>
-        Trajet depuis {{ data.originStop?.name }}
+        {{ 'map.stopPopup.fareFromOrigin' | transloco: { origin: data.originStop?.name ?? '' } }}
       </h3>
       <div class="fare-card">
         <div class="fare-amount">{{ label }}</div>
@@ -116,7 +116,7 @@
     <div class="flex-window-section">
       <h3 class="section-title">
         <mat-icon>schedule</mat-icon>
-        Réservation TAD aujourd'hui
+        {{ 'map.stopPopup.nextFlexTitle' | transloco }}
       </h3>
       <div class="flex-window-card">
         <span class="flex-window-time">{{ label }}</span>
@@ -132,7 +132,7 @@
     <div class="booking-rules-section">
       <h3 class="section-title">
         <mat-icon>phone_callback</mat-icon>
-        Comment réserver
+        {{ 'map.stopPopup.howToBook' | transloco }}
       </h3>
       @for (rule of bookingRules(); track rule.id) {
         <div class="booking-rule-card">
@@ -155,13 +155,13 @@
             @if (rule.bookingUrl) {
               <a class="rule-action rule-action-book" [href]="rule.bookingUrl" target="_blank" rel="noopener noreferrer">
                 <mat-icon>open_in_new</mat-icon>
-                Réserver en ligne
+                {{ 'map.stopPopup.bookOnline' | transloco }}
               </a>
             }
             @if (rule.infoUrl) {
               <a class="rule-action rule-action-info" [href]="rule.infoUrl" target="_blank" rel="noopener noreferrer">
                 <mat-icon>info</mat-icon>
-                Plus d'infos
+                {{ 'map.stopPopup.moreInfo' | transloco }}
               </a>
             }
           </div>
@@ -177,8 +177,8 @@
 
   @if (loading()) {
     <div class="loading">
-      <mat-spinner diameter="32" aria-label="Loading schedules"></mat-spinner>
-      <span>Loading schedules...</span>
+      <mat-spinner diameter="32" [attr.aria-label]="'map.stopPopup.loadingSchedulesAria' | transloco"></mat-spinner>
+      <span>{{ 'map.stopPopup.loadingSchedules' | transloco }}</span>
     </div>
   } @else if (error()) {
     <div class="error">
@@ -188,7 +188,7 @@
   } @else if (timetableGroups().length === 0) {
     <div class="empty">
       <mat-icon>schedule</mat-icon>
-      <span>No scheduled departures</span>
+      <span>{{ 'map.stopPopup.noDepartures' | transloco }}</span>
     </div>
   } @else {
     @for (group of timetableGroups(); track group.itineraryId) {

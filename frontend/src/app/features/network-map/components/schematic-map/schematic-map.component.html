@@ -14,8 +14,8 @@
       [class.active]="accessibleOnly()"
       [attr.aria-pressed]="accessibleOnly()"
       [attr.title]="accessibleOnly()
-        ? 'Désactiver le filtre PMR — afficher tous les arrêts'
-        : 'Filtre PMR — atténuer les arrêts non accessibles'"
+        ? ('map.schematic.accessibilityToggle.disable' | transloco)
+        : ('map.schematic.accessibilityToggle.enable' | transloco)"
       (click)="accessibleOnly.set(!accessibleOnly())"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -30,29 +30,29 @@
         [class.active]="zoneOverlayVisible()"
         [attr.aria-pressed]="zoneOverlayVisible()"
         [attr.title]="zoneOverlayVisible()
-          ? 'Masquer les couleurs de zone tarifaire'
-          : 'Afficher les couleurs de zone tarifaire en halo autour des arrêts'"
+          ? ('map.schematic.zoneOverlayToggle.hide' | transloco)
+          : ('map.schematic.zoneOverlayToggle.show' | transloco)"
         (click)="zoneOverlayVisible.set(!zoneOverlayVisible())"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
           <circle cx="12" cy="12" r="5" fill="currentColor" stroke="none" opacity="0.4"/>
         </svg>
-        <span class="zone-overlay-label">Zones</span>
+        <span class="zone-overlay-label">{{ 'map.schematic.zoneOverlayLabel' | transloco }}</span>
       </button>
     }
   </div>
 
   @if (availableZones().length > 0) {
     <div class="zone-row">
-      <span class="zone-row-label">Zones :</span>
+      <span class="zone-row-label">{{ 'map.schematic.zoneRowLabel' | transloco }}</span>
       <button
         type="button"
         class="zone-chip"
         [class.active]="selectedZone() === null"
         (click)="selectedZone.set(null)"
         [attr.aria-pressed]="selectedZone() === null"
-      >Toutes</button>
+      >{{ 'map.schematic.zoneRowAll' | transloco }}</button>
       @for (zone of availableZones(); track zone) {
         <button
           type="button"
@@ -67,7 +67,7 @@
 
   @if (visibleLineCodes().length === 0) {
     <div class="empty-selection">
-      <span class="empty-selection-text">Select a line to display it on the map</span>
+      <span class="empty-selection-text">{{ 'map.schematic.emptySelection' | transloco }}</span>
     </div>
   } @else {
   <!-- Diagram with zoom/pan.
@@ -81,7 +81,7 @@
     #diagramWrapper
     class="line-diagram-wrapper"
     tabindex="0"
-    aria-label="Network schematic. Drag or scroll to pan. Hold Ctrl and scroll, or pinch, to zoom. Arrow keys pan; plus and minus zoom; 0 resets the view."
+    [attr.aria-label]="'map.schematic.diagramAriaLabel' | transloco"
     (keydown)="onKeyDown($event)"
     (mousedown)="onPointerDown($event)"
     (mousemove)="onPointerMove($event)"
@@ -97,7 +97,7 @@
       preserveAspectRatio="xMidYMid meet"
       class="line-diagram network-diagram"
       role="img"
-      aria-label="Network schematic diagram — see /map/list for the accessible text alternative"
+      [attr.aria-label]="'map.schematic.svgAriaLabel' | transloco"
     >
       <!-- Interchange connectors (gently curved dashed paths) — multi-line
            only. vector-effect keeps the dashed stroke at constant screen
@@ -352,7 +352,7 @@
 
     @if (wheelHintVisible()) {
       <div class="wheel-hint" role="status" aria-live="polite">
-        <kbd>Ctrl</kbd> + scroll to zoom
+        <span [innerHTML]="'map.schematic.wheelHint' | transloco"></span>
       </div>
     }
   </div>

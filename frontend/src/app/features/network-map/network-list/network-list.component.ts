@@ -273,11 +273,11 @@ export class NetworkListComponent implements OnInit {
   }
 
   lineTypeLabel(type: NonNullable<NetworkLine['type']>): string {
-    // Resolve via the shared transit.lineType.* namespace so the same
+    // Resolve via the shared map.transit.lineType.* namespace so the same
     // catalogue (METRO -> "Metro" / "Subway", etc.) backs every page that
     // renders a GTFS route_type. Falls back to the raw enum if the dict
     // is missing the key (defensive against custom GTFS types).
-    const key = `transit.lineType.${type}`;
+    const key = `map.transit.lineType.${type}`;
     const translated = this.transloco.translate(key);
     return translated === key ? type : translated;
   }

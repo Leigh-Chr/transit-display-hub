@@ -236,12 +236,40 @@
         "default": "Réservation"
       },
       "priorNoticeHours": "au moins {{ hours }}h à l'avance",
-      "priorNoticeMinutes": "au moins {{ minutes }} min à l'avance"
+      "priorNoticeMinutes": "au moins {{ minutes }} min à l'avance",
+      "bookingRequired": "Réservation requise",
+      "tadZoneTitle": "Zone de prise en charge — {{ name }}",
+      "tadZoneSvgAria": "Polygone de la zone TAD {{ name }}",
+      "fareFromOrigin": "Trajet depuis {{ origin }}",
+      "nextFlexTitle": "Réservation TAD aujourd'hui",
+      "howToBook": "Comment réserver",
+      "bookOnline": "Réserver en ligne",
+      "moreInfo": "Plus d'infos",
+      "loadingSchedules": "Chargement des horaires…",
+      "loadingSchedulesAria": "Chargement des horaires",
+      "noDepartures": "Aucun passage prévu"
     },
     "accessibility": {
       "accessible": "Accessible PMR",
       "notAccessible": "Non accessible",
       "unknown": "Non renseigné"
+    },
+    "schematic": {
+      "accessibilityToggle": {
+        "enable": "Filtre PMR — atténuer les arrêts non accessibles",
+        "disable": "Désactiver le filtre PMR — afficher tous les arrêts"
+      },
+      "zoneOverlayToggle": {
+        "show": "Afficher les couleurs de zone tarifaire en halo autour des arrêts",
+        "hide": "Masquer les couleurs de zone tarifaire"
+      },
+      "zoneOverlayLabel": "Zones",
+      "zoneRowLabel": "Zones :",
+      "zoneRowAll": "Toutes",
+      "emptySelection": "Sélectionnez une ligne pour l'afficher sur la carte",
+      "diagramAriaLabel": "Schéma du réseau. Glissez ou faites défiler pour panoramiquer. Maintenez Ctrl et faites défiler, ou pincez, pour zoomer. Les touches fléchées panoramiquent ; plus et moins zooment ; 0 réinitialise la vue.",
+      "svgAriaLabel": "Schéma du réseau — voir /map/list pour l'alternative texte accessible",
+      "wheelHint": "<kbd>Ctrl</kbd> + molette pour zoomer"
     }
   },
   "hub": {

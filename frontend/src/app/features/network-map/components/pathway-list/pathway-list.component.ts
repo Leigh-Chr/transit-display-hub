@@ -168,7 +168,7 @@ export class PathwayListComponent {
     return g.pathways.map(p => ({
       pathway: p,
       icon: MODE_ICON[p.pathwayMode],
-      label: this.transloco.translate(`transit.pathwayMode.${p.pathwayMode}`),
+      label: this.transloco.translate(`map.transit.pathwayMode.${p.pathwayMode}`),
       durationLabel: this.formatDuration(p.traversalTimeSeconds),
       detailLabel: this.detailFor(p),
     }));
@@ -176,14 +176,14 @@ export class PathwayListComponent {
 
   readonly titleLabel = computed(() => {
     this.locale.current();
-    return this.transloco.translate('pathways.title', {
+    return this.transloco.translate('map.pathways.title', {
       station: this.graph()?.stationName ?? '',
     });
   });
 
   readonly ariaLabel = computed(() => {
     this.locale.current();
-    return this.transloco.translate('pathways.ariaLabel');
+    return this.transloco.translate('map.pathways.ariaLabel');
   });
 
   readonly levelLine = computed<string | null>(() => {
@@ -191,10 +191,10 @@ export class PathwayListComponent {
     const g = this.graph();
     if (!g || g.levels.length === 0) {return null;}
     const labels = g.levels.map(l =>
-      l.name ?? this.transloco.translate('pathways.fallbackLevel', { index: l.index }));
+      l.name ?? this.transloco.translate('map.pathways.fallbackLevel', { index: l.index }));
     const list = labels.join(', ');
     return this.transloco.translate(
-      g.levels.length === 1 ? 'pathways.levelOne' : 'pathways.levelOther',
+      g.levels.length === 1 ? 'map.pathways.levelOne' : 'map.pathways.levelOther',
       { count: g.levels.length, list },
     );
   });
@@ -202,19 +202,19 @@ export class PathwayListComponent {
   private formatDuration(seconds: number | null): string | null {
     if (seconds === null) {return null;}
     if (seconds < 60) {
-      return this.transloco.translate('pathways.durationSeconds', { value: seconds });
+      return this.transloco.translate('map.pathways.durationSeconds', { value: seconds });
     }
-    return this.transloco.translate('pathways.durationMinutes', { value: Math.round(seconds / 60) });
+    return this.transloco.translate('map.pathways.durationMinutes', { value: Math.round(seconds / 60) });
   }
 
   private detailFor(p: Pathway): string | null {
     const parts: string[] = [];
     if (p.stairCount !== null && p.stairCount !== 0) {
-      const key = p.stairCount > 0 ? 'pathways.stairsUp' : 'pathways.stairsDown';
+      const key = p.stairCount > 0 ? 'map.pathways.stairsUp' : 'map.pathways.stairsDown';
       parts.push(this.transloco.translate(key, { count: Math.abs(p.stairCount) }));
     }
     if (p.signpostedAs) {
-      parts.push(this.transloco.translate('pathways.signpostedAs', { label: p.signpostedAs }));
+      parts.push(this.transloco.translate('map.pathways.signpostedAs', { label: p.signpostedAs }));
     }
     return parts.length > 0 ? parts.join(' · ') : null;
   }

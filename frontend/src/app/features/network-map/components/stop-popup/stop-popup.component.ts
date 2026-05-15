@@ -19,7 +19,7 @@ import {
   ringsFromLocation,
 } from '@shared/utils/flex-locations.utils';
 import { LocaleService } from '@core/i18n/locale.service';
-import { TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { bcp47 } from '@shared/utils/locale-date.utils';
 import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import { NetworkMapDataService } from '../../services/network-map-data.service';
@@ -75,7 +75,7 @@ interface TimetableGroup {
   standalone: true,
   imports: [
     MatDialogModule, MatButtonModule, MatDividerModule, MatIconModule, MatProgressSpinnerModule,
-    PathwayListComponent,
+    PathwayListComponent, TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './stop-popup.component.html',
@@ -290,20 +290,20 @@ export class StopPopupComponent implements OnInit {
     const min = rule.priorNoticeDurationMin;
     if (min === null) {return null;}
     if (min >= 3600) {
-      return this.transloco.translate('stopPopup.priorNoticeHours', {
+      return this.transloco.translate('map.stopPopup.priorNoticeHours', {
         hours: Math.round(min / 3600),
       });
     }
-    return this.transloco.translate('stopPopup.priorNoticeMinutes', {
+    return this.transloco.translate('map.stopPopup.priorNoticeMinutes', {
       minutes: Math.round(min / 60),
     });
   }
 
   bookingTypeLabel(rule: BookingRule): string {
-    const key = `stopPopup.bookingType.${rule.bookingType ?? 'default'}`;
+    const key = `map.stopPopup.bookingType.${rule.bookingType ?? 'default'}`;
     const translated = this.transloco.translate(key);
     return translated === key
-      ? this.transloco.translate('stopPopup.bookingType.default')
+      ? this.transloco.translate('map.stopPopup.bookingType.default')
       : translated;
   }
 

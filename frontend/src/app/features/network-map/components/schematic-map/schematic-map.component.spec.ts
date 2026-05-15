@@ -8,8 +8,24 @@ import { NetworkLine } from '@shared/models';
 
 // Empty dict is enough — every t() inside the children just renders the
 // key as fallback, but the TRANSLOCO_TRANSPILER provider still has to be
-// wired or Angular DI throws on module import.
-const emptyDict = { map: {} };
+// wired or Angular DI throws on module import. The schematic strings that
+// are asserted in expect() (empty selection, etc.) are provided so the
+// rendered DOM contains the strings the assertions look for.
+const emptyDict = {
+  map: {
+    schematic: {
+      emptySelection: 'Select a line',
+      zoneOverlayLabel: 'Zones',
+      zoneRowLabel: 'Zones:',
+      zoneRowAll: 'All',
+      diagramAriaLabel: 'Network schematic',
+      svgAriaLabel: 'Network schematic diagram',
+      wheelHint: 'Ctrl + scroll to zoom',
+      accessibilityToggle: { enable: 'PMR filter on', disable: 'PMR filter off' },
+      zoneOverlayToggle: { show: 'Show zones', hide: 'Hide zones' },
+    },
+  },
+};
 
 describe('SchematicMapComponent', () => {
   let component: SchematicMapComponent;

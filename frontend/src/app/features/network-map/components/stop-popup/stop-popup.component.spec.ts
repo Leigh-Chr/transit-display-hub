@@ -11,33 +11,52 @@ import { ScheduleService } from '@core/api/schedule.service';
 import { LocaleService } from '@core/i18n/locale.service';
 
 const stopPopupDict = {
-  stopPopup: {
-    bookingType: {
-      REAL_TIME: 'Réservation temps réel',
-      SAME_DAY: 'Réservation le jour même',
-      PRIOR_DAYS: 'Réservation à l\'avance',
-      default: 'Réservation',
+  common: { close: 'Fermer' },
+  map: {
+    stopPopup: {
+      bookingType: {
+        REAL_TIME: 'Réservation temps réel',
+        SAME_DAY: 'Réservation le jour même',
+        PRIOR_DAYS: 'Réservation à l\'avance',
+        default: 'Réservation',
+      },
+      priorNoticeHours: 'au moins {{ hours }}h à l\'avance',
+      priorNoticeMinutes: 'au moins {{ minutes }} min à l\'avance',
+      bookingRequired: 'Réservation requise',
+      tadZoneTitle: 'Zone de prise en charge — {{ name }}',
+      tadZoneSvgAria: 'Polygone de la zone TAD {{ name }}',
+      fareFromOrigin: 'Trajet depuis {{ origin }}',
+      nextFlexTitle: 'Réservation TAD aujourd\'hui',
+      howToBook: 'Comment réserver',
+      bookOnline: 'Réserver en ligne',
+      moreInfo: 'Plus d\'infos',
+      loadingSchedules: 'Chargement des horaires…',
+      loadingSchedulesAria: 'Chargement des horaires',
+      noDepartures: 'No scheduled departures',
     },
-    priorNoticeHours: 'au moins {{ hours }}h à l\'avance',
-    priorNoticeMinutes: 'au moins {{ minutes }} min à l\'avance',
-  },
-  pathways: {
-    title: 'Connexions internes — {{ station }}',
-    ariaLabel: 'Connexions internes de la station',
-    levelOne: '1 niveau : {{ list }}',
-    levelOther: '{{ count }} niveaux : {{ list }}',
-    fallbackLevel: 'niveau {{ index }}',
-    stairsUp: '{{ count }} marches (montée)',
-    stairsDown: '{{ count }} marches (descente)',
-    signpostedAs: '« {{ label }} »',
-    durationSeconds: '{{ value }} s',
-    durationMinutes: '{{ value }} min',
-  },
-  transit: {
-    pathwayMode: {
-      WALKWAY: 'Couloir', STAIRS: 'Escalier', MOVING_SIDEWALK: 'Tapis roulant',
-      ESCALATOR: 'Escalator', ELEVATOR: 'Ascenseur',
-      FARE_GATE: 'Portillon (entrée)', EXIT_GATE: 'Portillon (sortie)',
+    accessibility: {
+      accessible: 'Accessible PMR',
+      notAccessible: 'Non accessible',
+      unknown: 'Non renseigné',
+    },
+    pathways: {
+      title: 'Connexions internes — {{ station }}',
+      ariaLabel: 'Connexions internes de la station',
+      levelOne: '1 niveau : {{ list }}',
+      levelOther: '{{ count }} niveaux : {{ list }}',
+      fallbackLevel: 'niveau {{ index }}',
+      stairsUp: '{{ count }} marches (montée)',
+      stairsDown: '{{ count }} marches (descente)',
+      signpostedAs: '« {{ label }} »',
+      durationSeconds: '{{ value }} s',
+      durationMinutes: '{{ value }} min',
+    },
+    transit: {
+      pathwayMode: {
+        WALKWAY: 'Couloir', STAIRS: 'Escalier', MOVING_SIDEWALK: 'Tapis roulant',
+        ESCALATOR: 'Escalator', ELEVATOR: 'Ascenseur',
+        FARE_GATE: 'Portillon (entrée)', EXIT_GATE: 'Portillon (sortie)',
+      },
     },
   },
 };
