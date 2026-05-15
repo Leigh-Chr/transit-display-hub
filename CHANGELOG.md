@@ -7,7 +7,145 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.5.1] — 2026-05-12
+## [1.6.0] — 2026-05-15
+
+Release majeure double-volet : ferme intégralement le re-audit du
+2026-05-12 (6 P0 + 3 P1 critiques + 9 P1 i18n + 5 P2 sécu) et livre
+la **Phase 1 + Phase 2** de la stratégie « maintenabilité » (ADR 0040)
+avec 14 commits ciblés. Aucune migration manuelle utilisateur ; un
+nouveau Flyway léger n'est requis que pour les fixtures GTFS-rich
+ajoutées en test. Le déploiement nécessite la mise à jour du
+secret `JWT_SECRET` (déjà requis depuis 1.4.2) et la configuration de
+`app.cors.allowed-origins` en prod (la note d'install pointe maintenant
+le défaut vide « fail-safe »).
+
+### Added
+
+- **`createAdminListResource<T>()`** dans `frontend/src/app/shared/admin/` :
+  factory qui mutualise les ~60 LOC répétées dans chaque page admin
+  paginée — `queryParams` toSignal + `rxResource` + sync URL→tableState
+  + page-step-back. Retourne `{ items, loading, loadError,
+  totalElements, reload }`. Les 5 pages list (lines, stops, users,
+  messages, itineraries) partagent maintenant une implémentation
+  unique ; les anciens `MatTableDataSource` ont été retirés au profit
+  d'un signal `items()`.
+- **`schematic-geometry.ts`** (`features/network-map/components/schematic-map/`) :
+  257 LOC de builders purs (route active edges, stops by line, overlay
+  paths, direction arrows, interchange connectors, stop labels,
+  severity map, hidden lines map, terminus ids). Le composant garde
+  uniquement les `computed()` qui les enveloppent.
+- **`shared/models/` éclaté par domaine** : 7 fichiers (`common`,
+  `network`, `operations`, `display`, `network-map`, `fares`, `gtfs`)
+  + un `index.ts` qui reste un barrel pur de 11 lignes. `common.model.ts`
+  est la feuille de la DAG (enums + pagination + `LineInfo`), aucun
+  cycle d'import. Les 116 imports `@shared/models` du code applicatif
+  sont inchangés.
+- **Backend i18n complet** :
+  - `MessageSource` sur l'envelope d'erreur via `GlobalExceptionHandler`
+    + bundles `messages.properties` / `messages_fr.properties`
+    (locale résolue depuis `Accept-Language`).
+  - `ValidationException.ofKey(messageKey, args)` et
+    `EntityNotFoundException.ofKey(...)` — 13 throw sites migrés sur
+    `LineService`, `ItineraryService`, `MessageService`, `UserService`,
+    puis 4 sur `ScheduleService`.
+  - `ValidationConfig` wire `jakarta.validation` vers `MessageSource` :
+    31 attributs `message=` sur les 11 request DTOs migrés vers des
+    clés `{validation.X}`, 25 nouvelles clés (FR/EN).
+- **Garde-fous CI** (Phase 1, ADR 0040 — voir `docs/adr/0040-maintainability-guardrails.md`) :
+  - **ArchUnit** : `LayeredArchitectureTest` avec 4 règles
+    `domain→¬infrastructure`, `domain→¬application`,
+    `application.dto→¬infrastructure`, `application.dto→¬application.service`.
+    L'allowlist d'exceptions est **vide**.
+  - **PMD CyclomaticComplexity** : seuils method ≤ 30 / class ≤ 110
+    (high-water marks actuels).
+  - **`scripts/check-file-size.sh`** + workflow GitHub `file-size.yml`
+    bloque toute régression au-delà de 800 LOC. `scripts/oversized-allowlist.txt`
+    est désormais **vide**.
+  - **jscpd** : seuil de duplication 6 % verrouillé sur le frontend.yml
+    (mesure actuelle 4.01 %).
+  - **knip** : reporter `github-actions` pour annotations PR.
+- **ADR 0040 — Maintainability guardrails** (`docs/adr/0040-maintainability-guardrails.md`)
+  documente la stratégie C (garde-fous + rotation) choisie pour fighter
+  la dérive de complexité hors des axes déjà couverts.
+- **GTFS-rich fixture exercée** : `GtfsImportServiceIntegrationTest`
+  consomme maintenant la fixture `backend/src/main/resources/fixtures/gtfs-rich/`
+  pour exercer shapes / transfers / pathways / translations / fares
+  (avant : sous-échantillonnés 8-11 %).
+
+### Security
+
+- **`commons-compress` pinné à 1.27.1** (transitif via `gtfs-validator:8.0.0`)
+  — ferme 4 CVE DoS atteignables sur `/api/admin/gtfs/reimport`.
+- **`commons-beanutils` pinné à 1.11.0** — ferme CVE-2025-48734 (RCE).
+- **`commons-validator` pinné à 1.10.0**.
+- **`/h2-console/**`** passe `@Profile("dev")` (S-13/N-02) — bouclage
+  d'un endpoint admin H2 historiquement accessible hors dev.
+- **`GtfsDataLoader` passe `@Profile("dev")`** (S-13) — le seed
+  `admin / admin123` ne tourne plus sur les profils non-dev.
+- **HSTS désactivé en dev** (S-15) — l'opérateur qui démarre en
+  HTTP localhost n'est plus piégé dans le HSTS preload du navigateur.
+- **`app.cors.allowed-origins` documenté** (S-14) — défaut vide
+  fail-safe, valeur prod explicite requise.
+- **`getMessageArgs()` retourne `clone()`** (PMD MethodReturnsInternalArray)
+  — défense en profondeur contre les mutations de payload localisé.
+
+### Fixed
+
+- **6 templates oversized externalisés** (kiosk 1516→622, schematic-map
+  1449→1086, network-map 1168→605, dashboard 1132→232, hub 1067→382,
+  stop-popup 1024→400). 5 sur 6 sortent de l'allowlist file-size ;
+  schematic-map est ensuite descendu à 890 LOC via l'extraction de
+  `schematic-geometry.ts` et sort aussi.
+- **`DisplayStateCalculator` déplacé vers `application.service`** —
+  il importait `infrastructure.persistence.*` (7×), `infrastructure.realtime.*`
+  et `application.dto.*` (3×) depuis `domain`. Seule entorse à
+  l'architecture en couches, désormais conforme. 4 callers ajustés.
+- **2 dernières exceptions ArchUnit retirées** : les statics
+  `VehiclePositionResponse.from(snap)` et `RealtimeAlertResponse.from(snap)`
+  migrent dans leurs controllers respectifs (private static `toResponse`)
+  — `application.dto` ne touche plus `application.service`.
+- **15 pages admin remontent leurs `loadError`** : les 12 pages
+  list (users, messages, itineraries, devices, schedules, tad-zones,
+  import-audit, shapes, dashboard, flex-stop-times, pathways, realtime)
+  affichent maintenant un état d'erreur inline avec bouton « Réessayer »
+  au lieu d'un empty-state silencieux après `catchError → EMPTY`.
+- **9 régressions i18n FR** :
+  - `NotifyService` (OK/Retry) et `ConfirmDialog` ne portent plus
+    de fallback EN hardcodé.
+  - `hub-display-dialog` 100 % EN → entièrement traduit + spec.
+  - `auth.interceptor` toasts réseau et 403 traduits.
+  - 4 helpers `toLocaleString('fr-FR')` honorent la locale active.
+  - `network-map` h1, contrôles et toolbars (14 chaînes) traduits.
+  - 6 erreurs fatales kiosk et hub traduites.
+- **JPA cache borné sur l'import GTFS** : `ScheduleImporter` et
+  `ItineraryImporter` appellent `entityManager.clear()` entre chaque
+  batch — sinon un feed > 500 MB pouvait OOM le persistence context.
+- **Kiosk `MediaQueryList.change` libéré au teardown** : le listener
+  `prefers-reduced-motion` n'était pas désabonné — `AbortController` +
+  `destroyRef.onDestroy` ferment la fuite (HMR dev + teardown).
+- **`getMessageArgs()` retourne `clone()` au lieu du tableau interne**.
+
+### Changed
+
+- **Stratégie maintenability C activée** : chaque minor à venir
+  doit retirer au moins une entrée d'`oversized-allowlist.txt`,
+  lever une exception ArchUnit, ou baisser un seuil PMD cyclo.
+- **Log `AbstractRealtimeFeedCache:107` rétrogradé INFO→DEBUG**
+  (1 ligne par tick, polluait les logs prod).
+
+### Build
+
+- **ArchUnit JUnit5 1.3.0** ajouté en `testImplementation`.
+- **PMD 7.7.0** : `category/java/design.xml/CyclomaticComplexity`
+  activé avec seuils 30/110.
+- **`scripts/check-file-size.sh`** (Bash, allowlist sourcée depuis
+  `scripts/oversized-allowlist.txt`).
+- **Workflow `.github/workflows/file-size.yml`** déclenché sur push +
+  PR.
+- **jscpd** lance désormais avec `--threshold 6` dans `frontend.yml`.
+- **knip** workflow utilise `--reporter github-actions`.
+
+
 
 Patch defensif autour du dernier P2 de l'audit du 12/05 (pagination
 findAll). Aucun changement de signature publique — les méthodes
