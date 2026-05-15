@@ -60,6 +60,13 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT s.id FROM Stop s")
     Set<UUID> findAllIds();
 
+    /** Returns the subset of {@code candidateIds} that match an existing
+     *  Stop row. Used by {@code HubDisplayService} so a hub bound to N
+     *  stop ids can filter unknown ones in a single query instead of
+     *  N {@code existsById} calls. */
+    @Query("SELECT s.id FROM Stop s WHERE s.id IN :ids")
+    List<UUID> findExistingIdsIn(List<UUID> ids);
+
     /** Two-step pagination, step 1: page Stop ids without collection
      *  fetches so Hibernate can paginate in SQL (HHH90003004 fix).
      *  Step 2 hydrates the page's entities below. */

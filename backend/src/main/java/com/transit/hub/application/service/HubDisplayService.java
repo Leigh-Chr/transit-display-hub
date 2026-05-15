@@ -15,7 +15,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -27,21 +30,28 @@ public class HubDisplayService {
     private final DisplayStateCalculator displayStateCalculator;
     private final StopRepository stopRepository;
     private final Clock clock;
-    private final AtomicLong versionCounter = new AtomicLong(0);
+    /**
+     * One monotonic counter per hub name. The previous shared
+     * {@link AtomicLong} meant two hubs polling concurrently saw an
+     * unstable global ordering, breaking the "drop stale frames"
+     * filter on the frontend (a frame from hub A could end up with a
+     * lower version than the frame the same hub had received earlier).
+     */
+    private final ConcurrentMap<String, AtomicLong> versionCountersByHub = new ConcurrentHashMap<>();
 
     private static final int MAX_MESSAGES = 5;
     private static final int MAX_ARRIVALS = 50;
 
     @Transactional(readOnly = true)
     public HubDisplayState getHubDisplayState(List<UUID> stopIds, String hubName) {
-        // Skip individual stops that no longer exist instead of failing the whole hub.
-        // A typo, a stale URL or a deleted stop should leave the rest of the hub usable.
-        // We pre-filter via existsById to avoid letting EntityNotFoundException leak out
-        // of calculateForStop — even when caught, an exception in a child @Transactional
-        // marks the parent transaction as rollback-only.
-        List<DisplayState> stopStates = new ArrayList<>(stopIds.size());
+        // One filtering query instead of one existsById per stop: keep the
+        // ids that actually map to a row, skip the rest. Stops missing
+        // from the result get debug-logged (typo / stale URL / deleted
+        // stop should not fail the whole hub).
+        Set<UUID> existing = Set.copyOf(stopRepository.findExistingIdsIn(stopIds));
+        List<DisplayState> stopStates = new ArrayList<>(existing.size());
         for (UUID stopId : stopIds) {
-            if (!stopRepository.existsById(stopId)) {
+            if (!existing.contains(stopId)) {
                 log.debug("Hub '{}' references unknown stop {}, skipping", hubName, stopId);
                 continue;
             }
@@ -93,12 +103,13 @@ public class HubDisplayService {
                 .limit(MAX_MESSAGES)
                 .toList();
 
+        AtomicLong counter = versionCountersByHub.computeIfAbsent(hubName, k -> new AtomicLong(0));
         return new HubDisplayState(
                 hubName,
                 lines,
                 arrivals,
                 messages,
-                versionCounter.incrementAndGet(),
+                counter.incrementAndGet(),
                 Instant.now(clock)
         );
     }
