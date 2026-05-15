@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.13.0] — 2026-05-15
+
+Continuation of the cross-axis cleanup. Closes the remaining secondary
+i18n holes on the public map (the four overlay components plus the
+line-index search and line-type catalogue), localises the severity
+chips on the messages and realtime admin pages, and decomposes the
+two HubDisplayService anti-patterns the audit flagged.
+
+### Fixed
+
+- **Secondary map overlays i18n**: zoom-controls, alert-overlay,
+  line-filter-chips and map-legend all read through the new
+  `map.zoom.*`, `map.legend.*`, `map.lineFilter.*` and
+  `map.alertOverlay.*` namespaces. The "All" filter chip, the
+  three zoom-button ARIA labels, the legend section labels (Stop,
+  Terminus, Interchange, Hidden line, Alert), the chip tooltip
+  ("Click to toggle X · Double-click to focus") and the alert
+  overlay section headers (Network, Lines) are no longer
+  EN-only on a FR-resolved kiosk.
+- **`network-list.lineTypeLabel`** now resolves through the shared
+  `transit.lineType.*` namespace (FR: Métro / Bus / Tramway /
+  Train / Bateau / Funiculaire / Téléphérique / Trolley / Monorail,
+  EN: Subway / Bus / Tram / Train / Ferry / Funicular / Cable car
+  / Trolleybus / Monorail). The hardcoded French map in the
+  component is gone.
+- **`messages.component`** + **`realtime.component`** severity
+  chips render through new `admin.{messages,realtime}.severity{
+  Critical,Warning,Info}` keys instead of the raw enum
+  ("CRITICAL" / "WARNING" / "INFO").
+- **`line-index`** search placeholder, clear-button ARIA, results
+  summary ("N lines" / "N matching lines"), the touch-app hint
+  and the empty state ("No line matches X") read through
+  `map.lineIndex.*`.
+
+### Changed
+
+- **HubDisplayService anti-patterns** (audit P1-2):
+  - **Per-hub version counter.** A single shared `AtomicLong`
+    meant two hubs polling concurrently saw a non-monotonic
+    version stream — the frontend's "drop stale frames" filter
+    would intermittently drop fresh frames whose version sat
+    below an older frame from a different hub. Replaced by a
+    `ConcurrentMap<String, AtomicLong>` keyed by hub name.
+  - **Filtering query.** The `existsById` loop ran one extra
+    SELECT per stop on top of `calculateForStop`. Replaced with
+    a single `StopRepository.findExistingIdsIn(ids)` query;
+    missing ids skip-and-log as before.
+
 ## [1.12.0] — 2026-05-15
 
 Cross-axis cleanup release driven by the post-1.11.1 audit. Closes
