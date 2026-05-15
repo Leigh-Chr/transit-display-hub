@@ -44,13 +44,13 @@ import { Attribution } from '@shared/models';
       flex-wrap: wrap;
       gap: 8px 14px;
       padding: 10px 16px;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       color: var(--app-on-surface-muted, #6b7280);
       border-top: 1px solid var(--app-divider, rgba(0, 0, 0, 0.08));
     }
 
     .credits-icon {
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
       color: var(--app-tone-success, #16a34a);
@@ -75,7 +75,7 @@ import { Attribution } from '@shared/models';
     .role {
       padding: 1px 7px;
       border-radius: 999px;
-      font-size: 10px;
+      font-size: var(--m3-type-label-small);
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.04em;

@@ -222,7 +222,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
 
     .page-title {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface);
       margin: 0;
@@ -303,7 +303,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
     .message-title {
       margin: 0;
-      font-size: 17px;
+      font-size: var(--m3-type-title-large);
       font-weight: 600;
       color: var(--app-on-surface);
     }
@@ -315,7 +315,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
 
     .message-meta {
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       color: var(--app-on-surface-muted);
     }
 
@@ -344,7 +344,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       display: inline-block;
       padding: 4px 12px;
       border-radius: var(--app-line-badge-radius);
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;

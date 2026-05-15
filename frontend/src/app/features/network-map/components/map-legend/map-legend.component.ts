@@ -94,7 +94,7 @@ import { MatIconModule } from '@angular/material/icon';
       border-radius: var(--app-radius-xs);
       background: transparent;
       color: var(--app-map-on-surface-variant);
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -107,7 +107,7 @@ import { MatIconModule } from '@angular/material/icon';
     }
 
     .legend-toggle mat-icon {
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
     }
@@ -124,7 +124,7 @@ import { MatIconModule } from '@angular/material/icon';
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       color: var(--app-map-on-surface-variant);
       white-space: nowrap;
     }
@@ -148,7 +148,7 @@ import { MatIconModule } from '@angular/material/icon';
       }
 
       .legend-item {
-        font-size: 11px;
+        font-size: var(--m3-type-label-small);
         gap: 6px;
       }
 

@@ -23,7 +23,7 @@
 
 .empty-selection-text {
   color: var(--app-map-on-surface-muted);
-  font-size: 15px;
+  font-size: var(--m3-type-body-medium);
 }
 
 /* --- Diagram --- */
@@ -69,7 +69,7 @@
   background: var(--app-map-overlay-bg);
   border: 1px solid var(--app-map-outline);
   color: var(--app-map-on-surface);
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 500;
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 8px var(--app-map-shadow);
@@ -83,7 +83,7 @@
   border-radius: 4px;
   background: var(--app-map-surface-container, var(--app-map-overlay-bg));
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: var(--m3-type-label-small);
   font-weight: 600;
 }
 
@@ -119,14 +119,14 @@
 }
 
 .line-badge-text {
-  font-size: 18px;
+  font-size: var(--m3-type-title-large);
   font-weight: 700;
   font-family: system-ui, -apple-system, sans-serif;
   /* fill is set per badge via [attr.fill] for contrast against brand colors */
 }
 
 .line-name-label {
-  font-size: 16px;
+  font-size: var(--m3-type-body-large);
   font-weight: 500;
   fill: var(--app-map-on-surface-muted);
   font-family: system-ui, -apple-system, sans-serif;
@@ -201,7 +201,7 @@
   border-radius: var(--app-radius-pill);
   background: var(--app-map-surface);
   color: var(--app-map-chip-inactive);
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -218,7 +218,7 @@
   color: white;
 }
 .accessibility-label {
-  font-size: 11px;
+  font-size: var(--m3-type-label-small);
 }
 
 .zone-overlay-toggle {
@@ -230,7 +230,7 @@
   border-radius: var(--app-radius-pill);
   background: var(--app-map-surface);
   color: var(--app-map-chip-inactive);
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -247,7 +247,7 @@
   color: white;
 }
 .zone-overlay-label {
-  font-size: 11px;
+  font-size: var(--m3-type-label-small);
 }
 
 /* Halo behind a stop coloured by its primary fare zone. Pointer
@@ -301,7 +301,7 @@
   flex-wrap: wrap;
 }
 .zone-row-label {
-  font-size: 11px;
+  font-size: var(--m3-type-label-small);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -314,7 +314,7 @@
   border-radius: var(--app-radius-pill);
   background: var(--app-map-surface);
   color: rgb(72, 38, 156);
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 700;
   cursor: pointer;
   transition: all var(--m3-duration-short3) var(--m3-easing-standard);
@@ -342,7 +342,7 @@
   }
   .zone-chip {
     padding: 3px 10px;
-    font-size: 11px;
+    font-size: var(--m3-type-label-small);
   }
 }
 
@@ -395,7 +395,7 @@
   // mode and even less in multi-line where the view-box also grows in height
   // for the extra rows. Multi-line labels are bumped well above their
   // single-line counterparts so the perceived screen size stays comparable.
-  font-size: 18px;
+  font-size: var(--m3-type-title-large);
   font-family: system-ui, -apple-system, sans-serif;
   fill: var(--app-map-on-surface);
   paint-order: stroke;
@@ -406,25 +406,25 @@
 }
 
 .network-stop-name {
-  font-size: 22px;
+  font-size: var(--m3-type-headline-small);
 }
 
 .stop-name.interchange {
   font-weight: 700;
-  font-size: 19px;
+  font-size: var(--m3-type-title-large);
 }
 
 .stop-name.terminus {
   font-weight: 700;
-  font-size: 19px;
+  font-size: var(--m3-type-title-large);
 }
 
 .network-stop-name.interchange {
-  font-size: 24px;
+  font-size: var(--m3-type-headline-medium);
 }
 
 .network-stop-name.terminus {
-  font-size: 24px;
+  font-size: var(--m3-type-headline-medium);
 }
 
 :host-context(.dark-theme) {

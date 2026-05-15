@@ -187,7 +187,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
     }
 
     .page-title {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface);
       margin: 0;
@@ -231,7 +231,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
       padding: 8px 18px;
       border-radius: var(--app-line-badge-radius);
       color: white;
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       font-weight: 700;
       letter-spacing: 0.5px;
     }
@@ -244,7 +244,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 
     .line-name {
       margin: 0 0 16px;
-      font-size: 17px;
+      font-size: var(--m3-type-title-large);
       font-weight: 600;
       color: var(--app-on-surface);
     }
@@ -260,11 +260,11 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
       align-items: center;
       gap: 6px;
       color: var(--app-on-surface-variant);
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
     }
 
     .stat mat-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       color: var(--app-on-surface-muted);
@@ -283,13 +283,13 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
       gap: 4px;
       padding: 3px 9px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 500;
       white-space: nowrap;
     }
 
     .line-tag mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }

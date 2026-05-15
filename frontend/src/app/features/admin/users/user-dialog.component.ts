@@ -146,7 +146,7 @@ export interface UserDialogData {
     }
 
     .role-desc {
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       color: var(--app-on-surface-variant);
     }
 
@@ -158,7 +158,7 @@ export interface UserDialogData {
     }
 
     .toggle-hint {
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       color: var(--app-on-surface-variant);
       margin-left: 48px;
     }

@@ -48,7 +48,7 @@ import { MatIconModule } from '@angular/material/icon';
     }
 
     .empty-icon mat-icon {
-      font-size: 36px;
+      font-size: var(--m3-type-display-large);
       width: 36px;
       height: 36px;
       color: var(--app-on-surface-variant);
@@ -64,7 +64,7 @@ import { MatIconModule } from '@angular/material/icon';
 
     .empty-title {
       margin: 0 0 8px;
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       font-weight: 600;
       color: var(--app-on-surface);
     }

@@ -63,7 +63,7 @@
   background: var(--app-map-overlay-bg);
   color: var(--app-map-on-surface-variant);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--m3-type-body-medium);
   cursor: pointer;
   backdrop-filter: blur(8px);
 }
@@ -74,7 +74,7 @@
   background: var(--app-map-surface-container-high);
 }
 .list-alt-link mat-icon {
-  font-size: 18px;
+  font-size: var(--m3-type-title-large);
   width: 18px;
   height: 18px;
 }
@@ -87,7 +87,7 @@
 }
 
 .theme-toggle mat-icon {
-  font-size: 20px;
+  font-size: var(--m3-type-headline-small);
   width: 20px;
   height: 20px;
 }
@@ -100,7 +100,7 @@
 
 .page-header h1 {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: var(--m3-type-headline-large);
   font-weight: 600;
   color: var(--app-map-on-surface);
 }
@@ -111,6 +111,7 @@
 }
 
 .page-header mat-icon {
+  // mat-icon font-size drives glyph height; matches container box.
   font-size: 32px;
   width: 32px;
   height: 32px;
@@ -120,7 +121,7 @@
 .subtitle {
   margin: 0;
   color: var(--app-map-on-surface-variant);
-  font-size: 0.9375rem;
+  font-size: var(--m3-type-body-medium);
 }
 
 .category-tabs {
@@ -144,7 +145,7 @@
   border-radius: var(--app-radius-sm);
   background: transparent;
   color: var(--app-map-on-surface-variant);
-  font-size: 0.8125rem;
+  font-size: var(--m3-type-body-small);
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -173,7 +174,7 @@
   border-radius: var(--app-radius-sm);
   background: var(--app-map-surface-container-high);
   color: var(--app-map-on-surface-variant);
-  font-size: 0.6875rem;
+  font-size: var(--m3-type-label-small);
   font-weight: 700;
 }
 
@@ -202,7 +203,7 @@
   border-radius: var(--app-radius-xs);
   background: var(--app-map-overlay-bg);
   color: var(--app-map-on-surface-muted);
-  font-size: 10px;
+  font-size: var(--m3-type-label-small);
   font-weight: 500;
   letter-spacing: 0.02em;
   backdrop-filter: blur(6px);
@@ -246,14 +247,14 @@
 }
 
 .stop-search-panel .panel-icon {
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
   width: 14px;
   height: 14px;
   color: var(--app-map-accent);
 }
 
 .stop-search-panel .panel-title {
-  font-size: 11px;
+  font-size: var(--m3-type-label-small);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -277,7 +278,7 @@
 }
 
 .stop-search-panel .field-icon {
-  font-size: 16px;
+  font-size: var(--m3-type-body-large);
   width: 16px;
   height: 16px;
   margin-right: 2px;
@@ -303,7 +304,7 @@
 }
 
 .stop-search-panel .clear-btn mat-icon {
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
   width: 14px;
   height: 14px;
 }
@@ -326,7 +327,7 @@
   border: 1px solid var(--app-map-outline);
   border-radius: var(--app-radius-sm);
   color: var(--app-map-on-surface-variant);
-  font-size: 11px;
+  font-size: var(--m3-type-label-small);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--m3-duration-short3) var(--m3-easing-standard);
@@ -338,7 +339,7 @@
 }
 
 .view-toggle-btn mat-icon {
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
   width: 14px;
   height: 14px;
 }
@@ -368,6 +369,7 @@
 
 .error-state mat-icon,
 .empty-state mat-icon {
+  // mat-icon font-size drives glyph height; matches container box.
   font-size: 64px;
   width: 64px;
   height: 64px;
@@ -388,6 +390,6 @@
   }
 
   .page-header h1 {
-    font-size: 1.5rem;
+    font-size: var(--m3-type-headline-medium);
   }
 }

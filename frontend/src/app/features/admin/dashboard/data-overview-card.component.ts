@@ -140,7 +140,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       align-items: center;
       gap: 8px;
       margin-bottom: 12px;
-      font-size: 1.05rem;
+      font-size: var(--m3-type-title-large);
     }
     .overview-icon { color: var(--mat-sys-primary); }
 
@@ -163,13 +163,13 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.45);
     }
     .count {
-      font-size: 1.3rem;
+      font-size: var(--m3-type-headline-small);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       color: var(--mat-sys-on-surface);
     }
     .label {
-      font-size: 0.75rem;
+      font-size: var(--m3-type-label-medium);
       color: var(--mat-sys-on-surface-variant);
       letter-spacing: 0.02em;
       margin-top: 2px;
@@ -178,7 +178,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       position: absolute;
       top: 4px;
       right: 6px;
-      font-size: 0.7rem;
+      font-size: var(--m3-type-label-small);
       color: rgb(180, 134, 6);
       background: rgba(241, 196, 15, 0.18);
       border-radius: 6px;
@@ -195,13 +195,13 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
       color: var(--mat-sys-on-surface-variant);
       letter-spacing: 0.04em;
       text-transform: uppercase;
       margin-bottom: 8px;
     }
-    .rt-icon { font-size: 16px; width: 16px; height: 16px; }
+    .rt-icon { font-size: var(--m3-type-body-large); width: 16px; height: 16px; }
     .rt-grid {
       display: flex;
       flex-wrap: wrap;
@@ -214,7 +214,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       padding: 4px 10px;
       background: var(--mat-sys-surface-container-low);
       border-radius: 999px;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
     }
     .rt-dot {
       width: 8px;

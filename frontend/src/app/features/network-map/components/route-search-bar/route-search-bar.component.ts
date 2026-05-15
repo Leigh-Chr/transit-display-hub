@@ -153,14 +153,14 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .panel-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
       color: var(--app-map-accent);
     }
 
     .panel-title {
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -187,7 +187,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .clear-btn mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }
@@ -210,7 +210,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .field-icon {
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
       margin-right: 2px;
@@ -258,7 +258,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .swap-btn mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }
@@ -266,7 +266,7 @@ import { RouteResult } from '../../services/route-finder.service';
     /* --- Error --- */
 
     .error-hint {
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       color: var(--app-critical);
       padding: 4px 4px 0;
     }
@@ -285,7 +285,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .error-hint-warning .error-icon {
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
       flex-shrink: 0;
@@ -320,7 +320,7 @@ import { RouteResult } from '../../services/route-finder.service';
     .segment-badge {
       padding: 2px 7px;
       border-radius: var(--app-radius-xs);
-      font-size: 10px;
+      font-size: var(--m3-type-label-small);
       font-weight: 700;
       color: white;
       flex-shrink: 0;
@@ -336,7 +336,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .segment-endpoints {
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       color: var(--app-map-on-surface);
       white-space: nowrap;
       overflow: hidden;
@@ -344,7 +344,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .segment-meta {
-      font-size: 10px;
+      font-size: var(--m3-type-label-small);
       color: var(--app-map-on-surface-muted);
       white-space: nowrap;
       overflow: hidden;
@@ -352,7 +352,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .expand-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
       color: var(--app-map-on-surface-muted);
@@ -395,7 +395,7 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .stop-name {
-      font-size: 10px;
+      font-size: var(--m3-type-label-small);
       color: var(--app-map-on-surface-muted);
       white-space: nowrap;
       overflow: hidden;
@@ -417,14 +417,14 @@ import { RouteResult } from '../../services/route-finder.service';
     }
 
     .transfer-icon {
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       width: 12px;
       height: 12px;
       color: var(--app-map-on-surface-muted);
     }
 
     .transfer-label {
-      font-size: 10px;
+      font-size: var(--m3-type-label-small);
       color: var(--app-map-on-surface-muted);
       font-weight: 600;
       white-space: nowrap;

@@ -89,20 +89,20 @@ const MODE_LABEL: Record<PathwayMode, string> = {
       align-items: center;
       gap: 6px;
       margin: 0 0 8px;
-      font-size: 0.9rem;
+      font-size: var(--m3-type-body-medium);
       font-weight: 600;
       color: var(--mat-sys-on-surface-variant);
     }
 
     .section-title mat-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
     }
 
     .levels-line {
       margin: 0 0 10px;
-      font-size: 0.8rem;
+      font-size: var(--m3-type-body-small);
       color: var(--mat-sys-on-surface-variant);
     }
 
@@ -125,7 +125,7 @@ const MODE_LABEL: Record<PathwayMode, string> = {
     }
 
     .row-icon {
-      font-size: 20px;
+      font-size: var(--m3-type-headline-small);
       width: 20px;
       height: 20px;
       color: var(--mat-sys-primary);
@@ -138,22 +138,22 @@ const MODE_LABEL: Record<PathwayMode, string> = {
       flex-direction: column;
       gap: 2px;
       flex: 1;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
     }
 
     .row-meta {
       color: var(--mat-sys-on-surface-variant);
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
     }
 
     .row-detail {
       color: var(--mat-sys-on-surface-variant);
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       font-style: italic;
     }
 
     .row-duration {
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       color: var(--mat-sys-on-surface-variant);
       font-variant-numeric: tabular-nums;
       flex-shrink: 0;

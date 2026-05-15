@@ -50,7 +50,7 @@ export interface DeviceTokenDialogData {
 
     .token-display {
       font-family: 'SF Mono', 'Consolas', monospace;
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       background-color: var(--app-surface-variant);
       padding: 16px;
       border-radius: var(--app-radius-sm);

@@ -202,7 +202,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
   styles: `
     .audit-page { max-width: 1300px; }
     .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
+    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
 
     .toolbar {
@@ -211,7 +211,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       gap: 16px;
       margin-bottom: 16px;
     }
-    .muted { color: var(--mat-sys-on-surface-variant); font-size: 0.85rem; }
+    .muted { color: var(--mat-sys-on-surface-variant); font-size: var(--m3-type-body-medium); }
 
     .audit-table-wrapper {
       background: var(--mat-sys-surface-container);
@@ -223,7 +223,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       font-variant-numeric: tabular-nums;
     }
 
-    .status-icon { font-size: 22px; width: 22px; height: 22px; }
+    .status-icon { font-size: var(--m3-type-headline-small); width: 22px; height: 22px; }
     .status-icon.success { color: rgb(46, 174, 96); }
     .status-icon.skipped { color: var(--mat-sys-outline); }
     .status-icon.failed { color: rgb(220, 38, 38); }
@@ -235,7 +235,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       align-items: center;
     }
     .inline-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
       vertical-align: middle;
@@ -282,7 +282,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       gap: 3px;
       padding: 2px 8px;
       border-radius: 999px;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
       font-weight: 500;
     }
     .badge.errors {
@@ -302,7 +302,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       align-items: center;
       gap: 4px;
       color: rgb(220, 38, 38);
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
     }
     .report-link {
       width: 32px;

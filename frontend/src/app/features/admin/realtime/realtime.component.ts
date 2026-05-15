@@ -276,10 +276,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       gap: 4px;
       padding: 2px 9px;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       font-weight: 500;
     }
-    .occupancy-badge mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .occupancy-badge mat-icon { font-size: var(--m3-type-body-medium); width: 14px; height: 14px; }
     .occ-low { background: rgba(16, 185, 129, 0.16); color: #047857; }
     .occ-mid { background: rgba(234, 179, 8, 0.18); color: #92400e; }
     .occ-high { background: rgba(239, 68, 68, 0.18); color: #b91c1c; }
@@ -295,22 +295,22 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       .occ-high { background: rgba(239, 68, 68, 0.32); color: #fca5a5; }
     }
     .bearing-arrow { display: inline-block; transform-origin: center; }
-    .bearing-arrow mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .bearing-arrow mat-icon { font-size: var(--m3-type-title-large); width: 18px; height: 18px; }
     .congestion-pill {
       padding: 2px 8px;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       background: var(--mat-sys-secondary-container);
       color: var(--mat-sys-on-secondary-container);
     }
     .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
+    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
 
     .tab-icon { margin-right: 6px; vertical-align: middle; }
     .tab-count {
       margin-left: 8px;
-      font-size: 0.75rem;
+      font-size: var(--m3-type-label-medium);
       padding: 1px 8px;
       border-radius: 999px;
       background: var(--mat-sys-secondary-container);
@@ -325,7 +325,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       gap: 16px;
       margin-bottom: 16px;
     }
-    .muted { color: var(--mat-sys-on-surface-variant); font-size: 0.85rem; }
+    .muted { color: var(--mat-sys-on-surface-variant); font-size: var(--m3-type-body-medium); }
 
     .alert-grid {
       display: grid;
@@ -343,12 +343,12 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       margin-bottom: 8px;
     }
     .severity-chip {
-      font-size: 0.7rem;
+      font-size: var(--m3-type-label-small);
       letter-spacing: 0.06em;
       font-weight: 600;
     }
-    .alert-title { margin: 0 0 6px 0; font-size: 1rem; font-weight: 600; }
-    .alert-body { margin: 0 0 10px 0; font-size: 0.9rem; line-height: 1.4; }
+    .alert-title { margin: 0 0 6px 0; font-size: var(--m3-type-body-large); font-weight: 600; }
+    .alert-body { margin: 0 0 10px 0; font-size: var(--m3-type-body-medium); line-height: 1.4; }
 
     .alert-scope {
       display: flex;
@@ -363,10 +363,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       padding: 2px 10px;
       background: var(--mat-sys-surface-container-high);
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
     }
     .scope-pill mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }
@@ -375,11 +375,11 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       align-items: center;
       gap: 4px;
       margin-top: 12px;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
       color: var(--mat-sys-primary);
       text-decoration: none;
     }
-    .alert-link mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .alert-link mat-icon { font-size: var(--m3-type-body-medium); width: 14px; height: 14px; }
     .alert-link:hover { text-decoration: underline; }
 
     .vehicle-table-wrapper {

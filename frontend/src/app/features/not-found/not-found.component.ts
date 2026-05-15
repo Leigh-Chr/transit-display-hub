@@ -46,7 +46,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
     }
 
     h1 {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface, #333);
       margin: 0 0 8px;

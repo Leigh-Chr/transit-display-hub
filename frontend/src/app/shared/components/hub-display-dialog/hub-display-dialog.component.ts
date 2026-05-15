@@ -207,7 +207,7 @@ export interface HubDisplayDialogResult {
       padding: 2px 8px;
       border-radius: var(--app-line-badge-radius);
       color: white;
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       font-weight: 600;
     }
 
@@ -225,7 +225,7 @@ export interface HubDisplayDialogResult {
     }
 
     .selected-label {
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       color: var(--app-on-surface-variant);
       margin-bottom: 12px;
       line-height: 1.4;

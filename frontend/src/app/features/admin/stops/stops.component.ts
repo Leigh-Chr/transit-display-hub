@@ -252,7 +252,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
 
     .page-title {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface);
       margin: 0;
@@ -290,7 +290,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       padding: 4px 10px;
       border-radius: var(--app-line-badge-radius);
       color: white;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 600;
     }
 
@@ -306,12 +306,12 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
     .device-active {
       color: var(--app-primary);
-      font-size: 20px;
+      font-size: var(--m3-type-headline-small);
     }
 
     .device-inactive {
       color: var(--app-outline);
-      font-size: 20px;
+      font-size: var(--m3-type-headline-small);
       opacity: 0.5;
     }
 
@@ -329,7 +329,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
 
     .stop-type-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       color: var(--mat-sys-primary);
@@ -339,7 +339,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       display: inline-block;
       padding: 1px 8px;
       border-radius: 4px;
-      font-size: 0.75rem;
+      font-size: var(--m3-type-label-medium);
       font-weight: 600;
       background: var(--mat-sys-secondary-container);
       color: var(--mat-sys-on-secondary-container);
@@ -350,7 +350,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       display: inline-block;
       padding: 1px 8px;
       border-radius: 4px;
-      font-size: 0.7rem;
+      font-size: var(--m3-type-label-small);
       font-weight: 500;
       background: rgba(99, 102, 241, 0.14);
       color: #4338ca;
@@ -363,14 +363,14 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       gap: 3px;
       padding: 1px 8px;
       border-radius: 4px;
-      font-size: 0.7rem;
+      font-size: var(--m3-type-label-small);
       font-weight: 500;
       background: rgba(244, 114, 182, 0.18);
       color: #be185d;
     }
 
     .access-restricted mat-icon {
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       width: 13px;
       height: 13px;
     }

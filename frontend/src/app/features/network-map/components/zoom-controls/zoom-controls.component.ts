@@ -50,7 +50,7 @@ import { MatIconModule } from '@angular/material/icon';
     }
 
     .zoom-btn mat-icon {
-      font-size: 20px;
+      font-size: var(--m3-type-headline-small);
       width: 20px;
       height: 20px;
     }

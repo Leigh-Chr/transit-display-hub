@@ -180,7 +180,7 @@ interface StopItem {
       background: var(--app-primary);
       color: white;
       border-radius: 50%;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -234,12 +234,12 @@ interface StopItem {
       background: var(--app-surface-variant);
       border-radius: var(--app-radius-sm);
       margin: 0;
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
     }
 
     .itinerary-stops-dialog-content .terminus-icon {
       color: var(--app-primary);
-      font-size: 20px;
+      font-size: var(--m3-type-headline-small);
       width: 20px;
       height: 20px;
     }
@@ -252,7 +252,7 @@ interface StopItem {
       background: var(--app-surface-variant);
       border-radius: var(--app-radius-sm);
       color: var(--app-on-surface-muted);
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       margin: 16px 0 0;
     }
 

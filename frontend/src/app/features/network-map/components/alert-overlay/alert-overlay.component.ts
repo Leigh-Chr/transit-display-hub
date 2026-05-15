@@ -72,7 +72,7 @@ export interface VisibleLineAlert {
     }
 
     .alert-section-label {
-      font-size: 10px;
+      font-size: var(--m3-type-label-small);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -111,7 +111,7 @@ export interface VisibleLineAlert {
     .alert-line-badge {
       padding: 2px 7px;
       border-radius: var(--app-radius-xs);
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       font-weight: 700;
       color: white;
       flex-shrink: 0;
@@ -129,7 +129,7 @@ export interface VisibleLineAlert {
 
     .alert-content {
       margin: 0;
-      font-size: 12.5px;
+      font-size: var(--m3-type-label-medium);
       line-height: 1.5;
       color: var(--app-map-on-surface-variant);
     }

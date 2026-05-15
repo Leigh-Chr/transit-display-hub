@@ -143,7 +143,7 @@ interface RenderedRing {
   styles: `
     .tad-zones-page { max-width: 1400px; }
     .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
+    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
 
     .loading {
@@ -183,13 +183,13 @@ interface RenderedRing {
 
     .map-footnote {
       margin: 12px 0 0;
-      font-size: 0.8rem;
+      font-size: var(--m3-type-body-small);
       color: var(--mat-sys-on-surface-variant);
     }
 
     .list-title {
       margin: 0 0 12px 0;
-      font-size: 1rem;
+      font-size: var(--m3-type-body-large);
       font-weight: 600;
     }
     .zone-list {
@@ -239,13 +239,13 @@ interface RenderedRing {
       flex: 1;
     }
     .zone-meta strong {
-      font-size: 0.92rem;
+      font-size: var(--m3-type-body-medium);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .zone-id {
-      font-size: 0.75rem;
+      font-size: var(--m3-type-label-medium);
       font-family: var(--mat-sys-code-font, monospace);
       color: var(--mat-sys-on-surface-variant);
     }
@@ -253,16 +253,16 @@ interface RenderedRing {
       display: inline-flex;
       align-items: center;
       gap: 3px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       color: var(--mat-sys-primary);
     }
     .zone-stop mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }
     .zone-type {
-      font-size: 0.72rem;
+      font-size: var(--m3-type-label-medium);
       color: var(--mat-sys-on-surface-variant);
       font-style: italic;
     }

@@ -267,7 +267,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
   styles: `
     .pathways-page { max-width: 1300px; }
     .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
+    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
 
     .stop-picker { width: 100%; max-width: 480px; margin-bottom: 24px; }
@@ -275,7 +275,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
 
     .selected-stop h2 {
       margin: 0 0 16px 0;
-      font-size: 1.2rem;
+      font-size: var(--m3-type-title-large);
       font-weight: 600;
     }
 
@@ -289,7 +289,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
 
     .mode-icon { color: var(--mat-sys-primary); }
     .direction-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       color: var(--mat-sys-on-surface-variant);
@@ -310,10 +310,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       padding: 1px 8px;
       background: var(--mat-sys-surface-container-high);
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
     }
     .detail-chip mat-icon {
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       width: 13px;
       height: 13px;
     }
@@ -326,11 +326,11 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       padding: 8px 12px;
       background: rgba(99, 102, 241, 0.08);
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
     }
     .levels-icon {
       color: #4338ca;
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
     }
@@ -343,7 +343,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       border-radius: 999px;
       background: rgba(99, 102, 241, 0.18);
       color: #4338ca;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       font-weight: 500;
     }
 
@@ -358,12 +358,12 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       align-items: center;
       gap: 6px;
       margin: 0 0 10px;
-      font-size: 0.95rem;
+      font-size: var(--m3-type-body-medium);
       font-weight: 600;
       color: var(--mat-sys-on-surface-variant);
     }
     .graph-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
     }
@@ -382,7 +382,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       flex-wrap: wrap;
       gap: 12px;
       margin-top: 10px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       color: var(--mat-sys-on-surface-variant);
     }
     .legend-chip {

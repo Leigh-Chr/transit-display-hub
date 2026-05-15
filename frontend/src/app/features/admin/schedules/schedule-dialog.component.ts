@@ -122,7 +122,7 @@ export interface ScheduleDialogData {
       padding: 2px 8px;
       border-radius: var(--app-line-badge-radius);
       color: white;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 600;
     }
   `,

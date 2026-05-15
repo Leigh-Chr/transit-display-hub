@@ -231,7 +231,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     }
 
     .page-title {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface);
       margin: 0;
@@ -263,7 +263,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       padding: 4px 10px;
       border-radius: var(--app-line-badge-radius);
       color: white;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 600;
     }
 
@@ -274,7 +274,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
     .stop-count {
       color: var(--app-on-surface-muted);
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
     }
 
     .dir-badge {
@@ -282,7 +282,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
       align-items: center;
       padding: 2px 9px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 500;
     }
 

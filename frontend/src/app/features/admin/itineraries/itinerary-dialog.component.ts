@@ -143,7 +143,7 @@ interface ItineraryForm {
       padding: 2px 8px;
       border-radius: var(--app-line-badge-radius);
       color: white;
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
       font-weight: 600;
     }
 
@@ -152,7 +152,7 @@ interface ItineraryForm {
       align-items: flex-start;
       gap: 8px;
       color: var(--app-on-surface-muted);
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       margin: 8px 0 0;
       padding: 12px;
       background: var(--app-surface-variant);
@@ -160,14 +160,14 @@ interface ItineraryForm {
     }
 
     .info-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       color: var(--app-primary);
     }
 
     .terminus-info {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       margin: 8px 0 0;
       padding: 12px;
       background: var(--app-surface-variant);
@@ -176,7 +176,7 @@ interface ItineraryForm {
 
     .muted {
       color: var(--app-on-surface-muted);
-      font-size: 12px;
+      font-size: var(--m3-type-label-medium);
     }
   `,
 })

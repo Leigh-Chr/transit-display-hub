@@ -48,7 +48,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
       background: var(--app-map-surface);
       color: var(--chip-color, var(--app-map-chip-inactive));
       font-weight: 700;
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       border-radius: var(--app-radius-pill);
       cursor: pointer;
       transition: all 0.15s;
@@ -123,7 +123,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
 
       .filter-chip {
         padding: 5px 10px;
-        font-size: 12px;
+        font-size: var(--m3-type-label-medium);
         flex-shrink: 0;
       }
     }

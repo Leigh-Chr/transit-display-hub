@@ -465,13 +465,13 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
   styles: `
     .gtfs-data-page { max-width: 1300px; }
     .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
+    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
 
     .tab-icon { margin-right: 6px; vertical-align: middle; }
     .tab-count {
       margin-left: 8px;
-      font-size: 0.75rem;
+      font-size: var(--m3-type-label-medium);
       padding: 1px 8px;
       border-radius: 999px;
       background: var(--mat-sys-secondary-container);
@@ -515,7 +515,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
     .section-title {
       margin: 24px 0 12px 0;
-      font-size: 0.95rem;
+      font-size: var(--m3-type-body-medium);
       font-weight: 600;
       color: var(--mat-sys-on-surface-variant);
       text-transform: uppercase;
@@ -526,7 +526,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     .table-field { width: 200px; }
 
     .inline-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
       vertical-align: middle;

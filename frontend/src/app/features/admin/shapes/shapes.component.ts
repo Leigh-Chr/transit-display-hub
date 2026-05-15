@@ -176,7 +176,7 @@ interface ProjectedPoint { x: number; y: number; }
   styles: `
     .shapes-page { max-width: 1100px; }
     .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: 1.6rem; font-weight: 600; }
+    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
     .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
 
     .itin-picker { width: 100%; max-width: 560px; margin-bottom: 24px; }
@@ -211,12 +211,12 @@ interface ProjectedPoint { x: number; y: number; }
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 0.9rem;
+      font-size: var(--m3-type-body-medium);
       font-variant-numeric: tabular-nums;
       color: var(--mat-sys-on-surface-variant);
     }
     .stat mat-icon {
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
     }
@@ -233,7 +233,7 @@ interface ProjectedPoint { x: number; y: number; }
       align-items: center;
       justify-content: center;
       color: var(--mat-sys-on-surface-variant);
-      font-size: 0.95rem;
+      font-size: var(--m3-type-body-medium);
     }
   `,
 })

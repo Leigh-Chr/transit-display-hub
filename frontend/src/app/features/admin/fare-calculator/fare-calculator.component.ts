@@ -191,7 +191,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
     .fare-page { max-width: 1200px; }
     .page-header { margin-bottom: 16px; }
     .page-title {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface);
       margin: 0 0 6px;

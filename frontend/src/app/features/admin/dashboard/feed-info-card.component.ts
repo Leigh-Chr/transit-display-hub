@@ -102,7 +102,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
     }
 
     .feed-icon {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       width: 28px;
       height: 28px;
     }
@@ -117,11 +117,11 @@ import { TranslocoDirective } from '@jsverse/transloco';
       display: flex;
       align-items: baseline;
       gap: 8px;
-      font-size: 1.05rem;
+      font-size: var(--m3-type-title-large);
     }
 
     .feed-version {
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
       opacity: 0.75;
       font-variant-numeric: tabular-nums;
     }
@@ -136,12 +136,12 @@ import { TranslocoDirective } from '@jsverse/transloco';
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.9rem;
+      font-size: var(--m3-type-body-medium);
       color: var(--mat-sys-on-surface-variant);
     }
 
     .feed-line-icon {
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       opacity: 0.7;

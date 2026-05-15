@@ -126,7 +126,7 @@ import { NetworkLine } from '@shared/models';
 
     .search-field mat-icon {
       flex-shrink: 0;
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       color: var(--app-map-on-surface-variant);
@@ -138,7 +138,7 @@ import { NetworkLine } from '@shared/models';
       outline: none;
       background: transparent;
       color: var(--app-map-on-surface);
-      font-size: 0.9375rem;
+      font-size: var(--m3-type-body-medium);
     }
 
     .search-field input::placeholder {
@@ -160,7 +160,7 @@ import { NetworkLine } from '@shared/models';
     }
 
     .clear-btn mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }
@@ -170,11 +170,11 @@ import { NetworkLine } from '@shared/models';
       align-items: baseline;
       gap: 6px;
       color: var(--app-map-on-surface-variant);
-      font-size: 0.875rem;
+      font-size: var(--m3-type-body-medium);
     }
 
     .summary-count {
-      font-size: 1.125rem;
+      font-size: var(--m3-type-title-large);
       font-weight: 700;
       color: var(--app-map-on-surface);
     }
@@ -186,11 +186,11 @@ import { NetworkLine } from '@shared/models';
       align-items: center;
       gap: 6px;
       color: var(--app-map-on-surface-muted);
-      font-size: 0.8125rem;
+      font-size: var(--m3-type-body-small);
     }
 
     .hint-icon {
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
     }
@@ -241,7 +241,7 @@ import { NetworkLine } from '@shared/models';
       padding: 0 8px;
       border-radius: 14px;
       color: #fff;
-      font-size: 0.8125rem;
+      font-size: var(--m3-type-body-small);
       font-weight: 700;
       letter-spacing: 0.02em;
       box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
@@ -256,7 +256,7 @@ import { NetworkLine } from '@shared/models';
     }
 
     .line-name {
-      font-size: 0.875rem;
+      font-size: var(--m3-type-body-medium);
       font-weight: 600;
       color: var(--app-map-on-surface);
       white-space: nowrap;
@@ -265,7 +265,7 @@ import { NetworkLine } from '@shared/models';
     }
 
     .line-category {
-      font-size: 0.6875rem;
+      font-size: var(--m3-type-label-small);
       font-weight: 600;
       color: var(--app-map-on-surface-muted);
       text-transform: uppercase;
@@ -274,7 +274,7 @@ import { NetworkLine } from '@shared/models';
 
     .line-arrow {
       flex-shrink: 0;
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
       color: var(--app-map-on-surface-muted);
@@ -288,11 +288,12 @@ import { NetworkLine } from '@shared/models';
       gap: 12px;
       padding: 60px 20px;
       color: var(--app-map-on-surface-muted);
-      font-size: 0.9375rem;
+      font-size: var(--m3-type-body-medium);
       text-align: center;
     }
 
     .empty-state mat-icon {
+      // mat-icon font-size is glyph height; matches its container box.
       font-size: 48px;
       width: 48px;
       height: 48px;

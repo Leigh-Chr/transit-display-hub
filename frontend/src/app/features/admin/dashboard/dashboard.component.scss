@@ -1,5 +1,5 @@
 .page-title {
-  font-size: 28px;
+  font-size: var(--m3-type-headline-large);
   font-weight: 700;
   color: var(--app-on-surface);
   margin-bottom: 28px;
@@ -36,7 +36,7 @@
 }
 
 .stat-icon mat-icon {
-  font-size: 24px;
+  font-size: var(--m3-type-headline-medium);
   width: 24px;
   height: 24px;
   color: white;
@@ -71,7 +71,7 @@
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: var(--m3-type-headline-large);
   font-weight: 700;
   color: var(--app-on-surface);
   letter-spacing: -0.5px;
@@ -80,7 +80,7 @@
 
 .stat-label {
   color: var(--app-on-surface-variant);
-  font-size: 13px;
+  font-size: var(--m3-type-body-small);
   font-weight: 500;
 }
 
@@ -130,7 +130,7 @@
   padding: 4px 10px;
   border-radius: var(--app-line-badge-radius);
   color: white;
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 600;
   min-width: 36px;
   text-align: center;
@@ -147,7 +147,7 @@
 }
 
 .line-stats {
-  font-size: 13px;
+  font-size: var(--m3-type-body-small);
   color: var(--app-on-surface-variant);
   white-space: nowrap;
   flex-shrink: 0;
@@ -189,7 +189,7 @@
 }
 
 .health-percent {
-  font-size: 20px;
+  font-size: var(--m3-type-headline-small);
   font-weight: 700;
   color: var(--app-on-surface);
 }
@@ -204,11 +204,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
 }
 
 .health-stat mat-icon {
-  font-size: 18px;
+  font-size: var(--m3-type-title-large);
   width: 18px;
   height: 18px;
 }
@@ -231,7 +231,7 @@
 }
 
 .offline-title {
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 600;
   color: var(--app-on-surface-variant);
   text-transform: uppercase;
@@ -244,12 +244,12 @@
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
   color: var(--app-on-surface);
 }
 
 .offline-device mat-icon {
-  font-size: 16px;
+  font-size: var(--m3-type-body-large);
   width: 16px;
   height: 16px;
   color: var(--app-critical);
@@ -258,7 +258,7 @@
 .offline-more {
   display: inline-block;
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--m3-type-body-small);
   color: var(--app-primary);
   text-decoration: none;
 }
@@ -278,6 +278,7 @@
 }
 
 .empty-state mat-icon {
+  // mat-icon font-size drives glyph height; matches container box.
   font-size: 40px;
   width: 40px;
   height: 40px;
@@ -304,7 +305,7 @@
 
 .ops-ok-text {
   font-weight: 500;
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
 }
 
 /* Alerts */
@@ -370,7 +371,7 @@
 }
 
 .alert-scope {
-  font-size: 13px;
+  font-size: var(--m3-type-body-small);
   opacity: 0.8;
 }
 
@@ -382,7 +383,7 @@
 
 .alert-count {
   font-weight: 400;
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
   color: var(--app-on-surface-variant);
   margin-left: 4px;
 }
@@ -395,7 +396,7 @@
   background-color: var(--app-surface-container);
   color: var(--app-primary);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--m3-type-body-medium);
   font-weight: 500;
   text-align: center;
   transition: background-color var(--m3-duration-short4) var(--m3-easing-standard);
@@ -451,7 +452,7 @@
 }
 
 .message-severity mat-icon {
-  font-size: 20px;
+  font-size: var(--m3-type-headline-small);
   width: 20px;
   height: 20px;
   color: white;
@@ -483,12 +484,12 @@
 }
 
 .message-meta {
-  font-size: 13px;
+  font-size: var(--m3-type-body-small);
   color: var(--app-on-surface-variant);
 }
 
 .message-status {
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--app-line-badge-radius);
@@ -529,14 +530,14 @@
 }
 
 .action-btn mat-icon {
-  font-size: 28px;
+  font-size: var(--m3-type-headline-large);
   width: 28px;
   height: 28px;
   color: var(--app-primary);
 }
 
 .action-btn span {
-  font-size: 13px;
+  font-size: var(--m3-type-body-small);
   font-weight: 500;
 }
 

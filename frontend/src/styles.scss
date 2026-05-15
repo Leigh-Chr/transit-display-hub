@@ -91,6 +91,25 @@ html {
   --m3-duration-short4: 200ms;
   --m3-duration-medium2: 300ms;
 
+  // === M3 Typography Tokens ===
+  // Thirteen-step scale derived from the M3 spec, snapped to the
+  // font-sizes actually used across the codebase. Display tokens
+  // power kiosk-style splashes, headlines title cards / dialogs,
+  // body the prose, label the chips and captions.
+  --m3-type-display-large: 36px;
+  --m3-type-display-medium: 32px;
+  --m3-type-headline-large: 28px;
+  --m3-type-headline-medium: 24px;
+  --m3-type-headline-small: 20px;
+  --m3-type-title-large: 18px;
+  --m3-type-title-medium: 16px;
+  --m3-type-title-small: 14px;
+  --m3-type-body-large: 16px;
+  --m3-type-body-medium: 14px;
+  --m3-type-body-small: 13px;
+  --m3-type-label-medium: 12px;
+  --m3-type-label-small: 11px;
+
   // === Status Colors (semantic) ===
   --app-success: #2E7D32;
   --app-success-container: #E8F5E9;
@@ -387,7 +406,7 @@ html.large-text-theme {
   --mat-sys-label-medium-size: 1.1rem;
   --mat-sys-label-small-size: 1rem;
 
-  font-size: 1.25rem;
+  font-size: var(--m3-type-headline-small);
 }
 
 // ----------------------------------------------------------------------------
@@ -554,7 +573,7 @@ mat-card {
 
   .mat-mdc-header-cell {
     font-weight: 600;
-    font-size: 13px;
+    font-size: var(--m3-type-body-small);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--app-on-surface-variant);
@@ -575,7 +594,7 @@ mat-card {
   }
 
   .mat-mdc-cell {
-    font-size: 14px;
+    font-size: var(--m3-type-body-medium);
     color: var(--app-on-surface);
   }
 
@@ -675,7 +694,7 @@ app-hub .mat-mdc-icon-button {
 .mat-mdc-chip {
   --mdc-chip-container-shape-radius: 16px;
   font-weight: 500;
-  font-size: 12px;
+  font-size: var(--m3-type-label-medium);
 }
 
 // ----------------------------------------------------------------------------
@@ -804,7 +823,7 @@ app-hub .mat-mdc-icon-button {
 // Responsive page title
 .page-title {
   @media (max-width: 600px) {
-    font-size: 22px !important;
+    font-size: var(--m3-type-headline-small) !important;
   }
 }
 
@@ -874,7 +893,7 @@ app-hub .mat-mdc-icon-button {
   }
 
   .page-title {
-    font-size: 26px;
+    font-size: var(--m3-type-headline-medium);
   }
 
   .stats-grid {

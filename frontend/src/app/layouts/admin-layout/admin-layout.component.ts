@@ -316,7 +316,7 @@ import {
 
     .sidenav-header .brand-name {
       margin: 0;
-      font-size: 18px;
+      font-size: var(--m3-type-title-large);
       font-weight: 600;
       color: var(--app-sidebar-text);
       letter-spacing: -0.25px;
@@ -343,7 +343,7 @@ import {
 
     .nav-section-title {
       padding: 24px 20px 10px;
-      font-size: 11px;
+      font-size: var(--m3-type-label-small);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.8px;

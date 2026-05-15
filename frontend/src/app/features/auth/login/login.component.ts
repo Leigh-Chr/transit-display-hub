@@ -133,7 +133,7 @@ import { AuthService } from '@core/auth/auth.service';
     }
 
     .login-title {
-      font-size: 26px;
+      font-size: var(--m3-type-headline-medium);
       font-weight: 700;
       color: var(--app-on-surface);
       letter-spacing: -0.5px;
@@ -149,7 +149,7 @@ import { AuthService } from '@core/auth/auth.service';
     .submit-button {
       margin-top: 24px;
       height: 52px;
-      font-size: 16px;
+      font-size: var(--m3-type-body-large);
       font-weight: 500;
       border-radius: var(--app-radius-sm);
     }
@@ -167,12 +167,12 @@ import { AuthService } from '@core/auth/auth.service';
       background-color: var(--app-critical-container);
       border-radius: var(--app-radius-sm);
       color: var(--app-on-critical-container);
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       font-weight: 500;
     }
 
     .error-message mat-icon {
-      font-size: 20px;
+      font-size: var(--m3-type-headline-small);
       width: 20px;
       height: 20px;
       color: var(--app-critical);
@@ -181,7 +181,7 @@ import { AuthService } from '@core/auth/auth.service';
     .hint-text {
       text-align: center;
       color: var(--app-on-surface-variant);
-      font-size: 13px;
+      font-size: var(--m3-type-body-small);
       margin: 20px 0 0;
     }
   `,

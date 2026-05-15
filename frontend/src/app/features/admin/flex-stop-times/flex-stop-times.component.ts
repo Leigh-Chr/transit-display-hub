@@ -152,7 +152,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     }
 
     .page-title {
-      font-size: 28px;
+      font-size: var(--m3-type-headline-large);
       font-weight: 700;
       color: var(--app-on-surface);
       margin: 0 0 6px;
@@ -172,7 +172,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       border-radius: 6px;
       color: white;
       font-weight: 600;
-      font-size: 0.85rem;
+      font-size: var(--m3-type-body-medium);
     }
 
     .legend {
@@ -188,12 +188,12 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       gap: 4px;
       padding: 2px 9px;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
       font-weight: 500;
     }
 
     .legend-pill mat-icon {
-      font-size: 14px;
+      font-size: var(--m3-type-body-medium);
       width: 14px;
       height: 14px;
     }
@@ -220,7 +220,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       border-radius: 999px;
       background: rgba(16, 185, 129, 0.14);
       color: #047857;
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
     }
 
     /* Dark mode swap: the indigo/pink/green -700 shades stop hitting
@@ -238,7 +238,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       border-radius: 4px;
       background: var(--mat-sys-surface-container);
       color: var(--mat-sys-on-surface-variant);
-      font-size: 0.78rem;
+      font-size: var(--m3-type-label-medium);
     }
 
     .calendar-tag.muted { font-style: italic; }
