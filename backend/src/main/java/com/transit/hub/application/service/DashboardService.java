@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -44,6 +45,7 @@ public class DashboardService {
     private final BroadcastMessageRepository messageRepository;
     private final DeviceRepository deviceRepository;
     private final MessageScopeResolver scopeResolver;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public DashboardResponse getSummary() {
@@ -67,7 +69,7 @@ public class DashboardService {
                 .map(LineResponse::from)
                 .toList();
 
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         List<BroadcastMessage> activeRaw = messageRepository.findActiveMessages(now);
         Map<UUID, String> lineNames = scopeResolver.bulkLineNames(activeRaw);
         Map<UUID, String> stopNames = scopeResolver.bulkStopNames(activeRaw);

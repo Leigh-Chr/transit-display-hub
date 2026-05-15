@@ -2,6 +2,7 @@ package com.transit.hub.application.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mobilitydata.gtfsvalidator.input.CountryCode;
 import org.mobilitydata.gtfsvalidator.runner.ApplicationType;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -33,8 +35,11 @@ import java.util.Optional;
  * Grenoble; callers can override per-call when known.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class GtfsValidatorService {
+
+    private final Clock clock;
 
     private static final String REPORT_JSON = "report.json";
     private static final String REPORT_HTML = "report.html";
@@ -66,7 +71,7 @@ public class GtfsValidatorService {
     }
 
     public ValidationResult validate(Path feedZip, Path outputDirectory) throws IOException {
-        return validate(feedZip, outputDirectory, "FR", LocalDate.now());
+        return validate(feedZip, outputDirectory, "FR", LocalDate.now(clock));
     }
 
     public ValidationResult validate(Path feedZip,

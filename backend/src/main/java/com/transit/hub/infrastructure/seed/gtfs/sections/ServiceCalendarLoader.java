@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.EnumSet;
@@ -41,6 +42,7 @@ import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.option
 public class ServiceCalendarLoader {
 
     private final ServiceCalendarRepository serviceCalendarRepository;
+    private final Clock clock;
 
     /**
      * Loads + persists service calendars for the feed in {@code workDir}.
@@ -157,7 +159,7 @@ public class ServiceCalendarLoader {
     private Set<String> pickActiveServices(Map<String, ServiceCalendarSnapshot> services) {
         if (services.isEmpty()) { return Set.of(); }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         for (int offset = 0; offset <= 30; offset++) {
             for (int sign : new int[]{1, -1}) {
                 if (offset == 0 && sign == -1) { continue; }

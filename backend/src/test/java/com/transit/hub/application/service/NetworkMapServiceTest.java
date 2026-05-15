@@ -77,6 +77,9 @@ class NetworkMapServiceTest {
     @Mock
     private com.transit.hub.infrastructure.websocket.ActiveDisplayTracker activeDisplayTracker;
 
+    @org.mockito.Spy
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
     @InjectMocks
     private NetworkMapService networkMapService;
 

@@ -35,7 +35,7 @@ class GtfsValidatorServiceTest {
         Path feedZip = zipClasspathFixture("fixtures/gtfs-rich/", workDir.resolve("gtfs-rich.zip"));
         Path outputDir = workDir.resolve("validator-output");
 
-        ValidationResult result = new GtfsValidatorService()
+        ValidationResult result = new GtfsValidatorService(java.time.Clock.systemUTC())
                 .validate(feedZip, outputDir, "FR", LocalDate.of(2026, 5, 10));
 
         assertThat(result.success()).isTrue();

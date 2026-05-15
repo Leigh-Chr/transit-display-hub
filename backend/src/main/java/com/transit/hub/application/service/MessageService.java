@@ -29,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +49,7 @@ public class MessageService {
     private final ApplicationEventPublisher eventPublisher;
     private final MessageScopeResolver scopeResolver;
     private final ActiveDisplayTracker activeDisplayTracker;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getAllMessages() {
@@ -61,12 +63,12 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getActiveMessages() {
-        return toResponses(messageRepository.findActiveMessages(Instant.now()));
+        return toResponses(messageRepository.findActiveMessages(Instant.now(clock)));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<MessageResponse> getAllMessages(Boolean active, MessageSeverity severity, String search, Pageable pageable) {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         boolean hasSearch = search != null && !search.isBlank();
         String trimmedSearch = hasSearch ? search.trim() : null;
 

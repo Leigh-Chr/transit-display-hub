@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,6 +26,7 @@ public class HubDisplayService {
 
     private final DisplayStateCalculator displayStateCalculator;
     private final StopRepository stopRepository;
+    private final Clock clock;
     private final AtomicLong versionCounter = new AtomicLong(0);
 
     private static final int MAX_MESSAGES = 5;
@@ -97,7 +99,7 @@ public class HubDisplayService {
                 arrivals,
                 messages,
                 versionCounter.incrementAndGet(),
-                Instant.now()
+                Instant.now(clock)
         );
     }
 }

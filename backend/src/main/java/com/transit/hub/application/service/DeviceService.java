@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -32,6 +33,7 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final StopRepository stopRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Duration HEARTBEAT_TIMEOUT = Duration.ofMinutes(2);
@@ -152,7 +154,7 @@ public class DeviceService {
     @Scheduled(fixedRate = 30000) // Every 30 seconds
     @Transactional
     public void checkOfflineDevices() {
-        Instant threshold = Instant.now().minus(HEARTBEAT_TIMEOUT);
+        Instant threshold = Instant.now(clock).minus(HEARTBEAT_TIMEOUT);
         List<Device> staleDevices = deviceRepository.findStaleOnlineDevices(threshold);
 
         for (Device device : staleDevices) {

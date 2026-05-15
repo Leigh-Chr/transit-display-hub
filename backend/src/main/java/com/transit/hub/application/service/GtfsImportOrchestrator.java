@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -51,6 +52,7 @@ public class GtfsImportOrchestrator {
     private final CacheManager cacheManager;
     private final GtfsImportMetrics metrics;
     private final GtfsValidatorService validator;
+    private final Clock clock;
 
     /** When false the MobilityData runner is bypassed entirely — the
      *  import audit row simply records {@code validationStatus =
@@ -94,7 +96,7 @@ public class GtfsImportOrchestrator {
         Timer.Sample sample = metrics.startSample();
         ImportAudit audit = ImportAudit.builder()
                 .sourceUrl(feedUrl)
-                .startedAt(Instant.now())
+                .startedAt(Instant.now(clock))
                 .status(ImportStatus.RUNNING)
                 .triggeredBy(triggeredBy)
                 .build();
@@ -156,7 +158,7 @@ public class GtfsImportOrchestrator {
 
     private void finalizeAudit(ImportAudit audit, ImportStatus status,
                                GtfsImportService.ImportResult result, String errorMessage) {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         audit.setCompletedAt(now);
         audit.setDurationMs(Duration.between(audit.getStartedAt(), now).toMillis());
         audit.setStatus(status);

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,7 @@ public class DisplayStateService {
     private final DisplayStateCalculator displayStateCalculator;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActiveDisplayTracker activeDisplayTracker;
+    private final Clock clock;
 
     public DisplayState getDisplayState(UUID stopId) {
         return displayStateCalculator.calculateForStop(stopId);
@@ -87,7 +89,7 @@ public class DisplayStateService {
                         "This stop is no longer in service.",
                         MessageSeverity.CRITICAL)),
                 Long.MAX_VALUE,
-                Instant.now()
+                Instant.now(clock)
         );
         try {
             messagingTemplate.convertAndSend("/topic/display/" + event.getStopId(), farewell);

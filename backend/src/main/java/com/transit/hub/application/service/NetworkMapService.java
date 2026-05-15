@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
 
@@ -54,6 +55,7 @@ public class NetworkMapService {
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActiveDisplayTracker activeDisplayTracker;
+    private final Clock clock;
 
     @Value("${app.data-loader.gtfs.attribution:}")
     private String attribution;
@@ -218,7 +220,7 @@ public class NetworkMapService {
     @Cacheable("networkAlerts")
     @Transactional(readOnly = true)
     public AlertsResponse getAlerts() {
-        List<BroadcastMessage> activeMessages = broadcastMessageRepository.findActiveMessages(Instant.now());
+        List<BroadcastMessage> activeMessages = broadcastMessageRepository.findActiveMessages(Instant.now(clock));
         if (activeMessages.isEmpty()) {
             return new AlertsResponse(List.of(), Map.of(), Map.of());
         }
