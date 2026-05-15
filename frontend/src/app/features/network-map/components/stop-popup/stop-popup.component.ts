@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, signal, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
@@ -85,6 +86,7 @@ export class StopPopupComponent implements OnInit {
   private readonly fareCalculator = inject(FareCalculatorService);
   private readonly flexStopTimes = inject(FlexStopTimeService);
   private readonly locale = inject(LocaleService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly data = inject<StopPopupData>(MAT_DIALOG_DATA);
 
   loading = signal(true);
@@ -192,25 +194,37 @@ export class StopPopupComponent implements OnInit {
   ngOnInit(): void {
     this.buildMessages();
     this.loadSchedules();
+    // takeUntilDestroyed everywhere: a popup can be closed before its
+    // HTTP fan-out (TAD zone, booking rules, pathway graph, fare,
+    // flex windows) returns; without the operator the late callback
+    // would still try to signal.set on a destroyed component.
     if (this.data.stop.hasOnDemand) {
-      this.networkMapData.getStopTadZone(this.data.stop.id).subscribe(zone => {
-        this.tadZone.set(zone);
-        if (zone) {
-          this.loadNextFlexWindow(zone);
-        }
-      });
-      this.networkMapData.getStopBookingRules(this.data.stop.id).subscribe(rules => {
-        this.bookingRules.set(rules);
-      });
+      this.networkMapData.getStopTadZone(this.data.stop.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(zone => {
+          this.tadZone.set(zone);
+          if (zone) {
+            this.loadNextFlexWindow(zone);
+          }
+        });
+      this.networkMapData.getStopBookingRules(this.data.stop.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(rules => {
+          this.bookingRules.set(rules);
+        });
     }
-    this.networkMapData.getStopPathwayGraph(this.data.stop.id).subscribe(graph => {
-      this.pathwayGraph.set(graph);
-    });
+    this.networkMapData.getStopPathwayGraph(this.data.stop.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(graph => {
+        this.pathwayGraph.set(graph);
+      });
     const origin = this.data.originStop;
     if (origin && origin.id !== this.data.stop.id) {
-      this.fareCalculator.calculate(origin.id, this.data.stop.id).subscribe(result => {
-        this.fareResult.set(result);
-      });
+      this.fareCalculator.calculate(origin.id, this.data.stop.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(result => {
+          this.fareResult.set(result);
+        });
     }
   }
 
@@ -218,7 +232,9 @@ export class StopPopupComponent implements OnInit {
    *  the first one starting after the current local time. Silently
    *  drops the section when nothing is upcoming. */
   private loadNextFlexWindow(zone: FlexLocation): void {
-    this.flexStopTimes.getWindowsForLocation(zone.externalId).subscribe(windows => {
+    this.flexStopTimes.getWindowsForLocation(zone.externalId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(windows => {
       if (windows.length === 0) {
         this.nextFlexWindow.set(null);
         return;
@@ -309,7 +325,9 @@ export class StopPopupComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.scheduleService.getForStop(this.data.stop.id).subscribe({
+    this.scheduleService.getForStop(this.data.stop.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (schedules: Schedule[]) => {
         this.timetableGroups.set(this.buildTimetableGroups(schedules));
         this.loading.set(false);
