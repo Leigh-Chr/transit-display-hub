@@ -2,10 +2,15 @@ package com.transit.hub.infrastructure.websocket;
 
 import com.transit.hub.application.dto.response.DeviceAuthResponse;
 import com.transit.hub.application.service.DeviceService;
+import com.transit.hub.infrastructure.config.AuthProperties;
 import com.transit.hub.infrastructure.security.JwtService;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -16,10 +21,13 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,8 +39,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtService jwtService;
     private final DeviceService deviceService;
+    private final AuthProperties authProperties;
 
     static final String DEVICE_ID_SESSION_KEY = "deviceId";
+    static final String ACCESS_TOKEN_SESSION_KEY = "accessToken";
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsCsv;
@@ -50,7 +60,51 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(origins);
+                .setAllowedOrigins(origins)
+                .addInterceptors(new AccessCookieHandshakeInterceptor());
+    }
+
+    /**
+     * Lifts the access JWT out of the cookie jar during the HTTP-to-WS
+     * upgrade and stashes it in the STOMP session attributes. Anything
+     * we put in {@code attributes} here ends up as the session attribute
+     * map that the channel interceptor reads on CONNECT.
+     *
+     * <p>Reading the cookie at handshake time (instead of relying on the
+     * client to mirror the JWT into a CONNECT header) means the access
+     * token never has to be readable from JavaScript — an XSS payload
+     * that lifts a cookie via {@code document.cookie} hits an httpOnly
+     * cookie wall on every modern browser, so the WebSocket session
+     * inherits the same protection as the rest of the API.
+     */
+    private class AccessCookieHandshakeInterceptor implements HandshakeInterceptor {
+        @Override
+        public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                       WebSocketHandler wsHandler, Map<String, Object> attributes) {
+            if (!(request instanceof ServletServerHttpRequest servlet)) {
+                return true;
+            }
+            Cookie[] cookies = servlet.getServletRequest().getCookies();
+            if (cookies == null) {
+                return true;
+            }
+            for (Cookie cookie : cookies) {
+                if (authProperties.accessCookieName().equals(cookie.getName())) {
+                    String value = cookie.getValue();
+                    if (value != null && !value.isBlank()) {
+                        attributes.put(ACCESS_TOKEN_SESSION_KEY, value);
+                    }
+                    return true;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                   WebSocketHandler wsHandler, Exception exception) {
+            // nothing to clean up — sessions are tracked by Spring
+        }
     }
 
     @Override
@@ -75,21 +129,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     /**
-     * If the CONNECT frame carries a Bearer JWT, validate it and bind the
-     * matching user principal to the STOMP session. An invalid or absent
-     * token leaves the connection anonymous — public topics (kiosk,
-     * network-map) keep working, private ones stay gated.
+     * Resolves the access JWT for this CONNECT — preferring the value
+     * the {@link AccessCookieHandshakeInterceptor} lifted out of the
+     * {@code ACCESS_TOKEN} cookie, falling back to the {@code Authorization:
+     * Bearer …} native header for legacy clients that still push the
+     * token in-band. An invalid or absent token leaves the connection
+     * anonymous — public topics (kiosk, network-map) keep working,
+     * private ones stay gated.
      */
     private void bindUserPrincipal(StompHeaderAccessor accessor) {
-        List<String> authHeaders = accessor.getNativeHeader("Authorization");
-        if (authHeaders == null || authHeaders.isEmpty()) {
+        String token = resolveAccessToken(accessor);
+        if (token == null) {
             return;
         }
-        String header = authHeaders.getFirst();
-        if (header == null || !header.startsWith("Bearer ")) {
-            return;
-        }
-        String token = header.substring("Bearer ".length()).trim();
         if (!jwtService.isValidToken(token)) {
             log.debug("STOMP CONNECT carries an expired/invalid token; "
                     + "falling back to anonymous (kiosk topics are public)");
@@ -102,6 +154,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role)));
         accessor.setUser(auth);
+    }
+
+    static String resolveAccessToken(StompHeaderAccessor accessor) {
+        Map<String, Object> attrs = accessor.getSessionAttributes();
+        if (attrs != null) {
+            Object cookieToken = attrs.get(ACCESS_TOKEN_SESSION_KEY);
+            if (cookieToken instanceof String s && !s.isBlank()) {
+                return s;
+            }
+        }
+        List<String> authHeaders = accessor.getNativeHeader("Authorization");
+        if (authHeaders == null || authHeaders.isEmpty()) {
+            return null;
+        }
+        String header = authHeaders.getFirst();
+        if (header == null || !header.startsWith("Bearer ")) {
+            return null;
+        }
+        return header.substring("Bearer ".length()).trim();
     }
 
     /**
@@ -131,7 +202,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
         Map<String, Object> attrs = accessor.getSessionAttributes();
         if (attrs == null) {
-            attrs = new java.util.HashMap<>();
+            attrs = new HashMap<>();
             accessor.setSessionAttributes(attrs);
         }
         attrs.put(DEVICE_ID_SESSION_KEY, result.deviceId());
