@@ -319,6 +319,12 @@ export class MessageDialogComponent implements OnInit {
   }
 
   private toLocalDatetime(date: Date): string {
-    return date.toISOString().slice(0, 16);
+    // <input type="datetime-local"> reads the value as the browser's
+    // local time. toISOString() is UTC, so for any non-UTC user that
+    // round-trip would shift the value by their offset every save.
+    // Subtract the timezone offset so the literal HH:mm we emit is
+    // the same wall-clock time the user sees in the picker.
+    const offsetMs = date.getTimezoneOffset() * 60_000;
+    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
   }
 }
