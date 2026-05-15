@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.14.0] — 2026-05-15
+
+Finishing pass on the cross-axis audit: closes the remaining
+FR-only enum labels on the public map and the admin pages, pairs
+every icon-button matTooltip with a screen-reader aria-label, and
+fixes a subtle GTFS exception-precedence bug in
+FlexAvailabilityService.
+
+### Fixed
+
+- **pathway-list, stop-popup, pathways admin** i18n: the three
+  components shared a hardcoded MODE_LABEL Record (Couloir /
+  Escalier / Tapis roulant / …) with three slightly divergent
+  variants. All routed through the new `transit.pathwayMode.*`
+  namespace. `pathway-list` station header, level pluralisation
+  ("X niveaux : …"), stair direction ("montée" / "descente") and
+  duration units (`s` / `min`) read through `pathways.*` keys.
+  `stop-popup.bookingTypeLabel` + `formatPriorNotice` read through
+  `stopPopup.bookingType.*` + `stopPopup.priorNotice{Hours,
+  Minutes}` instead of hardcoded French.
+- **gtfs-data admin** eight enum-label helpers (`paymentLabel`,
+  `transferLabel`, `ruleTooltip`, `bookingTypeLabel`,
+  `transferTypeLabel`, `mediaTypeLabel`, `noticeLabel`) now route
+  through `admin.gtfsData.{payment,transfer,rule,bookingType,
+  transferType,mediaType,notice}` so the EN locale stops shipping
+  a pure-FR fares page (À bord / Illimitées / Tarif unitaire sans
+  condition / Temps réel / Jour même / Sans contact (EMV) / J−2 à
+  10:00 / …).
+- **Admin a11y**: seven `mat-icon-button` + one `mat-icon-button`
+  anchor on `stops`, `itineraries` and `import-audit` exposed
+  their action verb only via `[matTooltip]`. Screen-reader users
+  heard a generic "button" announcement. Each now binds both
+  `[matTooltip]` and `[attr.aria-label]` to the same translated
+  key.
+- **`FlexAvailabilityService`** dropped its local
+  `serviceActiveOn` copy in favour of
+  `ServiceCalendarMatcher.isActive`. The local copy checked the
+  `start_date..end_date` window before the exception list, so an
+  ADDED `calendar_dates.txt` exception falling outside the window
+  was wrongly filtered out — the matcher (used everywhere else)
+  checks exceptions first per the GTFS spec.
+
+### Known limitations carried over to 1.15+
+
+- Five backend unit tests still missing on the largest source
+  files (`GtfsImportOrchestrator`, `ScheduleImporter`,
+  `FareV2Importer`, `GtfsDataLoader`, `RealtimeAlertScheduler`)
+  — covered indirectly via integration tests, not yet directly.
+- Five `ResponseEntity<?>` dual-shape REST endpoints
+  (`/api/users`, `/api/lines`, `/api/stops`, `/api/itineraries`,
+  `/api/messages`) keep their legacy unpaginated `List<T>`
+  branch; consolidation to paginated-only requires aligning the
+  frontend admin callers.
+- Testcontainers Postgres smoke for the 53 Flyway migrations
+  — the dev/test profile still runs on H2 with `ddl-auto:
+  create-drop`.
+
 ## [1.13.0] — 2026-05-15
 
 Continuation of the cross-axis cleanup. Closes the remaining secondary
