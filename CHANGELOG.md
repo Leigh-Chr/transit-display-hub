@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-05-15
+
+Refonte typographique : les 64 valeurs de `font-size` éparpillées dans
+le code sont remplacées par 13 tokens M3 (`display`, `headline`,
+`title`, `body`, `label`, chacun en `large`/`medium`/`small` selon le
+niveau). Aucune migration manuelle utilisateur. Le rendu visuel
+final a été validé via Playwright sur les quatre pages publiques
+(login, map, list, not-found) avant le tag.
+
+### Added
+
+- **Treize tokens M3 typography** dans `frontend/src/styles.scss :root` :
+  `--m3-type-display-{large,medium}`,
+  `--m3-type-headline-{large,medium,small}`,
+  `--m3-type-title-{large,medium,small}`,
+  `--m3-type-body-{large,medium,small}`,
+  `--m3-type-label-{medium,small}`. Tous les sites `font-size` du code
+  applicatif les consomment via `var(--m3-type-*)`.
+
+### Changed
+
+- **41 fichiers SCSS/TS migrés** vers les tokens — environ 280 sites de
+  substitution. Aucun changement de pixel à l'œil sur les pages
+  publiques (Playwright avant/après en 1440×900).
+- **`vh`-based sizes** (kiosk / hub fullscreen) et `em` relatifs **laissés
+  tels quels** — sémantique de scaling fullscreen distincte du ramp
+  typographique standard.
+- **`mat-icon` font-sizes laissés hardcodés** (avec commentaire) car
+  ils pilotent la hauteur du glyph en miroir de la box container,
+  pas le scale typographique.
+
+### Skipped — différé en attente de revue visuelle
+
+- **Palette tokenisée** : la migration des 119 hex en dur vers des
+  tokens `--app-color-*` reste différée. Inventaire effectué : sur 60
+  hex en code de prod (hors fixtures / mock data des `.spec.ts`),
+  l'écrasante majorité sont soit des couleurs métier (couleurs de
+  lignes GTFS qui viennent du feed, fixtures de test), soit des
+  constantes locales semantiquement intentionnelles dans des
+  contextes `:host-context(.dark-theme)`, soit déjà tokenisées dans
+  `:root`. Une migration plus agressive demande une revue visuelle
+  page par page (admin, kiosk, hub) que la session courante ne
+  permet pas de mener sans backend chargé. Conservé pour 1.9.0+.
+
 ## [1.7.0] — 2026-05-15
 
 Release backlog audit : ferme les P2 sécu (S-09 JWT jti + tokenVersion,
