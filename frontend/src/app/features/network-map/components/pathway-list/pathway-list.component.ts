@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoService } from '@jsverse/transloco';
+import { LocaleService } from '@core/i18n/locale.service';
 
 import { Pathway, PathwayMode, StationPathwayGraph } from '@shared/models';
 
@@ -21,16 +23,6 @@ const MODE_ICON: Record<PathwayMode, string> = {
   EXIT_GATE: 'logout',
 };
 
-const MODE_LABEL: Record<PathwayMode, string> = {
-  WALKWAY: 'Couloir',
-  STAIRS: 'Escalier',
-  MOVING_SIDEWALK: 'Tapis roulant',
-  ESCALATOR: 'Escalator',
-  ELEVATOR: 'Ascenseur',
-  FARE_GATE: 'Portique',
-  EXIT_GATE: 'Sortie',
-};
-
 /**
  * Read-only renderer for a station's indoor topology graph. Inputs the
  * GTFS pathway graph rooted at a stop's parent station and lays the
@@ -47,10 +39,10 @@ const MODE_LABEL: Record<PathwayMode, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (rows().length > 0) {
-      <div class="pathway-list" aria-label="Connexions internes de la station">
+      <div class="pathway-list" [attr.aria-label]="ariaLabel()">
         <h3 class="section-title">
           <mat-icon>alt_route</mat-icon>
-          Connexions internes — {{ graph()?.stationName }}
+          {{ titleLabel() }}
         </h3>
         @if (levelLine(); as line) {
           <p class="levels-line">{{ line }}</p>
@@ -163,39 +155,67 @@ const MODE_LABEL: Record<PathwayMode, string> = {
 export class PathwayListComponent {
   readonly graph = input<StationPathwayGraph | null>(null);
 
+  private readonly transloco = inject(TranslocoService);
+  // Track the active language so the row labels recompute when the
+  // user toggles FR/EN — TranslocoService.translate() reads the dict
+  // at call time and the `rows` computed re-runs on each lang switch.
+  private readonly locale = inject(LocaleService);
+
   readonly rows = computed<PathwayRow[]>(() => {
+    this.locale.current();
     const g = this.graph();
     if (!g) {return [];}
     return g.pathways.map(p => ({
       pathway: p,
       icon: MODE_ICON[p.pathwayMode],
-      label: MODE_LABEL[p.pathwayMode],
+      label: this.transloco.translate(`transit.pathwayMode.${p.pathwayMode}`),
       durationLabel: this.formatDuration(p.traversalTimeSeconds),
       detailLabel: this.detailFor(p),
     }));
   });
 
+  readonly titleLabel = computed(() => {
+    this.locale.current();
+    return this.transloco.translate('pathways.title', {
+      station: this.graph()?.stationName ?? '',
+    });
+  });
+
+  readonly ariaLabel = computed(() => {
+    this.locale.current();
+    return this.transloco.translate('pathways.ariaLabel');
+  });
+
   readonly levelLine = computed<string | null>(() => {
+    this.locale.current();
     const g = this.graph();
     if (!g || g.levels.length === 0) {return null;}
-    const labels = g.levels.map(l => l.name ?? `niveau ${l.index}`);
-    return `${g.levels.length} niveau${g.levels.length > 1 ? 'x' : ''} : ${labels.join(', ')}`;
+    const labels = g.levels.map(l =>
+      l.name ?? this.transloco.translate('pathways.fallbackLevel', { index: l.index }));
+    const list = labels.join(', ');
+    return this.transloco.translate(
+      g.levels.length === 1 ? 'pathways.levelOne' : 'pathways.levelOther',
+      { count: g.levels.length, list },
+    );
   });
 
   private formatDuration(seconds: number | null): string | null {
     if (seconds === null) {return null;}
-    if (seconds < 60) {return `${seconds} s`;}
-    const minutes = Math.round(seconds / 60);
-    return `${minutes} min`;
+    if (seconds < 60) {
+      return this.transloco.translate('pathways.durationSeconds', { value: seconds });
+    }
+    return this.transloco.translate('pathways.durationMinutes', { value: Math.round(seconds / 60) });
   }
 
   private detailFor(p: Pathway): string | null {
     const parts: string[] = [];
     if (p.stairCount !== null && p.stairCount !== 0) {
-      const dir = p.stairCount > 0 ? 'montée' : 'descente';
-      parts.push(`${Math.abs(p.stairCount)} marches (${dir})`);
+      const key = p.stairCount > 0 ? 'pathways.stairsUp' : 'pathways.stairsDown';
+      parts.push(this.transloco.translate(key, { count: Math.abs(p.stairCount) }));
     }
-    if (p.signpostedAs) {parts.push(`« ${p.signpostedAs} »`);}
+    if (p.signpostedAs) {
+      parts.push(this.transloco.translate('pathways.signpostedAs', { label: p.signpostedAs }));
+    }
     return parts.length > 0 ? parts.join(' · ') : null;
   }
 }

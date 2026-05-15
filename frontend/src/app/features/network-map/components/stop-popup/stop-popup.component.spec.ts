@@ -3,11 +3,44 @@ import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { StopPopupComponent, StopPopupData } from './stop-popup.component';
 import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { ScheduleService } from '@core/api/schedule.service';
 import { LocaleService } from '@core/i18n/locale.service';
+
+const stopPopupDict = {
+  stopPopup: {
+    bookingType: {
+      REAL_TIME: 'Réservation temps réel',
+      SAME_DAY: 'Réservation le jour même',
+      PRIOR_DAYS: 'Réservation à l\'avance',
+      default: 'Réservation',
+    },
+    priorNoticeHours: 'au moins {{ hours }}h à l\'avance',
+    priorNoticeMinutes: 'au moins {{ minutes }} min à l\'avance',
+  },
+  pathways: {
+    title: 'Connexions internes — {{ station }}',
+    ariaLabel: 'Connexions internes de la station',
+    levelOne: '1 niveau : {{ list }}',
+    levelOther: '{{ count }} niveaux : {{ list }}',
+    fallbackLevel: 'niveau {{ index }}',
+    stairsUp: '{{ count }} marches (montée)',
+    stairsDown: '{{ count }} marches (descente)',
+    signpostedAs: '« {{ label }} »',
+    durationSeconds: '{{ value }} s',
+    durationMinutes: '{{ value }} min',
+  },
+  transit: {
+    pathwayMode: {
+      WALKWAY: 'Couloir', STAIRS: 'Escalier', MOVING_SIDEWALK: 'Tapis roulant',
+      ESCALATOR: 'Escalator', ELEVATOR: 'Ascenseur',
+      FARE_GATE: 'Portillon (entrée)', EXIT_GATE: 'Portillon (sortie)',
+    },
+  },
+};
 import { FareCalculationResult, FlexLocation, FlexStopTime, Schedule } from '@shared/models';
 import { NetworkMapDataService } from '../../services/network-map-data.service';
 import { LayoutStop } from '../../services/schematic-layout.service';
@@ -100,7 +133,14 @@ describe('StopPopupComponent', () => {
     const dialogData = { ...baseMockData, ...data };
 
     TestBed.configureTestingModule({
-      imports: [StopPopupComponent],
+      imports: [
+        StopPopupComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: stopPopupDict, fr: stopPopupDict },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' },
+          preloadLangs: true,
+        }),
+      ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },

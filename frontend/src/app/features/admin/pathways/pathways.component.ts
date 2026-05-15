@@ -443,7 +443,7 @@ export class PathwaysComponent implements OnInit {
     const pathways = this.pathways();
     const root = this.selectedStop();
     if (pathways.length === 0 || !root) {return null;}
-    return PathwaysComponent.buildLayout(pathways, root.id);
+    return PathwaysComponent.buildLayout(pathways, root.id, this.transloco);
   });
 
   ngOnInit(): void {
@@ -512,22 +512,17 @@ export class PathwaysComponent implements OnInit {
   }
 
   modeLabel(mode: PathwayMode): string {
-    switch (mode) {
-      case 'WALKWAY': return 'Couloir';
-      case 'STAIRS': return 'Escalier';
-      case 'MOVING_SIDEWALK': return 'Tapis roulant';
-      case 'ESCALATOR': return 'Escalator';
-      case 'ELEVATOR': return 'Ascenseur';
-      case 'FARE_GATE': return 'Portillon (entrée)';
-      case 'EXIT_GATE': return 'Portillon (sortie)';
-    }
+    return this.transloco.translate(`transit.pathwayMode.${mode}`);
   }
 
   /** Pure helper kept static so unit tests can call it without a TestBed.
    *  BFS from {@code rootStopId}, layout nodes on a grid (column = depth,
    *  row = order of arrival), then materialise edges with stroke / dash
    *  / arrow attributes. */
-  static buildLayout(pathways: Pathway[], rootStopId: string): PathwayGraphLayout {
+  // transloco is optional so unit tests can call buildLayout without
+  // wiring a Transloco TestBed; the legend label falls back to the
+  // raw enum when omitted.
+  static buildLayout(pathways: Pathway[], rootStopId: string, transloco?: TranslocoService): PathwayGraphLayout {
     const nodeNames = new Map<string, string>();
     const adjacency = new Map<string, string[]>();
     for (const p of pathways) {
@@ -668,7 +663,7 @@ export class PathwaysComponent implements OnInit {
     for (const mode of usedModes) {
       legend.push({
         mode,
-        label: PathwaysComponent.modeLabelStatic(mode),
+        label: PathwaysComponent.modeLabelStatic(mode, transloco),
         color: PathwaysComponent.MODE_COLORS[mode],
         dashed: mode === 'STAIRS',
       });
@@ -696,16 +691,8 @@ export class PathwaysComponent implements OnInit {
     return name.slice(0, 17) + '…';
   }
 
-  private static modeLabelStatic(mode: PathwayMode): string {
-    switch (mode) {
-      case 'WALKWAY': return 'Couloir';
-      case 'STAIRS': return 'Escalier';
-      case 'MOVING_SIDEWALK': return 'Tapis roulant';
-      case 'ESCALATOR': return 'Escalator';
-      case 'ELEVATOR': return 'Ascenseur';
-      case 'FARE_GATE': return 'Portillon (entrée)';
-      case 'EXIT_GATE': return 'Portillon (sortie)';
-    }
+  private static modeLabelStatic(mode: PathwayMode, transloco?: TranslocoService): string {
+    return transloco ? transloco.translate(`transit.pathwayMode.${mode}`) : mode;
   }
 
   /** Build a triangle polygon pointing from (x1,y1) toward (x2,y2),

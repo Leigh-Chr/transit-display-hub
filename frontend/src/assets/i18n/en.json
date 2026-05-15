@@ -205,7 +205,38 @@
         "CABLE_CAR": "Cable car",
         "TROLLEYBUS": "Trolleybus",
         "MONORAIL": "Monorail"
+      },
+      "pathwayMode": {
+        "WALKWAY": "Walkway",
+        "STAIRS": "Stairs",
+        "MOVING_SIDEWALK": "Moving sidewalk",
+        "ESCALATOR": "Escalator",
+        "ELEVATOR": "Elevator",
+        "FARE_GATE": "Fare gate (entrance)",
+        "EXIT_GATE": "Fare gate (exit)"
       }
+    },
+    "pathways": {
+      "title": "Indoor connections — {{ station }}",
+      "ariaLabel": "Indoor station connections",
+      "levelOne": "1 level: {{ list }}",
+      "levelOther": "{{ count }} levels: {{ list }}",
+      "fallbackLevel": "level {{ index }}",
+      "stairsUp": "{{ count }} steps (up)",
+      "stairsDown": "{{ count }} steps (down)",
+      "signpostedAs": "“{{ label }}”",
+      "durationSeconds": "{{ value }} s",
+      "durationMinutes": "{{ value }} min"
+    },
+    "stopPopup": {
+      "bookingType": {
+        "REAL_TIME": "Real-time booking",
+        "SAME_DAY": "Same-day booking",
+        "PRIOR_DAYS": "Advance booking",
+        "default": "Booking"
+      },
+      "priorNoticeHours": "at least {{ hours }}h in advance",
+      "priorNoticeMinutes": "at least {{ minutes }} min in advance"
     },
     "accessibility": {
       "accessible": "Wheelchair accessible",

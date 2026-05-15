@@ -19,6 +19,7 @@ import {
   ringsFromLocation,
 } from '@shared/utils/flex-locations.utils';
 import { LocaleService } from '@core/i18n/locale.service';
+import { TranslocoService } from '@jsverse/transloco';
 import { bcp47 } from '@shared/utils/locale-date.utils';
 import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import { NetworkMapDataService } from '../../services/network-map-data.service';
@@ -86,6 +87,7 @@ export class StopPopupComponent implements OnInit {
   private readonly fareCalculator = inject(FareCalculatorService);
   private readonly flexStopTimes = inject(FlexStopTimeService);
   private readonly locale = inject(LocaleService);
+  private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
   readonly data = inject<StopPopupData>(MAT_DIALOG_DATA);
 
@@ -288,19 +290,21 @@ export class StopPopupComponent implements OnInit {
     const min = rule.priorNoticeDurationMin;
     if (min === null) {return null;}
     if (min >= 3600) {
-      const hours = Math.round(min / 3600);
-      return `au moins ${hours}h à l'avance`;
+      return this.transloco.translate('stopPopup.priorNoticeHours', {
+        hours: Math.round(min / 3600),
+      });
     }
-    return `au moins ${Math.round(min / 60)} min à l'avance`;
+    return this.transloco.translate('stopPopup.priorNoticeMinutes', {
+      minutes: Math.round(min / 60),
+    });
   }
 
   bookingTypeLabel(rule: BookingRule): string {
-    switch (rule.bookingType) {
-      case 'REAL_TIME': return 'Réservation temps réel';
-      case 'SAME_DAY': return 'Réservation le jour même';
-      case 'PRIOR_DAYS': return 'Réservation à l\'avance';
-      default: return 'Réservation';
-    }
+    const key = `stopPopup.bookingType.${rule.bookingType ?? 'default'}`;
+    const translated = this.transloco.translate(key);
+    return translated === key
+      ? this.transloco.translate('stopPopup.bookingType.default')
+      : translated;
   }
 
   private buildMessages(): void {

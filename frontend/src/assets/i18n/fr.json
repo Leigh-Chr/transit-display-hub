@@ -205,7 +205,38 @@
         "CABLE_CAR": "Téléphérique",
         "TROLLEYBUS": "Trolley",
         "MONORAIL": "Monorail"
+      },
+      "pathwayMode": {
+        "WALKWAY": "Couloir",
+        "STAIRS": "Escalier",
+        "MOVING_SIDEWALK": "Tapis roulant",
+        "ESCALATOR": "Escalator",
+        "ELEVATOR": "Ascenseur",
+        "FARE_GATE": "Portillon (entrée)",
+        "EXIT_GATE": "Portillon (sortie)"
       }
+    },
+    "pathways": {
+      "title": "Connexions internes — {{ station }}",
+      "ariaLabel": "Connexions internes de la station",
+      "levelOne": "1 niveau : {{ list }}",
+      "levelOther": "{{ count }} niveaux : {{ list }}",
+      "fallbackLevel": "niveau {{ index }}",
+      "stairsUp": "{{ count }} marches (montée)",
+      "stairsDown": "{{ count }} marches (descente)",
+      "signpostedAs": "« {{ label }} »",
+      "durationSeconds": "{{ value }} s",
+      "durationMinutes": "{{ value }} min"
+    },
+    "stopPopup": {
+      "bookingType": {
+        "REAL_TIME": "Réservation temps réel",
+        "SAME_DAY": "Réservation le jour même",
+        "PRIOR_DAYS": "Réservation à l'avance",
+        "default": "Réservation"
+      },
+      "priorNoticeHours": "au moins {{ hours }}h à l'avance",
+      "priorNoticeMinutes": "au moins {{ minutes }} min à l'avance"
     },
     "accessibility": {
       "accessible": "Accessible PMR",
