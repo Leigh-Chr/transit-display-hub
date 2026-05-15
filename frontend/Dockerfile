@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 COPY --from=build /app/dist/transit-display-hub/browser/ /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

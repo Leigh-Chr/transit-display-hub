@@ -257,7 +257,7 @@ docker compose logs -f
 
 | Service    | Image              | Port | Notes                              |
 |------------|--------------------| ---- |------------------------------------|
-| `postgres` | postgres:15-alpine | 5432 | Persistent volume, healthcheck     |
+| `postgres` | postgres:17-alpine | 5432 | Persistent volume, healthcheck     |
 | `backend`  | custom (Spring Boot) | 8080 | Waits for postgres healthy         |
 | `frontend` | custom (nginx)     | 80   | Proxies `/api/` and `/ws` to backend |
 
