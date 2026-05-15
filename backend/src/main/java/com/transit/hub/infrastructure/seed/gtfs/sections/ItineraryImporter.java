@@ -39,7 +39,7 @@ import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCs
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
 /**
- * Reads {@code trips.txt} and {@code stop_times.txt} (two passes) to build
+ * Reads {@code trips.txt} and {@code stop_times.txt} (single pass) to build
  * the {@link Itinerary} + {@link ItineraryStop} rows. For each (route_id,
  * direction_id) pair the representative trip is the one with the most stops
  * (longest variant covers the full itinerary). Returns an {@link ItineraryImport}
@@ -97,46 +97,23 @@ public class ItineraryImporter {
         }
         log.info("GTFS import: {} trips loaded", tripInfos.size());
 
-        // 2. Pass 1 over stop_times: count stops per trip
-        Map<String, Integer> stopsPerTrip = new HashMap<>();
-        try (CSVParser parser = openCsv(stopTimesFile)) {
-            for (CSVRecord record : parser) {
-                String tripId = record.get("trip_id");
-                stopsPerTrip.merge(tripId, 1, Integer::sum);
-            }
-        }
-
-        // 3. Select representative trip per (route_id, direction_id): the one with the most stops
-        Map<RouteDirKey, String> bestTrip = new HashMap<>();
-        Map<RouteDirKey, Integer> bestCount = new HashMap<>();
-        for (Map.Entry<String, TripInfo> entry : tripInfos.entrySet()) {
-            String tripId = entry.getKey();
-            TripInfo info = entry.getValue();
-            if (!linesByGtfsId.containsKey(info.routeId())) {
-                continue;
-            }
-            int count = stopsPerTrip.getOrDefault(tripId, 0);
-            if (count == 0) {
-                continue;
-            }
-            RouteDirKey key = new RouteDirKey(info.routeId(), info.directionId());
-            if (count > bestCount.getOrDefault(key, 0)) {
-                bestCount.put(key, count);
-                bestTrip.put(key, tripId);
-            }
-        }
-        Set<String> selectedTripIds = new HashSet<>(bestTrip.values());
-        log.info("GTFS import: {} representative trips selected", selectedTripIds.size());
-
-        // 4. Pass 2 over stop_times: collect (tripId -> ordered list of stops with per-stop headsign)
+        // 2. Single pass over stop_times.txt: count rows per trip AND
+        // collect the (stopId, sequence, headsign) triples we'll need
+        // for itinerary construction. We drop any row whose trip is not
+        // attached to a known route up front so the in-memory footprint
+        // tracks the size of the active network rather than the raw
+        // feed — a 200 MB feed with archived routes stays in low MB.
         record TimedStop(String stopId, int sequence, String headsign) {}
+        Map<String, Integer> stopsPerTrip = new HashMap<>();
         Map<String, List<TimedStop>> stopsByTrip = new HashMap<>();
         try (CSVParser parser = openCsv(stopTimesFile)) {
             for (CSVRecord record : parser) {
                 String tripId = record.get("trip_id");
-                if (!selectedTripIds.contains(tripId)) {
+                TripInfo info = tripInfos.get(tripId);
+                if (info == null || !linesByGtfsId.containsKey(info.routeId())) {
                     continue;
                 }
+                stopsPerTrip.merge(tripId, 1, Integer::sum);
                 int sequence = parseInt(record.get("stop_sequence"), 0);
                 String stopId = record.get("stop_id");
                 String headsign = optional(record, "stop_headsign");
@@ -144,6 +121,26 @@ public class ItineraryImporter {
                         .add(new TimedStop(stopId, sequence, isBlank(headsign) ? null : headsign.trim()));
             }
         }
+
+        // 3. Select representative trip per (route_id, direction_id): the one with the most stops
+        Map<RouteDirKey, String> bestTrip = new HashMap<>();
+        Map<RouteDirKey, Integer> bestCount = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : stopsPerTrip.entrySet()) {
+            String tripId = entry.getKey();
+            TripInfo info = tripInfos.get(tripId);
+            int count = entry.getValue();
+            RouteDirKey key = new RouteDirKey(info.routeId(), info.directionId());
+            if (count > bestCount.getOrDefault(key, 0)) {
+                bestCount.put(key, count);
+                bestTrip.put(key, tripId);
+            }
+        }
+        Set<String> selectedTripIds = new HashSet<>(bestTrip.values());
+        // Drop the rows belonging to non-representative trips now that
+        // we know which trip wins each (route, direction) — keeps the
+        // big collection small for the rest of the method.
+        stopsByTrip.keySet().retainAll(selectedTripIds);
+        log.info("GTFS import: {} representative trips selected", selectedTripIds.size());
 
         // Pre-load existing itineraries by external_id so re-imports
         // refresh a stable UUID. The representative trip_id can shift
