@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-05-15
+
+Clôture de la session : retire le push manuel du JWT en header STOMP
+côté client (le serveur a livré le HandshakeInterceptor cookie en
+1.7.0), resserre les seuils des garde-fous maintenabilité aux
+nouvelles marques actuelles, et factorise la dernière duplication
+palette résiduelle.
+
+### Security
+
+- **Frontend STOMP — fin du push Authorization Bearer** :
+  `BaseStompService.buildConnectHeaders()` renvoie maintenant `{}` par
+  défaut. Le JWT continue d'être transporté au broker via le cookie
+  httpOnly `ACCESS_TOKEN` lifté par le `HandshakeInterceptor` côté
+  serveur. Le serveur garde le fallback header pour les clients
+  legacy, mais le navigateur n'a plus besoin de lire le token en
+  JavaScript pour ouvrir une session WebSocket.
+
+### Changed
+
+- **Garde-fous maintenabilité — rotation aux nouvelles marques** :
+  - PMD `classReportLevel` 110 → 107 (DSC à 106 après relocalisation)
+  - `*.component.ts` block 1000 → 950 (HWM schematic-map à 890)
+  - `*.ts` non-component block 800 → 700 (HWM route-finder à 599)
+  - `*.scss` block 1500 → 1100 (HWM styles.scss à 982)
+  - `*Importer.java` / `*Calculator.java` block 700 → 650 (HWM DSC 606)
+  - `*Service.java` / `*Controller.java` block 600 → 500 (HWM GtfsImport 440)
+  - `methodReportLevel` reste 30 (ScheduleImporter.importSchedules à 29,
+    pas de marge à prendre)
+  - jscpd 6 % conservé (mesure courante 5.78 % après le churn typo
+    tokens, plus de marge confortable à offrir).
+- **`LINE_COLOR_FALLBACK` constant** : la valeur `'#666'` qui peignait
+  une ligne sans couleur de feed était répétée à trois call sites
+  (`network-map`, `stop-popup`, `schematic-map`). Centralisée dans
+  `@shared/utils/color.utils` pour qu'un futur ajustement n'ait à
+  toucher qu'à un endroit.
+
 ## [1.8.0] — 2026-05-15
 
 Refonte typographique : les 64 valeurs de `font-size` éparpillées dans
