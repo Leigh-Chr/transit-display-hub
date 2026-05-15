@@ -29,6 +29,14 @@ public class CacheConfig {
                         .expireAfterWrite(Duration.ofMinutes(1))
                         .recordStats()
                         .build());
+        // Schedule + calendar lookups: built from one DB query, served
+        // from memory until the next NetworkChangedEvent flushes them.
+        manager.registerCustomCache("calendars",
+                Caffeine.newBuilder()
+                        .maximumSize(1)
+                        .expireAfterWrite(Duration.ofMinutes(10))
+                        .recordStats()
+                        .build());
         return manager;
     }
 }

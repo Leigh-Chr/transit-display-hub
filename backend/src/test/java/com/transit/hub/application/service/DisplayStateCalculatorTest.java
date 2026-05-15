@@ -11,7 +11,6 @@ import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
-import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
@@ -55,7 +54,7 @@ class DisplayStateCalculatorTest {
     private BroadcastMessageRepository messageRepository;
 
     @Mock
-    private ServiceCalendarRepository serviceCalendarRepository;
+    private ServiceCalendarCache serviceCalendarCache;
 
     @Mock
     private TranslationRepository translationRepository;
@@ -93,7 +92,7 @@ class DisplayStateCalculatorTest {
                 stopRepository,
                 scheduleRepository,
                 messageRepository,
-                serviceCalendarRepository,
+                serviceCalendarCache,
                 translationRepository,
                 realtimeAlertCache,
                 realtimeTripUpdateCache,
@@ -111,8 +110,8 @@ class DisplayStateCalculatorTest {
         // the strict-mockito mode doesn't complain about tests that bail
         // out before the calculator reaches the calendar lookup (e.g. the
         // "stop not found" path).
-        lenient().when(serviceCalendarRepository.findAllWithExceptions())
-                .thenReturn(List.of());
+        lenient().when(serviceCalendarCache.loadAll())
+                .thenReturn(java.util.Map.of());
         // Default to "no realtime alerts" — keeps the existing message
         // assertions stable while the new MAX_MESSAGES path still picks
         // up an empty list cleanly.

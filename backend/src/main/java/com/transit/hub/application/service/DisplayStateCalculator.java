@@ -18,7 +18,6 @@ import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
 import com.transit.hub.infrastructure.realtime.RealtimeTripUpdateCache;
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
-import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +50,7 @@ public class DisplayStateCalculator {
     private final StopRepository stopRepository;
     private final ScheduleRepository scheduleRepository;
     private final BroadcastMessageRepository messageRepository;
-    private final ServiceCalendarRepository serviceCalendarRepository;
+    private final ServiceCalendarCache serviceCalendarCache;
     private final TranslationRepository translationRepository;
     private final RealtimeAlertCache realtimeAlertCache;
     private final RealtimeTripUpdateCache realtimeTripUpdateCache;
@@ -337,11 +335,7 @@ public class DisplayStateCalculator {
     }
 
     private Map<UUID, ServiceCalendar> loadCalendarsById() {
-        Map<UUID, ServiceCalendar> map = new HashMap<>();
-        for (ServiceCalendar cal : serviceCalendarRepository.findAllWithExceptions()) {
-            map.put(cal.getId(), cal);
-        }
-        return map;
+        return serviceCalendarCache.loadAll();
     }
 
     /**
