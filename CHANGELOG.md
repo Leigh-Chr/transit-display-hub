@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.14.1] — 2026-05-16
+
+Hotfix releasing the two P0 i18n regressions surfaced by the
+cross-axis audit on 2026-05-16. Public map pages now render fully
+translated labels in both languages instead of leaking raw GTFS
+enums or hardcoded French strings.
+
+### Fixed
+
+- **transloco lookups under the `map.*` namespace**: the 10
+  call sites resolving `transit.lineType.*`,
+  `transit.pathwayMode.*`, `pathways.*` and `stopPopup.*` keys
+  were looking at the JSON root while every catalogue entry
+  actually lives under `map.*`. The mismatch silently fell back
+  to the raw key/enum, so `network-list`, `pathway-list`, the
+  admin pathways diagram and `stop-popup` displayed `METRO`,
+  `STAIRS`, `pathways.title`, etc. instead of localised
+  labels. Every lookup is now prefixed with `map.`.
+- **stop-popup and schematic-map hardcoded strings**: 16
+  residual French phrases ("Réservation requise", "Accessible
+  PMR", "Zone de prise en charge", "Loading schedules…",
+  "Network schematic. Drag or scroll to pan…", etc.) bypassed
+  transloco. New keys under `map.stopPopup.*` and
+  `map.schematic.*` (`bookingRequired`, `tadZoneTitle`,
+  `fareFromOrigin`, `nextFlexTitle`, `howToBook`, `bookOnline`,
+  `moreInfo`, `loadingSchedules`, `noDepartures`,
+  `accessibilityToggle.{enable,disable}`,
+  `zoneOverlayToggle.{show,hide}`, `zoneRowLabel`, `zoneRowAll`,
+  `zoneOverlayLabel`, `emptySelection`, `diagramAriaLabel`,
+  `svgAriaLabel`, `wheelHint`) ship matched FR/EN pairs and the
+  templates consume them via `| transloco`. The Close button
+  now reads through the existing `common.close` key. Wheelchair
+  meta pills reuse the existing `map.accessibility.{accessible,
+  notAccessible}` catalogue instead of re-declaring the strings.
+
 ## [1.14.0] — 2026-05-15
 
 Finishing pass on the cross-axis audit: closes the remaining
