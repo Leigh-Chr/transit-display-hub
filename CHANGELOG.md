@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-05-15
+
+Clôture de la session. Casse la dernière friction côté maintenabilité
+(la méthode `ScheduleImporter.importSchedules` qui maintenait le
+plancher PMD à 30 cyclo) et achève le travail de tokenisation palette
+en hoistant les couleurs sémantiques des chips dans `:root`. Aucun
+changement visuel — validation Playwright pixel-identique sur les
+pages publiques.
+
+### Changed
+
+- **`ScheduleImporter.importSchedules` cassé en helpers nommés** :
+  la méthode passe de 230 lignes / **cyclomatic 29** à un orchestrateur
+  court qui délègue à `streamStopTimes`, `handleRow`,
+  `handleFlexRowIfApplicable`, `handleFixedRow`, `persistFixedSchedule`,
+  `expandFrequencyWindows` et `drainPendingBatches`. Un struct privé
+  `ImportContext` regroupe les batches, le set de dédup, les indices
+  et les compteurs, et un record `ScheduleRowContext` porte les
+  champs CSV per-row plus quelques accessors lazy. `importSchedules`
+  retombe sous 20 cyclo ; les nouveaux planchers méthode sont
+  `getNetworkMap` et `mapRouteType` à 27.
+- **PMD `methodReportLevel`** : 30 → **28** (gain 2, marge 1 sur le
+  nouveau plancher).
+- **Tokens chip sémantiques centralisés** : les couleurs des pills
+  `realtime.occ-*` et `flex-stop-times.{pill-target-location,
+  pill-target-group, rule-tag}` sortent des `:host-context(.dark-theme)`
+  par composant. Cinq paires `--app-chip-{success, warning, danger,
+  info, accent}-{bg, fg}` vivent désormais dans `:root` (light) et
+  `.dark-theme` (dark). Vingt-trois lignes de duplication retirées,
+  rendu pixel-identique sur les pages publiques.
+
 ## [1.9.0] — 2026-05-15
 
 Clôture de la session : retire le push manuel du JWT en header STOMP
