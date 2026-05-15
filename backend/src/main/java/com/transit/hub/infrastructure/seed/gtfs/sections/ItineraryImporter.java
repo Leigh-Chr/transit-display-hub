@@ -66,6 +66,10 @@ public class ItineraryImporter {
      * @param shapesByGtfsId already-imported shapes keyed by GTFS {@code shape_id}
      * @return import result carrying counts and the in-memory indexes needed by the schedule step
      */
+    /** Compact stop reference threaded through the import — captured as
+     *  package-private so the per-trip builder can stash entries. */
+    private record TimedStop(String stopId, int sequence, String headsign) {}
+
     public ItineraryImport importItineraries(
             Path tripsFile,
             Path stopTimesFile,
@@ -73,7 +77,48 @@ public class ItineraryImporter {
             StopImport stopImport,
             Map<String, Shape> shapesByGtfsId) throws IOException {
 
-        // 1. Read trips into memory
+        Map<String, TripInfo> tripInfos = loadTripInfos(tripsFile);
+        log.info("GTFS import: {} trips loaded", tripInfos.size());
+
+        StopTimeBuckets buckets = loadStopTimes(stopTimesFile, tripInfos, linesByGtfsId);
+        Map<RouteDirKey, String> bestTrip = pickRepresentativeTrips(buckets, tripInfos);
+        // Drop the rows belonging to non-representative trips now that
+        // we know which trip wins each (route, direction) — keeps the
+        // big collection small for the rest of the method.
+        Set<String> selectedTripIds = new HashSet<>(bestTrip.values());
+        buckets.stopsByTrip.keySet().retainAll(selectedTripIds);
+        log.info("GTFS import: {} representative trips selected", selectedTripIds.size());
+
+        // Pre-load existing itineraries by external_id so re-imports
+        // refresh a stable UUID. See ADR 0013.
+        Map<String, Itinerary> existingItinerariesByExternalId = itineraryRepository.findAll().stream()
+                .filter(i -> i.getExternalId() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        Itinerary::getExternalId, java.util.function.Function.identity(),
+                        (a, b) -> a));
+
+        // Clear stop ↔ line membership before rebuilding so a route
+        // reassigning its stops doesn't leave the previous lines
+        // permanently attached.
+        for (Stop stop : stopImport.stopsByGtfsId().values()) {
+            stop.getLines().clear();
+        }
+
+        ItineraryBuildResult result = buildItineraries(bestTrip, tripInfos, buckets.stopsByTrip,
+                linesByGtfsId, stopImport, shapesByGtfsId, existingItinerariesByExternalId);
+
+        stopRepository.saveAll(result.stopsTouched);
+        int orphans = removeOrphanedItineraries(existingItinerariesByExternalId, result.seenItineraryIds);
+        if (orphans > 0) {
+            log.info("GTFS import: {} obsolete itineraries removed", orphans);
+        }
+        log.info("GTFS import: {} itineraries upserted / {} itinerary stops created",
+                result.itineraryCount, result.itineraryStopCount);
+        return new ItineraryImport(result.itineraryCount, result.itineraryStopCount,
+                tripInfos, result.itinerariesByRouteDir);
+    }
+
+    private Map<String, TripInfo> loadTripInfos(Path tripsFile) throws IOException {
         Map<String, TripInfo> tripInfos = new HashMap<>();
         try (CSVParser parser = openCsv(tripsFile)) {
             for (CSVRecord record : parser) {
@@ -95,15 +140,17 @@ public class ItineraryImporter {
                         isBlank(rawShapeId) ? null : rawShapeId.trim()));
             }
         }
-        log.info("GTFS import: {} trips loaded", tripInfos.size());
+        return tripInfos;
+    }
 
-        // 2. Single pass over stop_times.txt: count rows per trip AND
-        // collect the (stopId, sequence, headsign) triples we'll need
-        // for itinerary construction. We drop any row whose trip is not
-        // attached to a known route up front so the in-memory footprint
-        // tracks the size of the active network rather than the raw
-        // feed — a 200 MB feed with archived routes stays in low MB.
-        record TimedStop(String stopId, int sequence, String headsign) {}
+    private record StopTimeBuckets(Map<String, Integer> stopsPerTrip,
+                                   Map<String, List<TimedStop>> stopsByTrip) {}
+
+    /** Single pass over stop_times.txt that produces both the per-trip
+     *  count and the timed-stops list, filtered to trips attached to a
+     *  known route so the in-memory footprint tracks the active network. */
+    private StopTimeBuckets loadStopTimes(Path stopTimesFile, Map<String, TripInfo> tripInfos,
+                                          Map<String, Line> linesByGtfsId) throws IOException {
         Map<String, Integer> stopsPerTrip = new HashMap<>();
         Map<String, List<TimedStop>> stopsByTrip = new HashMap<>();
         try (CSVParser parser = openCsv(stopTimesFile)) {
@@ -121,11 +168,16 @@ public class ItineraryImporter {
                         .add(new TimedStop(stopId, sequence, isBlank(headsign) ? null : headsign.trim()));
             }
         }
+        return new StopTimeBuckets(stopsPerTrip, stopsByTrip);
+    }
 
-        // 3. Select representative trip per (route_id, direction_id): the one with the most stops
+    /** Picks, for each (route_id, direction_id), the trip with the most
+     *  stops — the longest variant covers the full itinerary. */
+    private Map<RouteDirKey, String> pickRepresentativeTrips(StopTimeBuckets buckets,
+                                                             Map<String, TripInfo> tripInfos) {
         Map<RouteDirKey, String> bestTrip = new HashMap<>();
         Map<RouteDirKey, Integer> bestCount = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : stopsPerTrip.entrySet()) {
+        for (Map.Entry<String, Integer> entry : buckets.stopsPerTrip.entrySet()) {
             String tripId = entry.getKey();
             TripInfo info = tripInfos.get(tripId);
             int count = entry.getValue();
@@ -135,146 +187,129 @@ public class ItineraryImporter {
                 bestTrip.put(key, tripId);
             }
         }
-        Set<String> selectedTripIds = new HashSet<>(bestTrip.values());
-        // Drop the rows belonging to non-representative trips now that
-        // we know which trip wins each (route, direction) — keeps the
-        // big collection small for the rest of the method.
-        stopsByTrip.keySet().retainAll(selectedTripIds);
-        log.info("GTFS import: {} representative trips selected", selectedTripIds.size());
+        return bestTrip;
+    }
 
-        // Pre-load existing itineraries by external_id so re-imports
-        // refresh a stable UUID. The representative trip_id can shift
-        // between feeds (a longer variant becomes the most-stops one),
-        // in which case the old itinerary becomes orphan and gets
-        // dropped at the end of this method. See ADR 0013.
-        Map<String, Itinerary> existingItinerariesByExternalId = itineraryRepository.findAll().stream()
-                .filter(i -> i.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Itinerary::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
+    private static final class ItineraryBuildResult {
+        int itineraryCount;
+        int itineraryStopCount;
+        final Set<Stop> stopsTouched = new HashSet<>();
+        final Map<RouteDirKey, Itinerary> itinerariesByRouteDir = new HashMap<>();
+        final Set<UUID> seenItineraryIds = new HashSet<>();
+    }
 
-        // Clear stop ↔ line membership before rebuilding so a route
-        // reassigning its stops doesn't leave the previous lines
-        // permanently attached. The `stop.getLines()` collection is a
-        // Set, so adding stays idempotent below.
-        for (Stop stop : stopImport.stopsByGtfsId().values()) {
-            stop.getLines().clear();
-        }
-
-        // 5. Build itineraries
-        int itineraryCount = 0;
-        int itineraryStopCount = 0;
-        Set<Stop> stopsTouched = new HashSet<>();
-        Map<RouteDirKey, Itinerary> itinerariesByRouteDir = new HashMap<>();
-        Set<UUID> seenItineraryIds = new HashSet<>();
-
+    private ItineraryBuildResult buildItineraries(
+            Map<RouteDirKey, String> bestTrip,
+            Map<String, TripInfo> tripInfos,
+            Map<String, List<TimedStop>> stopsByTrip,
+            Map<String, Line> linesByGtfsId,
+            StopImport stopImport,
+            Map<String, Shape> shapesByGtfsId,
+            Map<String, Itinerary> existingItinerariesByExternalId) {
+        ItineraryBuildResult result = new ItineraryBuildResult();
         for (Map.Entry<RouteDirKey, String> entry : bestTrip.entrySet()) {
             RouteDirKey key = entry.getKey();
             String tripId = entry.getValue();
-            Line line = linesByGtfsId.get(key.routeId());
-            TripInfo info = tripInfos.get(tripId);
             List<TimedStop> trip = stopsByTrip.get(tripId);
             if (trip == null || trip.isEmpty()) {
                 continue;
             }
             trip.sort((a, b) -> Integer.compare(a.sequence(), b.sequence()));
-
-            String itineraryName = buildItineraryName(info.headsign(), key.directionId());
-            // Majority vote on wheelchair_accessible across every trip
-            // matching this (route, direction). The representative trip
-            // alone would underestimate accessibility on networks where
-            // the longest variant happens to be the non-accessible one.
-            com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault =
-                    majorityWheelchair(tripInfos, key);
-            com.transit.hub.domain.model.enums.BikesAllowed bikesDefault =
-                    majorityBikes(tripInfos, key);
-            com.transit.hub.domain.model.enums.CarsAllowed carsDefault =
-                    majorityCars(tripInfos, key);
-
-            // Resolve the geographic shape from the representative
-            // trip's shape_id. Null = the feed didn't ship a shape for
-            // this trip (or shapes.txt was missing entirely), in which
-            // case the future map view falls back to stop-to-stop lines.
-            Shape shape = (info.shapeId() == null) ? null : shapesByGtfsId.get(info.shapeId());
-
-            Short directionId = parseDirectionId(key.directionId());
-            String externalId = truncate(tripId, 100);
-            Itinerary itinerary = existingItinerariesByExternalId.get(externalId);
-            if (itinerary == null) {
-                itinerary = Itinerary.builder()
-                        .itineraryStops(new ArrayList<>())
-                        .build();
-            } else {
-                // orphanRemoval=true on the OneToMany picks up the
-                // cleared rows when we save the parent again below.
-                itinerary.getItineraryStops().clear();
-            }
-            // Single mutation site so a field added later can't silently
-            // miss either the create or the update path — the previous
-            // builder/setter split made that asymmetry too easy to hit.
-            itinerary.setExternalId(externalId);
-            itinerary.setLine(line);
-            itinerary.setName(truncate(itineraryName, LINE_NAME_MAX_LENGTH));
-            itinerary.setDirectionId(directionId);
-            itinerary.setWheelchairDefault(wheelchairDefault);
-            itinerary.setBikesAllowedDefault(bikesDefault);
-            itinerary.setCarsAllowedDefault(carsDefault);
-            itinerary.setSafeDurationFactor(info.safeDurationFactor());
-            itinerary.setSafeDurationOffset(info.safeDurationOffset());
-            itinerary.setMeanDurationFactor(info.meanDurationFactor());
-            itinerary.setMeanDurationOffset(info.meanDurationOffset());
-            itinerary.setShape(shape);
-            itinerary = itineraryRepository.save(itinerary);
-
-            int position = 0;
-            Set<Stop> seenInItinerary = new HashSet<>();
-            for (TimedStop ts : trip) {
-                Stop stop = stopImport.stopsByGtfsId().get(ts.stopId());
-                if (stop == null) {
-                    continue;
-                }
-                // Dedupe within itinerary (uk_itinerary_stop)
-                if (!seenInItinerary.add(stop)) {
-                    continue;
-                }
-                ItineraryStop is = ItineraryStop.builder()
-                        .itinerary(itinerary)
-                        .stop(stop)
-                        .position(position++)
-                        .stopHeadsign(truncate(ts.headsign(), 100))
-                        .build();
-                itinerary.getItineraryStops().add(is);
-                stop.getLines().add(line);
-                stopsTouched.add(stop);
-                itineraryStopCount++;
-            }
+            Itinerary itinerary = upsertItinerary(key, tripId, tripInfos, linesByGtfsId,
+                    shapesByGtfsId, existingItinerariesByExternalId);
+            attachStops(itinerary, trip, stopImport, linesByGtfsId.get(key.routeId()), result);
             itineraryRepository.save(itinerary);
-            itinerariesByRouteDir.put(key, itinerary);
-            seenItineraryIds.add(itinerary.getId());
-            itineraryCount++;
+            result.itinerariesByRouteDir.put(key, itinerary);
+            result.seenItineraryIds.add(itinerary.getId());
+            result.itineraryCount++;
         }
+        return result;
+    }
 
-        // Persist stop ↔ line associations
-        stopRepository.saveAll(stopsTouched);
+    private Itinerary upsertItinerary(RouteDirKey key, String tripId,
+                                      Map<String, TripInfo> tripInfos,
+                                      Map<String, Line> linesByGtfsId,
+                                      Map<String, Shape> shapesByGtfsId,
+                                      Map<String, Itinerary> existingByExternalId) {
+        TripInfo info = tripInfos.get(tripId);
+        // Majority vote across every trip matching (route, direction) so
+        // the representative trip alone doesn't underestimate
+        // accessibility when the longest variant is the non-accessible one.
+        com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault =
+                majorityWheelchair(tripInfos, key);
+        com.transit.hub.domain.model.enums.BikesAllowed bikesDefault = majorityBikes(tripInfos, key);
+        com.transit.hub.domain.model.enums.CarsAllowed carsDefault = majorityCars(tripInfos, key);
 
-        // Drop itineraries the new feed no longer declares. No FK is
-        // semantically attached from outside the import scope (no
-        // BroadcastMessage scope=ITINERARY exists), so a hard delete
-        // is safe.
+        // Null shape = the feed didn't ship a shape for this trip;
+        // the future map view falls back to stop-to-stop lines.
+        Shape shape = (info.shapeId() == null) ? null : shapesByGtfsId.get(info.shapeId());
+        Short directionId = parseDirectionId(key.directionId());
+        String externalId = truncate(tripId, 100);
+
+        Itinerary itinerary = existingByExternalId.get(externalId);
+        if (itinerary == null) {
+            itinerary = Itinerary.builder().itineraryStops(new ArrayList<>()).build();
+        } else {
+            // orphanRemoval=true on the OneToMany picks up the cleared rows
+            // when we save the parent again below.
+            itinerary.getItineraryStops().clear();
+        }
+        // Single mutation site so a field added later can't silently miss
+        // either the create or the update path.
+        itinerary.setExternalId(externalId);
+        itinerary.setLine(linesByGtfsId.get(key.routeId()));
+        itinerary.setName(truncate(buildItineraryName(info.headsign(), key.directionId()),
+                LINE_NAME_MAX_LENGTH));
+        itinerary.setDirectionId(directionId);
+        itinerary.setWheelchairDefault(wheelchairDefault);
+        itinerary.setBikesAllowedDefault(bikesDefault);
+        itinerary.setCarsAllowedDefault(carsDefault);
+        itinerary.setSafeDurationFactor(info.safeDurationFactor());
+        itinerary.setSafeDurationOffset(info.safeDurationOffset());
+        itinerary.setMeanDurationFactor(info.meanDurationFactor());
+        itinerary.setMeanDurationOffset(info.meanDurationOffset());
+        itinerary.setShape(shape);
+        return itineraryRepository.save(itinerary);
+    }
+
+    private void attachStops(Itinerary itinerary, List<TimedStop> trip,
+                             StopImport stopImport, Line line, ItineraryBuildResult result) {
+        int position = 0;
+        Set<Stop> seenInItinerary = new HashSet<>();
+        for (TimedStop ts : trip) {
+            Stop stop = stopImport.stopsByGtfsId().get(ts.stopId());
+            if (stop == null) {
+                continue;
+            }
+            // Dedupe within itinerary (uk_itinerary_stop).
+            if (!seenInItinerary.add(stop)) {
+                continue;
+            }
+            ItineraryStop is = ItineraryStop.builder()
+                    .itinerary(itinerary)
+                    .stop(stop)
+                    .position(position++)
+                    .stopHeadsign(truncate(ts.headsign(), 100))
+                    .build();
+            itinerary.getItineraryStops().add(is);
+            stop.getLines().add(line);
+            result.stopsTouched.add(stop);
+            result.itineraryStopCount++;
+        }
+    }
+
+    /** Drops itineraries the new feed no longer declares. No FK is
+     *  semantically attached from outside the import scope (no
+     *  BroadcastMessage scope=ITINERARY exists), so a hard delete is safe. */
+    private int removeOrphanedItineraries(Map<String, Itinerary> existing, Set<UUID> seen) {
         int orphans = 0;
-        for (Itinerary old : existingItinerariesByExternalId.values()) {
-            if (!seenItineraryIds.contains(old.getId())) {
+        for (Itinerary old : existing.values()) {
+            if (!seen.contains(old.getId())) {
                 itineraryRepository.delete(old);
                 orphans++;
             }
         }
-        if (orphans > 0) {
-            log.info("GTFS import: {} obsolete itineraries removed", orphans);
-        }
-
-        log.info("GTFS import: {} itineraries upserted / {} itinerary stops created",
-                itineraryCount, itineraryStopCount);
-        return new ItineraryImport(itineraryCount, itineraryStopCount, tripInfos, itinerariesByRouteDir);
+        return orphans;
     }
 
     // ---------- majority-vote helpers ----------

@@ -65,123 +65,154 @@ public class NetworkMapService {
         List<Stop> stops = stopRepository.findAllWithLines();
         List<Transfer> transfers = transferRepository.findAllWithStops();
 
-        // Map<lineId, scheduleCount> built from a single COUNT(*)
-        // GROUP BY query so the per-line lookup below stays O(1).
-        Map<UUID, Long> scheduleCountByLineId = new HashMap<>();
-        for (Object[] row : scheduleRepository.countByLineId()) {
-            scheduleCountByLineId.put((UUID) row[0], (Long) row[1]);
-        }
-
-        // Phase 1.3 itinerary remap: the importer attaches itinerary
-        // stops to actual platforms, but the schematic map only
-        // surfaces parent stations. Build platform→parent UUID
-        // mapping upfront so itineraries can rewrite their stop ids
-        // and stay consistent with the surface stop list shipped
-        // alongside.
-        Map<UUID, UUID> platformToParentId = new HashMap<>();
-        for (Stop s : stops) {
-            if (s.getParentStop() != null) {
-                platformToParentId.put(s.getId(), s.getParentStop().getId());
-            }
-        }
-
+        Map<UUID, UUID> platformToParentId = buildPlatformToParentMap(stops);
+        Map<UUID, Long> scheduleCountByLineId = buildScheduleCountByLine();
         List<NetworkLine> networkLines = lines.stream()
                 .map(line -> toNetworkLine(line,
                         scheduleCountByLineId.getOrDefault(line.getId(), 0L),
                         platformToParentId))
                 .toList();
 
-        // Phase 1.3 ripple: the importer now persists every platform plus
-        // its parent station as separate rows. The schematic map should
-        // still show ONE node per logical stop, so we collapse children
-        // back into their parent at render time. Standalone stops (no
-        // parent) keep rendering as themselves; parent stations gather
-        // the union of their children's line codes since lines attach
-        // to platforms after Phase 1.3, not to the parent.
-        Map<UUID, List<Stop>> childrenByParentId = new HashMap<>();
+        Set<UUID> onDemandStopIds = collectOnDemandStopIds();
+        Map<UUID, List<String>> areaNamesByStopId = buildAreaNamesByStopId();
+        Map<UUID, List<Stop>> childrenByParentId = buildChildrenByParentId(stops);
+        List<NetworkStop> networkStops = buildNetworkStops(stops, childrenByParentId,
+                onDemandStopIds, areaNamesByStopId);
+        List<NetworkTransfer> networkTransfers = buildNetworkTransfers(transfers,
+                platformToParentId, lines);
+
+        Bounds bounds = calculateBounds(networkStops);
+        String attr = attribution == null || attribution.isBlank() ? null : attribution;
+        return new NetworkMapResponse(networkLines, networkStops, networkTransfers, bounds, attr);
+    }
+
+    /** Phase 1.3 itinerary remap: the importer attaches itinerary stops
+     *  to actual platforms, but the schematic map only surfaces parent
+     *  stations. The platform→parent UUID mapping lets itineraries and
+     *  transfers rewrite their stop ids consistently with the surface
+     *  stop list. */
+    private static Map<UUID, UUID> buildPlatformToParentMap(List<Stop> stops) {
+        Map<UUID, UUID> map = new HashMap<>();
         for (Stop s : stops) {
             if (s.getParentStop() != null) {
-                childrenByParentId.computeIfAbsent(s.getParentStop().getId(), k -> new ArrayList<>()).add(s);
+                map.put(s.getId(), s.getParentStop().getId());
             }
         }
-        // Set of stops with at least one on-request schedule, joined
-        // with stops referenced by a flex_stop_times row (GTFS-flex).
-        // Both queries run once per cache miss; the merged set lookup
-        // is O(1) per stop. For parent stations we OR the parent's own
-        // value with each child's so a TAD platform "lights up" its
-        // parent on the map. Guard against the null fallback Mockito's
-        // default for Set returns gives in tests that don't stub it.
-        Set<UUID> scheduledOnDemand = scheduleRepository.findStopIdsWithOnDemandPickup();
-        Set<UUID> flexOnDemand = flexStopTimeRepository.findStopIdsTouchedByFlex();
-        Set<UUID> onDemandStopIds = new HashSet<>();
-        if (scheduledOnDemand != null) {onDemandStopIds.addAll(scheduledOnDemand);}
-        if (flexOnDemand != null) {onDemandStopIds.addAll(flexOnDemand);}
+        return map;
+    }
 
-        // Reverse map: stop UUID → sorted list of Fares v2 area names.
-        // Built once per cache miss from a single fetch-with-stops query
-        // so the popup-side display doesn't trigger N+1. Empty when the
-        // feed didn't ship areas.txt; the popup hides the zone pill in
-        // that case. Defensive null check matches the onDemand pattern
-        // for tests that don't stub the repo explicitly.
-        Map<UUID, List<String>> areaNamesByStopId = new HashMap<>();
+    /** Single COUNT(*) GROUP BY query so the per-line lookup stays O(1). */
+    private Map<UUID, Long> buildScheduleCountByLine() {
+        Map<UUID, Long> result = new HashMap<>();
+        for (Object[] row : scheduleRepository.countByLineId()) {
+            result.put((UUID) row[0], (Long) row[1]);
+        }
+        return result;
+    }
+
+    /** Stops with at least one on-request schedule, merged with stops
+     *  referenced by a flex_stop_times row. Both queries run once per
+     *  cache miss. Mockito returns null when not stubbed, hence the
+     *  defensive guards. */
+    private Set<UUID> collectOnDemandStopIds() {
+        Set<UUID> ids = new HashSet<>();
+        Set<UUID> scheduled = scheduleRepository.findStopIdsWithOnDemandPickup();
+        Set<UUID> flex = flexStopTimeRepository.findStopIdsTouchedByFlex();
+        if (scheduled != null) { ids.addAll(scheduled); }
+        if (flex != null) { ids.addAll(flex); }
+        return ids;
+    }
+
+    /** Stop UUID → sorted list of Fares v2 area names. Built once per
+     *  cache miss from a single fetch-with-stops query so the popup
+     *  side never triggers N+1. Empty when the feed shipped no
+     *  areas.txt. */
+    private Map<UUID, List<String>> buildAreaNamesByStopId() {
+        Map<UUID, List<String>> map = new HashMap<>();
         List<Area> areas = areaRepository.findAllWithStops();
-        if (areas != null) {
-            for (Area area : areas) {
-                String name = area.getName() != null ? area.getName() : area.getExternalId();
-                if (name == null) {continue;}
-                for (Stop s : area.getStops()) {
-                    areaNamesByStopId.computeIfAbsent(s.getId(), k -> new ArrayList<>()).add(name);
-                }
+        if (areas == null) {
+            return map;
+        }
+        for (Area area : areas) {
+            String name = area.getName() != null ? area.getName() : area.getExternalId();
+            if (name == null) {
+                continue;
             }
-            for (List<String> names : areaNamesByStopId.values()) {
-                Collections.sort(names);
+            for (Stop s : area.getStops()) {
+                map.computeIfAbsent(s.getId(), k -> new ArrayList<>()).add(name);
             }
         }
+        for (List<String> names : map.values()) {
+            Collections.sort(names);
+        }
+        return map;
+    }
 
-        // Surface stops = parent stations + free-standing platforms.
-        // Platforms with a parent disappear into their parent (already
-        // captured in platformToParentId above).
-        List<NetworkStop> networkStops = new ArrayList<>();
+    /** Phase 1.3 ripple: collapse platforms back into their parent at
+     *  render time so the schematic map keeps one node per logical
+     *  stop. Standalone stops (no parent) keep rendering as themselves. */
+    private static Map<UUID, List<Stop>> buildChildrenByParentId(List<Stop> stops) {
+        Map<UUID, List<Stop>> map = new HashMap<>();
         for (Stop s : stops) {
-            if (s.getParentStop() != null) {continue;}
-            networkStops.add(toNetworkStop(s, childrenByParentId.get(s.getId()),
+            if (s.getParentStop() != null) {
+                map.computeIfAbsent(s.getParentStop().getId(), k -> new ArrayList<>()).add(s);
+            }
+        }
+        return map;
+    }
+
+    /** Surface stops = parent stations + free-standing platforms.
+     *  Platforms with a parent disappear into their parent. */
+    private List<NetworkStop> buildNetworkStops(List<Stop> stops,
+                                                 Map<UUID, List<Stop>> childrenByParentId,
+                                                 Set<UUID> onDemandStopIds,
+                                                 Map<UUID, List<String>> areaNamesByStopId) {
+        List<NetworkStop> out = new ArrayList<>();
+        for (Stop s : stops) {
+            if (s.getParentStop() != null) {
+                continue;
+            }
+            out.add(toNetworkStop(s, childrenByParentId.get(s.getId()),
                     onDemandStopIds, areaNamesByStopId));
         }
+        return out;
+    }
 
-        // Transfers between platforms collapse to transfers between their
-        // parents; intra-station transfers (same parent both ends) drop
-        // off the map since they're walking inside a single node.
-        // Dedupe key adds the resolved route qualifiers so multiple
-        // {@code transfers.txt} entries for the same stop pair (one
-        // generic + one route-specific) coexist instead of squashing
-        // each other; the route-finder picks the most-specific applicable
-        // entry per (from-line, to-line) pair.
+    /** Transfers between platforms collapse to transfers between their
+     *  parents; intra-station transfers (same parent both ends) drop
+     *  off the map. The dedupe key adds the resolved route qualifiers
+     *  so multiple transfers.txt entries for the same stop pair (one
+     *  generic + one route-specific) coexist instead of squashing each
+     *  other. */
+    private List<NetworkTransfer> buildNetworkTransfers(List<Transfer> transfers,
+                                                         Map<UUID, UUID> platformToParentId,
+                                                         List<Line> lines) {
         Map<String, UUID> lineIdByExternalId = new HashMap<>();
         for (Line l : lines) {
             if (l.getExternalId() != null) {
                 lineIdByExternalId.put(l.getExternalId(), l.getId());
             }
         }
-        Set<List<Object>> seenTransfers = new HashSet<>();
-        List<NetworkTransfer> networkTransfers = new ArrayList<>();
+        Set<List<Object>> seen = new HashSet<>();
+        List<NetworkTransfer> out = new ArrayList<>();
         for (Transfer t : transfers) {
             UUID from = platformToParentId.getOrDefault(t.getFromStop().getId(), t.getFromStop().getId());
             UUID to = platformToParentId.getOrDefault(t.getToStop().getId(), t.getToStop().getId());
-            if (from.equals(to)) {continue;}
+            if (from.equals(to)) {
+                continue;
+            }
             UUID fromLineId = t.getFromRouteId() == null ? null : lineIdByExternalId.get(t.getFromRouteId());
             UUID toLineId = t.getToRouteId() == null ? null : lineIdByExternalId.get(t.getToRouteId());
             List<Object> key = Arrays.asList(from, to,
                     fromLineId == null ? "" : fromLineId,
                     toLineId == null ? "" : toLineId);
-            if (!seenTransfers.add(key)) {continue;}
-            networkTransfers.add(new NetworkTransfer(from, to, t.getTransferType(),
+            if (!seen.add(key)) {
+                continue;
+            }
+            out.add(new NetworkTransfer(from, to, t.getTransferType(),
                     t.getMinTransferTime(), fromLineId, toLineId));
         }
-
-        Bounds bounds = calculateBounds(networkStops);
-
-        String attr = attribution == null || attribution.isBlank() ? null : attribution;
-        return new NetworkMapResponse(networkLines, networkStops, networkTransfers, bounds, attr);
+        return out;
     }
 
     @Cacheable("networkAlerts")

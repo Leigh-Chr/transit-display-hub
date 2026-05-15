@@ -57,14 +57,15 @@
 
     <!-- Cyclomatic complexity gate. Phase 1 maintainability guardrails
          (see .planning/refactors/2026-05-12-maintainability-guardrails.md) :
-         pin the current ceiling so any growth past 30 cyclo on a method
-         or 110 cumulative on a class fails ./gradlew check. Thresholds
-         match the current high-water marks (ScheduleImporter.importSchedules
-         at 29 sets the method floor; DisplayStateCalculator class total
-         dropped to 106 once relocated, classReportLevel rotated 110→107). -->
+         pin the current ceiling so any growth past these levels fails
+         ./gradlew check. Thresholds match the current high-water marks
+         after the six big-method refactors landed in 1.11.0: the new
+         floor is FlexStopTime.from at cyclo 18, and the class floor
+         is DisplayStateCalculator at 106 (level 107 leaves one tick
+         of margin). -->
     <rule ref="category/java/design.xml/CyclomaticComplexity">
         <properties>
-            <property name="methodReportLevel" value="28"/>
+            <property name="methodReportLevel" value="19"/>
             <property name="classReportLevel" value="107"/>
         </properties>
     </rule>

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Pure parsing helpers for GTFS text fields. Extracted from {@link GtfsImportService}
@@ -68,41 +69,49 @@ public final class GtfsParse {
      * in the GTFS reference.
      */
     public static LineType mapRouteType(int routeType) {
-        switch (routeType) {
-            case 0: return LineType.TRAM;          // Tram, Streetcar, Light rail
-            case 1: return LineType.METRO;         // Subway, Metro
-            case 2: return LineType.TRAIN;         // Rail
-            case 3: return LineType.BUS;           // Bus
-            case 4: return LineType.FERRY;         // Ferry
-            case 5: return LineType.CABLE_CAR;     // Cable tram
-            case 6: return LineType.CABLE_CAR;     // Aerial lift / suspended cable car
-            case 7: return LineType.FUNICULAR;     // Funicular
-            case 11: return LineType.TROLLEYBUS;   // Trolleybus
-            case 12: return LineType.MONORAIL;     // Monorail
-            default: break;
+        LineType basic = BASIC_ROUTE_TYPES.get(routeType);
+        if (basic != null) {
+            return basic;
         }
-
-        int bucket = routeType / 100;
-        return switch (bucket) {
-            case 1 -> LineType.TRAIN;        // 100-199 Railway
-            case 2 -> LineType.BUS;          // 200-299 Coach
-            case 3 -> LineType.TRAIN;        // 300-399 Suburban Railway
-            case 4 -> LineType.METRO;        // 400-499 Urban Railway
-            case 5 -> LineType.METRO;        // 500-599 Metro
-            case 6 -> LineType.METRO;        // 600-699 Underground
-            case 7 -> LineType.BUS;          // 700-799 Bus
-            case 8 -> LineType.TROLLEYBUS;   // 800-899 Trolleybus
-            case 9 -> LineType.TRAM;         // 900-999 Tram
-            case 10 -> LineType.FERRY;       // 1000-1099 Water transport
-            case 11 -> LineType.OTHER;       // 1100-1199 Air
-            case 12 -> LineType.FERRY;       // 1200-1299 Ferry
-            case 13 -> LineType.CABLE_CAR;   // 1300-1399 Telecabin
-            case 14 -> LineType.FUNICULAR;   // 1400-1499 Funicular
-            case 15 -> LineType.BUS;         // 1500-1599 Taxi
-            case 17 -> LineType.OTHER;       // 1700-1799 Miscellaneous
-            default -> LineType.OTHER;
-        };
+        return EXTENDED_ROUTE_TYPE_BUCKETS.getOrDefault(routeType / 100, LineType.OTHER);
     }
+
+    /** Basic GTFS modes (0..12). Codes 8, 9 and 10 are reserved and fall
+     *  through to the extended bucket — kept absent here so the lookup
+     *  naturally hits the OTHER default. */
+    private static final Map<Integer, LineType> BASIC_ROUTE_TYPES = Map.ofEntries(
+            Map.entry(0, LineType.TRAM),
+            Map.entry(1, LineType.METRO),
+            Map.entry(2, LineType.TRAIN),
+            Map.entry(3, LineType.BUS),
+            Map.entry(4, LineType.FERRY),
+            Map.entry(5, LineType.CABLE_CAR),
+            Map.entry(6, LineType.CABLE_CAR),
+            Map.entry(7, LineType.FUNICULAR),
+            Map.entry(11, LineType.TROLLEYBUS),
+            Map.entry(12, LineType.MONORAIL));
+
+    /** Extended Hierarchical Vehicle Type buckets (TPEG-PTI). Indexed
+     *  by {@code routeType / 100}; 16 has no defined mapping in the
+     *  spec, so it falls through to OTHER via the {@code getOrDefault}
+     *  call upstream. */
+    private static final Map<Integer, LineType> EXTENDED_ROUTE_TYPE_BUCKETS = Map.ofEntries(
+            Map.entry(1, LineType.TRAIN),       // 100-199 Railway
+            Map.entry(2, LineType.BUS),         // 200-299 Coach
+            Map.entry(3, LineType.TRAIN),       // 300-399 Suburban Railway
+            Map.entry(4, LineType.METRO),       // 400-499 Urban Railway
+            Map.entry(5, LineType.METRO),       // 500-599 Metro
+            Map.entry(6, LineType.METRO),       // 600-699 Underground
+            Map.entry(7, LineType.BUS),         // 700-799 Bus
+            Map.entry(8, LineType.TROLLEYBUS),  // 800-899 Trolleybus
+            Map.entry(9, LineType.TRAM),        // 900-999 Tram
+            Map.entry(10, LineType.FERRY),      // 1000-1099 Water transport
+            Map.entry(11, LineType.OTHER),      // 1100-1199 Air
+            Map.entry(12, LineType.FERRY),      // 1200-1299 Ferry
+            Map.entry(13, LineType.CABLE_CAR),  // 1300-1399 Telecabin
+            Map.entry(14, LineType.FUNICULAR),  // 1400-1499 Funicular
+            Map.entry(15, LineType.BUS),        // 1500-1599 Taxi
+            Map.entry(17, LineType.OTHER));     // 1700-1799 Miscellaneous
 
     // ------------------------------------------------------------------ //
     // General string / number helpers shared with GtfsImportService       //

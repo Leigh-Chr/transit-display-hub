@@ -56,46 +56,11 @@ public class LocationImporter {
         int persisted = 0;
         int skipped = 0;
         for (JsonNode feature : features) {
-            JsonNode geom = feature.get("geometry");
-            JsonNode props = feature.get("properties");
-            if (geom == null || !geom.has("type") || !geom.has("coordinates")) {
+            Location loc = buildLocation(feature);
+            if (loc == null) {
                 skipped++;
                 continue;
             }
-            String externalId = feature.has("id") ? feature.get("id").asText() :
-                    (props != null && props.has("id") ? props.get("id").asText() : null);
-            if (isBlank(externalId)) {
-                skipped++;
-                continue;
-            }
-            String stopExternalId = props != null && props.has("stop_id")
-                    ? props.get("stop_id").asText() : null;
-            // The current GTFS-flex spec stores the human-readable name
-            // under `properties.name`. Older feeds (and the original
-            // Mobility-Data fixture set) used `stop_name`. Try both so
-            // we work with feeds that haven't yet migrated.
-            String name = null;
-            if (props != null) {
-                if (props.has("name") && !props.get("name").isNull()) {
-                    name = props.get("name").asText();
-                } else if (props.has("stop_name") && !props.get("stop_name").isNull()) {
-                    name = props.get("stop_name").asText();
-                }
-            }
-            String geomType = geom.get("type").asText();
-
-            double[] bbox = computeBoundingBox(geom.get("coordinates"));
-            Location loc = Location.builder()
-                    .externalId(truncate(externalId, 100))
-                    .stopExternalId(truncate(stopExternalId, 100))
-                    .name(truncate(name, 200))
-                    .geometryType(truncate(geomType, 30))
-                    .geometryJson(mapper.writeValueAsString(geom))
-                    .minLatitude(Double.isNaN(bbox[0]) ? null : bbox[0])
-                    .minLongitude(Double.isNaN(bbox[1]) ? null : bbox[1])
-                    .maxLatitude(Double.isNaN(bbox[2]) ? null : bbox[2])
-                    .maxLongitude(Double.isNaN(bbox[3]) ? null : bbox[3])
-                    .build();
             locationRepository.save(loc);
             persisted++;
         }
@@ -103,6 +68,63 @@ public class LocationImporter {
             log.warn("GTFS import: skipped {} locations.geojson features (missing id or geometry)", skipped);
         }
         log.info("GTFS import: {} locations.geojson features persisted", persisted);
+    }
+
+    /** Returns null when the feature is unusable (missing geometry or id);
+     *  the caller increments its skipped counter on null. */
+    private Location buildLocation(JsonNode feature) throws IOException {
+        JsonNode geom = feature.get("geometry");
+        if (geom == null || !geom.has("type") || !geom.has("coordinates")) {
+            return null;
+        }
+        JsonNode props = feature.get("properties");
+        String externalId = resolveExternalId(feature, props);
+        if (isBlank(externalId)) {
+            return null;
+        }
+
+        double[] bbox = computeBoundingBox(geom.get("coordinates"));
+        return Location.builder()
+                .externalId(truncate(externalId, 100))
+                .stopExternalId(truncate(resolveStopExternalId(props), 100))
+                .name(truncate(resolveName(props), 200))
+                .geometryType(truncate(geom.get("type").asText(), 30))
+                .geometryJson(mapper.writeValueAsString(geom))
+                .minLatitude(Double.isNaN(bbox[0]) ? null : bbox[0])
+                .minLongitude(Double.isNaN(bbox[1]) ? null : bbox[1])
+                .maxLatitude(Double.isNaN(bbox[2]) ? null : bbox[2])
+                .maxLongitude(Double.isNaN(bbox[3]) ? null : bbox[3])
+                .build();
+    }
+
+    private static String resolveExternalId(JsonNode feature, JsonNode props) {
+        if (feature.has("id")) {
+            return feature.get("id").asText();
+        }
+        if (props != null && props.has("id")) {
+            return props.get("id").asText();
+        }
+        return null;
+    }
+
+    private static String resolveStopExternalId(JsonNode props) {
+        return props != null && props.has("stop_id") ? props.get("stop_id").asText() : null;
+    }
+
+    /** The current GTFS-flex spec stores the human-readable name under
+     *  {@code properties.name}. Older feeds (and the original
+     *  Mobility-Data fixture set) used {@code stop_name}. Try both. */
+    private static String resolveName(JsonNode props) {
+        if (props == null) {
+            return null;
+        }
+        if (props.has("name") && !props.get("name").isNull()) {
+            return props.get("name").asText();
+        }
+        if (props.has("stop_name") && !props.get("stop_name").isNull()) {
+            return props.get("stop_name").asText();
+        }
+        return null;
     }
 
     /** Walks any GeoJSON coordinates array (Polygon, MultiPolygon, …)
