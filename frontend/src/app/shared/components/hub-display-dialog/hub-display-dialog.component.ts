@@ -88,9 +88,11 @@ export interface HubDisplayDialogResult {
             <div class="empty-state">{{ t('admin.hubDisplay.noStopsMatch') }}</div>
           } @else {
             @for (stop of filteredStops(); track stop.id) {
-              <div
+              <button
+                type="button"
                 class="stop-item"
                 [class.selected]="selectedIds().has(stop.id)"
+                [attr.aria-pressed]="selectedIds().has(stop.id)"
                 (click)="toggleStop(stop.id)"
               >
                 <mat-checkbox
@@ -106,7 +108,7 @@ export interface HubDisplayDialogResult {
                     </span>
                   }
                 </div>
-              </div>
+              </button>
             }
           }
         </div>
@@ -177,10 +179,23 @@ export interface HubDisplayDialogResult {
       background-color: var(--app-surface-variant);
       cursor: pointer;
       transition: background-color 0.15s;
+      // Reset native button look so the row reads like a list item;
+      // <button> chosen over <div> for keyboard accessibility (Enter +
+      // Space activate it natively).
+      width: 100%;
+      border: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
     }
 
     .stop-item:hover {
       background-color: var(--app-surface-container-high);
+    }
+
+    .stop-item:focus-visible {
+      outline: 2px solid var(--app-primary, #1976d2);
+      outline-offset: 1px;
     }
 
     .stop-item.selected {
