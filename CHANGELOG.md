@@ -7,7 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.6.0] — 2026-05-15
+## [1.7.0] — 2026-05-15
+
+Release backlog audit : ferme les P2 sécu (S-09 JWT jti + tokenVersion,
+S-12 STOMP cookie) et les P2 perf (Caffeine rate-limit, hash compare
+GTFS, stop_times single-pass, calendars `@Cacheable`) reportés depuis
+le re-audit du 2026-05-12. Côté UX, les 9 save dialogs admin gardent
+la main pendant le HTTP avec spinner inline + erreurs visibles, et
+les chips admin retrouvent un contraste WCAG AA en dark mode. Une
+migration Flyway (`V51__add_user_token_version.sql`) est nécessaire.
+
+### Added
+
+- **`runDialogSubmit` helper** (`frontend/src/app/shared/admin/dialog-submit.ts`)
+  — factory qui mutualise le pattern « le dialog garde la main pendant
+  le HTTP » : `submitting` signal, ferme uniquement sur succès, garde
+  ouvert sur erreur (le formulaire survit, l'utilisateur corrige sans
+  re-saisir). Les 9 save dialogs admin (lines, stops, schedules,
+  messages, users, devices, itineraries create/edit, itinerary-stops)
+  passent par ce helper ; chaque parent injecte sa callback
+  `submit` + `onError` via `data`. Le bouton submit affiche un
+  `<mat-progress-spinner diameter="18" />` inline pendant la requête.
+  `device-token` reste informational (pas d'HTTP propre).
+- **`ServiceCalendarCache`** : wrapper `@Cacheable("calendars")` autour
+  de `ServiceCalendarRepository.findAllWithExceptions()`. Évicté sur
+  `NetworkChangedEvent` (`AFTER_COMMIT` + fallback non-transactionnel
+  pour le boot loader et les tests).
+- **V51 Flyway** : colonne `users.token_version BIGINT NOT NULL DEFAULT 0`.
+- **Dix nouveaux specs services frontend** (`hub-websocket`, `locale`,
+  `dashboard`, `flex-stop-time`, `feed-info`, `data-overview`,
+  `gtfs-data`, `attribution`, `fare-calculator`, `realtime`) couvrent
+  le happy path + la branche d'erreur de chaque méthode HTTP. Total
+  tests frontend : **1044 → 1102**.
+- **Vingt-trois specs migrés vers des dictionnaires fr/en distincts**
+  — l'ancien `langs: { en, fr: en }` faisait pointer fr sur la même
+  référence que en, donc une régression FR ne pouvait pas être
+  détectée. Chaque dictionnaire fr est désormais une copie
+  intégralement traduite mais structurellement séparée.
+
+### Security
+
+- **S-09 — JWT `jti` + `tokenVersion`** : chaque access token porte
+  désormais un `jti` (UUID random) et un claim `tv` qui reflète
+  `User.tokenVersion`. `JwtAuthenticationFilter` re-lit l'utilisateur
+  à chaque hit authentifié (déjà le cas pour `enabled`) et compare
+  `tv` à la valeur en base. Mismatch ⇒ `SecurityContext` anonyme +
+  `WWW-Authenticate: error_description="Token revoked"`. Trois
+  opérations privilégiées bumpent `tokenVersion` côté `UserService`
+  (password reset, role change, disable) plus `RefreshTokenService.revokeAllForUser`.
+  Effet : un disable ou un changement de rôle invalide les access
+  tokens dans la requête suivante, plus besoin d'attendre l'expiration
+  8 h. Les tokens minted avant V51 portent `tv` absent → relu comme
+  0, donc les sessions actives ne sont pas globalement détruites au
+  déploiement.
+- **S-12 — STOMP CONNECT auth via cookie `ACCESS_TOKEN`** : un
+  `HandshakeInterceptor` lift le cookie pendant l'upgrade HTTP→WS et
+  le pose dans les session attributes STOMP. `resolveAccessToken`
+  préfère cette valeur au header `Authorization: Bearer` (gardé en
+  fallback pour la rétrocompat). Le JWT n'a plus besoin d'être
+  lisible côté JavaScript, donc un payload XSS ne peut plus le
+  soulever.
+
+### Fixed
+
+- **`LoginRateLimitFilter` — fuite mémoire** : le `ConcurrentMap<String, Bucket>`
+  par IP grossissait sans borne sous attaque distribuée. Migré vers
+  un `Caffeine.newBuilder().expireAfterAccess(15 min).maximumSize(100_000)`
+  — les buckets inactifs sont évictés, le cap est un backstop
+  defence-in-depth.
+- **`GtfsImportOrchestrator` re-import inutile** : le hash SHA-256
+  calculé était stocké mais jamais comparé au précédent. Le scheduler
+  re-importait l'intégralité du feed à chaque tick (cache evict +
+  inserts en boucle). Comparé maintenant au hash du dernier `SUCCESS` ;
+  hash égal ⇒ audit `SKIPPED_UNCHANGED`, pas de travail.
+- **`ItineraryImporter` 2 passes sur `stop_times.txt`** : combinées
+  en un seul stream qui filtre les rows non-pertinentes (route absente,
+  trip absent) eagerly. Sur un feed Île-de-France, ça retire plusieurs
+  dizaines de secondes de CSV parsing dupliqué.
+- **`DisplayStateCalculator` re-query calendars par render** : route
+  désormais via `ServiceCalendarCache` (`@Cacheable("calendars")`).
+  Le hot path kiosk ne refait plus la requête.
+- **`fare-calculator.calculate()` swallow d'erreur** : ajout d'un
+  handler `error:` qui set `errored.set(true)` + clear le résultat
+  précédent. Sans ça l'opérateur restait sur la dernière valeur sans
+  feedback en cas de 5xx.
+- **`gtfs-data` 4 sub-loads silencieux** (fares, booking rules, fares
+  v2, translations) : chaque échec affiche maintenant un snackbar
+  via `NotifyService`. Quatre clés i18n ajoutées en/fr.
+- **Chips admin contraste dark mode** : les pills `realtime.occ-*`
+  et `flex-stop-times.{pill-target-location,pill-target-group,rule-tag}`
+  utilisaient des couleurs -700 (`#047857`, `#92400e`, `#b91c1c`,
+  `#4338ca`, `#be185d`) qui tombaient sous WCAG AA sur une surface
+  sombre. Overrides `:host-context(.dark-theme)` qui swap vers le -300
+  et bumpent l'alpha du background.
+- **`<html lang>` first-paint** : un script inline dans `index.html`
+  lit `localStorage[lang]` (et `navigator.language` en fallback) pour
+  poser l'attribut **avant** le bootstrap Angular. Plus de "lang=en"
+  visible pendant les quelques centaines de ms du boot pour un
+  utilisateur FR.
+
+### Changed
+
+- **`mat-icon-button` 40×40 → 44×44 (WCAG 2.5.5)** globalement —
+  `app-kiosk` et `app-hub` opt-out vers 40×40 puisque leurs viewers
+  ne sont pas touch.
+- **Motion tokens M3** : douze sites SCSS (`network-map`, `schematic-map`,
+  dashboard admin) qui hardcodaient leurs `transition` durations et
+  ease curves passent par les variables `--m3-duration-short*` et
+  `--m3-easing-standard`.
+- **`RefreshTokenService` constructeur** prend désormais `UserRepository`
+  en plus (nécessaire pour bumper `tokenVersion` lors de
+  `revokeAllForUser`).
+- **`DisplayStateCalculator` constructeur** prend `ServiceCalendarCache`
+  au lieu de `ServiceCalendarRepository`.
+
+### Build
+
+- **Caffeine** déjà présent en dep — réutilisé par `LoginRateLimitFilter`
+  et `ServiceCalendarCache`.
+
+
 
 Release majeure double-volet : ferme intégralement le re-audit du
 2026-05-12 (6 P0 + 3 P1 critiques + 9 P1 i18n + 5 P2 sécu) et livre
