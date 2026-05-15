@@ -151,6 +151,44 @@
       "stopOne": "1 stop",
       "stopOther": "{{ count }} stops"
     },
+    "zoom": {
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "reset": "Reset view"
+    },
+    "legend": {
+      "title": "Legend",
+      "hide": "Hide legend",
+      "show": "Show legend",
+      "stop": "Stop",
+      "terminus": "Terminus",
+      "interchange": "Interchange",
+      "tad": "On-demand (TAD)",
+      "selected": "Selected",
+      "wheelchair": "Wheelchair accessible",
+      "hiddenLine": "Hidden line",
+      "alert": "Service alert"
+    },
+    "lineFilter": {
+      "all": "All",
+      "selectAria": "Filter by line",
+      "categoryAria": "Filter by line type",
+      "chipTitle": "Click to toggle {{ code }} · double-click to focus"
+    },
+    "alertOverlay": {
+      "title": "Active alerts",
+      "noAlerts": "No active alerts",
+      "lineLabel": "Line {{ code }}",
+      "linesLabel": "Lines",
+      "stopLabel": "Stop {{ name }}",
+      "networkLabel": "Network"
+    },
+    "lineIndex": {
+      "title": "Lines",
+      "subtitle": "Pick a line to view its full route",
+      "tooManyLines": "Too many lines for the index — use the filters",
+      "showAll": "Show all lines"
+    },
     "accessibility": {
       "accessible": "Wheelchair accessible",
       "notAccessible": "Not accessible",

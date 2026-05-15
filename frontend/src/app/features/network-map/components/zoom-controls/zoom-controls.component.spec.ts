@@ -1,13 +1,25 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ZoomControlsComponent } from './zoom-controls.component';
+
+const zoomDict = { map: { zoom: { in: 'Zoom in', out: 'Zoom out', reset: 'Reset view' } } };
 
 describe('ZoomControlsComponent', () => {
   let fixture: ComponentFixture<ZoomControlsComponent>;
   let component: ZoomControlsComponent;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [ZoomControlsComponent] });
+    TestBed.configureTestingModule({
+      imports: [
+        ZoomControlsComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: zoomDict, fr: zoomDict },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
+    });
     fixture = TestBed.createComponent(ZoomControlsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

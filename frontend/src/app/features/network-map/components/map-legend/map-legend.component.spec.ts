@@ -1,13 +1,41 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { MapLegendComponent } from './map-legend.component';
+
+const legendDict = {
+  map: {
+    legend: {
+      title: 'Legend',
+      hide: 'Hide legend',
+      show: 'Show legend',
+      stop: 'Stop',
+      terminus: 'Terminus',
+      interchange: 'Interchange',
+      tad: 'On-demand (TAD)',
+      selected: 'Selected',
+      wheelchair: 'Wheelchair accessible',
+      hiddenLine: 'Hidden line',
+      alert: 'Alert',
+    },
+  },
+};
 
 describe('MapLegendComponent', () => {
   let fixture: ComponentFixture<MapLegendComponent>;
   let component: MapLegendComponent;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [MapLegendComponent] });
+    TestBed.configureTestingModule({
+      imports: [
+        MapLegendComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: legendDict, fr: legendDict },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
+    });
     fixture = TestBed.createComponent(MapLegendComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

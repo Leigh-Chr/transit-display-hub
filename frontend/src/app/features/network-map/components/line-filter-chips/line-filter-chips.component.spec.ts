@@ -1,7 +1,19 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { LineFilterChipsComponent } from './line-filter-chips.component';
 import { MessageSeverity, NetworkLine } from '@shared/models';
+
+const filterDict = {
+  map: {
+    lineFilter: {
+      all: 'All',
+      selectAria: 'Filter by line',
+      categoryAria: 'Filter by line type',
+      chipTitle: 'Click to toggle {{ code }} · double-click to focus',
+    },
+  },
+};
 
 describe('LineFilterChipsComponent', () => {
   let fixture: ComponentFixture<LineFilterChipsComponent>;
@@ -14,7 +26,16 @@ describe('LineFilterChipsComponent', () => {
   ];
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [LineFilterChipsComponent] });
+    TestBed.configureTestingModule({
+      imports: [
+        LineFilterChipsComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: filterDict, fr: filterDict },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
+    });
     fixture = TestBed.createComponent(LineFilterChipsComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('lines', lines);

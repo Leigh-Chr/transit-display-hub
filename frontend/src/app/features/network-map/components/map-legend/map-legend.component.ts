@@ -1,23 +1,24 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-map-legend',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [MatIconModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="legend" [class.collapsed]="!open()">
+    <div class="legend" [class.collapsed]="!open()" *transloco="let t; read: 'map.legend'">
       <button
         type="button"
         class="legend-toggle"
         (click)="toggle()"
         [attr.aria-expanded]="open()"
-        [attr.aria-label]="open() ? 'Hide legend' : 'Show legend'"
+        [attr.aria-label]="open() ? t('hide') : t('show')"
       >
         <mat-icon>{{ open() ? 'expand_more' : 'info_outline' }}</mat-icon>
         @if (open()) {
-          <span class="legend-toggle-label">Legend</span>
+          <span class="legend-toggle-label">{{ t('title') }}</span>
         }
       </button>
       @if (open()) {
@@ -25,21 +26,21 @@ import { MatIconModule } from '@angular/material/icon';
           <svg width="18" height="18" viewBox="0 0 18 18">
             <circle cx="9" cy="9" r="6" fill="#888" stroke="white" stroke-width="2"/>
           </svg>
-          <span>Stop</span>
+          <span>{{ t('stop') }}</span>
         </div>
         <div class="legend-item">
           <svg width="18" height="18" viewBox="0 0 18 18">
             <circle cx="9" cy="9" r="7" fill="#888" stroke="white" stroke-width="2"/>
             <circle cx="9" cy="9" r="4" fill="white"/>
           </svg>
-          <span>Terminus</span>
+          <span>{{ t('terminus') }}</span>
         </div>
         <div class="legend-item">
           <svg width="18" height="18" viewBox="0 0 18 18">
             <circle cx="9" cy="9" r="6" fill="white" stroke="#333" stroke-width="2"/>
             <circle cx="9" cy="9" r="2.5" fill="#333"/>
           </svg>
-          <span>Interchange</span>
+          <span>{{ t('interchange') }}</span>
         </div>
         @if (hasHiddenLines()) {
           <div class="legend-item">
@@ -47,7 +48,7 @@ import { MatIconModule } from '@angular/material/icon';
               <circle cx="9" cy="9" r="8" fill="#666"/>
               <text x="9" y="9" text-anchor="middle" dominant-baseline="central" fill="white" font-size="7" font-weight="bold">X</text>
             </svg>
-            <span>Hidden line</span>
+            <span>{{ t('hiddenLine') }}</span>
           </div>
         }
         @if (hasStopAlerts()) {
@@ -56,7 +57,7 @@ import { MatIconModule } from '@angular/material/icon';
               <circle cx="9" cy="9" r="5" stroke="white" stroke-width="1.5"/>
               <text x="9" y="9" text-anchor="middle" dominant-baseline="central" fill="white" font-size="6" font-weight="bold">!</text>
             </svg>
-            <span>Alert</span>
+            <span>{{ t('alert') }}</span>
           </div>
         }
       }

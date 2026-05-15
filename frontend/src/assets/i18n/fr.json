@@ -151,6 +151,44 @@
       "stopOne": "1 arrêt",
       "stopOther": "{{ count }} arrêts"
     },
+    "zoom": {
+      "in": "Zoomer",
+      "out": "Dézoomer",
+      "reset": "Réinitialiser la vue"
+    },
+    "legend": {
+      "title": "Légende",
+      "hide": "Masquer la légende",
+      "show": "Afficher la légende",
+      "stop": "Arrêt",
+      "terminus": "Terminus",
+      "interchange": "Correspondance",
+      "tad": "À la demande (TAD)",
+      "selected": "Sélectionné",
+      "wheelchair": "Accessible PMR",
+      "hiddenLine": "Ligne masquée",
+      "alert": "Perturbation"
+    },
+    "lineFilter": {
+      "all": "Toutes",
+      "selectAria": "Filtrer par ligne",
+      "categoryAria": "Filtrer par type de ligne",
+      "chipTitle": "Cliquer pour basculer {{ code }} · double-clic pour cibler"
+    },
+    "alertOverlay": {
+      "title": "Alertes en cours",
+      "noAlerts": "Aucune alerte en cours",
+      "lineLabel": "Ligne {{ code }}",
+      "linesLabel": "Lignes",
+      "stopLabel": "Arrêt {{ name }}",
+      "networkLabel": "Réseau"
+    },
+    "lineIndex": {
+      "title": "Lignes",
+      "subtitle": "Choisissez une ligne pour voir son tracé complet",
+      "tooManyLines": "Trop de lignes pour l'index — utilisez les filtres",
+      "showAll": "Afficher toutes les lignes"
+    },
     "accessibility": {
       "accessible": "Accessible PMR",
       "notAccessible": "Non accessible",

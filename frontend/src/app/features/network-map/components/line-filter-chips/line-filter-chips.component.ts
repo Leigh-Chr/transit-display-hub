@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { MessageSeverity, NetworkLine } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 
@@ -7,19 +8,19 @@ import { lineTextColor } from '@shared/utils/color.utils';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="line-filters">
+    <div class="line-filters" [attr.aria-label]="transloco.translate('map.lineFilter.selectAria')">
       <button
         class="filter-chip all-chip"
         [class.active]="visibleLineCodes().length === lines().length"
         (click)="toggleAll.emit()"
-      >All</button>
+      >{{ transloco.translate('map.lineFilter.all') }}</button>
       @for (line of lines(); track line.id) {
         <button
           class="filter-chip"
           [class.active]="visibleSet().has(line.code)"
           [style.--chip-color]="line.color"
           [style.--chip-text]="lineTextColor(line)"
-          [attr.title]="'Click to toggle ' + line.code + ' · Double-click to focus'"
+          [attr.title]="lineChipTitle(line.code)"
           (click)="lineToggle.emit(line.code)"
           (dblclick)="focusLine.emit(line.code)"
         >{{ line.code }}@if (alertSeverityFor(line.id); as sev) {<span class="chip-alert-dot" [class]="'chip-alert-dot-' + sev.toLowerCase()"></span>}</button>
@@ -139,10 +140,19 @@ export class LineFilterChipsComponent {
   toggleAll = output();
   focusLine = output<string>();
 
+  // Public so the template can call transloco.translate() directly without
+  // having to wrap the whole element in *transloco — keeps the host
+  // attribute available for the read.
+  readonly transloco = inject(TranslocoService);
+
   visibleSet = computed(() => new Set(this.visibleLineCodes()));
 
   alertSeverityFor(lineId: string): MessageSeverity | null {
     return this.alertSeverityByLineId().get(lineId) ?? null;
+  }
+
+  lineChipTitle(code: string): string {
+    return this.transloco.translate('map.lineFilter.chipTitle', { code });
   }
 
   readonly lineTextColor = lineTextColor;

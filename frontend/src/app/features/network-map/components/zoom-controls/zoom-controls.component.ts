@@ -1,20 +1,21 @@
 import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-zoom-controls',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [MatIconModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="zoom-controls">
-      <button class="zoom-btn" type="button" (click)="zoomIn.emit()" title="Zoom in" aria-label="Zoom in">
+    <div class="zoom-controls" *transloco="let t; read: 'map.zoom'">
+      <button class="zoom-btn" type="button" (click)="zoomIn.emit()" [title]="t('in')" [attr.aria-label]="t('in')">
         <mat-icon aria-hidden="true">add</mat-icon>
       </button>
-      <button class="zoom-btn" type="button" (click)="resetView.emit()" title="Reset view" aria-label="Reset view">
+      <button class="zoom-btn" type="button" (click)="resetView.emit()" [title]="t('reset')" [attr.aria-label]="t('reset')">
         <mat-icon aria-hidden="true">fit_screen</mat-icon>
       </button>
-      <button class="zoom-btn" type="button" (click)="zoomOut.emit()" title="Zoom out" aria-label="Zoom out">
+      <button class="zoom-btn" type="button" (click)="zoomOut.emit()" [title]="t('out')" [attr.aria-label]="t('out')">
         <mat-icon aria-hidden="true">remove</mat-icon>
       </button>
     </div>

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { AlertMessage, NetworkLine } from '@shared/models';
 
 export interface VisibleLineAlert {
@@ -10,13 +11,13 @@ export interface VisibleLineAlert {
 @Component({
   selector: 'app-alert-overlay',
   standalone: true,
-  imports: [MatExpansionModule],
+  imports: [MatExpansionModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hasContent()) {
-      <div class="alert-overlay">
+      <div class="alert-overlay" *transloco="let t; read: 'map.alertOverlay'">
         @if (networkAlerts().length > 0) {
-          <div class="alert-section-label">Network</div>
+          <div class="alert-section-label">{{ t('networkLabel') }}</div>
           <mat-accordion multi>
             @for (alert of networkAlerts(); track alert.title) {
               <mat-expansion-panel [class]="'alert-panel alert-' + alert.severity.toLowerCase()">
@@ -34,7 +35,7 @@ export interface VisibleLineAlert {
           </mat-accordion>
         }
         @if (lineAlerts().length > 0) {
-          <div class="alert-section-label">Lines</div>
+          <div class="alert-section-label">{{ t('linesLabel') }}</div>
           <mat-accordion multi>
             @for (entry of lineAlerts(); track entry.line.id) {
               @for (alert of entry.alerts; track alert.title) {

@@ -1,7 +1,21 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { AlertOverlayComponent, VisibleLineAlert } from './alert-overlay.component';
 import { AlertMessage, NetworkLine } from '@shared/models';
+
+const alertDict = {
+  map: {
+    alertOverlay: {
+      title: 'Active alerts',
+      noAlerts: 'No active alerts',
+      networkLabel: 'Network',
+      linesLabel: 'Lines',
+      lineLabel: 'Line {{ code }}',
+      stopLabel: 'Stop {{ name }}',
+    },
+  },
+};
 
 describe('AlertOverlayComponent', () => {
   let fixture: ComponentFixture<AlertOverlayComponent>;
@@ -14,7 +28,16 @@ describe('AlertOverlayComponent', () => {
   const lineAlert: AlertMessage = { title: 'Strike', content: 'Hour-long delays', severity: 'CRITICAL' };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [AlertOverlayComponent] });
+    TestBed.configureTestingModule({
+      imports: [
+        AlertOverlayComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: alertDict, fr: alertDict },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
+    });
     fixture = TestBed.createComponent(AlertOverlayComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('networkAlerts', []);
