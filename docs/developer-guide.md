@@ -74,58 +74,78 @@ com.transit.hub/
 |   |   +-- ScheduleChangedEvent.java
 |   |   +-- MessageChangedEvent.java
 |   |   +-- NetworkChangedEvent.java
-|   +-- service/
-|       +-- DisplayStateCalculator.java  # State calculation
+|   |   +-- StopDeletedEvent.java
+|   +-- util/
+|       +-- ServiceCalendarMatcher.java  # GTFS active-day rules
+|       +-- PolygonContains.java         # TAD zone hit-test
 +-- application/
 |   +-- service/                         # Business services
 |   |   +-- AuthService.java
-|   |   +-- LineService.java
-|   |   +-- StopService.java
-|   |   +-- ItineraryService.java
-|   |   +-- ScheduleService.java
-|   |   +-- MessageService.java
-|   |   +-- DeviceService.java
-|   |   +-- UserService.java
-|   |   +-- DisplayStateService.java
-|   |   +-- NetworkMapService.java
+|   |   +-- LineService.java / StopService / ItineraryService / ScheduleService
+|   |   +-- MessageService.java / DeviceService / UserService
+|   |   +-- DisplayStateService.java + DisplayStateCalculator.java  # kiosk hot path
+|   |   +-- HubDisplayService.java       # per-hub stop aggregation
+|   |   +-- NetworkMapService.java       # cached map + alerts broadcast
+|   |   +-- DashboardService.java        # admin dashboard aggregator
+|   |   +-- DataOverviewService.java     # delegates to overview/ providers
+|   |   +-- FareCalculatorService.java / FlexAvailabilityService / PathwayService
+|   |   +-- GtfsImportOrchestrator.java / GtfsValidatorService
+|   |   +-- overview/                    # split out of DataOverviewService (v1.12.0)
+|   |       +-- StaticGtfsOverviewProvider.java   # 16 entity counts
+|   |       +-- RealtimeOverviewProvider.java     # 3 GTFS-RT caches
 |   +-- dto/
 |   |   +-- request/                     # Input DTOs
 |   |   +-- response/                    # Output DTOs
 |   +-- exception/                       # Business exceptions
+|   +-- support/
+|       +-- UnpaginatedCap.java          # bound non-paginated findAll
 +-- infrastructure/
 |   +-- security/
 |   |   +-- JwtService.java
 |   |   +-- JwtAuthenticationFilter.java
-|   |   +-- SecurityConfig.java
+|   |   +-- SecurityConfig.java          # BCrypt strength now externalised
+|   |   +-- AuthCookieFactory.java
+|   |   +-- LoginRateLimitFilter.java    # Caffeine + bucket4j
+|   |   +-- RefreshTokenService.java
 |   +-- websocket/
-|   |   +-- WebSocketConfig.java
+|   |   +-- WebSocketConfig.java         # STOMP handshake + cookie auth
 |   |   +-- ActiveDisplayTracker.java
-|   +-- persistence/                     # JPA Repositories
-|   |   +-- LineRepository.java
-|   |   +-- StopRepository.java
-|   |   +-- ItineraryRepository.java
-|   |   +-- ItineraryStopRepository.java
-|   |   +-- ScheduleRepository.java
-|   |   +-- BroadcastMessageRepository.java
-|   |   +-- DeviceRepository.java
-|   |   +-- UserRepository.java
+|   |   +-- StompChannelInterceptor.java
+|   |   +-- DeviceHeartbeatController.java
+|   +-- persistence/                     # JPA Repositories (40+)
+|   |   +-- LineRepository.java / StopRepository / ItineraryRepository / …
+|   +-- realtime/                        # GTFS-RT polling caches
+|   |   +-- RealtimeAlertCache.java / RealtimeTripUpdateCache / …
+|   |   +-- RealtimeAlertScheduler.java
+|   +-- metrics/
+|   |   +-- GtfsImportMetrics.java       # Micrometer custom meters
+|   +-- observability/
+|   |   +-- CorrelationIdFilter.java     # MDC requestId
+|   +-- seed/gtfs/                       # GTFS import pipeline
+|   |   +-- GtfsDataLoader.java          # @Profile("dev") boot loader
+|   |   +-- GtfsRefreshScheduler.java    # daily refresh cron
+|   |   +-- GtfsImportService.java       # orchestrates the 17 sectional importers
+|   |   +-- GtfsDownloader.java          # download / cache feeds
+|   |   +-- sections/                    # one importer per GTFS table
+|   |       +-- AgencyImporter / RouteImporter / StopImporter / ItineraryImporter
+|   |       +-- ScheduleImporter / TransferImporter / ShapeImporter / PathwayImporter
+|   |       +-- FareV1Importer / FareV2Importer / StationLevelImporter / …
+|   |       +-- ServiceCalendarLoader.java   # extracted from ScheduleImporter (v1.11.1)
+|   |       +-- FlexStopTimeMapper.java      # extracted from ScheduleImporter (v1.11.1)
 |   +-- config/
-|   |   +-- CacheConfig.java            # Caffeine configuration
-|   +-- DataLoader.java                 # Initial data
+|       +-- CacheConfig.java             # Caffeine configuration
+|       +-- ClockConfig.java             # injected Clock (testability)
+|       +-- ServiceCalendarCache.java    # @Cacheable around the calendars
 +-- api/
     +-- rest/                            # REST Controllers
-    |   +-- AuthController.java
-    |   +-- LineController.java
-    |   +-- StopController.java
-    |   +-- ItineraryController.java
-    |   +-- ScheduleController.java
-    |   +-- MessageController.java
-    |   +-- DeviceController.java
-    |   +-- UserController.java
-    |   +-- DisplayController.java
-    |   +-- NetworkMapController.java
+    |   +-- AuthController / LineController / StopController / …
+    |   +-- DisplayController / NetworkMapController / HubDisplayController
+    |   +-- GtfsAdminController / ImportAuditController
+    |   +-- RealtimeAlertController / RealtimeVehicleController
+    |   +-- support/
+    |       +-- Pageables.java            # central Pageable builder (cap at 200)
     +-- advice/
-        +-- GlobalExceptionHandler.java  # Error handling
+        +-- GlobalExceptionHandler.java   # MessageSource-driven error envelope
 ```
 
 ### Entities
@@ -850,22 +870,16 @@ one `jmh` task:
 
 # Filter to a single class / method
 ./gradlew jmh -Pjmh.includes='ServiceCalendarMatcher'
-./gradlew jmh -Pjmh.includes='DisplayStateCalculatorIntegrationBenchmark'
+./gradlew jmh -Pjmh.includes='FareCalculatorServiceBenchmark'
 ```
 
-Micro-benchmarks live at
-`backend/src/jmh/java/com/transit/hub/bench/` —
+Benchmarks live at `backend/src/jmh/java/com/transit/hub/bench/`
+in a single `jmh` source set:
 `ServiceCalendarMatcher`, `TranslationLookup`,
-`ColorContrast`, plus the three
-service-layer benches added during the deferred-backlog
-wrap-up: `FareCalculatorServiceBenchmark`,
-`FlexAvailabilityServiceBenchmark`,
-`PathwayServiceBenchmark` (Mockito-stubbed repositories
-to isolate service-side cost from the JPA round-trip).
-The full-stack benchmark sits under
-`bench/integration/` and boots a real Spring Boot context
-with H2 in-memory before measuring
-`DisplayStateCalculator.calculateForStop`.
+`ColorContrast`, plus the three service-layer benches:
+`FareCalculatorServiceBenchmark`, `FlexAvailabilityServiceBenchmark`,
+`PathwayServiceBenchmark` (Mockito-stubbed repositories to
+isolate service-side cost from the JPA round-trip).
 
 See ADR 0028 for the full rationale (no CI gating, single
 fork by default for dev iteration speed).
