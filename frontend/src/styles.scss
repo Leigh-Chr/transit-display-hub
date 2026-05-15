@@ -137,6 +137,22 @@ html {
   --app-critical-container-alpha: rgba(198, 40, 40, 0.12);
   --app-info-container-alpha: rgba(2, 136, 209, 0.12);
 
+  // === Chip palette (semantic — light theme) ===
+  // Used by admin status pills (realtime occupancy, flex-stop-times
+  // pickup/dropoff types, rule tags). Light surface: deep -700 text on
+  // a soft -200-ish translucent background. Dark surface (see
+  // .dark-theme below): the -300 line gets the legibility back.
+  --app-chip-success-bg: rgba(16, 185, 129, 0.16);
+  --app-chip-success-fg: #047857;
+  --app-chip-warning-bg: rgba(234, 179, 8, 0.18);
+  --app-chip-warning-fg: #92400e;
+  --app-chip-danger-bg: rgba(239, 68, 68, 0.18);
+  --app-chip-danger-fg: #b91c1c;
+  --app-chip-info-bg: rgba(99, 102, 241, 0.16);
+  --app-chip-info-fg: #4338ca;
+  --app-chip-accent-bg: rgba(244, 114, 182, 0.16);
+  --app-chip-accent-fg: #be185d;
+
   // === Surface hierarchy (light theme) ===
   --app-surface: #FAFAFA;
   --app-surface-variant: #F5F5F5;
@@ -280,6 +296,18 @@ html {
   --app-warning-container-alpha: rgba(255, 152, 0, 0.15);
   --app-critical-container-alpha: rgba(239, 83, 80, 0.15);
   --app-info-container-alpha: rgba(41, 182, 246, 0.15);
+
+  // === Chip palette (semantic — dark theme overrides) ===
+  --app-chip-success-bg: rgba(16, 185, 129, 0.28);
+  --app-chip-success-fg: #6ee7b7;
+  --app-chip-warning-bg: rgba(234, 179, 8, 0.32);
+  --app-chip-warning-fg: #fcd34d;
+  --app-chip-danger-bg: rgba(239, 68, 68, 0.32);
+  --app-chip-danger-fg: #fca5a5;
+  --app-chip-info-bg: rgba(99, 102, 241, 0.30);
+  --app-chip-info-fg: #a5b4fc;
+  --app-chip-accent-bg: rgba(244, 114, 182, 0.30);
+  --app-chip-accent-fg: #f9a8d4;
 
   // Surface tinting for dark theme
   --app-surface-tinted: #0E1218;

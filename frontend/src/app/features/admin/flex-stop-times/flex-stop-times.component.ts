@@ -204,13 +204,13 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     }
 
     .pill-target-location {
-      background: rgba(99, 102, 241, 0.16);
-      color: #4338ca;
+      background: var(--app-chip-info-bg);
+      color: var(--app-chip-info-fg);
     }
 
     .pill-target-group {
-      background: rgba(244, 114, 182, 0.16);
-      color: #be185d;
+      background: var(--app-chip-accent-bg);
+      color: var(--app-chip-accent-fg);
     }
 
     .rule-tag {
@@ -218,18 +218,9 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       padding: 2px 7px;
       margin-right: 4px;
       border-radius: 999px;
-      background: rgba(16, 185, 129, 0.14);
-      color: #047857;
+      background: var(--app-chip-success-bg);
+      color: var(--app-chip-success-fg);
       font-size: var(--m3-type-label-medium);
-    }
-
-    /* Dark mode swap: the indigo/pink/green -700 shades stop hitting
-     * WCAG AA against a dark translucent surface. Move to the -300
-     * row and bump alpha for the background. */
-    :host-context(.dark-theme) {
-      .pill-target-location { background: rgba(99, 102, 241, 0.30); color: #a5b4fc; }
-      .pill-target-group    { background: rgba(244, 114, 182, 0.30); color: #f9a8d4; }
-      .rule-tag             { background: rgba(16, 185, 129, 0.26); color: #6ee7b7; }
     }
 
     .calendar-tag {

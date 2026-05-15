@@ -280,20 +280,10 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       font-weight: 500;
     }
     .occupancy-badge mat-icon { font-size: var(--m3-type-body-medium); width: 14px; height: 14px; }
-    .occ-low { background: rgba(16, 185, 129, 0.16); color: #047857; }
-    .occ-mid { background: rgba(234, 179, 8, 0.18); color: #92400e; }
-    .occ-high { background: rgba(239, 68, 68, 0.18); color: #b91c1c; }
+    .occ-low { background: var(--app-chip-success-bg); color: var(--app-chip-success-fg); }
+    .occ-mid { background: var(--app-chip-warning-bg); color: var(--app-chip-warning-fg); }
+    .occ-high { background: var(--app-chip-danger-bg); color: var(--app-chip-danger-fg); }
     .occ-unknown { background: var(--mat-sys-surface-container); color: var(--mat-sys-on-surface-variant); }
-
-    /* Dark mode override: the deep -700 text shades drop below WCAG AA
-     * against translucent backgrounds on a dark surface. Swap to the
-     * -300 line and bump the background opacity so the pill stays
-     * legible without being shouty. */
-    :host-context(.dark-theme) {
-      .occ-low { background: rgba(16, 185, 129, 0.28); color: #6ee7b7; }
-      .occ-mid { background: rgba(234, 179, 8, 0.32); color: #fcd34d; }
-      .occ-high { background: rgba(239, 68, 68, 0.32); color: #fca5a5; }
-    }
     .bearing-arrow { display: inline-block; transform-origin: center; }
     .bearing-arrow mat-icon { font-size: var(--m3-type-title-large); width: 18px; height: 18px; }
     .congestion-pill {
