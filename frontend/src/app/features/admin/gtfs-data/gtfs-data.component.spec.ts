@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GtfsDataComponent } from './gtfs-data.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
+import { NotifyService } from '@core/services/notify.service';
 import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 
@@ -86,6 +87,7 @@ describe('GtfsDataComponent', () => {
       providers: [
         provideRouter([]),
         { provide: GtfsDataService, useValue: mockService },
+        { provide: NotifyService, useValue: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
       ],
     });
 

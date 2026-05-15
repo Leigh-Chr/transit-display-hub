@@ -698,6 +698,10 @@
     "gtfsData": {
       "title": "Données GTFS",
       "subtitle": "Browse en lecture seule des tables annexes alimentées par l'import GTFS — tarifs, transport à la demande, traductions.",
+      "loadFaresFailed": "Échec du chargement des tarifs",
+      "loadFaresV2Failed": "Échec du chargement des tarifs v2",
+      "loadBookingRulesFailed": "Échec du chargement des règles de réservation",
+      "loadTranslationsFailed": "Échec du chargement des traductions",
       "tabFares": "Tarifs",
       "tabFaresV2": "Fares v2",
       "tabTad": "TAD",

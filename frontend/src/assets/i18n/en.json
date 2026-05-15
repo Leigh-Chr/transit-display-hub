@@ -698,6 +698,10 @@
     "gtfsData": {
       "title": "GTFS Data",
       "subtitle": "Read-only browser for supplementary tables populated by the GTFS import — fares, on-demand transport, translations.",
+      "loadFaresFailed": "Failed to load fares",
+      "loadFaresV2Failed": "Failed to load Fares v2",
+      "loadBookingRulesFailed": "Failed to load booking rules",
+      "loadTranslationsFailed": "Failed to load translations",
       "tabFares": "Fares",
       "tabFaresV2": "Fares v2",
       "tabTad": "DRT",

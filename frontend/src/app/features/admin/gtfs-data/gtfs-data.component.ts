@@ -11,9 +11,10 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
+import { NotifyService } from '@core/services/notify.service';
 import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 /**
  * One-stop browser for the GTFS extension tables — fares, booking
@@ -534,6 +535,8 @@ import { TranslocoDirective } from '@jsverse/transloco';
 })
 export class GtfsDataComponent implements OnInit {
   private readonly gtfsData = inject(GtfsDataService);
+  private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly fares = signal<FareAttribute[]>([]);
   readonly faresV2 = signal<FaresV2 | null>(null);
@@ -561,15 +564,24 @@ export class GtfsDataComponent implements OnInit {
   ngOnInit(): void {
     this.gtfsData.getFares().subscribe({
       next: (data) => this.fares.set(data),
-      error: () => this.fares.set([]),
+      error: () => {
+        this.fares.set([]);
+        this.notify.error(this.transloco.translate('admin.gtfsData.loadFaresFailed'));
+      },
     });
     this.gtfsData.getBookingRules().subscribe({
       next: (data) => this.bookingRules.set(data),
-      error: () => this.bookingRules.set([]),
+      error: () => {
+        this.bookingRules.set([]);
+        this.notify.error(this.transloco.translate('admin.gtfsData.loadBookingRulesFailed'));
+      },
     });
     this.gtfsData.getFaresV2().subscribe({
       next: (data) => this.faresV2.set(data),
-      error: () => this.faresV2.set(null),
+      error: () => {
+        this.faresV2.set(null);
+        this.notify.error(this.transloco.translate('admin.gtfsData.loadFaresV2Failed'));
+      },
     });
     this.loadTranslations();
   }
@@ -584,6 +596,7 @@ export class GtfsDataComponent implements OnInit {
       error: () => {
         this.translations.set([]);
         this.loadingTranslations.set(false);
+        this.notify.error(this.transloco.translate('admin.gtfsData.loadTranslationsFailed'));
       },
     });
   }

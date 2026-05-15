@@ -278,13 +278,19 @@ export class FareCalculatorComponent implements OnInit {
     const d = this.dest();
     if (!o || !d) {return;}
     this.errored.set(false);
-    this.fareService.calculate(o.id, d.id).subscribe(r => {
-      if (r) {
-        this.result.set(r);
-      } else {
+    this.fareService.calculate(o.id, d.id).subscribe({
+      next: (r) => {
+        if (r) {
+          this.result.set(r);
+        } else {
+          this.errored.set(true);
+          this.result.set(null);
+        }
+      },
+      error: () => {
         this.errored.set(true);
         this.result.set(null);
-      }
+      },
     });
   }
 
