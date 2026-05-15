@@ -130,6 +130,27 @@
     "noMatchingStops": "Aucun arrêt ne correspond aux filtres actifs.",
     "loadingNetwork": "Chargement du réseau…",
     "loadFailed": "Impossible de charger le réseau. Réessayez plus tard.",
+    "loadFailedSnackbar": "Impossible de charger la carte du réseau. Réessayez plus tard.",
+    "subtitle": {
+      "directRoute": "Trajet direct — {{ stops }} arrêts",
+      "transferOne": "1 correspondance",
+      "transferOther": "{{ count }} correspondances",
+      "departure": "Départ : {{ name }} — choisissez un arrêt d'arrivée",
+      "clickStopHint": "Cliquez un arrêt pour voir les prochains passages"
+    },
+    "routeStaleNotice": "Itinéraire obsolète : un de vos arrêts n'est plus dans le réseau.",
+    "route": {
+      "title": "Itinéraire",
+      "departure": "Départ",
+      "arrival": "Arrivée",
+      "clearAria": "Effacer la recherche",
+      "swapAria": "Inverser départ et arrivée",
+      "sameStopError": "Même arrêt sélectionné",
+      "noRouteFound": "Aucun itinéraire trouvé entre ces arrêts",
+      "directionPrefix": "dir.",
+      "stopOne": "1 arrêt",
+      "stopOther": "{{ count }} arrêts"
+    },
     "accessibility": {
       "accessible": "Accessible PMR",
       "notAccessible": "Non accessible",

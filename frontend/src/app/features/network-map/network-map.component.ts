@@ -22,7 +22,7 @@ import { RouteSearchBarComponent } from './components/route-search-bar/route-sea
 import { LineIndexComponent } from './components/line-index/line-index.component';
 import { StopPopupComponent, LineAlertInfo } from './components/stop-popup/stop-popup.component';
 import { NetworkMap, NetworkMapAlerts, NetworkMapUpdate } from '@shared/models';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
@@ -59,8 +59,13 @@ export class NetworkMapComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
   readonly themeService = inject(ThemeService);
   readonly localeService = inject(LocaleService);
+  // The subtitle computed reads `locale.current()` to retrigger when
+  // the user toggles the language; expose the same instance under a
+  // shorter alias to keep the body readable.
+  private readonly locale = this.localeService;
   private readonly networkMapWs = inject(NetworkMapWebSocketService);
 
   private readonly schematicMap = viewChild(SchematicMapComponent);
@@ -91,18 +96,30 @@ export class NetworkMapComponent implements OnInit {
   });
 
   subtitle = computed(() => {
+    // Reading the active language signal makes the computed re-fire on
+    // language switch so the rendered subtitle picks up the new strings.
+    this.locale.current();
     const result = this.routeResult();
     if (result) {
-      const transfers = result.transfers;
-      return transfers === 0
-        ? `Direct route — ${result.allStopIds.length} stops`
-        : `${transfers} transfer${transfers > 1 ? 's' : ''} — ${result.allStopIds.length} stops`;
+      const stops = result.allStopIds.length;
+      const stopsLabel = this.transloco.translate(
+        stops === 1 ? 'map.route.stopOne' : 'map.route.stopOther',
+        { count: stops },
+      );
+      if (result.transfers === 0) {
+        return this.transloco.translate('map.subtitle.directRoute', { stops });
+      }
+      const transfersKey = result.transfers === 1
+        ? 'map.subtitle.transferOne'
+        : 'map.subtitle.transferOther';
+      return this.transloco.translate(transfersKey, { count: result.transfers })
+        + ' — ' + stopsLabel;
     }
     const dep = this.departureStop();
     if (dep && !this.arrivalStop()) {
-      return `Departure: ${dep.name} — select an arrival stop`;
+      return this.transloco.translate('map.subtitle.departure', { name: dep.name });
     }
-    return 'Click on a stop to see upcoming departures';
+    return this.transloco.translate('map.subtitle.clickStopHint');
   });
 
   /** Query param ?lines=M1,T2 — null means "show all" */
@@ -277,7 +294,7 @@ export class NetworkMapComponent implements OnInit {
       if (droppingDep) {this.fromParam.set(null);}
       if (droppingArr) {this.toParam.set(null);}
       if ((droppingDep || droppingArr) && hadActiveRoute) {
-        this.notify.warn('Route updated: one of your stops is no longer in the network.');
+        this.notify.warn(this.transloco.translate('map.routeStaleNotice'));
       }
 
       const currentDep = this.departureStop();
@@ -361,7 +378,7 @@ export class NetworkMapComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load network map:', err);
-        this.error.set('Failed to load network map. Please try again.');
+        this.error.set(this.transloco.translate('map.loadFailedSnackbar'));
         this.loading.set(false);
       }
     });

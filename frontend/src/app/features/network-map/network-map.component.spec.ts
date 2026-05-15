@@ -131,7 +131,40 @@ describe('NetworkMapComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [NetworkMapComponent, TranslocoTestingModule.forRoot({ langs: { en: {}, fr: {} }, translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' } })],
+      imports: [NetworkMapComponent, TranslocoTestingModule.forRoot({
+        langs: {
+          en: {
+            map: {
+              loadFailedSnackbar: 'Failed to load network map. Please try again.',
+              routeStaleNotice: 'Route is stale: one of your stops is no longer in the network.',
+              subtitle: {
+                directRoute: 'Direct route — {{ stops }} stops',
+                transferOne: '1 transfer',
+                transferOther: '{{ count }} transfers',
+                departure: 'Departure: {{ name }} — pick an arrival stop',
+                clickStopHint: 'Click on a stop to see upcoming departures',
+              },
+              route: { stopOne: '1 stop', stopOther: '{{ count }} stops' },
+            },
+          },
+          fr: {
+            map: {
+              loadFailedSnackbar: 'Impossible de charger la carte du réseau. Réessayez plus tard.',
+              routeStaleNotice: 'Itinéraire obsolète : un de vos arrêts n\'est plus dans le réseau.',
+              subtitle: {
+                directRoute: 'Trajet direct — {{ stops }} arrêts',
+                transferOne: '1 correspondance',
+                transferOther: '{{ count }} correspondances',
+                departure: 'Départ : {{ name }} — choisissez un arrêt d\'arrivée',
+                clickStopHint: 'Cliquez un arrêt pour voir les prochains passages',
+              },
+              route: { stopOne: '1 arrêt', stopOther: '{{ count }} arrêts' },
+            },
+          },
+        },
+        translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+        preloadLangs: true,
+      })],
       providers: [
         provideRouter([]),
         { provide: NetworkMapDataService, useValue: mockNetworkMapService },
@@ -217,6 +250,7 @@ describe('NetworkMapComponent', () => {
     expect(component.loading()).toBe(false);
   });
 
+
   it('should handle alerts loading failure gracefully', () => {
     mockNetworkMapService.getAlerts = vi.fn().mockReturnValue(throwError(() => new Error('Alerts fail')));
     fixture.detectChanges();
@@ -238,7 +272,7 @@ describe('NetworkMapComponent', () => {
 
       component.departureStop.set(mockStops[0]!);
       expect(component.subtitle()).toContain('Departure: Alpha');
-      expect(component.subtitle()).toContain('select an arrival stop');
+      expect(component.subtitle()).toContain('arrival stop');
     });
 
     it('should show route info when route is active', () => {

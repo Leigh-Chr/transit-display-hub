@@ -1,8 +1,26 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { RouteSearchBarComponent } from './route-search-bar.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
+
+const mapRouteEn = {
+  map: {
+    route: {
+      title: 'Route',
+      departure: 'Departure',
+      arrival: 'Arrival',
+      clearAria: 'Clear search',
+      swapAria: 'Swap departure and arrival',
+      sameStopError: 'Same stop selected',
+      noRouteFound: 'No route found between these stops',
+      directionPrefix: 'dir.',
+      stopOne: '1 stop',
+      stopOther: '{{ count }} stops',
+    },
+  },
+};
 
 describe('RouteSearchBarComponent', () => {
   let component: RouteSearchBarComponent;
@@ -33,7 +51,14 @@ describe('RouteSearchBarComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [RouteSearchBarComponent],
+      imports: [
+        RouteSearchBarComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: mapRouteEn, fr: mapRouteEn },
+          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
+          preloadLangs: true,
+        }),
+      ],
     });
 
     fixture = TestBed.createComponent(RouteSearchBarComponent);

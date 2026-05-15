@@ -13,6 +13,7 @@ import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/ma
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
 
@@ -25,15 +26,16 @@ import { RouteResult } from '../../services/route-finder.service';
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
+    TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="route-search-panel">
+    <div class="route-search-panel" *transloco="let t; read: 'map.route'">
       <div class="panel-header">
         <mat-icon class="panel-icon">route</mat-icon>
-        <span class="panel-title">Route</span>
+        <span class="panel-title">{{ t('title') }}</span>
         @if (selectedDeparture() || selectedArrival()) {
-          <button class="clear-btn" type="button" (click)="clearSearch()" title="Clear search" aria-label="Clear search">
+          <button class="clear-btn" type="button" (click)="clearSearch()" [title]="t('clearAria')" [attr.aria-label]="t('clearAria')">
             <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         }
@@ -44,7 +46,7 @@ import { RouteResult } from '../../services/route-finder.service';
         <input matInput
           [formControl]="departureCtrl"
           [matAutocomplete]="depAuto"
-          placeholder="Departure"
+          [placeholder]="t('departure')"
         />
         <mat-autocomplete #depAuto="matAutocomplete"
           [displayWith]="displayFn"
@@ -60,7 +62,7 @@ import { RouteResult } from '../../services/route-finder.service';
 
       <div class="field-separator">
         <span class="connector-line"></span>
-        <button class="swap-btn" type="button" (click)="swapStops()" title="Swap" aria-label="Swap departure and arrival">
+        <button class="swap-btn" type="button" (click)="swapStops()" [title]="t('swapAria')" [attr.aria-label]="t('swapAria')">
           <mat-icon aria-hidden="true">swap_vert</mat-icon>
         </button>
         <span class="connector-line"></span>
@@ -71,7 +73,7 @@ import { RouteResult } from '../../services/route-finder.service';
         <input matInput
           [formControl]="arrivalCtrl"
           [matAutocomplete]="arrAuto"
-          placeholder="Arrival"
+          [placeholder]="t('arrival')"
         />
         <mat-autocomplete #arrAuto="matAutocomplete"
           [displayWith]="displayFn"
@@ -86,11 +88,11 @@ import { RouteResult } from '../../services/route-finder.service';
       </mat-form-field>
 
       @if (sameStopError()) {
-        <div class="error-hint">Same stop selected</div>
+        <div class="error-hint">{{ t('sameStopError') }}</div>
       } @else if (noRouteFound()) {
         <div class="error-hint error-hint-warning" role="alert">
           <mat-icon class="error-icon">block</mat-icon>
-          <span>No route found between these stops</span>
+          <span>{{ t('noRouteFound') }}</span>
         </div>
       }
 
@@ -108,7 +110,7 @@ import { RouteResult } from '../../services/route-finder.service';
                 <span class="segment-badge" [style.backgroundColor]="segment.lineColor">{{ segment.lineCode }}</span>
                 <div class="segment-info">
                   <span class="segment-endpoints">{{ segment.stopNames[0] }} → {{ segment.stopNames[segment.stopNames.length - 1] }}</span>
-                  <span class="segment-meta">dir. {{ segment.directionName }} · {{ segment.stopIds.length }} stops</span>
+                  <span class="segment-meta">{{ t('directionPrefix') }} {{ segment.directionName }} · {{ stopsLabel(segment.stopIds.length, t) }}</span>
                 </div>
                 @if (segment.stopNames.length > 2) {
                   <mat-icon class="expand-icon">{{ expandedSegments().has($index) ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -597,6 +599,12 @@ export class RouteSearchBarComponent {
       this.suppressSync = false;
     }
     this.clearRoute.emit();
+  }
+
+  /** Pick the singular / plural i18n key for the stop count without
+   *  needing the messageformat plugin (we only ship the basic loader). */
+  stopsLabel(count: number, t: (key: string, params?: Record<string, unknown>) => string): string {
+    return t(count === 1 ? 'stopOne' : 'stopOther', { count });
   }
 
   toggleSegment(index: number): void {

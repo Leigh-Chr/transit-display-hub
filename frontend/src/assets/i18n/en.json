@@ -130,6 +130,27 @@
     "noMatchingStops": "No stop matches the active filters.",
     "loadingNetwork": "Loading the network…",
     "loadFailed": "Could not load the network. Please try again later.",
+    "loadFailedSnackbar": "Could not load the network map. Please try again later.",
+    "subtitle": {
+      "directRoute": "Direct route — {{ stops }} stops",
+      "transferOne": "1 transfer",
+      "transferOther": "{{ count }} transfers",
+      "departure": "Departure: {{ name }} — pick an arrival stop",
+      "clickStopHint": "Click on a stop to see upcoming departures"
+    },
+    "routeStaleNotice": "Route is stale: one of your stops is no longer in the network.",
+    "route": {
+      "title": "Route",
+      "departure": "Departure",
+      "arrival": "Arrival",
+      "clearAria": "Clear search",
+      "swapAria": "Swap departure and arrival",
+      "sameStopError": "Same stop selected",
+      "noRouteFound": "No route found between these stops",
+      "directionPrefix": "dir.",
+      "stopOne": "1 stop",
+      "stopOther": "{{ count }} stops"
+    },
     "accessibility": {
       "accessible": "Wheelchair accessible",
       "notAccessible": "Not accessible",
