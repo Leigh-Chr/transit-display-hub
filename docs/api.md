@@ -215,8 +215,8 @@ Public read-only counterparts:
 | Method | Endpoint                  | Auth       | Purpose                                  |
 | ------ | ------------------------- | ---------- | ---------------------------------------- |
 | `GET`  | `/actuator/health`        | public     | liveness / readiness probe (UP/DOWN)     |
-| `GET`  | `/actuator/info`          | public     | build metadata                           |
-| `GET`  | `/actuator/prometheus`    | public     | Prometheus scrape format (Micrometer)    |
+| `GET`  | `/actuator/info`          | admin only | build metadata                           |
+| `GET`  | `/actuator/prometheus`    | admin only | Prometheus scrape format (Micrometer)    |
 | `GET`  | `/actuator/metrics`       | admin only | JSON listing of meter names              |
 
 ### Custom GTFS import meters

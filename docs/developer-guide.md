@@ -1037,8 +1037,9 @@ ADR 0035 records the design decisions.
 
 ### Prometheus / Grafana
 
-`/actuator/prometheus` is exposed publicly (same trust
-posture as `/actuator/health`) and carries every default
+`/actuator/prometheus` requires the `ADMIN` role since v1.5.0
+(only `/actuator/health` stays public for load-balancer probes)
+and carries every default
 Spring Boot meter (HTTP, JVM, Caffeine, datasource) plus
 three custom meters around the GTFS import:
 

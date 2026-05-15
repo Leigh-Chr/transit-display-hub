@@ -21,8 +21,8 @@ metrics.
 
 It ships with **100 % GTFS spec coverage**, validated on every
 import by the canonical
-[MobilityData gtfs-validator][validator]. **Stable 1.0.0** is
-tagged.
+[MobilityData gtfs-validator][validator]. The 1.x line is tagged
+and shipping (current: see the version badge above).
 
 [validator]: https://github.com/MobilityData/gtfs-validator
 
@@ -131,7 +131,7 @@ GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
 | <http://localhost:4200/map/list>          | Tabular alternative (a11y) |
 | <http://localhost:4200/display/{stopId}>  | Public kiosk      |
 | <http://localhost:8080/swagger-ui.html>   | OpenAPI explorer  |
-| <http://localhost:8080/actuator/prometheus> | Metrics scrape  |
+| <http://localhost:8080/actuator/prometheus> | Metrics scrape (admin role) |
 
 | Username | Password | Role          |
 | -------- | -------- | ------------- |
@@ -162,7 +162,7 @@ transit-display-hub/
 │   ├── grafana/             # Dashboard JSON + provisioning
 │   └── kiosk/               # docker-compose + install.sh
 └── docs/
-    ├── adr/                 # Architecture Decision Records (38)
+    ├── adr/                 # Architecture Decision Records (40)
     ├── installation.md
     ├── developer-guide.md
     ├── deployment.md
@@ -180,7 +180,7 @@ transit-display-hub/
 - [User guide](docs/user-guide.md) — admin interface walkthrough
 - [Deployment guide](docs/deployment.md) — production hosting
 - [Kiosk on a Raspberry Pi](docs/kiosk-raspberry-pi.md)
-- [Architecture Decision Records](docs/adr/README.md) — 38 ADRs
+- [Architecture Decision Records](docs/adr/README.md) — 40 ADRs
 - [Changelog](CHANGELOG.md) — version history
 - [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Security](SECURITY.md)
 

@@ -414,13 +414,15 @@ Available Actuator endpoints:
 - `/actuator/health` — public, used by load balancer probes
 - `/actuator/info` — **ADMIN-only since v1.2.0**; exposes the build version + git commit when `springBoot { buildInfo() }` is active
 - `/actuator/metrics` — **ADMIN-only since v1.2.0**; raw Micrometer metrics
-- `/actuator/prometheus` — Prometheus scrape format; left open so a local Prometheus can pull without service-account credentials. **Production must fence this at the reverse-proxy / network layer** — example nginx ACL:
+- `/actuator/prometheus` — **ADMIN-only since v1.5.0**; Prometheus scrape format. Configure the scraper to authenticate (basic-auth at the reverse proxy or a service-account JWT cookie attached to each scrape). The reverse-proxy ACL pattern below is still recommended as defence-in-depth on top of the auth requirement:
 
 ```nginx
 location /actuator/prometheus {
     allow 10.0.0.0/8;     # internal Prometheus only
     deny all;
     proxy_pass http://backend:8080;
+    # Pair with an Authorization header injected via a sidecar:
+    # proxy_set_header Authorization "Bearer <service-account-token>";
 }
 ```
 
