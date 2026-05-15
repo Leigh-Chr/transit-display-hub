@@ -11,7 +11,7 @@ export type { ConnectionState } from './base-stomp.service';
   providedIn: 'root'
 })
 export class WebSocketService extends BaseStompService {
-  private readonly displayStateSubject = new Subject<DisplayState>();
+  private displayStateSubject = new Subject<DisplayState>();
   private deviceId: string | null = null;
   private stopId: string | null = null;
 
@@ -35,6 +35,12 @@ export class WebSocketService extends BaseStompService {
 
   override disconnect(): void {
     super.disconnect();
+    // Mirror HubWebSocketService / NetworkMapWebSocketService:
+    // complete the active subject so any subscriber teardown fires,
+    // then swap in a fresh one so a later connect() doesn't push
+    // values into a completed stream.
+    this.displayStateSubject.complete();
+    this.displayStateSubject = new Subject<DisplayState>();
     this.deviceId = null;
     this.stopId = null;
   }
