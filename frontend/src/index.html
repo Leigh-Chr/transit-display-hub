@@ -21,6 +21,23 @@
     if (typeof global === 'undefined') {
       window.global = window;
     }
+    // Lift the persisted UI language into <html lang> before the
+    // first paint so screen readers and search engines see the
+    // correct language attribute on initial load. LocaleService
+    // re-applies the same value later; this just collapses the
+    // few hundred ms of "lang=en" visible during the Angular boot
+    // for a user whose preference is fr.
+    (function () {
+      try {
+        var stored = localStorage.getItem('lang');
+        var supported = ['en', 'fr'];
+        var nav = (navigator.language || '').slice(0, 2);
+        var lang = supported.indexOf(stored) >= 0 ? stored
+                 : supported.indexOf(nav) >= 0 ? nav
+                 : 'fr';
+        document.documentElement.lang = lang;
+      } catch (e) { /* localStorage unavailable, fall back to <html lang="en"> */ }
+    })();
   </script>
 </head>
 <body>

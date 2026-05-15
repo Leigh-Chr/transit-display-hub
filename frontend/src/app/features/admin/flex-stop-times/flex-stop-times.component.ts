@@ -223,6 +223,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
       font-size: 0.78rem;
     }
 
+    /* Dark mode swap: the indigo/pink/green -700 shades stop hitting
+     * WCAG AA against a dark translucent surface. Move to the -300
+     * row and bump alpha for the background. */
+    :host-context(.dark-theme) {
+      .pill-target-location { background: rgba(99, 102, 241, 0.30); color: #a5b4fc; }
+      .pill-target-group    { background: rgba(244, 114, 182, 0.30); color: #f9a8d4; }
+      .rule-tag             { background: rgba(16, 185, 129, 0.26); color: #6ee7b7; }
+    }
+
     .calendar-tag {
       display: inline-block;
       padding: 2px 7px;
