@@ -1,0 +1,193 @@
+<ng-container *transloco="let t">
+<div class="stops-page">
+  <div class="page-header">
+    <h1 class="page-title">{{ t('admin.stops.title') }}</h1>
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="openCreateDialog()"
+      [disabled]="lines().length === 0"
+    >
+      <mat-icon>add</mat-icon>
+      {{ t('admin.stops.newStop') }}
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="line-filter">
+      <mat-label>{{ t('admin.stops.filterByLine') }}</mat-label>
+      <mat-select [value]="lineId()" (selectionChange)="onLineChange($event.value)">
+        <mat-option value="">{{ t('admin.stops.allLines') }}</mat-option>
+        @for (line of lines(); track line.id) {
+          <mat-option [value]="line.id">
+            {{ line.code }} - {{ line.name }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <app-search-input
+      [placeholder]="t('admin.stops.searchPlaceholder')"
+      [initialValue]="tableState.search"
+      (searchChange)="tableState.onSearchChange($event)"
+    />
+
+    <button
+      mat-stroked-button
+      (click)="openHubDisplay()"
+      [matTooltip]="t('admin.stops.hubDisplayTooltip')"
+    >
+      <mat-icon>hub</mat-icon>
+      {{ t('admin.stops.hubDisplay') }}
+    </button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton
+      [rows]="5"
+      [columns]="[
+        { width: '60px', height: '32px' },
+        { width: '180px' },
+        { width: '100px' },
+        { width: '60px' },
+        { width: '80px' }
+      ]"
+    />
+  } @else if (loadError()) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="error_outline"
+        [title]="t('admin.stops.loadFailed')"
+        [description]="t('admin.common.loadErrorDescription')"
+        [actionLabel]="t('common.refresh')"
+        actionIcon="refresh"
+        (action)="loadStops()"
+      />
+    </mat-card>
+  } @else if (stops().length === 0 && !tableState.search && !lineId()) {
+    <mat-card animate.enter="fade-in">
+      @if (lines().length === 0) {
+        <app-empty-state
+          icon="subway"
+          [title]="t('admin.stops.emptyNoLines')"
+          [description]="t('admin.stops.emptyNoLinesDesc')"
+        />
+      } @else {
+        <app-empty-state
+          icon="place"
+          iconColor="primary"
+          [title]="t('admin.stops.emptyTitle')"
+          [description]="t('admin.stops.emptyDescription')"
+          [actionLabel]="t('admin.stops.emptyAction')"
+          actionIcon="add"
+          (action)="openCreateDialog()"
+        />
+      }
+    </mat-card>
+  } @else if (stops().length === 0) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="search_off"
+        [title]="t('admin.stops.emptySearchTitle')"
+        [description]="t('admin.stops.emptySearchDescription')"
+      />
+    </mat-card>
+  } @else {
+    <mat-card animate.enter="fade-in">
+      <table mat-table matSort [dataSource]="stops()" (matSortChange)="tableState.onSortChange($event)" class="full-width">
+        <ng-container matColumnDef="line">
+          <th mat-header-cell *matHeaderCellDef>{{ t('admin.stops.colLines') }}</th>
+          <td mat-cell *matCellDef="let stop">
+            <div class="line-badges">
+              @for (line of stop.lines; track line.id) {
+                <span class="line-badge" [style.backgroundColor]="line.color">
+                  {{ line.code }}
+                </span>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.stops.colName') }}</th>
+          <td mat-cell *matCellDef="let stop">
+            <span class="stop-name-cell">
+              @if (stop.locationType === 1) {
+                <mat-icon class="stop-type-icon" matTooltip="Station (parent)">apartment</mat-icon>
+              }
+              <span>{{ stop.name }}</span>
+              @if (stop.platformCode) {
+                <span class="platform-badge" matTooltip="Quai">{{ stop.platformCode }}</span>
+              }
+              @if (stop.zoneId) {
+                <span class="zone-badge" matTooltip="GTFS fare zone (origin/destination/contains_id)">
+                  Zone {{ stop.zoneId }}
+                </span>
+              }
+              @if (stop.stopAccess === 1) {
+                <span class="access-restricted" matTooltip="GTFS stop_access = 1 (staff-only)">
+                  <mat-icon>lock</mat-icon> Personnel
+                </span>
+              }
+              @if (stop.parentStopName) {
+                <span class="parent-hint" matTooltip="Rattaché à">— {{ stop.parentStopName }}</span>
+              }
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="schedules">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="scheduleCount" class="hide-mobile">
+            {{ t('admin.stops.colSchedules') }}
+          </th>
+          <td mat-cell *matCellDef="let stop" class="hide-mobile">{{ t('admin.stops.colSchedulesEntries', { count: stop.scheduleCount }) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="device">
+          <th mat-header-cell *matHeaderCellDef class="device-column">{{ t('admin.stops.colDisplay') }}</th>
+          <td mat-cell *matCellDef="let stop" class="device-column">
+            @if (stop.hasDevice) {
+              <mat-icon class="device-active" [matTooltip]="t('admin.stops.displayConfigured')">tv</mat-icon>
+            } @else {
+              <mat-icon class="device-inactive" [matTooltip]="t('admin.stops.noDisplay')">tv_off</mat-icon>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.common.actions') }}</th>
+          <td mat-cell *matCellDef="let stop" class="actions-column">
+            <button mat-icon-button (click)="openKioskPreview(stop.id)"
+                    [matTooltip]="t('admin.stops.previewTooltip')"
+                    [attr.aria-label]="t('admin.stops.previewTooltip')">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button color="primary" (click)="openEditDialog(stop)"
+                    [matTooltip]="t('admin.stops.editTooltip')"
+                    [attr.aria-label]="t('admin.stops.editTooltip')">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteStop(stop)"
+                    [matTooltip]="t('admin.stops.deleteTooltip')"
+                    [attr.aria-label]="t('admin.stops.deleteTooltip')">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+
+      <mat-paginator
+        [length]="totalElements()"
+        [pageIndex]="tableState.page"
+        [pageSize]="tableState.size"
+        [pageSizeOptions]="pageSizeOptions"
+        (page)="tableState.onPageChange($event)"
+        showFirstLastButtons
+      />
+    </mat-card>
+  }
+</div>
+</ng-container>

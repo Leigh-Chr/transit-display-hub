@@ -1,0 +1,198 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.page-title {
+  font-size: var(--m3-type-headline-large);
+  font-weight: 700;
+  color: var(--app-on-surface);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.severity-filter {
+  width: 180px;
+}
+
+.active-checkbox {
+  margin-left: auto;
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-gap-grid);
+}
+
+.message-card {
+  padding: 20px;
+  border-radius: var(--app-radius-md);
+}
+
+.message-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.severity-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--app-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.severity-icon mat-icon {
+  color: white;
+}
+
+.severity-icon.critical {
+  background-color: var(--app-critical);
+}
+
+.severity-icon.warning {
+  background-color: var(--app-warning);
+}
+
+.severity-icon.info {
+  background-color: var(--app-info);
+}
+
+.message-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.message-title {
+  margin: 0;
+  font-size: var(--m3-type-title-large);
+  font-weight: 600;
+  color: var(--app-on-surface);
+}
+
+.message-text {
+  color: var(--app-on-surface-variant);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.message-meta {
+  font-size: var(--m3-type-body-small);
+  color: var(--app-on-surface-muted);
+}
+
+.meta-label {
+  font-weight: 600;
+}
+
+.meta-separator {
+  margin: 0 10px;
+  opacity: 0.5;
+}
+
+.message-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--app-line-badge-radius);
+  font-size: var(--m3-type-label-small);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-critical {
+  background-color: var(--app-critical-container);
+  color: var(--app-on-critical-container);
+}
+
+.badge-warning {
+  background-color: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+}
+
+.badge-info {
+  background-color: var(--app-info-container);
+  color: var(--app-on-info-container);
+}
+
+.badge-active {
+  background-color: var(--app-success-container);
+  color: var(--app-on-success-container);
+}
+
+.badge-inactive {
+  background-color: var(--app-surface-container-high);
+  color: var(--app-on-surface-variant);
+}
+
+.hide-mobile {
+  @media (max-width: 600px) {
+    display: none !important;
+  }
+}
+
+mat-paginator {
+  margin-top: 24px;
+  border-radius: var(--app-radius-md);
+}
+
+/* Enter animations defined globally — see styles.scss section 13a */
+
+@media (max-width: 600px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .severity-filter {
+    width: 100%;
+  }
+
+  .active-checkbox {
+    margin-left: 0;
+  }
+
+  .message-content {
+    flex-wrap: wrap;
+  }
+
+  .message-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+}

@@ -1,0 +1,162 @@
+<ng-container *transloco="let t">
+<div class="messages-page">
+  <div class="page-header">
+    <h1 class="page-title">{{ t('admin.messages.title') }}</h1>
+    <button mat-flat-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      {{ t('admin.messages.newMessage') }}
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <app-search-input
+      [placeholder]="t('admin.messages.searchPlaceholder')"
+      [initialValue]="tableState.search"
+      (searchChange)="tableState.onSearchChange($event)"
+    />
+
+    <mat-form-field appearance="outline" class="severity-filter">
+      <mat-label>{{ t('admin.messages.filterSeverity') }}</mat-label>
+      <mat-select [value]="severity()" (selectionChange)="onSeverityChange($event.value)">
+        <mat-option value="">{{ t('admin.messages.allSeverities') }}</mat-option>
+        <mat-option value="CRITICAL">{{ t('admin.messages.severityCritical') }}</mat-option>
+        <mat-option value="WARNING">{{ t('admin.messages.severityWarning') }}</mat-option>
+        <mat-option value="INFO">{{ t('admin.messages.severityInfo') }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-checkbox
+      [checked]="showActiveOnly()"
+      (change)="onActiveChange($event.checked)"
+      class="active-checkbox"
+    >
+      {{ t('admin.messages.activeOnly') }}
+    </mat-checkbox>
+  </div>
+
+  @if (loading()) {
+    <div class="messages-list">
+      @for (i of [1, 2, 3]; track i) {
+        <app-card-skeleton [showIcon]="true" />
+      }
+    </div>
+  } @else if (loadError()) {
+    <mat-card>
+      <app-empty-state
+        icon="error_outline"
+        [title]="t('admin.messages.loadFailed')"
+        [description]="t('admin.common.loadErrorDescription')"
+        [actionLabel]="t('common.refresh')"
+        actionIcon="refresh"
+        (action)="loadMessages()"
+      />
+    </mat-card>
+  } @else if (messages().length === 0 && !tableState.search && !severity() && !showActiveOnly()) {
+    <mat-card>
+      <app-empty-state
+        icon="campaign"
+        iconColor="primary"
+        [title]="t('admin.messages.emptyTitle')"
+        [description]="t('admin.messages.emptyDescription')"
+        [actionLabel]="t('admin.messages.emptyAction')"
+        actionIcon="add"
+        (action)="openCreateDialog()"
+      />
+    </mat-card>
+  } @else if (messages().length === 0) {
+    <mat-card>
+      <app-empty-state
+        icon="search_off"
+        [title]="t('admin.messages.emptySearchTitle')"
+        [description]="t('admin.messages.emptySearchDescription')"
+      />
+    </mat-card>
+  } @else {
+    <div class="messages-list" animate.enter="list-stagger">
+      @for (message of messages(); track message.id) {
+        <mat-card class="message-card">
+          <div class="message-content">
+            <div
+              class="severity-icon"
+              [class.critical]="message.severity === 'CRITICAL'"
+              [class.warning]="message.severity === 'WARNING'"
+              [class.info]="message.severity === 'INFO'"
+            >
+              @switch (message.severity) {
+                @case ('CRITICAL') {
+                  <mat-icon>error</mat-icon>
+                }
+                @case ('WARNING') {
+                  <mat-icon>warning</mat-icon>
+                }
+                @default {
+                  <mat-icon>info</mat-icon>
+                }
+              }
+            </div>
+
+            <div class="message-body">
+              <div class="message-header">
+                <h3 class="message-title">{{ message.title }}</h3>
+                <div class="badges">
+                  <span
+                    class="badge"
+                    [class.badge-critical]="message.severity === 'CRITICAL'"
+                    [class.badge-warning]="message.severity === 'WARNING'"
+                    [class.badge-info]="message.severity === 'INFO'"
+                  >
+                    {{ severityLabel(message.severity, t) }}
+                  </span>
+                  @if (isActive(message)) {
+                    <span class="badge badge-active">{{ t('admin.messages.badgeActive') }}</span>
+                  } @else {
+                    <span class="badge badge-inactive">{{ t('admin.messages.badgeInactive') }}</span>
+                  }
+                </div>
+              </div>
+              <p class="message-text">{{ message.content }}</p>
+              <div class="message-meta">
+                <span class="meta-label">{{ t('admin.messages.scopeLabel') }}</span>
+                @switch (message.scopeType) {
+                  @case ('NETWORK') {
+                    <span>{{ t('admin.messages.scopeNetwork') }}</span>
+                  }
+                  @case ('LINE') {
+                    <span>{{ t('admin.messages.scopeLine', { name: message.scopeInfo?.name }) }}</span>
+                  }
+                  @case ('STOP') {
+                    <span>{{ t('admin.messages.scopeStop', { name: message.scopeInfo?.name }) }}</span>
+                  }
+                }
+                <span class="meta-separator hide-mobile">|</span>
+                <span class="hide-mobile">
+                  {{ message.startTime | date : 'short' }} -
+                  {{ message.endTime | date : 'short' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="message-actions">
+              <button mat-icon-button color="primary" (click)="openEditDialog(message)" [matTooltip]="t('admin.messages.editTooltip')" [attr.aria-label]="t('admin.messages.editTooltip')">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteMessage(message)" [matTooltip]="t('admin.messages.deleteTooltip')" [attr.aria-label]="t('admin.messages.deleteTooltip')">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card>
+      }
+    </div>
+
+    <mat-paginator
+      [length]="totalElements()"
+      [pageIndex]="tableState.page"
+      [pageSize]="tableState.size"
+      [pageSizeOptions]="pageSizeOptions"
+      (page)="tableState.onPageChange($event)"
+      showFirstLastButtons
+    />
+  }
+</div>
+</ng-container>

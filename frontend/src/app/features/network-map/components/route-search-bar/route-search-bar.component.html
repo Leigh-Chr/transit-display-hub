@@ -1,0 +1,101 @@
+<div class="route-search-panel" *transloco="let t; read: 'map.route'">
+  <div class="panel-header">
+    <mat-icon class="panel-icon">route</mat-icon>
+    <span class="panel-title">{{ t('title') }}</span>
+    @if (selectedDeparture() || selectedArrival()) {
+      <button class="clear-btn" type="button" (click)="clearSearch()" [title]="t('clearAria')" [attr.aria-label]="t('clearAria')">
+        <mat-icon aria-hidden="true">close</mat-icon>
+      </button>
+    }
+  </div>
+
+  <mat-form-field class="search-field" appearance="fill" subscriptSizing="dynamic">
+    <mat-icon matPrefix class="field-icon departure-icon">trip_origin</mat-icon>
+    <input matInput
+      [formControl]="departureCtrl"
+      [matAutocomplete]="depAuto"
+      [placeholder]="t('departure')"
+    />
+    <mat-autocomplete #depAuto="matAutocomplete"
+      [displayWith]="displayFn"
+      (optionSelected)="onDepartureSelected($event)"
+    >
+      @for (stop of filteredDepartures(); track stop.id) {
+        <mat-option [value]="stop">
+          {{ stop.name }}
+        </mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
+
+  <div class="field-separator">
+    <span class="connector-line"></span>
+    <button class="swap-btn" type="button" (click)="swapStops()" [title]="t('swapAria')" [attr.aria-label]="t('swapAria')">
+      <mat-icon aria-hidden="true">swap_vert</mat-icon>
+    </button>
+    <span class="connector-line"></span>
+  </div>
+
+  <mat-form-field class="search-field" appearance="fill" subscriptSizing="dynamic">
+    <mat-icon matPrefix class="field-icon arrival-icon">place</mat-icon>
+    <input matInput
+      [formControl]="arrivalCtrl"
+      [matAutocomplete]="arrAuto"
+      [placeholder]="t('arrival')"
+    />
+    <mat-autocomplete #arrAuto="matAutocomplete"
+      [displayWith]="displayFn"
+      (optionSelected)="onArrivalSelected($event)"
+    >
+      @for (stop of filteredArrivals(); track stop.id) {
+        <mat-option [value]="stop">
+          {{ stop.name }}
+        </mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
+
+  @if (sameStopError()) {
+    <div class="error-hint">{{ t('sameStopError') }}</div>
+  } @else if (noRouteFound()) {
+    <div class="error-hint error-hint-warning" role="alert">
+      <mat-icon class="error-icon">block</mat-icon>
+      <span>{{ t('noRouteFound') }}</span>
+    </div>
+  }
+
+  @if (routeResult(); as route) {
+    <div class="route-breakdown">
+      @for (segment of route.segments; track segment.lineId + ':' + segment.stopIds[0]) {
+        @if ($index > 0) {
+          <div class="transfer-row">
+            <mat-icon class="transfer-icon">sync_alt</mat-icon>
+            <span class="transfer-label">{{ segment.stopNames[0] }}</span>
+          </div>
+        }
+        <div class="segment-block">
+          <div class="segment-header" [class.expandable]="segment.stopNames.length > 2" (click)="toggleSegment($index)">
+            <span class="segment-badge" [style.backgroundColor]="segment.lineColor">{{ segment.lineCode }}</span>
+            <div class="segment-info">
+              <span class="segment-endpoints">{{ segment.stopNames[0] }} → {{ segment.stopNames[segment.stopNames.length - 1] }}</span>
+              <span class="segment-meta">{{ t('directionPrefix') }} {{ segment.directionName }} · {{ stopsLabel(segment.stopIds.length, t) }}</span>
+            </div>
+            @if (segment.stopNames.length > 2) {
+              <mat-icon class="expand-icon">{{ expandedSegments().has($index) ? 'expand_less' : 'expand_more' }}</mat-icon>
+            }
+          </div>
+          @if (expandedSegments().has($index) && segment.stopNames.length > 2) {
+            <div class="segment-stops-list">
+              @for (name of segment.stopNames; track name) {
+                <div class="stop-item">
+                  <span class="stop-dot" [class.stop-endpoint]="$first || $last" [style.borderColor]="segment.lineColor"></span>
+                  <span class="stop-name" [class.stop-endpoint-name]="$first || $last">{{ name }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

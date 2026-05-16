@@ -1,0 +1,94 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.page-title {
+  font-size: var(--m3-type-headline-large);
+  font-weight: 700;
+  color: var(--app-on-surface);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.line-filter {
+  width: 300px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-card {
+  border-radius: var(--app-radius-md);
+  overflow: hidden;
+}
+
+.line-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--app-line-badge-radius);
+  color: white;
+  font-size: var(--m3-type-label-medium);
+  font-weight: 600;
+}
+
+.terminus-cell {
+  font-weight: 500;
+  color: var(--app-on-surface);
+}
+
+.stop-count {
+  color: var(--app-on-surface-muted);
+  font-size: var(--m3-type-body-small);
+}
+
+.dir-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: var(--m3-type-label-medium);
+  font-weight: 500;
+}
+
+.dir-out {
+  background: rgba(99, 102, 241, 0.14);
+  color: #4338ca;
+}
+
+.dir-back {
+  background: rgba(244, 114, 182, 0.16);
+  color: #be185d;
+}
+
+.amenity-cars {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.actions-column {
+  text-align: right;
+  width: var(--app-actions-column-width);
+}
+
+/* Enter animations defined globally — see styles.scss section 13a */
+
+@media (max-width: 600px) {
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .line-filter {
+    width: 100%;
+  }
+}

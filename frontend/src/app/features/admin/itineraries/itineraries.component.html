@@ -1,0 +1,174 @@
+<ng-container *transloco="let t">
+<div class="itineraries-page">
+  <div class="page-header">
+    <h1 class="page-title">{{ t('admin.itineraries.title') }}</h1>
+    @if (isAdmin()) {
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="openCreateDialog()"
+        [disabled]="lines().length === 0"
+      >
+        <mat-icon>add</mat-icon>
+        {{ t('admin.itineraries.newItinerary') }}
+      </button>
+    }
+  </div>
+
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="line-filter">
+      <mat-label>{{ t('admin.itineraries.filterByLine') }}</mat-label>
+      <mat-select [value]="lineId()" (selectionChange)="onLineChange($event.value)">
+        <mat-option value="">{{ t('admin.itineraries.allLines') }}</mat-option>
+        @for (line of lines(); track line.id) {
+          <mat-option [value]="line.id">
+            {{ line.code }} - {{ line.name }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <app-search-input
+      [placeholder]="t('admin.itineraries.searchPlaceholder')"
+      [initialValue]="tableState.search"
+      (searchChange)="tableState.onSearchChange($event)"
+    />
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton
+      [rows]="5"
+      [columns]="[{ width: '80px' }, { width: '200px' }, { width: '150px' }, { width: '200px' }, { width: '80px' }]"
+    />
+  } @else if (loadError()) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="error_outline"
+        [title]="t('admin.itineraries.loadFailed')"
+        [description]="t('admin.common.loadErrorDescription')"
+        [actionLabel]="t('common.refresh')"
+        actionIcon="refresh"
+        (action)="loadItineraries()"
+      />
+    </mat-card>
+  } @else if (lines().length === 0) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="route"
+        iconColor="primary"
+        [title]="t('admin.itineraries.emptyNoLinesTitle')"
+        [description]="t('admin.itineraries.emptyNoLinesDesc')"
+      />
+    </mat-card>
+  } @else if (itineraries().length === 0 && !tableState.search && !lineId()) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="route"
+        iconColor="primary"
+        [title]="t('admin.itineraries.emptyTitle')"
+        [description]="t('admin.itineraries.emptyDescription')"
+        [actionLabel]="isAdmin() ? t('admin.itineraries.emptyAction') : ''"
+        [actionIcon]="isAdmin() ? 'add' : ''"
+        (action)="openCreateDialog()"
+      />
+    </mat-card>
+  } @else if (itineraries().length === 0) {
+    <mat-card animate.enter="fade-in">
+      <app-empty-state
+        icon="search_off"
+        [title]="t('admin.itineraries.emptySearchTitle')"
+        [description]="t('admin.itineraries.emptySearchDescription')"
+      />
+    </mat-card>
+  } @else {
+    <mat-card animate.enter="fade-in">
+      <table mat-table [dataSource]="itineraries()" matSort (matSortChange)="tableState.onSortChange($event)" class="full-width">
+        <ng-container matColumnDef="line">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colLine') }}</th>
+          <td mat-cell *matCellDef="let itinerary">
+            <span class="line-badge" [style.backgroundColor]="itinerary.line.color">
+              {{ itinerary.line.code }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colName') }}</th>
+          <td mat-cell *matCellDef="let itinerary">{{ itinerary.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="terminusName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ t('admin.itineraries.colTerminus') }}</th>
+          <td mat-cell *matCellDef="let itinerary" class="terminus-cell">
+            {{ itinerary.terminusName || t('admin.itineraries.noStops') }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="direction">
+          <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colDirection') }}</th>
+          <td mat-cell *matCellDef="let itinerary">
+            @if (itinerary.directionId === 0) {
+              <span class="dir-badge dir-out" matTooltip="GTFS direction_id = 0 (outbound)">→ Aller</span>
+            } @else if (itinerary.directionId === 1) {
+              <span class="dir-badge dir-back" matTooltip="GTFS direction_id = 1 (inbound)">← Retour</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="stops">
+          <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colStops') }}</th>
+          <td mat-cell *matCellDef="let itinerary">
+            <span class="stop-count">{{ t('admin.itineraries.stopCount', { count: itinerary.stops?.length || 0 }) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="amenities">
+          <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colAmenities') }}</th>
+          <td mat-cell *matCellDef="let itinerary">
+            @if (itinerary.carsAllowedDefault === 'ALLOWED') {
+              <span class="dir-badge amenity-cars" [matTooltip]="t('admin.itineraries.carsAllowedTooltip')">
+                🚗 Voitures
+              </span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions-column">{{ t('admin.itineraries.colActions') }}</th>
+          <td mat-cell *matCellDef="let itinerary" class="actions-column">
+            @if (isAdmin()) {
+              <button mat-icon-button color="primary" (click)="openEditDialog(itinerary)"
+                      [matTooltip]="t('admin.itineraries.editTooltip')"
+                      [attr.aria-label]="t('admin.itineraries.editTooltip')">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" (click)="openStopsDialog(itinerary)"
+                      [matTooltip]="t('admin.itineraries.editStopsTooltip')"
+                      [attr.aria-label]="t('admin.itineraries.editStopsTooltip')">
+                <mat-icon>reorder</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteItinerary(itinerary)"
+                      [matTooltip]="t('admin.itineraries.deleteTooltip')"
+                      [attr.aria-label]="t('admin.itineraries.deleteTooltip')">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+
+      <mat-paginator
+        [length]="totalElements()"
+        [pageIndex]="tableState.page"
+        [pageSize]="tableState.size"
+        [pageSizeOptions]="pageSizeOptions"
+        (page)="tableState.onPageChange($event)"
+        showFirstLastButtons
+      />
+    </mat-card>
+  }
+</div>
+</ng-container>
