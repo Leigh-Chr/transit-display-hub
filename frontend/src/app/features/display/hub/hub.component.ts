@@ -25,7 +25,13 @@ import {
 } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { LocaleService } from '@core/i18n/locale.service';
-import { formatLocaleDate } from '@shared/utils/locale-date.utils';
+import {
+  formatClockDate,
+  formatClockTime,
+  formatDepartureTime,
+  getMinutesUntil,
+  isImminent,
+} from '@shared/utils/time.utils';
 
 @Component({
   selector: 'app-hub',
@@ -334,41 +340,20 @@ export class HubComponent implements OnInit, OnDestroy {
   }
 
   private formatTime(date: Date): string {
-    return formatLocaleDate(date, this.localeService.current(), {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatClockTime(date, this.localeService.current());
   }
 
   private formatDate(date: Date): string {
-    return formatLocaleDate(date, this.localeService.current(), {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatClockDate(date, this.localeService.current());
   }
 
   formatDepartureTime(time: string): string {
-    const parts = time.split(':');
-    return `${parts[0] ?? '00'}:${parts[1] ?? '00'}`;
+    return formatDepartureTime(time);
   }
 
   getMinutesUntil(time: string): number {
     this.currentTime();
-
-    const parts = time.split(':');
-    const hours = parseInt(parts[0] ?? '0', 10);
-    const minutes = parseInt(parts[1] ?? '0', 10);
-
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const departureMinutes = hours * 60 + minutes;
-
-    // Wrap across midnight (same logic as allArrivals filter).
-    let delta = departureMinutes - nowMinutes;
-    if (delta < -360) { delta += 1440; }
-    return Math.max(0, delta);
+    return getMinutesUntil(time, new Date());
   }
 
   formatRelativeTime(time: string): string {
@@ -382,6 +367,7 @@ export class HubComponent implements OnInit, OnDestroy {
   /** Whether the next departure is happening now (within the same minute).
    *  Drives the highlighted `.imminent` styling on the relative-time pill. */
   isImminent(time: string): boolean {
-    return this.getMinutesUntil(time) === 0;
+    this.currentTime();
+    return isImminent(time, new Date());
   }
 }

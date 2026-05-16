@@ -23,7 +23,13 @@ import { WebSocketService } from '@core/websocket/websocket.service';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { LocaleService } from '@core/i18n/locale.service';
-import { formatLocaleDate } from '@shared/utils/locale-date.utils';
+import {
+  formatClockDate,
+  formatClockTime,
+  formatDepartureTime,
+  getMinutesUntil,
+  isImminent,
+} from '@shared/utils/time.utils';
 
 @Component({
   selector: 'app-kiosk',
@@ -575,44 +581,21 @@ export class KioskComponent implements OnInit, OnDestroy {
   }
 
   private formatTime(date: Date): string {
-    return formatLocaleDate(date, this.localeService.current(), {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatClockTime(date, this.localeService.current());
   }
 
   private formatDate(date: Date): string {
-    return formatLocaleDate(date, this.localeService.current(), {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatClockDate(date, this.localeService.current());
   }
 
   formatDepartureTime(time: string): string {
-    // Time comes as "HH:MM:SS" or "HH:MM" - show only HH:MM
-    const parts = time.split(':');
-    return `${parts[0] ?? '00'}:${parts[1] ?? '00'}`;
+    return formatDepartureTime(time);
   }
 
   getMinutesUntil(time: string): number {
     // Trigger recalculation when currentTime changes
     this.currentTime();
-
-    const parts = time.split(':');
-    const hours = parseInt(parts[0] ?? '0', 10);
-    const minutes = parseInt(parts[1] ?? '0', 10);
-
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const departureMinutes = hours * 60 + minutes;
-
-    // Wrap across midnight (same logic as allArrivals filter): a scheduled time
-    // earlier than `now` with a large gap means tomorrow's departure.
-    let delta = departureMinutes - nowMinutes;
-    if (delta < -360) { delta += 1440; }
-    return Math.max(0, delta);
+    return getMinutesUntil(time, new Date());
   }
 
   formatRelativeTime(time: string): string {
@@ -626,6 +609,8 @@ export class KioskComponent implements OnInit, OnDestroy {
   /** Whether the next departure is happening now (within the same minute).
    *  Drives the highlighted `.imminent` styling on the relative-time pill. */
   isImminent(time: string): boolean {
-    return this.getMinutesUntil(time) === 0;
+    // Trigger recalculation when currentTime changes
+    this.currentTime();
+    return isImminent(time, new Date());
   }
 }
