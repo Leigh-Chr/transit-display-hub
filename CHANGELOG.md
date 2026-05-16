@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.15.0] — 2026-05-16
+
+P1 sweep from the 5-axis audit shipped on 2026-05-16. Closes
+ten high-priority items spanning backend security, CI hygiene,
+domain hygiene and frontend accessibility / performance. The
+maintainability guardrails stay green: both allowlists empty,
+zero PMD / SpotBugs / ArchUnit violations, 1102/1102 frontend
+specs and 1107/1107 backend tests in the green.
+
+### Added
+
+- **DeviceRepository two-step paging helpers**:
+  `findAllIds(Pageable)` + `findAllByIdInWithStopAndLine(ids)`
+  so the unpaginated device listing can apply a hard cap
+  without giving up the JOIN-FETCH hydration path.
+- **OpenAPI version wired to bootBuildInfo**: the
+  `/v3/api-docs` `info.version` now reads the actual gradle
+  project version through `BuildProperties` instead of the
+  hardcoded `0.3.0` that had been lying since 1.0.
+
+### Changed
+
+- **CI hardening**: backend, frontend, e2e, file-size and
+  no-env-tracked workflows declare `permissions: contents:
+  read` explicitly. PR / feature-branch runs cancel earlier
+  runs through `concurrency: cancel-in-progress`. The e2e job
+  caches `~/.cache/ms-playwright` keyed on `@playwright/test`,
+  trimming 1-2 minutes per invocation.
+- **Spring Boot 4.0.2 → 4.0.6**: pulls four cumulative patches
+  (~65 fixes across Tomcat, Hibernate, Jackson). Verified by
+  `./gradlew check`.
+- **Clock injection in three domain entities**:
+  `Device.recordHeartbeat()` now takes an `Instant`,
+  `BroadcastMessage.isActive()` collapses into the existing
+  `isActiveAt(Instant)`, `RefreshToken.isActive()` becomes
+  `isActiveAt(Instant)`. Production callers draw the value
+  from the injected `Clock` (ADR 0024).
+- **`MessageService.toResponse` delegates to
+  `MessageScopeResolver`** instead of re-issuing the
+  per-message line/stop lookup. Closes the audit P1 B-4
+  duplication; the resolver itself also reads the clock so
+  the `active` flag in the DTO is now driven by the same
+  clock the rest of the application uses.
+- **Four unpaginated admin listings now cap at
+  `UnpaginatedCap.MAX_ROWS`**: `getAllStops()`, `getAllLines()`,
+  `getAllItineraries()` and `getAllDevices()` delegate to the
+  paginated path and warn when the cap actually fires. The
+  controller surface is unchanged.
+- **`material-icons` font stack** trimmed to the regular
+  variant via `filled.css`. Drops ~660 kB of woff2 (outlined,
+  round, sharp, two-tone) plus ~600 kB of woff fallbacks from
+  `/media/`. No icon usage changes.
+- **kiosk + hub critical-alert banner** now ships with
+  `role="alert"` + `aria-live="assertive"` + `aria-atomic` so
+  screen-readers announce a disruption as it appears. The
+  duplicated marquee track carries `aria-hidden` to avoid a
+  double announcement.
+- **kiosk + hub teardown**: route params, query params and the
+  WebSocket `reconnected$` Subject now flow through
+  `takeUntilDestroyed(destroyRef)`. The Subject lives in a
+  `providedIn: 'root'` service so the previous pattern would
+  leak the subscriber when the component remounted.
+- **`@for` tracking on stable lists**: criticalMessages,
+  infoMessages, stop-popup messages and route-search-bar
+  segments / stop names track on identity (title, lineId,
+  name) rather than `$index`, preserving DOM nodes when a list
+  reorders.
+- **ADR 0040** records the pivot from the rotation cadence
+  (Phase 2 table) to the audit-driven cadence the project has
+  actually followed since v1.7.0.
+
+### Removed
+
+- **`material-icons-outlined/round/sharp/two-tone`** font
+  declarations and their woff/woff2 blobs (never used).
+- **`window.global = window` polyfill** in `index.html`:
+  legacy from the sockjs-client spike, no longer required by
+  the StompJS native-WebSocket client.
+
+### Fixed
+
+- **`WebSocketConfig`** caps the inbound STOMP frame at 64 KiB,
+  the per-session outbound buffer at 512 KiB, and the send
+  timeout at 20 s so a slow Raspberry Pi receiver cannot pin
+  server memory by accumulating undelivered messages.
+- **CSS `//` line comments** in `line-index` and
+  `hub-display-dialog` template strings replaced by `/* */`
+  blocks. Clears two long-running build warnings.
+
 ## [1.14.1] — 2026-05-16
 
 Hotfix releasing the two P0 i18n regressions surfaced by the
