@@ -65,6 +65,8 @@ class DisplayStateCalculatorTest {
     @Mock
     private RealtimeTripUpdateCache realtimeTripUpdateCache;
 
+    private RealtimeAlertMatcher realtimeAlertMatcher;
+
     /** Pin "now" mid-day so the calculator's 30-minute window never
      *  crosses midnight. The DSC tests stub the in-window query
      *  variant, so a wall-clock-driven now() near 23:30 would silently
@@ -88,14 +90,18 @@ class DisplayStateCalculatorTest {
         // Manual construction so we can pass a fixed Clock alongside
         // the Mockito mocks. @InjectMocks doesn't pick up plain
         // (non-@Mock) fields like our Clock.fixed instance.
+        // RealtimeAlertMatcher is the small collaborator extracted in
+        // v1.18.0; wrap the cache mock the existing tests already stub
+        // so the alert-matching flow keeps working through the bridge.
+        realtimeAlertMatcher = new RealtimeAlertMatcher(realtimeAlertCache);
         calculator = new DisplayStateCalculator(
                 stopRepository,
                 scheduleRepository,
                 messageRepository,
                 serviceCalendarCache,
                 translationRepository,
-                realtimeAlertCache,
                 realtimeTripUpdateCache,
+                realtimeAlertMatcher,
                 clock
         );
         testLineId = UUID.randomUUID();
