@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.17.0] — 2026-05-16
+
+Backend abstractions wave from the 5-axis audit. Closes the
+P1 B-3 "api leaks into infrastructure" finding and the P1 B-2
+"each GTFS section importer carries its own skeleton" finding,
+and consolidates the twelve `app.gtfs-rt.*` property reads into
+a single typed record.
+
+### Added
+
+- **`GtfsRtProperties`** record (`@ConfigurationProperties("app.gtfs-rt")`)
+  centralises feed URLs, the timeout, and the three poll crons.
+  Caches and the scheduler consume it through DI instead of six
+  `@Value` annotations spread across five classes.
+- **`RealtimeAdminService`** wraps `RealtimeAlertCache` and
+  `RealtimeVehiclePositionCache` for the two admin controllers.
+  `Optional<List<…>>` return types model "feed disabled" so the
+  HTTP adapter stays infra-agnostic.
+- **`AuthService.getCurrentUser(username)`** moves the `/me`
+  lookup out of `AuthController` so the controller no longer
+  imports `UserRepository`.
+- **`DeviceRepository.findAllIds(Pageable)` +
+  `findAllByIdInWithStopAndLine`** (introduced in v1.15.0,
+  documented here for parity).
+- **`GtfsSectionImporter.run(repo, file, label, mapper, log)`**
+  static template helper for the wipe-then-rebuild pattern that
+  drives every GTFS "section" importer. `AttributionImporter`
+  and `StationLevelImporter` migrate as proof of concept (-40
+  lines net); the helper is available for the rest of the
+  family once their bespoke skip counters are unified.
+- **Two ArchUnit rules** pin the `api → infrastructure`
+  boundary going forward: `api → infrastructure.persistence`
+  and `api → infrastructure.realtime` both fail `check` on a
+  new violation.
+
+### Changed
+
+- `RealtimeAlertController` and `RealtimeVehicleController`
+  now hold a single `RealtimeAdminService` dependency each and
+  reduce to thin HTTP adapters (~40 lines each, was ~70).
+- `AuthController` drops its `UserRepository` import and reads
+  `/me` through `AuthService`.
+
+### Removed
+
+- Six `@Value("${app.gtfs-rt.*}")` annotations and three
+  inline default URLs/crons spread across `RealtimeAlertCache`,
+  `RealtimeTripUpdateCache`, `RealtimeVehiclePositionCache`,
+  and `RealtimeAlertScheduler`. They now live in
+  `GtfsRtProperties`.
+
 ## [1.16.0] — 2026-05-16
 
 First wave of the kiosk/hub deduplication chantier identified
