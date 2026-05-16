@@ -31,10 +31,56 @@ import java.util.stream.Collectors;
  * leaves only the row-to-entity mapping in each importer, where the
  * GTFS-specific knowledge actually lives.
  *
- * <p>Multi-pass importers (Schedule, Itinerary, FareV2, Route, Stop)
- * keep their bespoke flows: they need cross-row state, multi-table
- * upserts, or row-skipping policies the template would obscure
- * rather than help.
+ * <h3>Importers that DO go through this helper (7)</h3>
+ * <ul>
+ *   <li>{@code AttributionImporter} ({@link #run})</li>
+ *   <li>{@code StationLevelImporter} ({@link #run})</li>
+ *   <li>{@code TransferImporter} ({@link #runWithStats}, skips unknown
+ *       stops)</li>
+ *   <li>{@code PathwayImporter} ({@link #runWithStats}, skips unknown
+ *       stops + invalid modes)</li>
+ *   <li>{@code TranslationImporter} ({@link #runWithStats}, skips
+ *       duplicates)</li>
+ *   <li>{@code BookingRuleImporter} ({@link #runWithStats}, skips
+ *       invalid {@code booking_type})</li>
+ *   <li>{@code ShapeImporter} ({@link #runAggregating}: N CSV rows
+ *       fold into 1 {@code Shape} entity)</li>
+ * </ul>
+ *
+ * <h3>Importers that intentionally stay bespoke (7)</h3>
+ * <ul>
+ *   <li>{@code AgencyImporter} — <em>upsert</em>, not wipe-rebuild
+ *       (ADR 0013: preserve UUIDs so foreign-key references from
+ *       lines/messages stay valid across re-imports).</li>
+ *   <li>{@code FareV1Importer} — <em>multi-file</em>
+ *       ({@code fare_attributes.txt} + {@code fare_rules.txt}) with
+ *       cross-file FK resolution.</li>
+ *   <li>{@code FareV2Importer} — <em>5 dependent files</em>
+ *       ({@code fare_media}, {@code fare_products}, {@code fare_leg_rules},
+ *       {@code fare_transfer_rules}, {@code areas}) read in
+ *       dependency order with shared lookup maps.</li>
+ *   <li>{@code LocationGroupImporter} — <em>multi-file</em>
+ *       ({@code location_groups.txt} + {@code location_group_stops.txt})
+ *       where the second file mutates the entities persisted by the
+ *       first.</li>
+ *   <li>{@code LocationImporter} — parses
+ *       {@code locations.geojson} (not CSV) and re-uses the booking
+ *       rule index built by {@code BookingRuleImporter}.</li>
+ *   <li>{@code RouteImporter} — multi-pass that also feeds the
+ *       network / agency / line indices downstream importers depend
+ *       on, plus FK-bound deletions.</li>
+ *   <li>{@code ItineraryImporter} / {@code ScheduleImporter} /
+ *       {@code StopImporter} / {@code ServiceCalendarLoader} —
+ *       cross-row state (group-by-trip, sequence ordering, calendar
+ *       exception application) the template would obscure rather
+ *       than help.</li>
+ * </ul>
+ *
+ * <p>Refactoring this last group to plug into the helper would require
+ * variants for upsert + multi-file + multi-pass + aggregating each
+ * (4 separate helpers), which exceeds the deduplication budget — each
+ * importer is read end-to-end and the bespoke code is the clearest
+ * way to express its specific contract.
  */
 public final class GtfsSectionImporter {
 
@@ -158,5 +204,72 @@ public final class GtfsSectionImporter {
         Map<String, Long> frozenCounts() {
             return Map.copyOf(counts);
         }
+    }
+
+    /**
+     * Variant of {@link #run} for importers where N CSV rows fold into a
+     * single entity — the typical case being {@code shapes.txt}, which
+     * lists one row per shape point and groups them under a shared
+     * {@code shape_id} to materialise a {@link Number Shape} entity with
+     * its ordered points.
+     *
+     * @param <T>           the persisted entity type
+     * @param <R>           the intermediate row representation produced by
+     *                      {@code rowMapper} and consumed by {@code entityBuilder}
+     * @param repository    JPA repository to wipe + reuse for the save
+     * @param file          CSV file path; missing files are silently skipped
+     * @param label         human-readable name for the log lines
+     * @param keyExtractor  pulls the grouping key (e.g. {@code shape_id})
+     *                      from a row; rows whose key resolves to {@code null}
+     *                      or blank are dropped
+     * @param rowMapper     parses one row into the intermediate representation;
+     *                      returning {@link Optional#empty()} drops the row
+     * @param entityBuilder builds the persisted entity from the accumulated
+     *                      rows for a given key
+     * @param log           the caller's logger so the line reads with the
+     *                      right class name
+     * @return number of persisted entities (zero when the file is missing
+     *         or every row is filtered out)
+     */
+    public static <T, R> int runAggregating(
+            JpaRepository<T, ?> repository,
+            Path file,
+            String label,
+            Function<CSVRecord, String> keyExtractor,
+            Function<CSVRecord, Optional<R>> rowMapper,
+            BiFunction<String, List<R>, T> entityBuilder,
+            Logger log
+    ) throws IOException {
+        repository.deleteAllInBatch();
+        repository.flush();
+
+        if (!Files.exists(file)) {
+            log.info("GTFS import: {} missing, skipping", label);
+            return 0;
+        }
+
+        Map<String, List<R>> rowsByKey = new LinkedHashMap<>();
+        try (CSVParser parser = CsvHelper.openCsv(file)) {
+            for (CSVRecord record : parser) {
+                String key = keyExtractor.apply(record);
+                if (key == null || key.isBlank()) {continue;}
+                Optional<R> row = rowMapper.apply(record);
+                if (row.isEmpty()) {continue;}
+                rowsByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(row.get());
+            }
+        }
+
+        List<T> batch = new ArrayList<>(rowsByKey.size());
+        int totalRows = 0;
+        for (Map.Entry<String, List<R>> entry : rowsByKey.entrySet()) {
+            batch.add(entityBuilder.apply(entry.getKey(), entry.getValue()));
+            totalRows += entry.getValue().size();
+        }
+        if (!batch.isEmpty()) {
+            repository.saveAll(batch);
+        }
+        log.info("GTFS import: {} {} / {} rows persisted",
+                batch.size(), label, totalRows);
+        return batch.size();
     }
 }

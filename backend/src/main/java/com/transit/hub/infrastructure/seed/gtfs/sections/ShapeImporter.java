@@ -5,25 +5,20 @@ import com.transit.hub.domain.model.ShapePoint;
 import com.transit.hub.infrastructure.persistence.ShapeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDoubleOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseIntOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
-import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
 /**
@@ -52,58 +47,62 @@ public class ShapeImporter {
         // Cascade clears shape_points. Order matters: itineraries.shape_id
         // is ON DELETE SET NULL so existing itineraries' FKs go null
         // here, then importItineraries sets them again immediately after.
-        shapeRepository.deleteAllInBatch();
-        shapeRepository.flush();
-
         Map<String, Shape> result = new HashMap<>();
-        if (!Files.exists(shapesFile)) {
-            log.info("GTFS import: shapes.txt missing, itineraries will have no geographic polyline");
-            return result;
-        }
-        Map<String, List<ShapePoint>> pointsByShape = new HashMap<>();
-        try (CSVParser parser = openCsv(shapesFile)) {
-            for (CSVRecord record : parser) {
-                String shapeId = optional(record, "shape_id");
-                if (isBlank(shapeId)) { continue; }
-                Double lat = parseDoubleOrNull(optional(record, "shape_pt_lat"));
-                Double lon = parseDoubleOrNull(optional(record, "shape_pt_lon"));
-                Integer sequence = parseIntOrNull(optional(record, "shape_pt_sequence"));
-                if (lat == null || lon == null || sequence == null) { continue; }
-                ShapePoint point = ShapePoint.builder()
-                        .sequence(sequence)
-                        .latitude(lat)
-                        .longitude(lon)
-                        .distTraveled(parseDoubleOrNull(optional(record, "shape_dist_traveled")))
-                        .build();
-                pointsByShape.computeIfAbsent(shapeId, k -> new ArrayList<>()).add(point);
-            }
-        }
-        int totalPoints = 0;
-        for (Map.Entry<String, List<ShapePoint>> entry : pointsByShape.entrySet()) {
-            String shapeId = entry.getKey();
-            List<ShapePoint> points = entry.getValue();
-            // GTFS doesn't guarantee shape_pt_sequence rows arrive in
-            // order — sort defensively before we hand them to the
-            // unique constraint and to OrderBy("sequence ASC").
-            points.sort((a, b) -> Integer.compare(a.getSequence(), b.getSequence()));
-            // Deduplicate consecutive (sequence) values: rare feeds
-            // occasionally repeat a row, which would violate the UK.
-            // Keep the first occurrence only.
-            Set<Integer> seenSeq = new HashSet<>();
-            points.removeIf(p -> !seenSeq.add(p.getSequence()));
-
-            Shape shape = Shape.builder()
-                    .externalId(truncate(shapeId, 100))
-                    .build();
-            for (ShapePoint p : points) {
-                p.setShape(shape);
-                shape.getPoints().add(p);
-            }
-            Shape saved = shapeRepository.save(shape);
-            result.put(shapeId, saved);
-            totalPoints += points.size();
-        }
-        log.info("GTFS import: {} shapes / {} shape points persisted", result.size(), totalPoints);
+        GtfsSectionImporter.runAggregating(
+                shapeRepository,
+                shapesFile,
+                "shapes",
+                record -> optional(record, "shape_id"),
+                ShapeImporter::mapPointRow,
+                (shapeId, points) -> {
+                    Shape shape = buildShape(shapeId, points);
+                    // Repository.saveAll() happens inside the helper, but
+                    // callers need the persisted Shape map indexed by its
+                    // external_id to wire downstream itineraries' FK. The
+                    // entity itself is the same JPA instance the helper
+                    // will save, so populating the map here is safe and
+                    // avoids a second round-trip to fetch by externalId.
+                    result.put(shapeId, shape);
+                    return shape;
+                },
+                log
+        );
         return result;
+    }
+
+    private static Optional<ShapePoint> mapPointRow(org.apache.commons.csv.CSVRecord record) {
+        Double lat = parseDoubleOrNull(optional(record, "shape_pt_lat"));
+        Double lon = parseDoubleOrNull(optional(record, "shape_pt_lon"));
+        Integer sequence = parseIntOrNull(optional(record, "shape_pt_sequence"));
+        if (lat == null || lon == null || sequence == null) {
+            return Optional.empty();
+        }
+        return Optional.of(ShapePoint.builder()
+                .sequence(sequence)
+                .latitude(lat)
+                .longitude(lon)
+                .distTraveled(parseDoubleOrNull(optional(record, "shape_dist_traveled")))
+                .build());
+    }
+
+    private static Shape buildShape(String shapeId, List<ShapePoint> points) {
+        // GTFS doesn't guarantee shape_pt_sequence rows arrive in order —
+        // sort defensively before we hand them to the unique constraint
+        // and to @OrderBy("sequence ASC").
+        points.sort((a, b) -> Integer.compare(a.getSequence(), b.getSequence()));
+        // Deduplicate consecutive (sequence) values: rare feeds occasionally
+        // repeat a row, which would violate the UK. Keep the first
+        // occurrence only.
+        Set<Integer> seenSeq = new HashSet<>();
+        points.removeIf(p -> !seenSeq.add(p.getSequence()));
+
+        Shape shape = Shape.builder()
+                .externalId(truncate(shapeId, 100))
+                .build();
+        for (ShapePoint p : points) {
+            p.setShape(shape);
+            shape.getPoints().add(p);
+        }
+        return shape;
     }
 }
