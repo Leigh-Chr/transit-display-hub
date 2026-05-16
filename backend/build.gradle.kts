@@ -149,6 +149,19 @@ dependencies {
     // landing on main.
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
 
+    // Testcontainers — spins up a real PostgreSQL 16 container so the
+    // Flyway migrations (PG-specific syntax, extensions, type casts)
+    // are validated against the actual prod-target engine. The default
+    // H2 test profile catches JPA-level regressions but cannot exercise
+    // PG-only DDL; the dedicated FlywayMigrationsPostgresTest opts in
+    // via @Tag("postgres") and is tagged for the same opt-in test task
+    // as the real-feed suite so CI without Docker stays fast.
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("org.testcontainers:postgresql:1.21.3")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.flywaydb:flyway-database-postgresql")
+    testRuntimeOnly("org.postgresql:postgresql")
+
     // JMH-only — Mockito lets micro-benchmarks stub the Spring Data
     // repositories with constant-time fakes so the measurement stays
     // focused on the service code (not the JPA round-trip).
@@ -183,7 +196,11 @@ tasks.withType<Test> {
         // the default ./gradlew test stays Internet-free. Run them with
         // ./gradlew testRealFeed (see below) when validating layout-engine
         // generality against new feed shapes.
-        excludeTags("real-feed")
+        //
+        // The Flyway-on-PostgreSQL smoke test ({@code @Tag("postgres")})
+        // requires Docker and runs much slower than the H2 unit tests;
+        // it has its own opt-in `./gradlew testPostgres` task below.
+        excludeTags("real-feed", "postgres")
     }
 }
 
@@ -199,6 +216,31 @@ tasks.register<Test>("testRealFeed") {
     }
     description = "Runs the GTFS importer against real public feeds. " +
             "Requires Internet; skipped from the default test task."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    shouldRunAfter("test")
+}
+
+/**
+ * Opt-in test task for the @Tag("postgres") suite — applies every
+ * Flyway migration against a real PostgreSQL container via
+ * Testcontainers, the closest mirror to the prod runtime. Requires a
+ * Docker daemon reachable on the host; skipped from the default
+ * {@code test} task so the H2-only CI lane stays fast.
+ */
+tasks.register<Test>("testPostgres") {
+    // Reset the filters set by the global tasks.withType<Test> block
+    // before declaring the include-only filter — otherwise the "postgres"
+    // tag is both excluded (globally) and included (here), and JUnit
+    // resolves the conflict by excluding.
+    useJUnitPlatform {
+        excludeTags.clear()
+        includeTags("postgres")
+    }
+    description = "Runs the Flyway migrations against a Testcontainers " +
+            "PostgreSQL 16 container. Requires Docker; skipped from the " +
+            "default test task."
     group = "verification"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
