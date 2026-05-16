@@ -84,15 +84,16 @@ public class BroadcastMessage {
         return endTime.isAfter(startTime);
     }
 
-    public boolean isActive() {
-        return isActiveAt(Instant.now());
-    }
-
     /**
      * Half-open interval [startTime, endTime): a message is visible the moment
      * its start arrives and stops being visible when end arrives. Matches the
      * repository queries (`start <= now AND end > now`) so a message created
      * exactly at its start instant fires the corresponding event.
+     *
+     * <p>The entity refuses to read {@code Instant.now()} so callers pass
+     * a clock-driven {@link Instant} (ADR 0024). Tests inject a fixed
+     * instant; production receives {@code Instant.now(clock)} from the
+     * service layer.
      */
     public boolean isActiveAt(Instant time) {
         return !time.isBefore(startTime) && time.isBefore(endTime);

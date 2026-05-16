@@ -121,7 +121,7 @@ public class MessageService {
 
         // Publish event for affected stops
         Set<UUID> affectedStops = getAffectedStopIds(saved);
-        if (!affectedStops.isEmpty() && saved.isActive()) {
+        if (!affectedStops.isEmpty() && saved.isActiveAt(Instant.now(clock))) {
             eventPublisher.publishEvent(new MessageChangedEvent(this, affectedStops));
         }
 
@@ -245,21 +245,19 @@ public class MessageService {
     }
 
     private MessageResponse toResponse(BroadcastMessage message) {
-        MessageResponse.ScopeInfo scopeInfo = null;
-
-        if (message.getScopeType() == MessageScope.LINE && message.getScopeId() != null) {
-            Line line = lineRepository.findById(message.getScopeId()).orElse(null);
-            if (line != null) {
-                scopeInfo = new MessageResponse.ScopeInfo(line.getName());
-            }
-        } else if (message.getScopeType() == MessageScope.STOP && message.getScopeId() != null) {
-            Stop stop = stopRepository.findById(message.getScopeId()).orElse(null);
-            if (stop != null) {
-                scopeInfo = new MessageResponse.ScopeInfo(stop.getName());
-            }
-        }
-
-        return MessageResponse.from(message, scopeInfo);
+        // Delegating to the shared resolver keeps a single code path for
+        // scope name resolution: it also short-circuits the lookup when
+        // the scope is NETWORK and reuses the bulk-friendly signature so
+        // a future caller that resolves a batch only needs a one-line
+        // change. The single-message list materialisation costs nothing
+        // (one HashMap allocation) compared to the two SELECTs the
+        // private duplicate used to issue.
+        List<BroadcastMessage> single = List.of(message);
+        return scopeResolver.toResponse(
+                message,
+                scopeResolver.bulkLineNames(single),
+                scopeResolver.bulkStopNames(single)
+        );
     }
 
     private List<MessageResponse> toResponses(List<BroadcastMessage> messages) {

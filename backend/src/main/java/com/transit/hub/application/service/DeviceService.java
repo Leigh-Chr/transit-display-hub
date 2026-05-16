@@ -121,7 +121,7 @@ public class DeviceService {
 
         for (Device device : candidates) {
             if (passwordEncoder.matches(token, device.getTokenHash())) {
-                device.recordHeartbeat();
+                device.recordHeartbeat(Instant.now(clock));
                 deviceRepository.save(device);
 
                 List<LineInfo> lines = device.getStop().getLines().stream()
@@ -147,7 +147,7 @@ public class DeviceService {
         Device device = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new EntityNotFoundException("Device", deviceId));
 
-        device.recordHeartbeat();
+        device.recordHeartbeat(Instant.now(clock));
         deviceRepository.save(device);
     }
 

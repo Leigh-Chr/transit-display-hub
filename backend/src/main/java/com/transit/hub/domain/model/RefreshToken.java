@@ -82,7 +82,12 @@ public class RefreshToken {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
-    public boolean isActive() {
-        return revokedAt == null && expiresAt.isAfter(Instant.now());
+    /**
+     * Active = not revoked yet and not past its expiry. Callers pass the
+     * clock-driven now so the domain stays free of wall-clock reads
+     * (ADR 0024).
+     */
+    public boolean isActiveAt(Instant now) {
+        return revokedAt == null && expiresAt.isAfter(now);
     }
 }

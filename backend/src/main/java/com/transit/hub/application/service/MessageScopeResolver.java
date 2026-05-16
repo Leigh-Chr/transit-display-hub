@@ -10,6 +10,8 @@ import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,7 @@ public class MessageScopeResolver {
 
     private final LineRepository lineRepository;
     private final StopRepository stopRepository;
+    private final Clock clock;
 
     /**
      * Bulk-loads the line names referenced by any LINE-scoped message in
@@ -94,6 +97,6 @@ public class MessageScopeResolver {
                 scopeInfo = new MessageResponse.ScopeInfo(name);
             }
         }
-        return MessageResponse.from(message, scopeInfo);
+        return MessageResponse.from(message, scopeInfo, Instant.now(clock));
     }
 }

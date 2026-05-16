@@ -21,11 +21,11 @@ public record MessageResponse(
 ) {
     public record ScopeInfo(String name) {}
 
-    public static MessageResponse from(BroadcastMessage message) {
-        return from(message, null);
+    public static MessageResponse from(BroadcastMessage message, Instant evaluatedAt) {
+        return from(message, null, evaluatedAt);
     }
 
-    public static MessageResponse from(BroadcastMessage message, ScopeInfo scopeInfo) {
+    public static MessageResponse from(BroadcastMessage message, ScopeInfo scopeInfo, Instant evaluatedAt) {
         return new MessageResponse(
                 message.getId(),
                 message.getTitle(),
@@ -36,7 +36,7 @@ public record MessageResponse(
                 message.getScopeType(),
                 message.getScopeId(),
                 scopeInfo,
-                message.isActive()
+                message.isActiveAt(evaluatedAt)
         );
     }
 }

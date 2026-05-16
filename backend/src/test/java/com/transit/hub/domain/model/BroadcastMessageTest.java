@@ -31,7 +31,7 @@ class BroadcastMessageTest {
     }
 
     @Nested
-    @DisplayName("isActive — wall-clock based")
+    @DisplayName("isActiveAt — wall-clock smoke tests")
     class IsActive {
 
         @Test
@@ -43,7 +43,7 @@ class BroadcastMessageTest {
                     now.plus(1, ChronoUnit.HOURS)
             );
 
-            assertThat(message.isActive()).isTrue();
+            assertThat(message.isActiveAt(Instant.now())).isTrue();
         }
 
         @Test
@@ -55,7 +55,7 @@ class BroadcastMessageTest {
                     now.plus(2, ChronoUnit.HOURS)
             );
 
-            assertThat(message.isActive()).isFalse();
+            assertThat(message.isActiveAt(Instant.now())).isFalse();
         }
 
         @Test
@@ -67,7 +67,7 @@ class BroadcastMessageTest {
                     now.minus(1, ChronoUnit.HOURS)
             );
 
-            assertThat(message.isActive()).isFalse();
+            assertThat(message.isActiveAt(Instant.now())).isFalse();
         }
 
         @Test
@@ -79,7 +79,7 @@ class BroadcastMessageTest {
                     now.plus(1, ChronoUnit.HOURS)
             );
 
-            assertThat(message.isActive()).isFalse();
+            assertThat(message.isActiveAt(Instant.now())).isFalse();
         }
 
         @Test
@@ -91,7 +91,7 @@ class BroadcastMessageTest {
                     now.minus(10, ChronoUnit.SECONDS)
             );
 
-            assertThat(message.isActive()).isFalse();
+            assertThat(message.isActiveAt(Instant.now())).isFalse();
         }
     }
 

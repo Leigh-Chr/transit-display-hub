@@ -26,46 +26,40 @@ class DeviceTest {
 
             assertThat(device.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
 
-            device.recordHeartbeat();
+            device.recordHeartbeat(Instant.parse("2026-05-01T10:00:00Z"));
 
             assertThat(device.getStatus()).isEqualTo(DeviceStatus.ONLINE);
         }
 
         @Test
-        @DisplayName("updates lastHeartbeat to current time")
-        void updatesLastHeartbeat() {
+        @DisplayName("stamps lastHeartbeat with the supplied instant")
+        void stampsLastHeartbeatWithSuppliedInstant() {
             Line line = TestDataFactory.createLine();
             Stop stop = TestDataFactory.createStop(line);
             Device device = TestDataFactory.createDevice(stop);
+            Instant now = Instant.parse("2026-05-01T10:00:00Z");
 
             assertThat(device.getLastHeartbeat()).isNull();
 
-            Instant before = Instant.now();
-            device.recordHeartbeat();
-            Instant after = Instant.now();
+            device.recordHeartbeat(now);
 
-            assertThat(device.getLastHeartbeat()).isNotNull();
-            assertThat(device.getLastHeartbeat()).isAfterOrEqualTo(before);
-            assertThat(device.getLastHeartbeat()).isBeforeOrEqualTo(after);
+            assertThat(device.getLastHeartbeat()).isEqualTo(now);
         }
 
         @Test
-        @DisplayName("updates lastHeartbeat on repeated calls")
-        void repeatedCalls_UpdatesHeartbeat() throws InterruptedException {
+        @DisplayName("monotonic stamps reflect the supplied instants")
+        void repeatedCalls_UpdatesHeartbeat() {
             Line line = TestDataFactory.createLine();
             Stop stop = TestDataFactory.createStop(line);
             Device device = TestDataFactory.createDevice(stop);
+            Instant first = Instant.parse("2026-05-01T10:00:00Z");
+            Instant second = first.plusSeconds(5);
 
-            device.recordHeartbeat();
-            Instant firstHeartbeat = device.getLastHeartbeat();
+            device.recordHeartbeat(first);
+            assertThat(device.getLastHeartbeat()).isEqualTo(first);
 
-            // Small delay to ensure different timestamp
-            Thread.sleep(5);
-
-            device.recordHeartbeat();
-            Instant secondHeartbeat = device.getLastHeartbeat();
-
-            assertThat(secondHeartbeat).isAfterOrEqualTo(firstHeartbeat);
+            device.recordHeartbeat(second);
+            assertThat(device.getLastHeartbeat()).isEqualTo(second);
             assertThat(device.getStatus()).isEqualTo(DeviceStatus.ONLINE);
         }
     }

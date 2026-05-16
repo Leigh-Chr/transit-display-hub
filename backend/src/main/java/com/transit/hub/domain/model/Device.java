@@ -68,8 +68,14 @@ public class Device {
     @Column(name = "last_heartbeat")
     private Instant lastHeartbeat;
 
-    public void recordHeartbeat() {
-        this.lastHeartbeat = Instant.now();
+    /**
+     * Stamp the heartbeat with the caller's clock. The domain refuses to
+     * read {@code Instant.now()} so a fixed {@link java.time.Clock}
+     * injected at the service edge (ADR 0024) drives the timestamp in
+     * production AND in tests — no more dependency on the wall clock.
+     */
+    public void recordHeartbeat(Instant now) {
+        this.lastHeartbeat = now;
         this.status = DeviceStatus.ONLINE;
     }
 

@@ -108,7 +108,7 @@ class MessageServiceTest {
         lenient().when(scopeResolver.bulkLineNames(anyList())).thenReturn(Map.of());
         lenient().when(scopeResolver.bulkStopNames(anyList())).thenReturn(Map.of());
         lenient().when(scopeResolver.toResponse(any(BroadcastMessage.class), anyMap(), anyMap()))
-                .thenAnswer(inv -> MessageResponse.from(inv.getArgument(0)));
+                .thenAnswer(inv -> MessageResponse.from(inv.getArgument(0), Instant.now()));
     }
 
     @AfterEach
@@ -184,7 +184,7 @@ class MessageServiceTest {
                     testLineId
             );
             when(lineRepository.existsById(testLineId)).thenReturn(true);
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            lenient().when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
@@ -254,7 +254,7 @@ class MessageServiceTest {
                     testStopId
             );
             when(stopRepository.existsById(testStopId)).thenReturn(true);
-            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
+            lenient().when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -407,7 +407,7 @@ class MessageServiceTest {
                     testLineId
             );
             when(lineRepository.existsById(testLineId)).thenReturn(true);
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            lenient().when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(stopRepository.findByLineId(testLineId)).thenReturn(List.of(testStop));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
@@ -435,7 +435,7 @@ class MessageServiceTest {
                     testStopId
             );
             when(stopRepository.existsById(testStopId)).thenReturn(true);
-            when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
+            lenient().when(stopRepository.findById(testStopId)).thenReturn(Optional.of(testStop));
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -671,7 +671,7 @@ class MessageServiceTest {
                     testLineId
             );
             when(lineRepository.existsById(testLineId)).thenReturn(true);
-            when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
+            lenient().when(lineRepository.findById(testLineId)).thenReturn(Optional.of(testLine));
             when(stopRepository.findByLineId(testLineId)).thenReturn(List.of());
             when(messageRepository.save(any(BroadcastMessage.class))).thenAnswer(invocation -> {
                 BroadcastMessage saved = invocation.getArgument(0);
