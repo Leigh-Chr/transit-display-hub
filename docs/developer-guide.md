@@ -23,7 +23,7 @@ of concerns.
                        HTTP / WS
                             |
 +---------------------------------------------------------+
-|                Backend (Spring Boot 4.0.2)              |
+|                Backend (Spring Boot 4.0.6)              |
 +---------------------------------------------------------+
 |  API Layer             |  Application Layer             |
 |  - REST Controllers    |  - Business services           |

@@ -7,6 +7,119 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Post-v1.19.0 marathon (21 commits, 2026-05-16 → 2026-05-17): closes
+the entire 14-item P2/P3 backlog of the cross-axis audit shipped on
+2026-05-16. Splits naturally into a perf / hygiene wave (the seven
+items in the morning) and a depth-first wave that finishes every
+remaining bespoke pattern (the second half).
+
+### Added
+
+- **`AuthTestHelper`** (`testutil`) — collapses the
+  admin/agent JWT bootstrap from 23 controller integration tests
+  into `createAdminToken()` / `createAgentToken()`. Removes 280
+  lines of duplicated `User.builder()...passwordEncoder.encode...
+  jwtService.generateToken(...)` and its three matching
+  autowired fields.
+- **`testTranslocoModule(en, fr?)`** (`src/test-translations.ts`)
+  — single helper consumed by 39 specs that used to inline the
+  `TranslocoTestingModule.forRoot({langs:{en,fr},translocoConfig:
+  ...,preloadLangs:true})` boilerplate.
+- **`frontend/e2e/screenshots.spec.ts`** — Playwright capture
+  script (skipped unless `SCREENSHOTS_ENABLED=1`) that
+  regenerates the 6 README PNGs against a running app.
+- **`HubDisplayServiceTest`** (4 specs) and
+  **`GtfsRefreshSchedulerTest`** (4 specs) — close the two
+  packages flagged at 0–2 % coverage by the audit.
+- **`GtfsDataLoaderTest`** (5 specs) — covers the last
+  uncovered seed component (skip-on-seeded DB, user creation,
+  orchestrator delegation, null-result tolerance).
+- **`ArrivalEnricher`** — extracted from `DisplayStateCalculator`;
+  owns `toArrivalInfo` + delay/skip lookups + accessibility
+  resolution + booking info + headsign translation. DSC drops
+  from 500 → 307 lines, ArrivalEnricher fits in 231.
+- **`HeartbeatBuffer`** — coalesces WebSocket device heartbeats
+  through a `ConcurrentHashMap<UUID, Instant>` flushed every 30 s
+  by `DeviceService.recordHeartbeatsBatch(...)`. A 50-kiosk fleet
+  waking up at the same time now produces one batched UPDATE
+  instead of 50 simultaneous transactions.
+- **`GtfsRtConfig.gtfsRtHttpClient()`** — single `HttpClient`
+  bean (virtual-thread executor, 10 s connect timeout) shared by
+  the three GTFS-RT caches instead of one per cache instance.
+- **`GtfsSectionImporter.runWithStats(...)` and `runAggregating(...)`**
+  — two new templated entry points that took five more importers
+  through the helper (Transfer, Pathway, Translation, BookingRule,
+  Shape) on top of the original two (Attribution, StationLevel).
+- **`backend/src/test/resources/junit-platform.properties`** —
+  enables class-level parallel execution; the 30 `@SpringBootTest`
+  classes are individually annotated with
+  `@Execution(ExecutionMode.SAME_THREAD)` so the shared H2 stays
+  safe. Suite drops from ~52 s to ~39 s (~25 %).
+- **`FlywayMigrationsPostgresTest`** + `./gradlew testPostgres` —
+  runs every Flyway migration against a Postgres 16 Testcontainer
+  to catch PG-specific syntax regressions the default H2 lane
+  misses. Excluded from the default `test` task.
+- **`.github/workflows/release.yml`** publishes SBOM (CycloneDX
+  via `anchore/sbom-action`) and Sigstore build provenance
+  attestations for the two GHCR multi-arch images and the
+  bootJar artefact.
+
+### Changed
+
+- **CSS z-index** — every raw value migrated to a tokenised scale
+  (`--app-z-overlay`, `-raised`, `-top`, `-tooltip`, `-modal`,
+  `-snackbar`, `-skip-link`) declared once in `styles.scss`.
+- **17 i18n keys** dropped (common.back/confirm/edit/loading/save,
+  kiosk.alertWarning/noArrivals, six `admin.common.*` items,
+  `admin.{schedules,stops}.colActions`,
+  `admin.devices.done`). `common.close` stays — the only
+  surviving usage was in `stop-popup`.
+- **axe-core e2e** extended from `/login`, `/map`, `/map/list` to
+  `/display/<stopId>`, `/hub`, `/admin/dashboard` (baselines
+  initialised at 3 / 3 / 5 critical violations respectively).
+- **6 admin component templates** (`gtfs-data`, `route-search-bar`,
+  `messages`, `stops`, `realtime`, `itineraries`) externalised to
+  `templateUrl` / `styleUrl` — the six `.ts` files drop from
+  3 459 → 1 252 lines, ~3 400 LoC moved into siblings where
+  they read naturally.
+- **WebSocket STOMP** outbound channel sized to corePool=4 /
+  maxPool=16 / queueCapacity=100, so a single slow kiosk no longer
+  back-pressures the broadcast loop.
+- **`PATHWAY_MODE_COLORS`** replaced by `pathway-mode-*` CSS
+  classes consumed via `currentColor`; the hex palette now lives
+  in `pathways.component.scss` and inherits from the semantic
+  tokens (`--app-critical`, `--app-warning`, …).
+- **JPA collections** on `Stop`, `Line`, `Itinerary` encapsulated
+  behind explicit hand-written getters that return
+  `Collections.unmodifiable*`. Mutators (`addLine`, `removeLine`,
+  `clearLines`, `addItineraryStop`, `removeItineraryStopIf(...)`,
+  …) become the single mutation surface; the 8 prod call sites
+  and 4 tests that used to `.getLines().add(...)` directly are
+  migrated.
+- **5 GHCR / release workflows** moved to least-privilege
+  permissions (`contents: read`) and concurrency
+  cancel-in-progress (z-index / i18n preparation work — landed
+  on top of the earlier hardening).
+- **README screenshots** regenerated on the Grenoble live feed
+  (55 lines, 2 501 stops, 434 k schedules).
+- **Hex-to-token migration** is now complete: the remaining
+  visible hex literals are documented as intentional (auto-
+  contrast utility, form placeholders, high-contrast text).
+
+### Fixed
+
+- **`!important` sidebar override** re-confirmed intentional after
+  a visual test: dropping the 12 `color !important` declarations
+  in favour of the `--mdc-list-item-*` tokens leaves the nav
+  text invisible on Material 21.2.10. The block stays, with the
+  comment now dated 2026-05-16 to spare future readers the same
+  experiment.
+
+### Performance
+
+- **Backend test suite** down ~25 % (~52 s → ~39 s) via JUnit 5
+  class-level parallelism with `@SpringBootTest` opt-out.
+
 ## [1.19.0] — 2026-05-16
 
 Tail-end of the audit-driven session: two small but valuable
