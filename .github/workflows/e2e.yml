@@ -14,6 +14,13 @@ on:
       - 'backend/**'
       - '.github/workflows/e2e.yml'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   e2e:
     name: Backend up + Playwright run
@@ -56,11 +63,30 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Resolve Playwright version
+        id: playwright-version
+        working-directory: frontend
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Playwright browsers
         working-directory: frontend
         # All three projects defined in playwright.config.ts so CI matches
         # the local matrix (chromium / firefox / mobile-chrome).
-        run: npx playwright install --with-deps chromium firefox
+        # When the browser bundle is restored from cache, only refresh the
+        # apt dependencies — the binaries themselves stay put.
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium firefox
+          else
+            npx playwright install --with-deps chromium firefox
+          fi
 
       - name: Wait for backend health
         run: |
