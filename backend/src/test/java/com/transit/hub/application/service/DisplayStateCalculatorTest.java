@@ -94,13 +94,20 @@ class DisplayStateCalculatorTest {
         // v1.18.0; wrap the cache mock the existing tests already stub
         // so the alert-matching flow keeps working through the bridge.
         realtimeAlertMatcher = new RealtimeAlertMatcher(realtimeAlertCache);
+        // ArrivalEnricher is the schedule-to-DTO extraction landed
+        // post-v1.19; it owns the realtime trip-update lookups now, but
+        // the calculator test still stubs realtimeTripUpdateCache so the
+        // delay / skip paths exercised below keep going through the same
+        // Mockito mock — just one hop deeper.
+        com.transit.hub.application.service.ArrivalEnricher arrivalEnricher =
+                new com.transit.hub.application.service.ArrivalEnricher(realtimeTripUpdateCache);
         calculator = new DisplayStateCalculator(
                 stopRepository,
                 scheduleRepository,
                 messageRepository,
                 serviceCalendarCache,
                 translationRepository,
-                realtimeTripUpdateCache,
+                arrivalEnricher,
                 realtimeAlertMatcher,
                 clock
         );

@@ -14,7 +14,6 @@ import com.transit.hub.domain.event.StopDeletedEvent;
 import com.transit.hub.domain.util.ServiceCalendarMatcher;
 import com.transit.hub.domain.util.TranslationLookup;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
-import com.transit.hub.infrastructure.realtime.RealtimeTripUpdateCache;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
@@ -50,7 +49,7 @@ public class DisplayStateCalculator {
     private final BroadcastMessageRepository messageRepository;
     private final ServiceCalendarCache serviceCalendarCache;
     private final TranslationRepository translationRepository;
-    private final RealtimeTripUpdateCache realtimeTripUpdateCache;
+    private final ArrivalEnricher arrivalEnricher;
     private final RealtimeAlertMatcher realtimeAlertMatcher;
     /** Indirected so tests can pin "now" via Clock.fixed and not depend
      *  on wall-clock time. Production wires the system default-zone
@@ -94,7 +93,7 @@ public class DisplayStateCalculator {
         // Get all lines info for this stop
         List<LineInfo> lineInfos = stop.getLines().stream()
                 .sorted(Comparator.comparing(Line::getCode))
-                .map(line -> translatedLineInfo(line, translations))
+                .map(line -> ArrivalEnricher.translatedLineInfo(line, translations))
                 .toList();
 
         // Get upcoming arrivals within 30-minute window, one per itinerary/direction.
@@ -140,7 +139,7 @@ public class DisplayStateCalculator {
             if (!ServiceCalendarMatcher.isActive(calendar, effectiveDate)) {
                 continue;
             }
-            if (isRealtimeSkipped(s)) {
+            if (arrivalEnricher.isRealtimeSkipped(s)) {
                 continue;
             }
             activeToday.add(s);
@@ -158,7 +157,7 @@ public class DisplayStateCalculator {
                 ))
                 .values()
                 .stream()
-                .map(s -> toArrivalInfo(s, stopId, translations))
+                .map(s -> arrivalEnricher.toArrivalInfo(s, stopId, translations))
                 .toList();
 
         // Get active messages for this stop (for all its lines)
@@ -225,39 +224,6 @@ public class DisplayStateCalculator {
         return TranslationLookup.from(translationRepository.findByLanguage(preferredLanguage.trim()));
     }
 
-    /**
-     * Builds a {@link LineInfo} with {@code code} / {@code name} swapped
-     * for their translated equivalents when the feed provides them. The
-     * fallback is the original value, so a partially-translated feed
-     * still renders without holes.
-     */
-    private static LineInfo translatedLineInfo(Line line, TranslationLookup translations) {
-        if (translations.isEmpty()) {
-            return LineInfo.from(line);
-        }
-        String code = translations.resolveOr("routes", line.getExternalId(), "route_short_name", line.getCode());
-        String name = translations.resolveOr("routes", line.getExternalId(), "route_long_name", line.getName());
-        return new LineInfo(line.getId(), code, name, line.getColor(), line.getTextColor());
-    }
-
-    /**
-     * Resolves the itinerary's terminus name, applying the translation
-     * for the underlying terminus stop when one exists. Used as the
-     * final fallback for {@code destination} when neither a per-stop
-     * {@code stop_headsign} nor a trip-level {@code trip_headsign}
-     * translation is available.
-     */
-    private static String resolveTranslatedTerminus(Itinerary itinerary, TranslationLookup translations) {
-        if (itinerary.getItineraryStops() == null || itinerary.getItineraryStops().isEmpty()) {
-            return itinerary.getTerminusName();
-        }
-        Stop terminus = itinerary.getItineraryStops().getLast().getStop();
-        if (terminus == null) {
-            return itinerary.getTerminusName();
-        }
-        return translations.resolveOr("stops", terminus.getExternalId(), "stop_name", terminus.getName());
-    }
-
     private Map<UUID, ServiceCalendar> loadCalendarsById() {
         return serviceCalendarCache.loadAll();
     }
@@ -309,165 +275,6 @@ public class DisplayStateCalculator {
         // pruned for a stop the database still has (and pushing version=1
         // afterwards, which the kiosk's monotonicity filter would then reject).
         versionMap.remove(event.getStopId());
-    }
-
-    private DisplayState.ArrivalInfo toArrivalInfo(Schedule schedule, UUID stopId,
-                                                   TranslationLookup translations) {
-        Itinerary itinerary = schedule.getItinerary();
-        LineInfo lineInfo = translatedLineInfo(itinerary.getLine(), translations);
-        // stop_headsign overrides the trip-level terminus when the feed
-        // declares a stop-specific destination (loop services, terminus
-        // short-running, branching). Falls through to the itinerary's
-        // trip_headsign translation, then to the terminus name.
-        // The stop_times translation key is composite: record_id is
-        // stop_id (the kiosk stop), record_sub_id is trip_id (the
-        // representative trip carried by the itinerary).
-        String destination = resolveStopHeadsign(itinerary, stopId);
-        if (destination != null && schedule.getStop() != null) {
-            String translated = translations.resolve(
-                    "stop_times",
-                    schedule.getStop().getExternalId(),
-                    itinerary.getExternalId(),
-                    "stop_headsign",
-                    null
-            ).orElse(null);
-            if (translated != null) {destination = translated;}
-        }
-        if (destination == null) {
-            destination = translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign",
-                    resolveTranslatedTerminus(itinerary, translations));
-        }
-        // Realtime delay: positive = late, negative = early. The
-        // scheduled time stays as-published; the kiosk applies the
-        // delta itself so a "scheduled / live" comparison is possible.
-        Integer delay = resolveRealtimeDelay(schedule);
-        return new DisplayState.ArrivalInfo(
-                schedule.getTime(),
-                destination,
-                lineInfo,
-                com.transit.hub.domain.model.enums.PickupKind.from(
-                        schedule.getPickupType(), schedule.getDropOffType()),
-                resolveWheelchair(schedule, itinerary),
-                resolveBikes(schedule, itinerary),
-                schedule.isTimepoint(),
-                schedule.getFrequencyHeadwaySeconds(),
-                delay,
-                schedule.getStop() != null ? schedule.getStop().getPlatformCode() : null,
-                resolveBookingInfo(schedule)
-        );
-    }
-
-    /**
-     * Looks the schedule up against the GTFS-RT trip-update cache.
-     * Matching: itinerary's representative trip_id → trip-level
-     * adjustment, then stop's external_id → stop-level adjustment.
-     * The stop-level delay wins when both are present.
-     */
-    /**
-     * Surfaces the schedule's pickup booking rule as a passenger DTO
-     * — phone, URL, prior notice — when the arrival's pickup is
-     * on-demand (TAD). Returns null on regular fixed-route arrivals
-     * so the kiosk doesn't render a CTA where none applies.
-     *
-     * Drop-off bookings are intentionally not surfaced: a passenger
-     * arriving at a stop has already booked, and rendering an
-     * "alighting reservation" message at boarding time confuses more
-     * than it helps.
-     */
-    private DisplayState.BookingInfo resolveBookingInfo(Schedule schedule) {
-        com.transit.hub.domain.model.BookingRule rule = schedule.getPickupBookingRule();
-        if (rule == null) {return null;}
-        // Only surface when the pickup type signals "on-demand" — a
-        // booking rule attached to a regular pickup_type=0 trip is
-        // unusual but legal in the spec and shouldn't trigger a CTA.
-        short pt = schedule.getPickupType();
-        if (pt != 2 && pt != 3) {return null;}
-        return new DisplayState.BookingInfo(
-                rule.getPhone(),
-                rule.getBookingUrl(),
-                rule.getInfoUrl(),
-                rule.getMessage(),
-                rule.getPriorNoticeDurationMin());
-    }
-
-    private Integer resolveRealtimeDelay(Schedule schedule) {
-        Itinerary itinerary = schedule.getItinerary();
-        if (itinerary.getExternalId() == null) {return null;}
-        return realtimeTripUpdateCache.findUpdate(itinerary.getExternalId())
-                .map(update -> {
-                    String stopExternalId = schedule.getStop() != null
-                            ? schedule.getStop().getExternalId() : null;
-                    if (stopExternalId != null && update.byStopExternalId().containsKey(stopExternalId)) {
-                        Integer perStop = update.byStopExternalId().get(stopExternalId).effectiveDelaySeconds();
-                        if (perStop != null) {return perStop;}
-                    }
-                    return update.tripLevelDelaySeconds();
-                })
-                .orElse(null);
-    }
-
-    /**
-     * True when the GTFS-RT feed marks this stop / trip pair as
-     * skipped. The display calculator drops the schedule entirely so
-     * the kiosk doesn't show a phantom departure.
-     */
-    private boolean isRealtimeSkipped(Schedule schedule) {
-        Itinerary itinerary = schedule.getItinerary();
-        if (itinerary.getExternalId() == null) {return false;}
-        String stopExternalId = schedule.getStop() != null
-                ? schedule.getStop().getExternalId() : null;
-        if (stopExternalId == null) {return false;}
-        return realtimeTripUpdateCache.findUpdate(itinerary.getExternalId())
-                .map(update -> {
-                    var stopAdj = update.byStopExternalId().get(stopExternalId);
-                    return stopAdj != null && stopAdj.skipped();
-                })
-                .orElse(false);
-    }
-
-    /**
-     * Resolves the effective bikes-allowed policy for an arrival,
-     * mirroring {@link #resolveWheelchair}.
-     */
-    private static com.transit.hub.domain.model.enums.BikesAllowed resolveBikes(
-            Schedule schedule, Itinerary itinerary) {
-        if (schedule.getBikesAllowedOverride() != null) {
-            return schedule.getBikesAllowedOverride()
-                    ? com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED
-                    : com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED;
-        }
-        return itinerary.getBikesAllowedDefault() == null
-                ? com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN
-                : itinerary.getBikesAllowedDefault();
-    }
-
-    /**
-     * Resolves the effective wheelchair accessibility for an arrival.
-     * Priority: schedule override > itinerary default > UNKNOWN. Keeps
-     * the kiosk three-state pictogram in sync with what the operator
-     * actually published in the feed.
-     */
-    private static com.transit.hub.domain.model.enums.WheelchairAccess resolveWheelchair(
-            Schedule schedule, Itinerary itinerary) {
-        if (schedule.getWheelchairOverride() != null) {
-            return schedule.getWheelchairOverride()
-                    ? com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE
-                    : com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE;
-        }
-        return itinerary.getWheelchairDefault() == null
-                ? com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN
-                : itinerary.getWheelchairDefault();
-    }
-
-    private static String resolveStopHeadsign(Itinerary itinerary, UUID stopId) {
-        if (itinerary.getItineraryStops() == null) {return null;}
-        for (var is : itinerary.getItineraryStops()) {
-            if (is.getStop() != null && stopId.equals(is.getStop().getId())) {
-                String headsign = is.getStopHeadsign();
-                return (headsign == null || headsign.isBlank()) ? null : headsign;
-            }
-        }
-        return null;
     }
 
     private DisplayState.MessageInfo toMessageInfo(BroadcastMessage message) {
