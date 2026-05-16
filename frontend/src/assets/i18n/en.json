@@ -1,17 +1,12 @@
 {
   "common": {
     "appName": "Transit Display Hub",
-    "loading": "Loading…",
-    "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "edit": "Edit",
     "search": "Search",
     "close": "Close",
-    "confirm": "Confirm",
     "yes": "Yes",
     "no": "No",
-    "back": "Back",
     "refresh": "Refresh",
     "ok": "OK",
     "retry": "Retry",
@@ -19,7 +14,6 @@
       "network": "Network error: please check your connection",
       "accessDenied": "Access denied: insufficient permissions"
     },
-    "language": "Language",
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",
     "switchLight": "Switch to light mode",
@@ -46,9 +40,7 @@
       "invalidToken": "Invalid device token or device not found.",
       "stopNotFound": "Stop not found."
     },
-    "noArrivals": "No upcoming departure",
     "noScheduledDepartures": "No scheduled departures",
-    "alertWarning": "Service alert",
     "speakNext": "Read the next departure aloud",
     "highContrast": "High-contrast mode",
     "largeText": "Larger text",
@@ -314,15 +306,9 @@
       "logout": "Logout"
     },
     "common": {
-      "saveChanges": "Save Changes",
       "remove": "Remove",
-      "create": "Create",
-      "noResults": "No results",
-      "noResultsHint": "Try adjusting your search terms.",
-      "viewAll": "View All",
       "sortBy": "Sort by",
       "actions": "Actions",
-      "networkWide": "Entire Network",
       "done": "Done",
       "loadErrorDescription": "The server didn't respond as expected. Try again, or check your network."
     },
@@ -472,7 +458,6 @@
       "colSchedules": "Schedules",
       "colSchedulesEntries": "{{ count }} entries",
       "colDisplay": "Display",
-      "colActions": "Actions",
       "displayConfigured": "Display configured",
       "noDisplay": "No display",
       "previewTooltip": "Preview kiosk display",
@@ -649,7 +634,6 @@
       "copyToken": "Copy Token to Clipboard",
       "tokenCopied": "Token copied to clipboard",
       "tokenCopyFailed": "Failed to copy token",
-      "done": "Done",
       "loadFailed": "Failed to load devices",
       "loadLinesFailed": "Failed to load lines",
       "registerFailed": "Failed to register device",
@@ -679,7 +663,6 @@
       "colLine": "Line",
       "colDestination": "Destination",
       "colTime": "Time",
-      "colActions": "Actions",
       "noTerminus": "(no terminus)",
       "scheduleFor": "Schedule for {{ name }}",
       "emptyTitle": "No schedule entries",
@@ -838,7 +821,10 @@
       "vehiclesNotConfigured": "Vehicles feed not configured (app.gtfs-rt.vehicle-positions-url empty)"
     },
     "gtfsData": {
-      "payment": { "onBoard": "On board", "advance": "In advance" },
+      "payment": {
+        "onBoard": "On board",
+        "advance": "In advance"
+      },
       "transfer": {
         "unlimited": "Unlimited",
         "none": "None",

@@ -1,17 +1,12 @@
 {
   "common": {
     "appName": "Transit Display Hub",
-    "loading": "Chargement…",
-    "save": "Enregistrer",
     "cancel": "Annuler",
     "delete": "Supprimer",
-    "edit": "Modifier",
     "search": "Rechercher",
     "close": "Fermer",
-    "confirm": "Confirmer",
     "yes": "Oui",
     "no": "Non",
-    "back": "Retour",
     "refresh": "Rafraîchir",
     "ok": "OK",
     "retry": "Réessayer",
@@ -19,7 +14,6 @@
       "network": "Erreur réseau : vérifiez votre connexion",
       "accessDenied": "Accès refusé : permissions insuffisantes"
     },
-    "language": "Langue",
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",
     "switchLight": "Passer en mode clair",
@@ -46,9 +40,7 @@
       "invalidToken": "Jeton d'appareil invalide ou appareil introuvable.",
       "stopNotFound": "Arrêt introuvable."
     },
-    "noArrivals": "Aucun passage prévu",
     "noScheduledDepartures": "Aucun passage à annoncer",
-    "alertWarning": "Alerte trafic",
     "speakNext": "Écouter le prochain passage",
     "highContrast": "Mode contrasté",
     "largeText": "Texte agrandi",
@@ -314,15 +306,9 @@
       "logout": "Déconnexion"
     },
     "common": {
-      "saveChanges": "Enregistrer les modifications",
       "remove": "Retirer",
-      "create": "Créer",
-      "noResults": "Aucun résultat",
-      "noResultsHint": "Essayez de modifier vos termes de recherche.",
-      "viewAll": "Voir tout",
       "sortBy": "Trier par",
       "actions": "Actions",
-      "networkWide": "Réseau entier",
       "done": "Terminé",
       "loadErrorDescription": "Le serveur n'a pas répondu comme prévu. Réessayez ou vérifiez votre connexion."
     },
@@ -472,7 +458,6 @@
       "colSchedules": "Horaires",
       "colSchedulesEntries": "{{ count }} entrées",
       "colDisplay": "Affichage",
-      "colActions": "Actions",
       "displayConfigured": "Affichage configuré",
       "noDisplay": "Aucun affichage",
       "previewTooltip": "Aperçu de l'affichage kiosque",
@@ -649,7 +634,6 @@
       "copyToken": "Copier le jeton dans le presse-papier",
       "tokenCopied": "Jeton copié dans le presse-papier",
       "tokenCopyFailed": "Impossible de copier le jeton",
-      "done": "Terminé",
       "loadFailed": "Impossible de charger les équipements",
       "loadLinesFailed": "Impossible de charger les lignes",
       "registerFailed": "Impossible d'enregistrer l'équipement",
@@ -679,7 +663,6 @@
       "colLine": "Ligne",
       "colDestination": "Destination",
       "colTime": "Heure",
-      "colActions": "Actions",
       "noTerminus": "(pas de terminus)",
       "scheduleFor": "Horaire pour {{ name }}",
       "emptyTitle": "Aucune entrée d'horaire",
@@ -838,7 +821,10 @@
       "vehiclesNotConfigured": "Flux véhicules non configuré (app.gtfs-rt.vehicle-positions-url vide)"
     },
     "gtfsData": {
-      "payment": { "onBoard": "À bord", "advance": "À l'avance" },
+      "payment": {
+        "onBoard": "À bord",
+        "advance": "À l'avance"
+      },
       "transfer": {
         "unlimited": "Illimitées",
         "none": "Aucune",
