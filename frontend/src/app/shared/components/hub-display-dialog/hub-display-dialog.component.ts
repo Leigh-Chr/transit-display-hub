@@ -179,9 +179,9 @@ export interface HubDisplayDialogResult {
       background-color: var(--app-surface-variant);
       cursor: pointer;
       transition: background-color 0.15s;
-      // Reset native button look so the row reads like a list item;
-      // <button> chosen over <div> for keyboard accessibility (Enter +
-      // Space activate it natively).
+      /* Reset native button look so the row reads like a list item;
+         <button> chosen over <div> for keyboard accessibility
+         (Enter + Space activate it natively). */
       width: 100%;
       border: none;
       font: inherit;

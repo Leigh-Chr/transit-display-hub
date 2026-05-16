@@ -298,7 +298,7 @@ import { NetworkLine } from '@shared/models';
     }
 
     .empty-state mat-icon {
-      // mat-icon font-size is glyph height; matches its container box.
+      /* mat-icon font-size is glyph height; matches its container box. */
       font-size: 48px;
       width: 48px;
       height: 48px;

@@ -17,10 +17,6 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="assets/icons/icon-512x512.png">
   <script>
-    // Polyfill for sockjs-client which expects Node.js global
-    if (typeof global === 'undefined') {
-      window.global = window;
-    }
     // Lift the persisted UI language into <html lang> before the
     // first paint so screen readers and search engines see the
     // correct language attribute on initial load. LocaleService
