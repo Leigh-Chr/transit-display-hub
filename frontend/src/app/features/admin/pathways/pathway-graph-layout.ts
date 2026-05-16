@@ -53,7 +53,7 @@ export interface PathwayGraphLayout {
  * ESCALATOR / ELEVATOR are the modes admins look at most when
  * checking accessibility.
  */
-export const PATHWAY_MODE_COLORS: Record<PathwayMode, string> = {
+const PATHWAY_MODE_COLORS: Record<PathwayMode, string> = {
   WALKWAY: '#6b7280',
   STAIRS: '#dc2626',
   MOVING_SIDEWALK: '#0ea5e9',

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.19.0] — 2026-05-16
+
+Tail-end of the audit-driven session: two small but valuable
+extractions that move pure logic out of Angular components into
+plain TypeScript modules, where unit-testing is cheap.
+
+### Added
+
+- **`shared/utils/min-heap.ts`** — generic binary min-heap pulled
+  out of `route-finder.service.ts` (~60 lines), now reusable and
+  covered by 5 dedicated specs.
+- **`features/admin/pathways/pathway-graph-layout.ts`** —
+  `buildPathwayGraphLayout(pathways, rootStopId, transloco?)` plus
+  the four `PathwayGraph*` interfaces and `PATHWAY_MODE_COLORS`
+  table. Hosts the BFS layout + arrow geometry that used to be
+  ~200 lines of static helpers inside `pathways.component.ts`.
+
+### Changed
+
+- **`route-finder.service.ts`** drops its inline `MinHeap` class
+  and reads from the new shared module.
+- **`pathways.component.ts`** drops the static helpers + interface
+  declarations (~250 lines) and delegates to
+  `buildPathwayGraphLayout`. A static `PathwaysComponent.buildLayout`
+  bridge stays so the existing six spec assertions keep compiling
+  unchanged.
+
 ## [1.18.0] — 2026-05-16
 
 Backend "god service" decomposition wave. Closes audit P2 on
