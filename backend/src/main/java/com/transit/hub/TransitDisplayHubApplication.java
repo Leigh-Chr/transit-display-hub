@@ -1,6 +1,7 @@
 package com.transit.hub;
 
 import com.transit.hub.infrastructure.config.AuthProperties;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import com.transit.hub.infrastructure.config.JwtProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -11,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
-@EnableConfigurationProperties({ JwtProperties.class, AuthProperties.class })
+@EnableConfigurationProperties({ JwtProperties.class, AuthProperties.class, GtfsRtProperties.class })
 public final class TransitDisplayHubApplication {
 
     private TransitDisplayHubApplication() {

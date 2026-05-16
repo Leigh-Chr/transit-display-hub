@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,7 +17,7 @@ class RealtimeAlertCacheTest {
 
     @Test
     void disabledByDefault_emptyAlertsUrl() {
-        RealtimeAlertCache cache = new RealtimeAlertCache();
+        RealtimeAlertCache cache = new RealtimeAlertCache(propertiesFor(""));
         assertFalse(cache.isEnabled());
         assertTrue(cache.activeAlerts(Instant.now()).isEmpty());
         assertEquals(FeedHeaderInfo.empty(), cache.currentHeader());
@@ -24,7 +25,7 @@ class RealtimeAlertCacheTest {
 
     @Test
     void refresh_isNoOpWhenDisabled() {
-        RealtimeAlertCache cache = new RealtimeAlertCache();
+        RealtimeAlertCache cache = new RealtimeAlertCache(propertiesFor(""));
         cache.refresh();
         assertTrue(cache.activeAlerts(Instant.now()).isEmpty());
     }
@@ -199,5 +200,12 @@ class RealtimeAlertCacheTest {
                         .setText(text)
                         .build())
                 .build();
+    }
+
+    private static GtfsRtProperties propertiesFor(String url) {
+        // Tests prime the snapshot directly so the cache never
+        // calls fetchAndParse — supply a dummy URL set and the
+        // default timeout.
+        return new GtfsRtProperties(url, url, url, "", "", "", 10);
     }
 }

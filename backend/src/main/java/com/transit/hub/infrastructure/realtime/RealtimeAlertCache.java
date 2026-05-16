@@ -1,8 +1,9 @@
 package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -24,8 +25,11 @@ import java.util.Set;
  * without a realtime feed unaffected.
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeAlertCache.AlertSnapshot>> {
+
+    private final GtfsRtProperties properties;
 
     /**
      * Public-facing snapshot of an active service alert, distilled
@@ -65,20 +69,14 @@ public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeA
         }
     }
 
-    @Value("${app.gtfs-rt.alerts-url:}")
-    private String alertsUrl = "";
-
-    @Value("${app.gtfs-rt.timeout-seconds:10}")
-    private int timeoutSeconds = 10;
-
     @Override
     protected String feedUrl() {
-        return alertsUrl;
+        return properties.alertsUrl();
     }
 
     @Override
     protected int timeoutSeconds() {
-        return timeoutSeconds;
+        return properties.timeoutSeconds();
     }
 
     @Override

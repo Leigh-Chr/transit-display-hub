@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -16,7 +17,7 @@ class RealtimeTripUpdateCacheTest {
 
     @Test
     void disabledByDefault_emptyTripUpdatesUrl() {
-        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache();
+        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""));
         assertFalse(cache.isEnabled());
         assertEquals(0, cache.snapshotSize());
         assertNotNull(cache.currentHeader());
@@ -24,14 +25,14 @@ class RealtimeTripUpdateCacheTest {
 
     @Test
     void findUpdate_returnsEmptyForNullOrUnknownTripId() {
-        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache();
+        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""));
         assertEquals(Optional.empty(), cache.findUpdate(null));
         assertEquals(Optional.empty(), cache.findUpdate("unknown-trip"));
     }
 
     @Test
     void refresh_isNoOpWhenDisabled() {
-        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache();
+        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""));
         cache.refresh();
         assertEquals(0, cache.snapshotSize());
     }
@@ -158,5 +159,12 @@ class RealtimeTripUpdateCacheTest {
         return GtfsRealtime.TripUpdate.newBuilder()
                 .setTrip(GtfsRealtime.TripDescriptor.newBuilder().setTripId(tripId).build())
                 .build();
+    }
+
+    private static GtfsRtProperties propertiesFor(String url) {
+        // Tests prime the snapshot directly so the cache never
+        // calls fetchAndParse — supply a dummy URL set and the
+        // default timeout.
+        return new GtfsRtProperties(url, url, url, "", "", "", 10);
     }
 }

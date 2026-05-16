@@ -1,8 +1,9 @@
 package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -20,8 +21,11 @@ import java.util.Optional;
  * {@link RealtimeAlertCache} keeps the operator config symmetric.
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<String, RealtimeTripUpdateCache.TripAdjustment>> {
+
+    private final GtfsRtProperties properties;
 
     /**
      * Per-stop adjustment carried by a {@link GtfsRealtime.TripUpdate.StopTimeUpdate}.
@@ -67,20 +71,14 @@ public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<Strin
             Map<String, StopAdjustment> byStopExternalId
     ) {}
 
-    @Value("${app.gtfs-rt.trip-updates-url:}")
-    private String tripUpdatesUrl = "";
-
-    @Value("${app.gtfs-rt.timeout-seconds:10}")
-    private int timeoutSeconds = 10;
-
     @Override
     protected String feedUrl() {
-        return tripUpdatesUrl;
+        return properties.tripUpdatesUrl();
     }
 
     @Override
     protected int timeoutSeconds() {
-        return timeoutSeconds;
+        return properties.timeoutSeconds();
     }
 
     @Override

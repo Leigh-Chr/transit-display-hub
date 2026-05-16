@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,7 +16,7 @@ class RealtimeVehiclePositionCacheTest {
 
     @Test
     void disabledByDefault_emptyVehiclePositionsUrl() {
-        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache();
+        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache(propertiesFor(""));
         assertFalse(cache.isEnabled());
         assertTrue(cache.currentSnapshot().isEmpty());
         assertNotNull(cache.currentHeader());
@@ -23,7 +24,7 @@ class RealtimeVehiclePositionCacheTest {
 
     @Test
     void refresh_isNoOpWhenDisabled() {
-        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache();
+        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache(propertiesFor(""));
         cache.refresh();
         assertTrue(cache.currentSnapshot().isEmpty());
     }
@@ -154,5 +155,12 @@ class RealtimeVehiclePositionCacheTest {
         }
         vb.setTrip(tb.build());
         return GtfsRealtime.FeedEntity.newBuilder().setId(entityId).setVehicle(vb.build()).build();
+    }
+
+    private static GtfsRtProperties propertiesFor(String url) {
+        // Tests prime the snapshot directly so the cache never
+        // calls fetchAndParse — supply a dummy URL set and the
+        // default timeout.
+        return new GtfsRtProperties(url, url, url, "", "", "", 10);
     }
 }

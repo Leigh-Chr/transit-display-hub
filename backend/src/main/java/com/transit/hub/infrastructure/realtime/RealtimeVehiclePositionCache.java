@@ -1,8 +1,9 @@
 package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,8 +20,11 @@ import java.util.List;
  * so positions are exposed via the admin browse endpoint only.
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class RealtimeVehiclePositionCache extends AbstractRealtimeFeedCache<List<RealtimeVehiclePositionCache.VehicleSnapshot>> {
+
+    private final GtfsRtProperties properties;
 
     /**
      * Flat snapshot of one vehicle's position. We keep raw GTFS-RT
@@ -47,20 +51,14 @@ public class RealtimeVehiclePositionCache extends AbstractRealtimeFeedCache<List
             Long timestampEpochSeconds
     ) {}
 
-    @Value("${app.gtfs-rt.vehicle-positions-url:}")
-    private String vehiclePositionsUrl = "";
-
-    @Value("${app.gtfs-rt.timeout-seconds:10}")
-    private int timeoutSeconds = 10;
-
     @Override
     protected String feedUrl() {
-        return vehiclePositionsUrl;
+        return properties.vehiclePositionsUrl();
     }
 
     @Override
     protected int timeoutSeconds() {
-        return timeoutSeconds;
+        return properties.timeoutSeconds();
     }
 
     @Override

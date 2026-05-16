@@ -1,8 +1,8 @@
 package com.transit.hub.infrastructure.realtime;
 
+import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,32 +26,24 @@ public class RealtimeAlertScheduler {
     private final RealtimeAlertCache alertCache;
     private final RealtimeTripUpdateCache tripUpdateCache;
     private final RealtimeVehiclePositionCache vehiclePositionCache;
-
-    @Value("${app.gtfs-rt.alerts-url:}")
-    private String alertsUrl = "";
-
-    @Value("${app.gtfs-rt.trip-updates-url:}")
-    private String tripUpdatesUrl = "";
-
-    @Value("${app.gtfs-rt.vehicle-positions-url:}")
-    private String vehiclePositionsUrl = "";
+    private final GtfsRtProperties properties;
 
     @EventListener(ApplicationReadyEvent.class)
     public void refreshOnStartup() {
         if (alertCache.isEnabled()) {
-            log.info("GTFS-RT alerts: priming cache from {}", alertsUrl);
+            log.info("GTFS-RT alerts: priming cache from {}", properties.alertsUrl());
             alertCache.refresh();
         } else {
             log.info("GTFS-RT alerts: no app.gtfs-rt.alerts-url configured, skipping");
         }
         if (tripUpdateCache.isEnabled()) {
-            log.info("GTFS-RT trip updates: priming cache from {}", tripUpdatesUrl);
+            log.info("GTFS-RT trip updates: priming cache from {}", properties.tripUpdatesUrl());
             tripUpdateCache.refresh();
         } else {
             log.info("GTFS-RT trip updates: no app.gtfs-rt.trip-updates-url configured, skipping");
         }
         if (vehiclePositionCache.isEnabled()) {
-            log.info("GTFS-RT vehicle positions: priming cache from {}", vehiclePositionsUrl);
+            log.info("GTFS-RT vehicle positions: priming cache from {}", properties.vehiclePositionsUrl());
             vehiclePositionCache.refresh();
         } else {
             log.info("GTFS-RT vehicle positions: no app.gtfs-rt.vehicle-positions-url configured, skipping");
