@@ -91,7 +91,12 @@ class ItineraryServiceTest {
         void returnsAllItineraries() {
             Itinerary itinerary1 = TestDataFactory.createItinerary(testLine, "Direction East");
             Itinerary itinerary2 = TestDataFactory.createItinerary(testLine, "Direction West");
-            when(itineraryRepository.findAllWithLineAndStops()).thenReturn(List.of(itinerary1, itinerary2));
+            UUID id1 = itinerary1.getId();
+            UUID id2 = itinerary2.getId();
+            when(itineraryRepository.findAllIds(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(id1, id2), Pageable.unpaged(), 2));
+            when(itineraryRepository.findAllByIdInWithLine(List.of(id1, id2)))
+                    .thenReturn(List.of(itinerary1, itinerary2));
 
             List<ItineraryResponse> result = itineraryService.getAllItineraries();
 
@@ -103,7 +108,8 @@ class ItineraryServiceTest {
         @Test
         @DisplayName("returns empty list when no itineraries exist")
         void returnsEmptyListWhenNoItineraries() {
-            when(itineraryRepository.findAllWithLineAndStops()).thenReturn(List.of());
+            when(itineraryRepository.findAllIds(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(), Pageable.unpaged(), 0));
 
             List<ItineraryResponse> result = itineraryService.getAllItineraries();
 

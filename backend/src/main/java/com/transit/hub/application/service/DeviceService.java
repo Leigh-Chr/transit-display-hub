@@ -6,6 +6,7 @@ import com.transit.hub.application.dto.response.DeviceRegistrationResponse;
 import com.transit.hub.application.dto.response.DeviceResponse;
 import com.transit.hub.application.dto.response.LineInfo;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.model.Device;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
@@ -13,6 +14,9 @@ import com.transit.hub.domain.model.enums.DeviceStatus;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DeviceService {
 
     private final DeviceRepository deviceRepository;
@@ -40,7 +45,21 @@ public class DeviceService {
 
     @Transactional(readOnly = true)
     public List<DeviceResponse> getAllDevices() {
-        return deviceRepository.findAllWithStopAndLine().stream()
+        // Defensive cap (audit P1 B-7): page over ids first, then hydrate
+        // only the bounded page with stop + lines so a future deployment
+        // with thousands of kiosks does not pin a Hikari thread on a
+        // multi-megabyte JSON serialisation. The cap warns operators when
+        // the unpaginated read path needs to migrate to true paging.
+        Page<UUID> idsPage = deviceRepository.findAllIds(
+                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
+        if (idsPage.hasNext()) {
+            log.warn("getAllDevices() capped at {} rows (totalElements={}); switch to a paginated endpoint",
+                    UnpaginatedCap.MAX_ROWS, idsPage.getTotalElements());
+        }
+        if (idsPage.getContent().isEmpty()) {
+            return List.of();
+        }
+        return deviceRepository.findAllByIdInWithStopAndLine(idsPage.getContent()).stream()
                 .map(DeviceResponse::from)
                 .toList();
     }

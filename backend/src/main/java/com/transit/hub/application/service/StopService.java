@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.request.CreateStopRequest;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.event.StopDeletedEvent;
 import com.transit.hub.domain.model.Line;
@@ -16,8 +17,10 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StopService {
 
     private final StopRepository stopRepository;
@@ -43,11 +47,17 @@ public class StopService {
 
     @Transactional(readOnly = true)
     public List<StopResponse> getAllStops() {
-        List<Stop> stops = stopRepository.findAllWithLinesAndDevices();
-        Map<UUID, Integer> counts = scheduleCountsFor(stops);
-        return stops.stream()
-                .map(stop -> StopResponse.from(stop, counts.getOrDefault(stop.getId(), 0)))
-                .toList();
+        // Defensive cap (audit P1 B-7): route the unpaginated read path
+        // through the paginated implementation with a one-page cap so a
+        // future feed with 30k stops does not blow memory on this
+        // endpoint. Operators see a warning when the cap fires.
+        PageResponse<StopResponse> page = getAllStops(null, null,
+                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
+        if (page.totalPages() > 1) {
+            log.warn("getAllStops() capped at {} rows (totalElements={}); switch to the paginated endpoint",
+                    UnpaginatedCap.MAX_ROWS, page.totalElements());
+        }
+        return page.content();
     }
 
     @Transactional(readOnly = true)

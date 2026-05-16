@@ -87,7 +87,12 @@ class LineServiceTest {
         void returnsAllLines() {
             Line line1 = TestDataFactory.createLine("L1", "Line 1", "#FF5733");
             Line line2 = TestDataFactory.createLine("L2", "Line 2", "#33FF57");
-            when(lineRepository.findAllWithStopsAndRoutes()).thenReturn(List.of(line1, line2));
+            UUID id1 = line1.getId();
+            UUID id2 = line2.getId();
+            when(lineRepository.findAllIds(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(id1, id2), Pageable.unpaged(), 2));
+            when(lineRepository.findAllByIdInWithStopsAndRoutes(List.of(id1, id2)))
+                    .thenReturn(List.of(line1, line2));
 
             List<LineResponse> result = lineService.getAllLines();
 
@@ -98,7 +103,8 @@ class LineServiceTest {
         @Test
         @DisplayName("returns empty list when no lines exist")
         void returnsEmptyListWhenNoLines() {
-            when(lineRepository.findAllWithStopsAndRoutes()).thenReturn(List.of());
+            when(lineRepository.findAllIds(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(), Pageable.unpaged(), 0));
 
             List<LineResponse> result = lineService.getAllLines();
 

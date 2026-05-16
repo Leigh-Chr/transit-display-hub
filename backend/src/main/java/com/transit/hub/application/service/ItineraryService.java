@@ -7,6 +7,7 @@ import com.transit.hub.application.dto.response.ItineraryResponse;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
@@ -17,8 +18,10 @@ import com.transit.hub.infrastructure.persistence.ItineraryStopRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ItineraryService {
 
     private final ItineraryRepository itineraryRepository;
@@ -41,9 +45,15 @@ public class ItineraryService {
 
     @Transactional(readOnly = true)
     public List<ItineraryResponse> getAllItineraries() {
-        return itineraryRepository.findAllWithLineAndStops().stream()
-                .map(ItineraryResponse::from)
-                .toList();
+        // Defensive cap (audit P1 B-7): unpaginated path delegates to
+        // the paginated implementation with a one-page cap.
+        PageResponse<ItineraryResponse> page = getAllItineraries(null, null,
+                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
+        if (page.totalPages() > 1) {
+            log.warn("getAllItineraries() capped at {} rows (totalElements={}); switch to the paginated endpoint",
+                    UnpaginatedCap.MAX_ROWS, page.totalElements());
+        }
+        return page.content();
     }
 
     @Transactional(readOnly = true)

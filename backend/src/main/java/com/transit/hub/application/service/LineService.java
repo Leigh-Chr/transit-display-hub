@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Stop;
@@ -17,8 +18,10 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LineService {
 
     private final LineRepository lineRepository;
@@ -43,9 +47,19 @@ public class LineService {
 
     @Transactional(readOnly = true)
     public List<LineResponse> getAllLines() {
-        return lineRepository.findAllWithStopsAndRoutes().stream()
-                .map(LineResponse::from)
-                .toList();
+        // Defensive cap (audit P1 B-7): the unpaginated read path no
+        // longer materialises the whole table at once. Delegates to the
+        // paginated path with a generous one-page cap so we still pin
+        // the round trip while the rare caller (admin overview) gets
+        // the same list shape it always did. Warns when the cap was
+        // actually hit so operators see when to migrate to paging.
+        PageResponse<LineResponse> page = getAllLines(null,
+                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
+        if (page.totalPages() > 1) {
+            log.warn("getAllLines() capped at {} rows (totalElements={}); switch to the paginated endpoint",
+                    UnpaginatedCap.MAX_ROWS, page.totalElements());
+        }
+        return page.content();
     }
 
     @Transactional(readOnly = true)

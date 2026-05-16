@@ -92,7 +92,12 @@ class StopServiceTest {
         void returnsAllStops() {
             Stop stop1 = TestDataFactory.createStop("Station 1", testLine);
             Stop stop2 = TestDataFactory.createStop("Station 2", testLine);
-            when(stopRepository.findAllWithLinesAndDevices()).thenReturn(List.of(stop1, stop2));
+            UUID id1 = stop1.getId();
+            UUID id2 = stop2.getId();
+            when(stopRepository.findAllIds(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(id1, id2), Pageable.unpaged(), 2));
+            when(stopRepository.findAllByIdInWithLinesAndDevices(List.of(id1, id2)))
+                    .thenReturn(List.of(stop1, stop2));
 
             List<StopResponse> result = stopService.getAllStops();
 
@@ -104,7 +109,8 @@ class StopServiceTest {
         @Test
         @DisplayName("returns empty list when no stops exist")
         void returnsEmptyListWhenNoStops() {
-            when(stopRepository.findAllWithLinesAndDevices()).thenReturn(List.of());
+            when(stopRepository.findAllIds(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(), Pageable.unpaged(), 0));
 
             List<StopResponse> result = stopService.getAllStops();
 

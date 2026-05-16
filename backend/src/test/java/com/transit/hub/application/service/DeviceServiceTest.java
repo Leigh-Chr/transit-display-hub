@@ -21,6 +21,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
@@ -352,7 +355,12 @@ class DeviceServiceTest {
         void returnsAllDevices() {
             Device device1 = TestDataFactory.createDevice(testStop);
             Device device2 = TestDataFactory.createOnlineDevice(testStop);
-            when(deviceRepository.findAllWithStopAndLine()).thenReturn(List.of(device1, device2));
+            UUID id1 = UUID.randomUUID();
+            UUID id2 = UUID.randomUUID();
+            Page<UUID> idsPage = new PageImpl<>(List.of(id1, id2), Pageable.unpaged(), 2);
+            when(deviceRepository.findAllIds(any())).thenReturn(idsPage);
+            when(deviceRepository.findAllByIdInWithStopAndLine(List.of(id1, id2)))
+                    .thenReturn(List.of(device1, device2));
 
             List<DeviceResponse> result = deviceService.getAllDevices();
 
@@ -362,7 +370,8 @@ class DeviceServiceTest {
         @Test
         @DisplayName("returns empty list when no devices")
         void returnsEmptyWhenNoDevices() {
-            when(deviceRepository.findAllWithStopAndLine()).thenReturn(List.of());
+            when(deviceRepository.findAllIds(any()))
+                    .thenReturn(new PageImpl<>(List.of(), Pageable.unpaged(), 0));
 
             List<DeviceResponse> result = deviceService.getAllDevices();
 

@@ -25,6 +25,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.HashMap;
@@ -62,6 +63,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(origins)
                 .addInterceptors(new AccessCookieHandshakeInterceptor());
+    }
+
+    /**
+     * Caps the inbound STOMP frame and the per-session outbound buffer so
+     * a slow / malicious client cannot pin server memory by accumulating
+     * undelivered messages. Spring's defaults (65 KiB / 512 KiB / no send
+     * timeout) are too lenient for a kiosk-heavy deployment where dozens
+     * of Raspberry Pi receivers may share flaky Wi-Fi. The send timeout
+     * matches what Tomcat applies elsewhere for stalled writes.
+     */
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        registration
+                .setMessageSizeLimit(64 * 1024)
+                .setSendBufferSizeLimit(512 * 1024)
+                .setSendTimeLimit(20_000);
     }
 
     /**
