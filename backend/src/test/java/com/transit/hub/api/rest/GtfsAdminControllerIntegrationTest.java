@@ -2,11 +2,8 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.application.service.GtfsImportOrchestrator;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsImportService;
-import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.ImportStatus;
-import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
-import com.transit.hub.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,8 +40,7 @@ class GtfsAdminControllerIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtService jwtService;
+    @Autowired private com.transit.hub.testutil.AuthTestHelper authHelper;
 
     @MockitoBean private GtfsImportOrchestrator orchestrator;
 
@@ -56,17 +51,9 @@ class GtfsAdminControllerIntegrationTest {
     void setUp() {
         userRepository.deleteAll();
 
-        User admin = User.builder()
-                .username("admin").password(passwordEncoder.encode("admin123"))
-                .role(UserRole.ADMIN).enabled(true).build();
-        userRepository.save(admin);
-        adminToken = jwtService.generateToken(admin);
+        adminToken = authHelper.createAdminToken();
 
-        User agent = User.builder()
-                .username("agent").password(passwordEncoder.encode("agent123"))
-                .role(UserRole.AGENT).enabled(true).build();
-        userRepository.save(agent);
-        agentToken = jwtService.generateToken(agent);
+        agentToken = authHelper.createAgentToken();
     }
 
     @Test

@@ -5,15 +5,12 @@ import com.transit.hub.application.dto.request.CreateMessageRequest;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
-import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.UserRepository;
-import com.transit.hub.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,10 +58,7 @@ class MessageControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtService jwtService;
+    private com.transit.hub.testutil.AuthTestHelper authHelper;
 
     private String adminToken;
     private String agentToken;
@@ -82,23 +75,9 @@ class MessageControllerIntegrationTest {
         lineRepository.deleteAll();
         userRepository.deleteAll();
 
-        User admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("admin123"))
-                .role(UserRole.ADMIN)
-                .enabled(true)
-                .build();
-        userRepository.save(admin);
-        adminToken = jwtService.generateToken(admin);
+        adminToken = authHelper.createAdminToken();
 
-        User agent = User.builder()
-                .username("agent")
-                .password(passwordEncoder.encode("agent123"))
-                .role(UserRole.AGENT)
-                .enabled(true)
-                .build();
-        userRepository.save(agent);
-        agentToken = jwtService.generateToken(agent);
+        agentToken = authHelper.createAgentToken();
 
         testLine = Line.builder()
                 .code("L1")

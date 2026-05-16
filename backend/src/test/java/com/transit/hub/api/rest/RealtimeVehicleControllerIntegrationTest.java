@@ -1,16 +1,12 @@
 package com.transit.hub.api.rest;
 
-import com.transit.hub.domain.model.User;
-import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
-import com.transit.hub.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,19 +25,14 @@ class RealtimeVehicleControllerIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtService jwtService;
+    @Autowired private com.transit.hub.testutil.AuthTestHelper authHelper;
 
     private String adminToken;
 
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
-        User admin = User.builder()
-                .username("admin").password(passwordEncoder.encode("admin123"))
-                .role(UserRole.ADMIN).enabled(true).build();
-        userRepository.save(admin);
-        adminToken = jwtService.generateToken(admin);
+        adminToken = authHelper.createAdminToken();
     }
 
     @Test

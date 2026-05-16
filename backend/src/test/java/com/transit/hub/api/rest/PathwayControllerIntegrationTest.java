@@ -2,20 +2,16 @@ package com.transit.hub.api.rest;
 
 import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.Stop;
-import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.PathwayMode;
-import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.UserRepository;
-import com.transit.hub.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +34,7 @@ class PathwayControllerIntegrationTest {
     @Autowired private StopRepository stopRepository;
     @Autowired private PathwayRepository pathwayRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtService jwtService;
+    @Autowired private com.transit.hub.testutil.AuthTestHelper authHelper;
 
     private String agentToken;
     private UUID centralStopId;
@@ -50,11 +45,7 @@ class PathwayControllerIntegrationTest {
         stopRepository.deleteAll();
         userRepository.deleteAll();
 
-        User agent = User.builder()
-                .username("agent").password(passwordEncoder.encode("agent123"))
-                .role(UserRole.AGENT).enabled(true).build();
-        userRepository.save(agent);
-        agentToken = jwtService.generateToken(agent);
+        agentToken = authHelper.createAgentToken();
 
         Stop platformA = stopRepository.save(Stop.builder()
                 .name("Quai A").lines(new HashSet<>()).build());
