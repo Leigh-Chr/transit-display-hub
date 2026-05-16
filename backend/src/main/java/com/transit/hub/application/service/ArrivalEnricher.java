@@ -186,7 +186,8 @@ public class ArrivalEnricher {
     }
 
     static String resolveStopHeadsign(Itinerary itinerary, UUID stopId) {
-        if (itinerary.getItineraryStops() == null) {return null;}
+        // Itinerary.getItineraryStops() now returns a non-null unmodifiable
+        // view, so the legacy null guard is redundant.
         for (var is : itinerary.getItineraryStops()) {
             if (is.getStop() != null && stopId.equals(is.getStop().getId())) {
                 String headsign = is.getStopHeadsign();

@@ -94,7 +94,7 @@ class NetworkMapServiceTest {
             Stop stopA = TestDataFactory.createStop("Station A", line);
             Stop stopB = TestDataFactory.createStop("Station B", line);
             Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "Direction B", stopA, stopB);
-            line.getItineraries().add(itinerary);
+            line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
             when(stopRepository.findAllWithLines()).thenReturn(List.of(stopA, stopB));
@@ -132,7 +132,7 @@ class NetworkMapServiceTest {
             Stop stopB = TestDataFactory.createStop("Beta", line);
             Stop stopC = TestDataFactory.createStop("Gamma", line);
             Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "To Gamma", stopA, stopB, stopC);
-            line.getItineraries().add(itinerary);
+            line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
             when(stopRepository.findAllWithLines()).thenReturn(List.of(stopA, stopB, stopC));
@@ -382,7 +382,7 @@ class NetworkMapServiceTest {
             Stop terminusEnd = TestDataFactory.createStop("End", line);
             Itinerary itinerary = TestDataFactory.createItineraryWithStops(line,
                     "ToEnd", terminusStart, centralPlatform, terminusEnd);
-            line.getItineraries().add(itinerary);
+            line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
             when(stopRepository.findAllWithLines())
@@ -406,7 +406,7 @@ class NetworkMapServiceTest {
             Stop end = TestDataFactory.createStop("End", line);
             Itinerary itinerary = TestDataFactory.createItineraryWithStops(line,
                     "ToEnd", start, centralA, centralB, end);
-            line.getItineraries().add(itinerary);
+            line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
             when(stopRepository.findAllWithLines())

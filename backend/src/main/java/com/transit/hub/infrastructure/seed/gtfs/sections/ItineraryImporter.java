@@ -101,7 +101,7 @@ public class ItineraryImporter {
         // reassigning its stops doesn't leave the previous lines
         // permanently attached.
         for (Stop stop : stopImport.stopsByGtfsId().values()) {
-            stop.getLines().clear();
+            stop.clearLines();
         }
 
         ItineraryBuildResult result = buildItineraries(bestTrip, tripInfos, buckets.stopsByTrip,
@@ -252,7 +252,7 @@ public class ItineraryImporter {
         } else {
             // orphanRemoval=true on the OneToMany picks up the cleared rows
             // when we save the parent again below.
-            itinerary.getItineraryStops().clear();
+            itinerary.clearItineraryStops();
         }
         // Single mutation site so a field added later can't silently miss
         // either the create or the update path.
@@ -291,8 +291,8 @@ public class ItineraryImporter {
                     .position(position++)
                     .stopHeadsign(truncate(ts.headsign(), 100))
                     .build();
-            itinerary.getItineraryStops().add(is);
-            stop.getLines().add(line);
+            itinerary.addItineraryStop(is);
+            stop.addLine(line);
             result.stopsTouched.add(stop);
             result.itineraryStopCount++;
         }

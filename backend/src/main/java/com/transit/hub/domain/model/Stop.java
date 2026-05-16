@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -158,6 +161,14 @@ public class Stop {
     @JoinColumn(name = "parent_stop_id")
     private Stop parentStop;
 
+    // Collections are exposed via explicit hand-written getters (below)
+    // that return unmodifiable views, so callers must use the dedicated
+    // mutators (addLine / removeLine / setLines, …). Hibernate still
+    // reads the backing field via reflection — its persistent collection
+    // wrapper stays untouched and the dirty-checking it relies on keeps
+    // working transparently.
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "stop_lines",
             joinColumns = @JoinColumn(name = "stop_id"),
@@ -165,16 +176,63 @@ public class Stop {
     @Builder.Default
     private Set<Line> lines = new HashSet<>();
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "stop", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Schedule> schedules = new ArrayList<>();
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "stop")
     @Builder.Default
     private List<Device> devices = new ArrayList<>();
 
+    public Set<Line> getLines() {
+        return Collections.unmodifiableSet(lines);
+    }
+
+    public List<Schedule> getSchedules() {
+        return Collections.unmodifiableList(schedules);
+    }
+
+    public List<Device> getDevices() {
+        return Collections.unmodifiableList(devices);
+    }
+
     public void addLine(Line line) {
         lines.add(line);
-        line.getStops().add(this);
+        line.getStopsMutable().add(this);
+    }
+
+    public void removeLine(Line line) {
+        lines.remove(line);
+        line.getStopsMutable().remove(this);
+    }
+
+    public void clearLines() {
+        // Detach this stop from both sides of the relation so the
+        // owning-side @JoinTable rows are removed on flush.
+        for (Line line : new HashSet<>(lines)) {
+            line.getStopsMutable().remove(this);
+        }
+        lines.clear();
+    }
+
+    public void setLines(Collection<Line> replacement) {
+        clearLines();
+        for (Line line : replacement) {
+            addLine(line);
+        }
+    }
+
+    /**
+     * Mutable accessor used by the cross-side bookkeeping in
+     * {@link Line#addStop(Stop)} / {@link Line#removeStop(Stop)}. Marked
+     * package-private to deter random callers; production code should
+     * route through {@link #addLine(Line)} / {@link #removeLine(Line)}.
+     */
+    Set<Line> getLinesMutable() {
+        return lines;
     }
 }

@@ -151,7 +151,7 @@ public class ItineraryService {
         // Update stops if provided
         if (request.stopIds() != null) {
             itineraryStopRepository.deleteByItineraryId(id);
-            itinerary.getItineraryStops().clear();
+            itinerary.clearItineraryStops();
             if (!request.stopIds().isEmpty()) {
                 addStopsToItinerary(itinerary, request.stopIds());
             }
@@ -178,7 +178,7 @@ public class ItineraryService {
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary", id));
 
         itineraryStopRepository.deleteByItineraryId(id);
-        itinerary.getItineraryStops().clear();
+        itinerary.clearItineraryStops();
 
         if (request.stopIds() != null && !request.stopIds().isEmpty()) {
             addStopsToItinerary(itinerary, request.stopIds());
@@ -223,7 +223,7 @@ public class ItineraryService {
                 .position(position)
                 .build();
 
-        itinerary.getItineraryStops().add(itineraryStop);
+        itinerary.addItineraryStop(itineraryStop);
         itineraryRepository.save(itinerary);
         eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(request.stopId())));
 
@@ -239,7 +239,7 @@ public class ItineraryService {
             throw new EntityNotFoundException("Stop", stopId);
         }
 
-        boolean removed = itinerary.getItineraryStops().removeIf(is -> is.getStop().getId().equals(stopId));
+        boolean removed = itinerary.removeItineraryStopIf(is -> is.getStop().getId().equals(stopId));
         if (!removed) {
             throw ValidationException.ofKey("error.itinerary.stopNotInItinerary");
         }
@@ -281,7 +281,7 @@ public class ItineraryService {
                     .position(i)
                     .build();
 
-            itinerary.getItineraryStops().add(itineraryStop);
+            itinerary.addItineraryStop(itineraryStop);
         }
     }
 }

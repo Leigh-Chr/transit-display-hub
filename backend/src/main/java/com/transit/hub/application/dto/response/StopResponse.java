@@ -52,7 +52,8 @@ public record StopResponse(
         // Lazily reads stop.getSchedules() — incurs a per-row SELECT. Prefer
         // the (stop, scheduleCount) overload from listing endpoints that have
         // already aggregated the counts.
-        return from(stop, stop.getSchedules() != null ? stop.getSchedules().size() : 0);
+        // Stop.getSchedules() now always returns a non-null unmodifiable view.
+        return from(stop, stop.getSchedules().size());
     }
 
     public static StopResponse from(Stop stop, int scheduleCount) {

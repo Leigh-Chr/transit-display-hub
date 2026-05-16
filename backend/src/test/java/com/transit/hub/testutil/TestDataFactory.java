@@ -55,7 +55,7 @@ public final class TestDataFactory {
                 .build();
         for (Line line : lines) {
             if (line != null) {
-                line.getStops().add(stop);
+                stop.addLine(line);
             }
         }
         return stop;

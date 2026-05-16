@@ -18,6 +18,7 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,6 +26,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -121,10 +124,57 @@ public class Itinerary {
     private Double meanDurationOffset;
 
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @Builder.Default
     private List<ItineraryStop> itineraryStops = new ArrayList<>();
+
+    public List<ItineraryStop> getItineraryStops() {
+        return Collections.unmodifiableList(itineraryStops);
+    }
+
+    public void addItineraryStop(ItineraryStop itineraryStop) {
+        itineraryStops.add(itineraryStop);
+        itineraryStop.setItinerary(this);
+    }
+
+    public void removeItineraryStop(ItineraryStop itineraryStop) {
+        if (itineraryStops.remove(itineraryStop)) {
+            itineraryStop.setItinerary(null);
+        }
+    }
+
+    public void clearItineraryStops() {
+        for (ItineraryStop is : new ArrayList<>(itineraryStops)) {
+            removeItineraryStop(is);
+        }
+    }
+
+    public void setItineraryStops(Collection<ItineraryStop> replacement) {
+        clearItineraryStops();
+        for (ItineraryStop is : replacement) {
+            addItineraryStop(is);
+        }
+    }
+
+    /**
+     * Removes every itinerary stop matching {@code predicate}. Returns
+     * true when at least one stop was removed — same contract as
+     * {@link java.util.Collection#removeIf} so callers that used the
+     * leaked mutable list have a drop-in replacement.
+     */
+    public boolean removeItineraryStopIf(java.util.function.Predicate<ItineraryStop> predicate) {
+        boolean changed = false;
+        for (ItineraryStop is : new ArrayList<>(itineraryStops)) {
+            if (predicate.test(is)) {
+                removeItineraryStop(is);
+                changed = true;
+            }
+        }
+        return changed;
+    }
 
     /** Geographic shape the itinerary traces, sourced from
      *  {@code shapes.txt} via the representative trip's

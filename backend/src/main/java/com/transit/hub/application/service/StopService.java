@@ -156,8 +156,7 @@ public class StopService {
         stop.setName(request.name());
         stop.setLatitude(request.latitude());
         stop.setLongitude(request.longitude());
-        stop.getLines().clear();
-        stop.getLines().addAll(lines);
+        stop.setLines(lines);
 
         Stop saved = stopRepository.save(stop);
         eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(saved.getId())));

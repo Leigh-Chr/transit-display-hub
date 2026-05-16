@@ -19,12 +19,15 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -132,11 +135,53 @@ public class Line {
     @JoinColumn(name = "agency_id")
     private Agency agency;
 
+    // Inverse side of Stop.lines — see Stop for the encapsulation
+    // rationale. Mutate via addStop/removeStop so the owning side
+    // (Stop.lines) stays in sync.
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @ManyToMany(mappedBy = "lines")
     @Builder.Default
     private Set<Stop> stops = new HashSet<>();
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "line", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Itinerary> itineraries = new HashSet<>();
+
+    public Set<Stop> getStops() {
+        return Collections.unmodifiableSet(stops);
+    }
+
+    public Set<Itinerary> getItineraries() {
+        return Collections.unmodifiableSet(itineraries);
+    }
+
+    public void addItinerary(Itinerary itinerary) {
+        itineraries.add(itinerary);
+        itinerary.setLine(this);
+    }
+
+    public void removeItinerary(Itinerary itinerary) {
+        if (itineraries.remove(itinerary)) {
+            itinerary.setLine(null);
+        }
+    }
+
+    public void setItineraries(Collection<Itinerary> replacement) {
+        for (Itinerary it : new HashSet<>(itineraries)) {
+            removeItinerary(it);
+        }
+        for (Itinerary it : replacement) {
+            addItinerary(it);
+        }
+    }
+
+    /** Package-private bridge used by {@link Stop#addLine(Line)} /
+     *  {@link Stop#removeLine(Line)} to keep both sides of the M-N
+     *  relation in sync without exposing the mutable Set publicly. */
+    Set<Stop> getStopsMutable() {
+        return stops;
+    }
 }

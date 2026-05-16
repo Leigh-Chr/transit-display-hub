@@ -50,8 +50,11 @@ public record LineResponse(
                 line.getContinuousPickup(),
                 line.getContinuousDropOff(),
                 line.getCemvSupport(),
-                line.getStops() != null ? line.getStops().size() : 0,
-                line.getItineraries() != null ? line.getItineraries().size() : 0
+                // Line.getStops() / getItineraries() now return non-null
+                // unmodifiable views since the collections are encapsulated;
+                // the legacy null guard is redundant.
+                line.getStops().size(),
+                line.getItineraries().size()
         );
     }
 }
