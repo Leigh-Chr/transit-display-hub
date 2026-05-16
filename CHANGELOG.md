@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.16.0] — 2026-05-16
+
+First wave of the kiosk/hub deduplication chantier identified
+by the 5-axis audit. The two display pages used to ship 1:1
+copies of every clock helper and the two scrolling banners.
+This release lifts the time helpers and the two banners into
+shared/, cutting ~210 lines of duplicated SCSS and ~60 lines
+of duplicated HTML while keeping the visual pixels identical.
+
+### Added
+
+- **`shared/utils/time.utils.ts`** — `formatClockTime`,
+  `formatClockDate`, `formatDepartureTime`, `getMinutesUntil`,
+  `isImminent`. Pure functions with explicit `Date` / locale
+  parameters so the midnight wrap-around at -360 minutes is
+  unit-tested in one place (10 specs).
+- **`<app-display-alert-banner>`** — scrolling critical-alert
+  banner with `role="alert"` + `aria-live="assertive"` +
+  `aria-hidden` on the duplicated marquee. Consumed by both
+  kiosk and hub via the new `--app-display-alert-bg` alias.
+- **`<app-display-info-ticker>`** — bottom info/warning ticker
+  with `aria-live="polite"`. Consumes the
+  `--app-display-info-*` and `--app-display-warning-accent`
+  aliases.
+
+### Changed
+
+- **kiosk + hub host palettes** map their existing
+  `--app-kiosk-*` tokens onto the new `--app-display-*`
+  aliases the shared components read. Zero visual change.
+- **`prefers-reduced-motion`** now also pauses the
+  info-ticker; previously only the alert banner respected the
+  preference.
+
+### Removed
+
+- ~210 lines of duplicated SCSS between
+  `kiosk.component.scss` and `hub.component.scss`
+  (alert-banner block + keyframes, info-ticker block +
+  keyframes).
+- ~60 lines of duplicated HTML between
+  `kiosk.component.html` and `hub.component.html` for the
+  two banners (two marquee tracks each).
+
 ## [1.15.0] — 2026-05-16
 
 P1 sweep from the 5-axis audit shipped on 2026-05-16. Closes
