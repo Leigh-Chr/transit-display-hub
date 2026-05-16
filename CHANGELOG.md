@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.18.0] — 2026-05-16
+
+Backend "god service" decomposition wave. Closes audit P2 on
+`NetworkMapService` (mixed read/publish) and audit P2 on
+`DisplayStateCalculator` (606 LoC, four responsibilities) by
+extracting collaborators where the cohesion was already low.
+
+### Added
+
+- **`NetworkMapPublisher`** owns the WebSocket fan-out: two
+  `@TransactionalEventListener` handlers, per-cache eviction,
+  and `pushNetworkMapUpdate` / `pushAlertsUpdate`. Depends on
+  `NetworkMapService` for read access.
+- **`StopZoneResolver`** (domain util) carries the four-level
+  timezone fallback chain (stop → most-served line agency →
+  app default → `Europe/Paris`).
+- **`RealtimeAlertMatcher`** owns the GTFS-RT alert ↔ stop
+  cross-reference: `buildRealtimeMessages`, `matchesStop`,
+  `severityFromAlert`.
+- **`NetworkMapPublisherTest`** covers the four eviction +
+  push scenarios that used to sit in `NetworkMapServiceTest`.
+
+### Changed
+
+- **`NetworkMapService`** loses `CacheManager`,
+  `SimpMessagingTemplate`, `ActiveDisplayTracker`, the two
+  event listener methods, the cache evict helper and the two
+  push methods. Constructor now only takes JPA repositories +
+  `Clock`.
+- **`DisplayStateCalculator`** loses `RealtimeAlertCache`,
+  three Java imports, the timezone resolver and the
+  alert-matching trio. The remaining
+  `buildRealtimeMessages(stop, now)` is a one-line bridge to
+  the matcher; constructor swaps `RealtimeAlertCache` for
+  `RealtimeAlertMatcher`.
+- **`DisplayStateCalculatorTest`** instantiates the matcher
+  itself wrapping the existing cache mock so every alert-flow
+  expectation holds without a mock-of-a-mock dance.
+
+### Removed
+
+- ~95 lines from `DisplayStateCalculator` (alert matching +
+  timezone resolution).
+- ~75 lines from `NetworkMapService` (event listeners + push +
+  evict helper).
+
 ## [1.17.0] — 2026-05-16
 
 Backend abstractions wave from the 5-axis audit. Closes the
