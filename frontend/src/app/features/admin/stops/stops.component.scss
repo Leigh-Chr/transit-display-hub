@@ -107,7 +107,7 @@ mat-card {
   font-size: var(--m3-type-label-small);
   font-weight: 500;
   background: rgba(99, 102, 241, 0.14);
-  color: #4338ca;
+  color: var(--app-chip-info-fg);
   font-variant-numeric: tabular-nums;
 }
 
@@ -120,7 +120,7 @@ mat-card {
   font-size: var(--m3-type-label-small);
   font-weight: 500;
   background: rgba(244, 114, 182, 0.18);
-  color: #be185d;
+  color: var(--app-chip-accent-fg);
 }
 
 .access-restricted mat-icon {

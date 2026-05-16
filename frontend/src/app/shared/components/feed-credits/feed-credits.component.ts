@@ -53,7 +53,7 @@ import { Attribution } from '@shared/models';
       font-size: var(--m3-type-body-large);
       width: 16px;
       height: 16px;
-      color: var(--app-tone-success, #16a34a);
+      color: var(--app-tone-success, var(--app-success));
     }
 
     .credit-item {
@@ -83,17 +83,17 @@ import { Attribution } from '@shared/models';
 
     .role-producer {
       background: rgba(99, 102, 241, 0.14);
-      color: #4338ca;
+      color: var(--app-chip-info-fg);
     }
 
     .role-operator {
       background: rgba(16, 185, 129, 0.14);
-      color: #047857;
+      color: var(--app-chip-success-fg);
     }
 
     .role-authority {
       background: rgba(244, 114, 182, 0.16);
-      color: #be185d;
+      color: var(--app-chip-accent-fg);
     }
 
     .separator {

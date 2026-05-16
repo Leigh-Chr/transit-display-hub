@@ -296,17 +296,17 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 
     .line-tag.tag-hop {
       background: var(--app-tone-tertiary, rgba(99, 102, 241, 0.14));
-      color: var(--app-on-tertiary-container, #4338ca);
+      color: var(--app-on-tertiary-container, var(--app-chip-info-fg));
     }
 
     .line-tag.tag-cemv {
       background: var(--app-tone-success, rgba(16, 185, 129, 0.14));
-      color: var(--app-on-success-container, #047857);
+      color: var(--app-on-success-container, var(--app-chip-success-fg));
     }
 
     .line-tag.tag-cemv-ask {
       background: var(--app-tone-warning, rgba(234, 179, 8, 0.18));
-      color: var(--app-on-warning-container, #92400e);
+      color: var(--app-on-warning-container, var(--app-chip-warning-fg));
     }
 
     mat-paginator {

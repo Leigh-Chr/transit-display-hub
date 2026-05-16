@@ -331,7 +331,7 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
       font-size: var(--m3-type-body-medium);
     }
     .levels-icon {
-      color: #4338ca;
+      color: var(--app-chip-info-fg);
       font-size: var(--m3-type-title-large);
       width: 18px;
       height: 18px;
@@ -344,7 +344,7 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
       padding: 2px 8px;
       border-radius: 999px;
       background: rgba(99, 102, 241, 0.18);
-      color: #4338ca;
+      color: var(--app-chip-info-fg);
       font-size: var(--m3-type-label-medium);
       font-weight: 500;
     }
@@ -412,10 +412,10 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
        / success semantic tokens used elsewhere so a theme change
        automatically lights up the right hue. */
     .pathway-mode-walkway        { color: var(--mat-sys-outline, #6b7280); }
-    .pathway-mode-stairs         { color: var(--app-critical, #dc2626); }
+    .pathway-mode-stairs         { color: var(--app-critical, var(--app-critical)); }
     .pathway-mode-moving-sidewalk{ color: var(--app-info, #0ea5e9); }
-    .pathway-mode-escalator      { color: var(--app-warning, #f59e0b); }
-    .pathway-mode-elevator       { color: var(--app-success, #16a34a); }
+    .pathway-mode-escalator      { color: var(--app-warning, var(--app-warning)); }
+    .pathway-mode-elevator       { color: var(--app-success, var(--app-success)); }
     .pathway-mode-fare-gate,
     .pathway-mode-exit-gate      { color: var(--app-chip-accent-fg, #a855f7); }
 

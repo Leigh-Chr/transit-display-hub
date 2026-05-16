@@ -87,11 +87,11 @@ import { TranslocoDirective } from '@jsverse/transloco';
     }
 
     .feed-info-card.expiring {
-      border-left-color: #f59e0b;
+      border-left-color: var(--app-warning);
     }
 
     .feed-info-card.expired {
-      border-left-color: #ef4444;
+      border-left-color: var(--app-critical);
     }
 
     .feed-header {
@@ -107,8 +107,8 @@ import { TranslocoDirective } from '@jsverse/transloco';
       height: 28px;
     }
 
-    .feed-info-card.expiring .feed-icon { color: #f59e0b; }
-    .feed-info-card.expired .feed-icon { color: #ef4444; }
+    .feed-info-card.expiring .feed-icon { color: var(--app-warning); }
+    .feed-info-card.expired .feed-icon { color: var(--app-critical); }
     .feed-info-card:not(.expiring):not(.expired) .feed-icon {
       color: var(--mat-sys-primary);
     }
