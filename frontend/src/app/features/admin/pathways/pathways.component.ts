@@ -16,6 +16,7 @@ import { Pathway, PathwayMode, StationLevelInfo, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-layout';
 
 /**
  * Browse the indoor topology — pathways.txt — around any stop.
@@ -420,30 +421,14 @@ export class PathwaysComponent implements OnInit {
 
   readonly columns = ['mode', 'from', 'direction', 'to', 'signpost', 'length', 'time', 'details'];
 
-  /** Color per pathway mode — kept in one place so graph edges and the
-   *  legend stay in sync. The choice favours readability on both
-   *  light/dark backgrounds; STAIRS / ESCALATOR / ELEVATOR are the
-   *  modes admins look at most when checking accessibility. */
-  private static readonly MODE_COLORS: Record<PathwayMode, string> = {
-    WALKWAY: '#6b7280',
-    STAIRS: '#dc2626',
-    MOVING_SIDEWALK: '#0ea5e9',
-    ESCALATOR: '#f59e0b',
-    ELEVATOR: '#16a34a',
-    FARE_GATE: '#a855f7',
-    EXIT_GATE: '#a855f7',
-  };
-
-  /** Build the SVG layout for the pathways graph. Stops are positioned
-   *  on a BFS grid rooted at the selected stop: column = BFS depth,
-   *  row = arrival order at that depth. The result keeps the selected
-   *  stop on the left, branches outward visually, and stays stable
-   *  whenever the underlying graph topology stays stable. */
+  /** Build the SVG layout for the pathways graph via the
+   *  buildPathwayGraphLayout helper (extracted to its own module in
+   *  v1.19.0 so the BFS + geometry are testable without a TestBed). */
   readonly graphLayout = computed<PathwayGraphLayout | null>(() => {
     const pathways = this.pathways();
     const root = this.selectedStop();
     if (pathways.length === 0 || !root) {return null;}
-    return PathwaysComponent.buildLayout(pathways, root.id, this.transloco);
+    return buildPathwayGraphLayout(pathways, root.id, this.transloco);
   });
 
   ngOnInit(): void {
@@ -515,242 +500,13 @@ export class PathwaysComponent implements OnInit {
     return this.transloco.translate(`map.transit.pathwayMode.${mode}`);
   }
 
-  /** Pure helper kept static so unit tests can call it without a TestBed.
-   *  BFS from {@code rootStopId}, layout nodes on a grid (column = depth,
-   *  row = order of arrival), then materialise edges with stroke / dash
-   *  / arrow attributes. */
-  // transloco is optional so unit tests can call buildLayout without
-  // wiring a Transloco TestBed; the legend label falls back to the
-  // raw enum when omitted.
+  /** Static bridge kept so the existing spec keeps compiling — forwards to
+   *  the buildPathwayGraphLayout pure helper extracted in v1.19.0. The
+   *  pathway-graph-layout.ts module is the canonical entry point for any
+   *  new caller.
+   */
   static buildLayout(pathways: Pathway[], rootStopId: string, transloco?: TranslocoService): PathwayGraphLayout {
-    const nodeNames = new Map<string, string>();
-    const adjacency = new Map<string, string[]>();
-    for (const p of pathways) {
-      nodeNames.set(p.fromStopId, p.fromStopName);
-      nodeNames.set(p.toStopId, p.toStopName);
-      const fwd = adjacency.get(p.fromStopId) ?? [];
-      fwd.push(p.toStopId);
-      adjacency.set(p.fromStopId, fwd);
-      if (p.bidirectional) {
-        const rev = adjacency.get(p.toStopId) ?? [];
-        rev.push(p.fromStopId);
-        adjacency.set(p.toStopId, rev);
-      }
-    }
-    nodeNames.set(rootStopId, nodeNames.get(rootStopId) ?? '—');
-
-    // BFS — depth tracks the column, queue order within a depth tracks
-    // the row. Stops unreachable from the root still need a position so
-    // their pathways render: they are placed in a "rest" column after
-    // the BFS-reached stops.
-    const depth = new Map<string, number>();
-    depth.set(rootStopId, 0);
-    const queue: string[] = [rootStopId];
-    let head = 0;
-    while (head < queue.length) {
-      const cursor = queue[head++];
-      if (cursor === undefined) {continue;}
-      const currentDepth = depth.get(cursor) ?? 0;
-      for (const neighbour of adjacency.get(cursor) ?? []) {
-        if (!depth.has(neighbour)) {
-          depth.set(neighbour, currentDepth + 1);
-          queue.push(neighbour);
-        }
-      }
-    }
-    let restColumn = 0;
-    for (const id of nodeNames.keys()) {
-      if (!depth.has(id)) {
-        depth.set(id, ++restColumn + Math.max(...depth.values()));
-      }
-    }
-
-    // Group stop ids by depth, preserving BFS order within each layer.
-    const byDepth = new Map<number, string[]>();
-    for (const id of queue) {
-      const d = depth.get(id) ?? 0;
-      const list = byDepth.get(d) ?? [];
-      list.push(id);
-      byDepth.set(d, list);
-    }
-    for (const id of nodeNames.keys()) {
-      if (!queue.includes(id)) {
-        const d = depth.get(id) ?? 0;
-        const list = byDepth.get(d) ?? [];
-        if (!list.includes(id)) {
-          list.push(id);
-          byDepth.set(d, list);
-        }
-      }
-    }
-
-    const colWidth = 140;
-    const rowHeight = 70;
-    const padding = 40;
-    const positions = new Map<string, { x: number; y: number }>();
-    for (const [d, ids] of byDepth) {
-      ids.forEach((id, idx) => {
-        positions.set(id, {
-          x: padding + d * colWidth,
-          y: padding + idx * rowHeight,
-        });
-      });
-    }
-
-    const maxDepth = Math.max(0, ...depth.values());
-    const maxRows = Math.max(0, ...[...byDepth.values()].map(l => l.length));
-    const width = padding * 2 + maxDepth * colWidth;
-    const height = padding * 2 + Math.max(0, maxRows - 1) * rowHeight;
-
-    const nodes: PathwayGraphNode[] = [];
-    for (const [id, name] of nodeNames) {
-      const pos = positions.get(id) ?? { x: 0, y: 0 };
-      nodes.push({
-        id,
-        name,
-        shortName: PathwaysComponent.shortenName(name),
-        x: pos.x,
-        y: pos.y,
-        isCurrent: id === rootStopId,
-      });
-    }
-
-    const edges: PathwayGraphEdge[] = [];
-    const seen = new Set<string>();
-    for (const p of pathways) {
-      const from = positions.get(p.fromStopId);
-      const to = positions.get(p.toStopId);
-      if (!from || !to) {continue;}
-      const canonical = p.fromStopId < p.toStopId
-          ? `${p.fromStopId}|${p.toStopId}|${p.pathwayMode}`
-          : `${p.toStopId}|${p.fromStopId}|${p.pathwayMode}`;
-      if (seen.has(canonical)) {continue;}
-      seen.add(canonical);
-
-      const color = PathwaysComponent.MODE_COLORS[p.pathwayMode];
-      const dash = p.pathwayMode === 'STAIRS' ? '4 4' : null;
-      // Stroke width scales with traversal time so longer pathways read
-      // as visually heavier — capped to keep the SVG readable.
-      const strokeWidth = p.traversalTimeSeconds === null
-          ? 1.5
-          : Math.min(4, 1.2 + p.traversalTimeSeconds / 80);
-      const tooltipParts: string[] = [];
-      tooltipParts.push(`${p.fromStopName} → ${p.toStopName}`);
-      if (p.lengthMetres !== null) {tooltipParts.push(`${p.lengthMetres} m`);}
-      if (p.traversalTimeSeconds !== null) {tooltipParts.push(`${p.traversalTimeSeconds} s`);}
-      // Pre-compute the arrow head only for one-way pathways. The arrow
-      // is a small triangle landing 14px before the target node so the
-      // line does not visually pierce the circle.
-      const arrowPoints = p.bidirectional
-          ? ''
-          : PathwaysComponent.arrowPolygon(from.x, from.y, to.x, to.y, 12, 6);
-
-      edges.push({
-        key: canonical,
-        x1: from.x, y1: from.y,
-        x2: to.x, y2: to.y,
-        color,
-        strokeWidth,
-        dash,
-        bidirectional: p.bidirectional,
-        arrowPoints,
-        tooltip: tooltipParts.join(' • '),
-      });
-    }
-
-    const usedModes = new Set<PathwayMode>(pathways.map(p => p.pathwayMode));
-    const legend: PathwayGraphLegendEntry[] = [];
-    for (const mode of usedModes) {
-      legend.push({
-        mode,
-        label: PathwaysComponent.modeLabelStatic(mode, transloco),
-        color: PathwaysComponent.MODE_COLORS[mode],
-        dashed: mode === 'STAIRS',
-      });
-    }
-
-    return {
-      nodes,
-      edges,
-      legend,
-      viewBox: `0 0 ${Math.max(width, 200)} ${Math.max(height + padding, 160)}`,
-    };
-  }
-
-  /** Compact display name — keeps SVG labels readable on small graphs.
-   *  Picks the part after the last separator (em-dash, hyphen, slash)
-   *  when the name is long. */
-  private static shortenName(name: string): string {
-    if (name.length <= 18) {return name;}
-    const sep = / [—\-/]\s+/;
-    const parts = name.split(sep);
-    const last = parts[parts.length - 1];
-    if (last !== undefined && last.length > 0 && last.length <= 18) {
-      return last;
-    }
-    return name.slice(0, 17) + '…';
-  }
-
-  private static modeLabelStatic(mode: PathwayMode, transloco?: TranslocoService): string {
-    return transloco ? transloco.translate(`map.transit.pathwayMode.${mode}`) : mode;
-  }
-
-  /** Build a triangle polygon pointing from (x1,y1) toward (x2,y2),
-   *  with the tip placed at distance {@code tipBack} before the target
-   *  to avoid overlapping the destination circle. */
-  private static arrowPolygon(
-    x1: number, y1: number, x2: number, y2: number,
-    tipBack: number, half: number,
-  ): string {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const len = Math.sqrt(dx * dx + dy * dy);
-    if (len === 0) {return '';}
-    const ux = dx / len;
-    const uy = dy / len;
-    const tipX = x2 - ux * tipBack;
-    const tipY = y2 - uy * tipBack;
-    const baseX = tipX - ux * tipBack;
-    const baseY = tipY - uy * tipBack;
-    const leftX = baseX + uy * half;
-    const leftY = baseY - ux * half;
-    const rightX = baseX - uy * half;
-    const rightY = baseY + ux * half;
-    return `${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`;
+    return buildPathwayGraphLayout(pathways, rootStopId, transloco);
   }
 }
 
-export interface PathwayGraphNode {
-  id: string;
-  name: string;
-  shortName: string;
-  x: number;
-  y: number;
-  isCurrent: boolean;
-}
-
-export interface PathwayGraphEdge {
-  key: string;
-  x1: number; y1: number;
-  x2: number; y2: number;
-  color: string;
-  strokeWidth: number;
-  dash: string | null;
-  bidirectional: boolean;
-  arrowPoints: string;
-  tooltip: string;
-}
-
-export interface PathwayGraphLegendEntry {
-  mode: PathwayMode;
-  label: string;
-  color: string;
-  dashed: boolean;
-}
-
-export interface PathwayGraphLayout {
-  nodes: PathwayGraphNode[];
-  edges: PathwayGraphEdge[];
-  legend: PathwayGraphLegendEntry[];
-  viewBox: string;
-}
