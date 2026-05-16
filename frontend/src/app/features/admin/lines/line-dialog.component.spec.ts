@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { LineDialogComponent, LineDialogData } from './line-dialog.component';
 import { Line, CreateLineRequest } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const en = {
   common: { cancel: 'Cancel', delete: 'Delete' },
@@ -79,10 +79,7 @@ describe('LineDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         LineDialogComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },

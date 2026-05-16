@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { LineFilterChipsComponent } from './line-filter-chips.component';
 import { MessageSeverity, NetworkLine } from '@shared/models';
 
@@ -29,11 +29,7 @@ describe('LineFilterChipsComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         LineFilterChipsComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: filterDict, fr: filterDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(filterDict),
       ],
     });
     fixture = TestBed.createComponent(LineFilterChipsComponent);

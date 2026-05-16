@@ -7,7 +7,7 @@ import { of, Subject, EMPTY, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { DisplayState } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLangs = {
   en: {
@@ -167,11 +167,7 @@ describe('KioskComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         KioskComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLangs.en, fr: translocoLangs.fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLangs.en, translocoLangs.fr),
       ],
       providers: [
         provideRouter([]),

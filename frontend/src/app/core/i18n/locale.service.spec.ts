@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { TranslocoService, TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../test-translations';
+import { TranslocoService, } from '@jsverse/transloco';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { LocaleService } from './locale.service';
 
@@ -15,11 +16,7 @@ describe('LocaleService', () => {
 
     TestBed.configureTestingModule({
       imports: [
-        TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: { hello: 'Bonjour' } },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule({}, { hello: 'Bonjour' }),
       ],
     });
 

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LineService } from '@core/api/line.service';
 import { Line, PageResponse } from '@shared/models';
 import { LinesComponent } from './lines.component';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
   f.detectChanges();
@@ -94,11 +94,7 @@ describe('LinesComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         LinesComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         provideRouter([]),

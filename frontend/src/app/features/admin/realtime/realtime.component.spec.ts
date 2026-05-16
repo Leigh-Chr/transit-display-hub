@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RealtimeComponent } from './realtime.component';
 import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLang = { admin: { realtime: { occupancy: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
 const translocoLangFr = { admin: { realtime: { occupancy: {} }, common: {}, navigation: {} }, common: { delete: 'Supprimer' } };
@@ -66,11 +66,7 @@ describe('RealtimeComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         RealtimeComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         provideRouter([]),

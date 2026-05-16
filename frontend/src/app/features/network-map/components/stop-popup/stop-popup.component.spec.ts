@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { StopPopupComponent, StopPopupData } from './stop-popup.component';
 import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
@@ -154,11 +154,7 @@ describe('StopPopupComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         StopPopupComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: stopPopupDict, fr: stopPopupDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(stopPopupDict),
       ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: dialogData },

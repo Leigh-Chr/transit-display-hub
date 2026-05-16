@@ -9,7 +9,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Line, BroadcastMessage, Device } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 /** detectChanges then await whenStable so that rxResource loaders
  *  (which schedule via microtasks in zoneless mode) resolve before assertions. */
@@ -135,11 +135,7 @@ describe('DashboardComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         DashboardComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         provideRouter([]),

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FareCalculatorComponent } from './fare-calculator.component';
 import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { StopService } from '@core/api/stop.service';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 describe('FareCalculatorComponent', () => {
   let mockFareService: { calculate: ReturnType<typeof vi.fn> };
@@ -25,11 +25,7 @@ describe('FareCalculatorComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         FareCalculatorComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: {} },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule({}),
       ],
       providers: [
         provideHttpClient(),

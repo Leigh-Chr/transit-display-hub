@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { ZoomControlsComponent } from './zoom-controls.component';
 
 const zoomDict = { map: { zoom: { in: 'Zoom in', out: 'Zoom out', reset: 'Reset view' } } };
@@ -13,11 +13,7 @@ describe('ZoomControlsComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         ZoomControlsComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: zoomDict, fr: zoomDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(zoomDict),
       ],
     });
     fixture = TestBed.createComponent(ZoomControlsComponent);

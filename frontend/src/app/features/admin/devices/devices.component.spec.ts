@@ -7,7 +7,7 @@ import { DeviceService } from '@core/api/device.service';
 import { LineService } from '@core/api/line.service';
 import { Device, DeviceRegistration, Line } from '@shared/models';
 import { DevicesComponent } from './devices.component';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLang = {
   admin: {
@@ -115,11 +115,7 @@ describe('DevicesComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         DevicesComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         { provide: DeviceService, useValue: mockDeviceService },

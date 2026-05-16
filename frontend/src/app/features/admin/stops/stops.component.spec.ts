@@ -8,7 +8,7 @@ import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop, PageResponse } from '@shared/models';
 import { StopsComponent } from './stops.component';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
   f.detectChanges();
@@ -127,11 +127,7 @@ describe('StopsComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         StopsComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         provideRouter([]),

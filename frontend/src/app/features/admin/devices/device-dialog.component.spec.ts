@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 import { of, Subject, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceDialogComponent, DeviceDialogData } from './device-dialog.component';
@@ -75,10 +75,7 @@ describe('DeviceDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         DeviceDialogComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },

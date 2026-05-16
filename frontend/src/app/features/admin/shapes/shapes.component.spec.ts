@@ -6,7 +6,7 @@ import { ShapesComponent } from './shapes.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { Itinerary, Shape } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 describe('ShapesComponent', () => {
   let component: ShapesComponent;
@@ -49,11 +49,7 @@ describe('ShapesComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         ShapesComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: {} },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule({}),
       ],
       providers: [
         provideRouter([]),

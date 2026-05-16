@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { AlertOverlayComponent, VisibleLineAlert } from './alert-overlay.component';
 import { AlertMessage, NetworkLine } from '@shared/models';
 
@@ -31,11 +31,7 @@ describe('AlertOverlayComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         AlertOverlayComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: alertDict, fr: alertDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(alertDict),
       ],
     });
     fixture = TestBed.createComponent(AlertOverlayComponent);

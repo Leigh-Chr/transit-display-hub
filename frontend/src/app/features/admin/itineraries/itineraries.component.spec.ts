@@ -10,7 +10,7 @@ import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
 import { Itinerary, Line, PageResponse } from '@shared/models';
 import { ItinerariesComponent } from './itineraries.component';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
   f.detectChanges();
@@ -123,11 +123,7 @@ describe('ItinerariesComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         ItinerariesComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         provideRouter([]),

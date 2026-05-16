@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 import { LoginComponent } from './login.component';
 import { AuthService } from '@core/auth/auth.service';
 import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
@@ -64,10 +64,7 @@ describe('LoginComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         LoginComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         { provide: AuthService, useValue: authServiceSpy },

@@ -7,7 +7,7 @@ import { ImportAuditComponent } from './import-audit.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ImportAudit } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLang = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
 const translocoLangFr = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Supprimer' } };
@@ -44,11 +44,7 @@ describe('ImportAuditComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         ImportAuditComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         provideRouter([]),

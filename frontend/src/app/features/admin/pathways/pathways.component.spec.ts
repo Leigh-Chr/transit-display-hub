@@ -6,7 +6,7 @@ import { PathwaysComponent } from './pathways.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { StopService } from '@core/api/stop.service';
 import { Pathway, Stop } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 describe('PathwaysComponent', () => {
   let component: PathwaysComponent;
@@ -53,11 +53,7 @@ describe('PathwaysComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         PathwaysComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: {} },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule({}),
       ],
       providers: [
         provideRouter([]),

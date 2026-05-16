@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { MapLegendComponent } from './map-legend.component';
 
 const legendDict = {
@@ -29,11 +29,7 @@ describe('MapLegendComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         MapLegendComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: legendDict, fr: legendDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(legendDict),
       ],
     });
     fixture = TestBed.createComponent(MapLegendComponent);

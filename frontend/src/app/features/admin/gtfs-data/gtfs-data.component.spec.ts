@@ -6,7 +6,7 @@ import { GtfsDataComponent } from './gtfs-data.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { NotifyService } from '@core/services/notify.service';
 import { BookingRule, FareAttribute, FaresV2, Translation } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const gtfsDataDict = {
   admin: {
@@ -101,11 +101,7 @@ describe('GtfsDataComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         GtfsDataComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: gtfsDataDict, fr: gtfsDataDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(gtfsDataDict),
       ],
       providers: [
         provideRouter([]),

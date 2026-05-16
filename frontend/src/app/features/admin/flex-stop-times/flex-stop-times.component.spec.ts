@@ -6,7 +6,7 @@ import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FlexStopTimesComponent } from './flex-stop-times.component';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 describe('FlexStopTimesComponent', () => {
   let mockFlexService: { browse: ReturnType<typeof vi.fn> };
@@ -19,11 +19,7 @@ describe('FlexStopTimesComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         FlexStopTimesComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: {} },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule({}),
       ],
       providers: [
         provideHttpClient(),

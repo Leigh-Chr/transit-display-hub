@@ -7,7 +7,7 @@ import { HubComponent } from './hub.component';
 import { DisplayService } from '@core/api/display.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
 import { HubDisplayState } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLangs = {
   en: {
@@ -96,11 +96,7 @@ describe('HubComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         HubComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLangs.en, fr: translocoLangs.fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLangs.en, translocoLangs.fr),
       ],
       providers: [
         provideRouter([]),

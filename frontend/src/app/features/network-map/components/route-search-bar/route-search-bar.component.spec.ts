@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { RouteSearchBarComponent } from './route-search-bar.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
@@ -53,11 +53,7 @@ describe('RouteSearchBarComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         RouteSearchBarComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: mapRouteEn, fr: mapRouteEn },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(mapRouteEn),
       ],
     });
 

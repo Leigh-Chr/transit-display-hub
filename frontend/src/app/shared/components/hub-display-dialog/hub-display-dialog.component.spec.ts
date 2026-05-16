@@ -2,7 +2,7 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 import {
   HubDisplayDialogComponent,
   HubDisplayDialogData,
@@ -86,10 +86,7 @@ describe('HubDisplayDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         HubDisplayDialogComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },

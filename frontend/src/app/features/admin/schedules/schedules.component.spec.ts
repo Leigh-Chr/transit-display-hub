@@ -10,7 +10,7 @@ import { Line, Stop, Schedule } from '@shared/models';
 import { SchedulesComponent } from './schedules.component';
 import { ScheduleDialogComponent } from './schedule-dialog.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLang = {
   admin: {
@@ -102,11 +102,7 @@ describe('SchedulesComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         SchedulesComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         { provide: LineService, useValue: mockLineService },

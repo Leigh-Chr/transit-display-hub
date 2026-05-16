@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessageDialogComponent, MessageDialogData } from './message-dialog.component';
 import { StopService } from '@core/api/stop.service';
 import { Line, BroadcastMessage } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 const en = {
   common: { cancel: 'Cancel', delete: 'Delete' },
@@ -121,10 +121,7 @@ describe('MessageDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         MessageDialogComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en, fr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-        }),
+        testTranslocoModule(en, fr),
       ],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },

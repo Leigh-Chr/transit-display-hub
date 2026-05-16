@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../../test-translations';
 import { SchematicMapComponent } from './schematic-map.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkLine } from '@shared/models';
@@ -68,11 +68,7 @@ describe('SchematicMapComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         SchematicMapComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: emptyDict, fr: emptyDict },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(emptyDict),
       ],
       providers: [provideRouter([])], // ngxtension's linkedQueryParam needs ActivatedRoute
     });

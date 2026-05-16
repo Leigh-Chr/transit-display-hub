@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NetworkListComponent } from './network-list.component';
@@ -26,10 +26,7 @@ describe('NetworkListComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         NetworkListComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: {}, fr: {} },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'fr' },
-        }),
+        testTranslocoModule({}),
       ],
       providers: [
         provideHttpClient(),

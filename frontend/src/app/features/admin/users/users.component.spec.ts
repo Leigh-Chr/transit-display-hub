@@ -9,7 +9,7 @@ import { UsersComponent } from './users.component';
 import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
 import { User, PageResponse } from '@shared/models';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { testTranslocoModule } from '../../../../test-translations';
 
 async function detectAndFlush(f: ComponentFixture<unknown>): Promise<void> {
   f.detectChanges();
@@ -114,11 +114,7 @@ describe('UsersComponent', () => {
     TestBed.configureTestingModule({
       imports: [
         UsersComponent,
-        TranslocoTestingModule.forRoot({
-          langs: { en: translocoLang, fr: translocoLangFr },
-          translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-          preloadLangs: true,
-        }),
+        testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
         provideRouter([]),

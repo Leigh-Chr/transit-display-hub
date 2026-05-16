@@ -1,4 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { testTranslocoModule } from '../../../test-translations';
 import { provideRouter, Router, RouterLink } from '@angular/router';
 import { signal, Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -8,7 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslocoPipe, TranslocoTestingModule } from '@jsverse/transloco';
+import { TranslocoPipe, } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MatDialog } from '@angular/material/dialog';
@@ -131,9 +132,7 @@ describe('NetworkMapComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [NetworkMapComponent, TranslocoTestingModule.forRoot({
-        langs: {
-          en: {
+      imports: [NetworkMapComponent, testTranslocoModule({
             map: {
               loadFailedSnackbar: 'Failed to load network map. Please try again.',
               routeStaleNotice: 'Route is stale: one of your stops is no longer in the network.',
@@ -146,8 +145,7 @@ describe('NetworkMapComponent', () => {
               },
               route: { stopOne: '1 stop', stopOther: '{{ count }} stops' },
             },
-          },
-          fr: {
+          }, {
             map: {
               loadFailedSnackbar: 'Impossible de charger la carte du réseau. Réessayez plus tard.',
               routeStaleNotice: 'Itinéraire obsolète : un de vos arrêts n\'est plus dans le réseau.',
@@ -160,11 +158,7 @@ describe('NetworkMapComponent', () => {
               },
               route: { stopOne: '1 arrêt', stopOther: '{{ count }} arrêts' },
             },
-          },
-        },
-        translocoConfig: { availableLangs: ['en', 'fr'], defaultLang: 'en' },
-        preloadLangs: true,
-      })],
+          })],
       providers: [
         provideRouter([]),
         { provide: NetworkMapDataService, useValue: mockNetworkMapService },
