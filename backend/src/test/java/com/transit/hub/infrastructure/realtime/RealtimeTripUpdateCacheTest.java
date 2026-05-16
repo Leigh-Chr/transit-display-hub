@@ -4,6 +4,7 @@ import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpClient;
 import java.util.Map;
 import java.util.Optional;
 
@@ -17,7 +18,7 @@ class RealtimeTripUpdateCacheTest {
 
     @Test
     void disabledByDefault_emptyTripUpdatesUrl() {
-        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""));
+        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""), HttpClient.newHttpClient());
         assertFalse(cache.isEnabled());
         assertEquals(0, cache.snapshotSize());
         assertNotNull(cache.currentHeader());
@@ -25,14 +26,14 @@ class RealtimeTripUpdateCacheTest {
 
     @Test
     void findUpdate_returnsEmptyForNullOrUnknownTripId() {
-        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""));
+        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""), HttpClient.newHttpClient());
         assertEquals(Optional.empty(), cache.findUpdate(null));
         assertEquals(Optional.empty(), cache.findUpdate("unknown-trip"));
     }
 
     @Test
     void refresh_isNoOpWhenDisabled() {
-        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""));
+        RealtimeTripUpdateCache cache = new RealtimeTripUpdateCache(propertiesFor(""), HttpClient.newHttpClient());
         cache.refresh();
         assertEquals(0, cache.snapshotSize());
     }

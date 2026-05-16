@@ -4,6 +4,7 @@ import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpClient;
 import java.time.Instant;
 import java.util.List;
 
@@ -17,7 +18,7 @@ class RealtimeAlertCacheTest {
 
     @Test
     void disabledByDefault_emptyAlertsUrl() {
-        RealtimeAlertCache cache = new RealtimeAlertCache(propertiesFor(""));
+        RealtimeAlertCache cache = new RealtimeAlertCache(propertiesFor(""), HttpClient.newHttpClient());
         assertFalse(cache.isEnabled());
         assertTrue(cache.activeAlerts(Instant.now()).isEmpty());
         assertEquals(FeedHeaderInfo.empty(), cache.currentHeader());
@@ -25,7 +26,7 @@ class RealtimeAlertCacheTest {
 
     @Test
     void refresh_isNoOpWhenDisabled() {
-        RealtimeAlertCache cache = new RealtimeAlertCache(propertiesFor(""));
+        RealtimeAlertCache cache = new RealtimeAlertCache(propertiesFor(""), HttpClient.newHttpClient());
         cache.refresh();
         assertTrue(cache.activeAlerts(Instant.now()).isEmpty());
     }

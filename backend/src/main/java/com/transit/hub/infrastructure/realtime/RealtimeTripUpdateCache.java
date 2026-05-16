@@ -2,10 +2,10 @@ package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.net.http.HttpClient;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,11 +21,15 @@ import java.util.Optional;
  * {@link RealtimeAlertCache} keeps the operator config symmetric.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<String, RealtimeTripUpdateCache.TripAdjustment>> {
 
     private final GtfsRtProperties properties;
+
+    public RealtimeTripUpdateCache(GtfsRtProperties properties, HttpClient gtfsRtHttpClient) {
+        super(gtfsRtHttpClient);
+        this.properties = properties;
+    }
 
     /**
      * Per-stop adjustment carried by a {@link GtfsRealtime.TripUpdate.StopTimeUpdate}.

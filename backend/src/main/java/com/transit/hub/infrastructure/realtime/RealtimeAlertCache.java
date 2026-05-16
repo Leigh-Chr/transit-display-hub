@@ -2,10 +2,10 @@ package com.transit.hub.infrastructure.realtime;
 
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.net.http.HttpClient;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,11 +25,15 @@ import java.util.Set;
  * without a realtime feed unaffected.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeAlertCache.AlertSnapshot>> {
 
     private final GtfsRtProperties properties;
+
+    public RealtimeAlertCache(GtfsRtProperties properties, HttpClient gtfsRtHttpClient) {
+        super(gtfsRtHttpClient);
+        this.properties = properties;
+    }
 
     /**
      * Public-facing snapshot of an active service alert, distilled

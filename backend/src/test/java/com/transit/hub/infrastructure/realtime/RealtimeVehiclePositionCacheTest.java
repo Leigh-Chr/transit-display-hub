@@ -4,6 +4,7 @@ import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpClient;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,7 +17,7 @@ class RealtimeVehiclePositionCacheTest {
 
     @Test
     void disabledByDefault_emptyVehiclePositionsUrl() {
-        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache(propertiesFor(""));
+        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache(propertiesFor(""), HttpClient.newHttpClient());
         assertFalse(cache.isEnabled());
         assertTrue(cache.currentSnapshot().isEmpty());
         assertNotNull(cache.currentHeader());
@@ -24,7 +25,7 @@ class RealtimeVehiclePositionCacheTest {
 
     @Test
     void refresh_isNoOpWhenDisabled() {
-        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache(propertiesFor(""));
+        RealtimeVehiclePositionCache cache = new RealtimeVehiclePositionCache(propertiesFor(""), HttpClient.newHttpClient());
         cache.refresh();
         assertTrue(cache.currentSnapshot().isEmpty());
     }

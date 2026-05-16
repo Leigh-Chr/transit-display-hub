@@ -21,19 +21,25 @@ import java.util.concurrent.atomic.AtomicReference;
  * methods. The {@link #refresh()} loop is implemented once here so the three
  * concrete caches only carry the logic that actually differs.
  *
+ * <p>The {@link HttpClient} is provided by the Spring container
+ * ({@code GtfsRtConfig#gtfsRtHttpClient}) so the three caches share the
+ * same connection pool and virtual-thread executor.
+ *
  * @param <S> the snapshot type held by this cache
  */
 @Slf4j
 abstract class AbstractRealtimeFeedCache<S> {
 
-    protected final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    protected final HttpClient http;
 
     protected final AtomicReference<S> snapshot = new AtomicReference<>(emptySnapshot());
 
     protected final AtomicReference<FeedHeaderInfo> headerRef =
             new AtomicReference<>(FeedHeaderInfo.empty());
+
+    protected AbstractRealtimeFeedCache(HttpClient http) {
+        this.http = http;
+    }
 
     // ------------------------------------------------------------------ //
     // Contract for subclasses                                              //
