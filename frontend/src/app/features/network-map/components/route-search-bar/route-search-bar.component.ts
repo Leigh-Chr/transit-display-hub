@@ -98,7 +98,7 @@ import { RouteResult } from '../../services/route-finder.service';
 
       @if (routeResult(); as route) {
         <div class="route-breakdown">
-          @for (segment of route.segments; track $index) {
+          @for (segment of route.segments; track segment.lineId + ':' + segment.stopIds[0]) {
             @if ($index > 0) {
               <div class="transfer-row">
                 <mat-icon class="transfer-icon">sync_alt</mat-icon>
@@ -118,7 +118,7 @@ import { RouteResult } from '../../services/route-finder.service';
               </div>
               @if (expandedSegments().has($index) && segment.stopNames.length > 2) {
                 <div class="segment-stops-list">
-                  @for (name of segment.stopNames; track $index) {
+                  @for (name of segment.stopNames; track name) {
                     <div class="stop-item">
                       <span class="stop-dot" [class.stop-endpoint]="$first || $last" [style.borderColor]="segment.lineColor"></span>
                       <span class="stop-name" [class.stop-endpoint-name]="$first || $last">{{ name }}</span>

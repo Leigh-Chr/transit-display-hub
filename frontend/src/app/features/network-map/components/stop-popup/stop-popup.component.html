@@ -44,7 +44,7 @@
 <mat-dialog-content>
   @if (messages().length > 0) {
     <div class="messages-section">
-      @for (msg of messages(); track $index) {
+      @for (msg of messages(); track msg.title) {
         <div class="message-card" [class]="'message-card severity-' + msg.severity.toLowerCase()">
           <mat-icon class="message-icon">{{ getMessageIcon(msg.severity) }}</mat-icon>
           <div class="message-body">

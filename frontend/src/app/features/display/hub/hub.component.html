@@ -149,7 +149,7 @@
       <aside class="info-ticker">
         <div class="ticker-track" [style.animationDuration]="tickerDuration()">
           <div class="ticker-content">
-            @for (message of infoMessages(); track $index) {
+            @for (message of infoMessages(); track message.title) {
               <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
                 <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
                 <strong>{{ message.title }}</strong>
@@ -162,7 +162,7 @@
           </div>
           <!-- Duplicate for seamless loop -->
           <div class="ticker-content">
-            @for (message of infoMessages(); track $index) {
+            @for (message of infoMessages(); track message.title) {
               <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
                 <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
                 <strong>{{ message.title }}</strong>
