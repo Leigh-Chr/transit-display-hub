@@ -76,7 +76,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
       border-radius: var(--app-radius-sm);
       padding: 8px 12px;
       box-shadow: 0 1px 4px var(--app-map-shadow);
-      z-index: 2;
+      z-index: var(--app-z-overlay);
       pointer-events: auto;
       transition: padding 120ms ease;
     }

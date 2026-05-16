@@ -326,7 +326,7 @@ import {
       position: absolute;
       top: -100px;
       left: 8px;
-      z-index: 1000;
+      z-index: var(--app-z-skip-link);
       padding: 12px 16px;
       background: var(--mat-sys-primary, #0078D4);
       color: var(--mat-sys-on-primary, #ffffff);

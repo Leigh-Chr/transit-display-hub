@@ -28,7 +28,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
       display: flex;
       flex-direction: column;
       gap: 4px;
-      z-index: 2;
+      z-index: var(--app-z-overlay);
     }
 
     .zoom-btn {

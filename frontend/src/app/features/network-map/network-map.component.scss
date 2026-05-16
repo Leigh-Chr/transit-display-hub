@@ -197,7 +197,7 @@
   bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 4;
+  z-index: var(--app-z-overlay-top);
   pointer-events: none;
   padding: 2px 8px;
   border-radius: var(--app-radius-xs);
@@ -217,7 +217,7 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 3;
+  z-index: var(--app-z-overlay-raised);
   pointer-events: auto;
   display: flex;
   flex-direction: column;

@@ -59,7 +59,7 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 4;
+  z-index: var(--app-z-overlay-top);
   pointer-events: none;
   display: inline-flex;
   align-items: center;

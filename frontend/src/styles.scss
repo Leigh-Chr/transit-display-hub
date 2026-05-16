@@ -258,6 +258,21 @@ html {
   --app-dialog-min-width-lg: 420px;
   --app-actions-column-width: 140px;
   --app-gap-grid: 20px;
+
+  // === Z-index scale ===
+  // Sauts de 10 pour autoriser l'insertion d'un niveau intermédiaire
+  // sans renommer la chaîne. Les overlays carto sont déclinés en 3
+  // strates (base, raised, top) parce qu'ils coexistent dans le même
+  // conteneur `.network-map` et que leur empilement relatif est porteur
+  // de sens (la légende reste sous une alerte ; l'attribution reste
+  // au-dessus de la recherche).
+  --app-z-overlay: 10;
+  --app-z-overlay-raised: 20;
+  --app-z-overlay-top: 30;
+  --app-z-tooltip: 40;
+  --app-z-modal: 50;
+  --app-z-snackbar: 100;
+  --app-z-skip-link: 1000;
 }
 
 // Dark theme overrides

@@ -62,7 +62,7 @@ export interface VisibleLineAlert {
       position: absolute;
       top: 16px;
       left: 16px;
-      z-index: 3;
+      z-index: var(--app-z-overlay-raised);
       max-width: 340px;
       max-height: calc(100% - 32px);
       overflow-y: auto;
