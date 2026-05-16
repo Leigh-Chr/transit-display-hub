@@ -21,44 +21,12 @@
       </div>
     </header>
 
-    <!-- Critical alert (scrolling banner)
-         role="alert" + aria-live="assertive" announce the disruption
-         to screen-readers right when it appears. The duplicate
-         marquee track is purely decorative for the visual scroll, so
-         aria-hidden keeps the announcement from firing twice. -->
-    @if (criticalMessages().length > 0) {
-      <div class="alert-banner" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="alert-icon">
-          <mat-icon>warning</mat-icon>
-        </div>
-        <div class="alert-wrapper">
-          <div class="alert-track" [style.animationDuration]="alertDuration()">
-            <div class="alert-content">
-              @for (message of criticalMessages(); track message.title) {
-                <span class="alert-item">
-                  <strong>{{ message.title }}</strong>
-                  @if (message.content) {
-                    <span class="alert-detail">— {{ message.content }}</span>
-                  }
-                </span>
-                <span class="alert-separator">•</span>
-              }
-            </div>
-            <div class="alert-content" aria-hidden="true">
-              @for (message of criticalMessages(); track message.title) {
-                <span class="alert-item">
-                  <strong>{{ message.title }}</strong>
-                  @if (message.content) {
-                    <span class="alert-detail">— {{ message.content }}</span>
-                  }
-                </span>
-                <span class="alert-separator">•</span>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    }
+    <!-- Critical alert (scrolling banner) — extracted to the shared
+         <app-display-alert-banner> so the markup, role=alert and the
+         aria-live wiring stay 1:1 between kiosk and hub. -->
+    <app-display-alert-banner
+      [messages]="criticalMessages()"
+      [durationSeconds]="alertDuration()" />
 
     <!-- Main departures board (4 columns) -->
     <main class="departures">
@@ -144,38 +112,12 @@
       </div>
     </main>
 
-    <!-- Info/Warning messages ticker -->
-    @if (infoMessages().length > 0) {
-      <aside class="info-ticker">
-        <div class="ticker-track" [style.animationDuration]="tickerDuration()">
-          <div class="ticker-content">
-            @for (message of infoMessages(); track message.title) {
-              <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
-                <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
-                <strong>{{ message.title }}</strong>
-                @if (message.content) {
-                  <span class="ticker-detail">{{ message.content }}</span>
-                }
-              </span>
-              <span class="ticker-separator">•</span>
-            }
-          </div>
-          <!-- Duplicate for seamless loop -->
-          <div class="ticker-content">
-            @for (message of infoMessages(); track message.title) {
-              <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
-                <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
-                <strong>{{ message.title }}</strong>
-                @if (message.content) {
-                  <span class="ticker-detail">{{ message.content }}</span>
-                }
-              </span>
-              <span class="ticker-separator">•</span>
-            }
-          </div>
-        </div>
-      </aside>
-    }
+    <!-- Info / Warning ticker — extracted to <app-display-info-ticker>
+         so the duplicated marquee + aria-hidden second track stay in
+         sync with the kiosk display. -->
+    <app-display-info-ticker
+      [messages]="infoMessages()"
+      [durationSeconds]="tickerDuration()" />
 
     <!-- Connection status indicator -->
     @if (!connected()) {

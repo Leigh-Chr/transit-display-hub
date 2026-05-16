@@ -18,6 +18,16 @@
   flex-direction: column;
   padding: 2vh 2.5vw;
   box-sizing: border-box;
+  /* Map the kiosk palette onto the aliases the shared display
+     components consume (hub reuses the kiosk colour scheme — both
+     share --app-kiosk-* tokens by design). */
+  --app-display-alert-bg: var(--app-kiosk-alert-bg);
+  --app-display-info-bg: var(--app-kiosk-info-bg);
+  --app-display-info-bg-subtle: var(--app-kiosk-info-bg-subtle);
+  --app-display-info-border: var(--app-kiosk-info-border);
+  --app-display-info-accent: var(--app-kiosk-info-accent);
+  --app-display-warning-accent: var(--app-kiosk-warning-accent);
+  --app-display-on-surface-muted: var(--app-kiosk-on-surface-muted);
 }
 
 /* --- Header --- */
@@ -79,72 +89,9 @@
   letter-spacing: 0.02em;
 }
 
-/* --- Alert Banner (scrolling) --- */
-.alert-banner {
-  display: flex;
-  align-items: center;
-  background: var(--app-kiosk-alert-bg);
-  margin-bottom: 1vh;
-  border-radius: 0.5vh;
-}
-
-.alert-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.2vh 1.5vw;
-  flex-shrink: 0;
-}
-
-.alert-icon mat-icon {
-  font-size: 3vh;
-  width: 3vh;
-  height: 3vh;
-}
-
-.alert-wrapper {
-  flex: 1;
-  overflow: hidden;
-  padding: 1.2vh 0;
-  padding-right: 2vw;
-}
-
-.alert-track {
-  display: flex;
-  animation: alert-scroll linear infinite;
-  width: max-content;
-}
-
-.alert-content {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.alert-item {
-  font-size: 3vh;
-  line-height: 1.3;
-}
-
-.alert-item strong {
-  font-weight: 700;
-}
-
-.alert-detail {
-  opacity: 0.9;
-  margin-left: 0.5vw;
-}
-
-.alert-separator {
-  margin: 0 2vw;
-  opacity: 0.5;
-}
-
-@keyframes alert-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
+/* The .alert-banner styles + alert-scroll keyframes were lifted into
+   the shared <app-display-alert-banner> component. The host hooks the
+   palette onto --app-display-alert-bg in the .hub block below. */
 
 /* --- Departures Board (4 columns) --- */
 .departures {
@@ -330,68 +277,9 @@
   min-height: 20vh;
 }
 
-/* --- Info Ticker --- */
-.info-ticker {
-  margin-top: auto;
-  padding-top: 1.5vh;
-  overflow: hidden;
-  background: linear-gradient(90deg, var(--app-kiosk-info-bg) 0%, var(--app-kiosk-info-bg-subtle) 50%, var(--app-kiosk-info-bg) 100%);
-  border-radius: 0.5vh;
-  border-top: 0.3vh solid var(--app-kiosk-info-border);
-}
-
-.ticker-track {
-  display: flex;
-  overflow: hidden;
-  padding: 1.5vh 0;
-  animation: ticker-scroll linear infinite;
-  width: max-content;
-}
-
-.ticker-content {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-@keyframes ticker-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.ticker-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.8vw;
-  font-size: 3vh;
-  color: var(--app-kiosk-info-accent);
-}
-
-.ticker-warning {
-  color: var(--app-kiosk-warning-accent);
-}
-
-.ticker-item mat-icon {
-  font-size: 3vh;
-  width: 3vh;
-  height: 3vh;
-}
-
-.ticker-item strong {
-  font-weight: 600;
-}
-
-.ticker-detail {
-  margin-left: 0.5vw;
-  opacity: 0.85;
-}
-
-.ticker-separator {
-  margin: 0 3vw;
-  color: var(--app-kiosk-on-surface-muted);
-  font-size: 3vh;
-}
+/* The .info-ticker styles + ticker-scroll keyframes were lifted into
+   the shared <app-display-info-ticker> component. The host hooks the
+   palette onto --app-display-info-* in the .kiosk block at the top. */
 
 /* --- Connection Warning --- */
 .connection-warning {

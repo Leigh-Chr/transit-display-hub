@@ -1,0 +1,30 @@
+@if (messages().length > 0) {
+  <aside class="info-ticker" aria-live="polite">
+    <div class="ticker-track" [style.animationDuration]="durationSeconds()">
+      <div class="ticker-content">
+        @for (message of messages(); track message.title) {
+          <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
+            <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
+            <strong>{{ message.title }}</strong>
+            @if (message.content) {
+              <span class="ticker-detail">{{ message.content }}</span>
+            }
+          </span>
+          <span class="ticker-separator">•</span>
+        }
+      </div>
+      <div class="ticker-content" aria-hidden="true">
+        @for (message of messages(); track message.title) {
+          <span class="ticker-item" [class.ticker-warning]="message.severity === 'WARNING'">
+            <mat-icon>{{ message.severity === 'WARNING' ? 'warning' : 'info' }}</mat-icon>
+            <strong>{{ message.title }}</strong>
+            @if (message.content) {
+              <span class="ticker-detail">{{ message.content }}</span>
+            }
+          </span>
+          <span class="ticker-separator">•</span>
+        }
+      </div>
+    </div>
+  </aside>
+}

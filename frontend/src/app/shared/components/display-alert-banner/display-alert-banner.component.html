@@ -1,0 +1,33 @@
+@if (messages().length > 0) {
+  <div class="alert-banner" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="alert-icon">
+      <mat-icon>warning</mat-icon>
+    </div>
+    <div class="alert-wrapper">
+      <div class="alert-track" [style.animationDuration]="durationSeconds()">
+        <div class="alert-content">
+          @for (message of messages(); track message.title) {
+            <span class="alert-item">
+              <strong>{{ message.title }}</strong>
+              @if (message.content) {
+                <span class="alert-detail">— {{ message.content }}</span>
+              }
+            </span>
+            <span class="alert-separator">•</span>
+          }
+        </div>
+        <div class="alert-content" aria-hidden="true">
+          @for (message of messages(); track message.title) {
+            <span class="alert-item">
+              <strong>{{ message.title }}</strong>
+              @if (message.content) {
+                <span class="alert-detail">— {{ message.content }}</span>
+              }
+            </span>
+            <span class="alert-separator">•</span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

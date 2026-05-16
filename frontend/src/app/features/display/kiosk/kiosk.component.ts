@@ -20,6 +20,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { ThemeService } from '@core/services/theme.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
+import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
+import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -41,6 +43,8 @@ import {
     MatProgressSpinnerModule,
     MatTooltipModule,
     TranslocoPipe,
+    DisplayAlertBannerComponent,
+    DisplayInfoTickerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './kiosk.component.html',

@@ -1,0 +1,80 @@
+/* Shared between kiosk + hub. Host pages map their dedicated alert
+   colour through the --app-display-alert-bg alias so each display
+   keeps its visual identity. */
+:host {
+  display: block;
+}
+
+.alert-banner {
+  display: flex;
+  align-items: center;
+  background: var(--app-display-alert-bg);
+  margin-bottom: 1vh;
+  border-radius: 0.5vh;
+}
+
+.alert-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2vh 1.5vw;
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 3vh;
+    width: 3vh;
+    height: 3vh;
+  }
+}
+
+.alert-wrapper {
+  flex: 1;
+  overflow: hidden;
+  padding: 1.2vh 0;
+  padding-right: 2vw;
+}
+
+.alert-track {
+  display: flex;
+  animation: alert-scroll linear infinite;
+  width: max-content;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.alert-item {
+  font-size: 3vh;
+  line-height: 1.3;
+}
+
+.alert-item strong {
+  font-weight: 700;
+}
+
+.alert-detail {
+  opacity: 0.9;
+  margin-left: 0.5vw;
+}
+
+.alert-separator {
+  margin: 0 2vw;
+  opacity: 0.5;
+}
+
+@keyframes alert-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Honour the "reduce motion" preference: pause the marquee and
+   let users read the messages stacked rather than scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  .alert-track {
+    animation: none;
+  }
+}

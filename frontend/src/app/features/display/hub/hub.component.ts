@@ -16,6 +16,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
+import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
+import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import {
   DisplayState,
   HubDisplayState,
@@ -36,7 +38,7 @@ import {
 @Component({
   selector: 'app-hub',
   standalone: true,
-  imports: [NgOptimizedImage, MatIconModule, MatProgressSpinnerModule, TranslocoPipe],
+  imports: [NgOptimizedImage, MatIconModule, MatProgressSpinnerModule, TranslocoPipe, DisplayAlertBannerComponent, DisplayInfoTickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hub.component.html',
   styleUrl: './hub.component.scss',
