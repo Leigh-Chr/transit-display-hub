@@ -12,6 +12,8 @@ import com.transit.hub.infrastructure.persistence.StopRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   - 4 trips × 2-3 stop_times each
  *   - WEEKDAY + WEEKEND calendars
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

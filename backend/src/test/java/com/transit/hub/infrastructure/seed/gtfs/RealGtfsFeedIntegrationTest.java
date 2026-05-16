@@ -7,6 +7,8 @@ import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * is unreachable — a network outage or operator downtime should not
  * fail the build, only mark the test as skipped.
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @SpringBootTest
 @ActiveProfiles("test")
 @Tag("real-feed")

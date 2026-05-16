@@ -16,6 +16,8 @@ import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * each Importer's repository observed at least the rows declared in
  * the fixture.
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

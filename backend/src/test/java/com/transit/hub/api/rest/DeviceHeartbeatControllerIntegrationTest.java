@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * cover both the session-bound and anonymous branches without spinning
  * up a STOMP broker.
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
