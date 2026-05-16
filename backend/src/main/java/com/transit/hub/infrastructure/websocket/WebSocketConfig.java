@@ -124,6 +124,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
     }
 
+    /**
+     * Sizes the outbound channel's executor so a single slow kiosk (flaky
+     * Wi-Fi, paper-thin Pi) doesn't back-pressure broadcasts to every
+     * other client. Spring's default keeps one worker thread; bumping the
+     * core to 4 + max to 16 lets the broker keep delivering to the rest
+     * of the fleet while a stuck send to one session drains in the
+     * background. Queue capacity stays small so slow clients still
+     * surface as send-timeouts (configured in
+     * {@link #configureWebSocketTransport(WebSocketTransportRegistration)})
+     * rather than silently lagging.
+     */
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor()
+                .corePoolSize(4)
+                .maxPoolSize(16)
+                .queueCapacity(100);
+    }
+
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         // Authenticate STOMP CONNECT frames using the same JWT the front-end sends
