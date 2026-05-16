@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   OnDestroy,
   signal,
   computed,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -39,6 +41,7 @@ export class HubComponent implements OnInit, OnDestroy {
   private readonly hubWsService = inject(HubWebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly localeService = inject(LocaleService);
+  private readonly destroyRef = inject(DestroyRef);
 
   hubState = signal<HubDisplayState | null>(null);
   error = signal<string | null>(null);
@@ -154,7 +157,7 @@ export class HubComponent implements OnInit, OnDestroy {
   connected = computed(() => this.hubWsService.isConnected());
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const stopIdsParam = String(params['stopIds'] ?? '');
       this.hubName = String(params['name'] ?? '') || 'Hub';
 
@@ -249,9 +252,11 @@ export class HubComponent implements OnInit, OnDestroy {
     // capture any deletions or renames that happened during the gap. Also
     // wipe stopStates so the version filter can't reject a backend whose
     // in-memory versionMap restarted from scratch.
-    this.hubWsService.reconnected$.subscribe(() => {
-      this.stopStates.clear();
-      this.displayService.getHubState(this.stopIds, this.hubName).subscribe({
+    this.hubWsService.reconnected$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.stopStates.clear();
+        this.displayService.getHubState(this.stopIds, this.hubName).subscribe({
         next: state => {
           this.lastUpdate.set(Date.now());
           this.hubState.set(state);

@@ -21,16 +21,20 @@
       </div>
     </header>
 
-    <!-- Critical alert (scrolling banner) -->
+    <!-- Critical alert (scrolling banner)
+         role="alert" + aria-live="assertive" announce the disruption
+         to screen-readers right when it appears. The duplicate
+         marquee track is purely decorative for the visual scroll, so
+         aria-hidden keeps the announcement from firing twice. -->
     @if (criticalMessages().length > 0) {
-      <div class="alert-banner">
+      <div class="alert-banner" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="alert-icon">
           <mat-icon>warning</mat-icon>
         </div>
         <div class="alert-wrapper">
           <div class="alert-track" [style.animationDuration]="alertDuration()">
             <div class="alert-content">
-              @for (message of criticalMessages(); track $index) {
+              @for (message of criticalMessages(); track message.title) {
                 <span class="alert-item">
                   <strong>{{ message.title }}</strong>
                   @if (message.content) {
@@ -40,8 +44,8 @@
                 <span class="alert-separator">•</span>
               }
             </div>
-            <div class="alert-content">
-              @for (message of criticalMessages(); track $index) {
+            <div class="alert-content" aria-hidden="true">
+              @for (message of criticalMessages(); track message.title) {
                 <span class="alert-item">
                   <strong>{{ message.title }}</strong>
                   @if (message.content) {

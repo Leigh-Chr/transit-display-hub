@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   OnDestroy,
   signal,
@@ -8,6 +9,7 @@ import {
   inject,
   effect,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -44,6 +46,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   private readonly wsService = inject(WebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly localeService = inject(LocaleService);
+  private readonly destroyRef = inject(DestroyRef);
   /** Exposed to the template so the a11y toolbar can bind to its
    *  three signals (dark / contrast / large text) directly. */
   readonly themeService = inject(ThemeService);
@@ -393,7 +396,7 @@ export class KioskComponent implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const routeStopId = String(params['stopId'] ?? '');
       if (routeStopId) {
         this.stopId = routeStopId;
@@ -401,7 +404,7 @@ export class KioskComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.route.queryParams.subscribe((params) => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.token = String(params['token'] ?? '') || null;
       const queryStopId = String(params['stopId'] ?? '') || null;
 
@@ -525,7 +528,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     // (e.g. a stop was renamed, a message expired) — fetch a fresh snapshot
     // so the kiosk doesn't keep showing pre-disconnect state until the next
     // server-driven event.
-    this.wsService.reconnected$.subscribe(() => this.refetchSnapshot(stopId));
+    this.wsService.reconnected$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refetchSnapshot(stopId));
   }
 
   /** Accept a state only if its version is monotone — drops out-of-order pushes

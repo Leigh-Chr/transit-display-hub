@@ -61,16 +61,21 @@
       </div>
     </header>
 
-    <!-- Critical alert (scrolling banner) -->
+    <!-- Critical alert (scrolling banner)
+         role="alert" + aria-live="assertive" surface a service
+         disruption to screen-readers immediately. The visual ticker
+         keeps scrolling but the announcement fires the first time a
+         message id appears in the @for track, so subsequent re-renders
+         (clock tick, status refresh) don't re-announce the same alert. -->
     @if (criticalMessages().length > 0) {
-      <div class="alert-banner">
+      <div class="alert-banner" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="alert-icon">
           <mat-icon>warning</mat-icon>
         </div>
         <div class="alert-wrapper">
           <div class="alert-track" [style.animationDuration]="alertDuration()">
             <div class="alert-content">
-              @for (message of criticalMessages(); track $index) {
+              @for (message of criticalMessages(); track message.title) {
                 <span class="alert-item">
                   <strong>{{ message.title }}</strong>
                   @if (message.content) {
@@ -80,8 +85,8 @@
                 <span class="alert-separator">•</span>
               }
             </div>
-            <div class="alert-content">
-              @for (message of criticalMessages(); track $index) {
+            <div class="alert-content" aria-hidden="true">
+              @for (message of criticalMessages(); track message.title) {
                 <span class="alert-item">
                   <strong>{{ message.title }}</strong>
                   @if (message.content) {
