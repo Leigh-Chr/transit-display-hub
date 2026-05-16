@@ -11,6 +11,27 @@ allowlist and `scripts/oversized-allowlist.txt` remain empty — the
 "30 / 110" numbers in the *Decision* section are kept for archival
 fidelity; the live values are in the linked config files.
 
+**Updated v1.15.0:** the rotation table below (Phase 2) was the
+*indicative* plan as of 2026-05-12. After eight more minors
+(v1.7.0 → v1.14.1) the project drifted to an **audit-driven
+cadence** instead: every minor or two, a fresh 4-pillar audit
+re-prioritises the dette, and the work that ships is whatever
+that audit surfaces — not what this table predicted. The result
+is that **none of the four 1.7-1.10 cleanup targets in the table
+have been delivered as written**: `AbstractGtfsImporter<T>` and
+the `<display-board>` extraction are still open (carried over to
+the v1.16.0 / v1.17.0 plan), `AdminPageBase` was superseded by
+the leaner `createAdminListResource` helper shipped earlier,
+`schematic-map` was decomposed into `SvgPanZoom`,
+`NetworkRowLayoutService`, `schematic-geometry.ts` and
+`SchematicLayoutService` (912 lines now, none in the allowlist),
+and the design-system-v2 work is parked pending a visual
+review. The audit-driven cadence has nevertheless kept both
+allowlists empty across all eight releases, so the guardrails
+themselves are doing their job — only the predicted timeline
+was wrong. Treat the table as historical context, not a
+commitment.
+
 ## Context
 
 After v1.5.1 the project was, on every objective axis, clean: zero
