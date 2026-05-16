@@ -170,6 +170,29 @@ public class DeviceService {
         deviceRepository.save(device);
     }
 
+    /**
+     * Bulk-apply a (deviceId → lastSeen) snapshot collected by
+     * {@link HeartbeatBuffer}. Single SELECT … IN (…) followed by one
+     * batched UPDATE, instead of one round-trip per heartbeat. Unknown
+     * ids are silently dropped — kiosks reconnecting on a stale token
+     * may emit a few heartbeats for a device row the operator just
+     * deleted, and we don't want to spam the log every 30 s for that.
+     */
+    @Transactional
+    public void recordHeartbeatsBatch(java.util.Map<UUID, Instant> heartbeatsByDeviceId) {
+        if (heartbeatsByDeviceId.isEmpty()) {
+            return;
+        }
+        List<Device> devices = deviceRepository.findAllById(heartbeatsByDeviceId.keySet());
+        for (Device device : devices) {
+            Instant ts = heartbeatsByDeviceId.get(device.getId());
+            if (ts != null) {
+                device.recordHeartbeat(ts);
+            }
+        }
+        deviceRepository.saveAll(devices);
+    }
+
     @Scheduled(fixedRate = 30000) // Every 30 seconds
     @Transactional
     public void checkOfflineDevices() {

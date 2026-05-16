@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DeviceHeartbeatControllerIntegrationTest {
 
     @Autowired private DeviceHeartbeatController controller;
+    @Autowired private com.transit.hub.application.service.HeartbeatBuffer heartbeatBuffer;
     @Autowired private DeviceRepository deviceRepository;
     @Autowired private StopRepository stopRepository;
     @Autowired private LineRepository lineRepository;
@@ -113,6 +114,7 @@ class DeviceHeartbeatControllerIntegrationTest {
             Instant before = Instant.now().minusSeconds(1);
             controller.handleHeartbeat(new HeartbeatMessage(testDevice.getId()), anonymousAccessor());
 
+            heartbeatBuffer.flush();
             Device reloaded = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(reloaded.getLastHeartbeat()).isNotNull();
             assertThat(reloaded.getLastHeartbeat()).isAfter(before);
@@ -126,6 +128,7 @@ class DeviceHeartbeatControllerIntegrationTest {
                     new HeartbeatMessage(testDevice.getId()),
                     accessorBoundTo(testDevice.getId()));
 
+            heartbeatBuffer.flush();
             Device reloaded = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(reloaded.getStatus()).isEqualTo(DeviceStatus.ONLINE);
             assertThat(reloaded.getLastHeartbeat()).isNotNull();
@@ -139,6 +142,7 @@ class DeviceHeartbeatControllerIntegrationTest {
                     new HeartbeatMessage(otherDeviceId),
                     accessorBoundTo(testDevice.getId()));
 
+            heartbeatBuffer.flush();
             Device reloaded = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(reloaded.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
             assertThat(reloaded.getLastHeartbeat()).isNull();
@@ -151,6 +155,7 @@ class DeviceHeartbeatControllerIntegrationTest {
             // No exception should bubble up — controller catches EntityNotFoundException
             controller.handleHeartbeat(new HeartbeatMessage(unknownDeviceId), anonymousAccessor());
 
+            heartbeatBuffer.flush();
             Device reloaded = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(reloaded.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
         }
@@ -160,6 +165,7 @@ class DeviceHeartbeatControllerIntegrationTest {
         void nullPayload_NoOp() {
             controller.handleHeartbeat(null, anonymousAccessor());
 
+            heartbeatBuffer.flush();
             Device reloaded = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(reloaded.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
             assertThat(reloaded.getLastHeartbeat()).isNull();
@@ -170,6 +176,7 @@ class DeviceHeartbeatControllerIntegrationTest {
         void payloadWithNullDeviceId_NoOp() {
             controller.handleHeartbeat(new HeartbeatMessage(null), anonymousAccessor());
 
+            heartbeatBuffer.flush();
             Device reloaded = deviceRepository.findById(testDevice.getId()).orElseThrow();
             assertThat(reloaded.getStatus()).isEqualTo(DeviceStatus.OFFLINE);
             assertThat(reloaded.getLastHeartbeat()).isNull();

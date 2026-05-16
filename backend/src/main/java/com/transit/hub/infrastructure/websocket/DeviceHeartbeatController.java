@@ -1,7 +1,6 @@
 package com.transit.hub.infrastructure.websocket;
 
-import com.transit.hub.application.exception.EntityNotFoundException;
-import com.transit.hub.application.service.DeviceService;
+import com.transit.hub.application.service.HeartbeatBuffer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -17,7 +16,7 @@ import java.util.UUID;
 @Slf4j
 public class DeviceHeartbeatController {
 
-    private final DeviceService deviceService;
+    private final HeartbeatBuffer heartbeatBuffer;
 
     @MessageMapping("/device/heartbeat")
     public void handleHeartbeat(@Payload HeartbeatMessage message, SimpMessageHeaderAccessor accessor) {
@@ -29,11 +28,12 @@ public class DeviceHeartbeatController {
                     message.deviceId());
             return;
         }
-        try {
-            deviceService.recordHeartbeat(message.deviceId());
-        } catch (EntityNotFoundException e) {
-            log.debug("Heartbeat received for unknown device {}", message.deviceId());
-        }
+        // Buffered write — the in-memory map absorbs the WS hot path and a
+        // scheduled flush coalesces the per-device updates into a single
+        // batched UPDATE. Unknown devices are silently dropped at flush
+        // time so a stale token in a kiosk loop doesn't spam the log
+        // every 30 s.
+        heartbeatBuffer.record(message.deviceId());
     }
 
     /**
