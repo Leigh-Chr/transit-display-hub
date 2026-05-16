@@ -25,7 +25,9 @@ export interface PathwayGraphEdge {
   key: string;
   x1: number; y1: number;
   x2: number; y2: number;
-  color: string;
+  /** CSS class such as `pathway-mode-stairs` whose stroke/fill is resolved
+   *  through the design-system tokens in pathways.component.scss. */
+  modeClass: string;
   strokeWidth: number;
   dash: string | null;
   bidirectional: boolean;
@@ -36,7 +38,9 @@ export interface PathwayGraphEdge {
 export interface PathwayGraphLegendEntry {
   mode: PathwayMode;
   label: string;
-  color: string;
+  /** CSS class such as `pathway-mode-stairs` whose background is resolved
+   *  through the design-system tokens in pathways.component.scss. */
+  modeClass: string;
   dashed: boolean;
 }
 
@@ -48,19 +52,21 @@ export interface PathwayGraphLayout {
 }
 
 /**
- * Per-mode stroke colour for the SVG edges. Hex values picked so the
- * lines stay legible on both light and dark backgrounds; STAIRS /
- * ESCALATOR / ELEVATOR are the modes admins look at most when
- * checking accessibility.
+ * Per-mode CSS class — the actual colour comes from
+ * pathways.component.scss, which maps each class to the matching
+ * semantic token (`var(--mat-sys-outline)` for walkways,
+ * `var(--app-critical)` for stairs, …). Keeping the lookup as a
+ * class name means a dark-theme switch or a design-system token
+ * change automatically propagates without touching this TypeScript.
  */
-const PATHWAY_MODE_COLORS: Record<PathwayMode, string> = {
-  WALKWAY: '#6b7280',
-  STAIRS: '#dc2626',
-  MOVING_SIDEWALK: '#0ea5e9',
-  ESCALATOR: '#f59e0b',
-  ELEVATOR: '#16a34a',
-  FARE_GATE: '#a855f7',
-  EXIT_GATE: '#a855f7',
+const PATHWAY_MODE_CLASS: Record<PathwayMode, string> = {
+  WALKWAY: 'pathway-mode-walkway',
+  STAIRS: 'pathway-mode-stairs',
+  MOVING_SIDEWALK: 'pathway-mode-moving-sidewalk',
+  ESCALATOR: 'pathway-mode-escalator',
+  ELEVATOR: 'pathway-mode-elevator',
+  FARE_GATE: 'pathway-mode-fare-gate',
+  EXIT_GATE: 'pathway-mode-exit-gate',
 };
 
 /**
@@ -178,7 +184,7 @@ export function buildPathwayGraphLayout(
     if (seen.has(canonical)) {continue;}
     seen.add(canonical);
 
-    const color = PATHWAY_MODE_COLORS[p.pathwayMode];
+    const modeClass = PATHWAY_MODE_CLASS[p.pathwayMode];
     const dash = p.pathwayMode === 'STAIRS' ? '4 4' : null;
     // Stroke width scales with traversal time so longer pathways read
     // as visually heavier — capped to keep the SVG readable.
@@ -200,7 +206,7 @@ export function buildPathwayGraphLayout(
       key: canonical,
       x1: from.x, y1: from.y,
       x2: to.x, y2: to.y,
-      color,
+      modeClass,
       strokeWidth,
       dash,
       bidirectional: p.bidirectional,
@@ -215,7 +221,7 @@ export function buildPathwayGraphLayout(
     legend.push({
       mode,
       label: modeLabelStatic(mode, transloco),
-      color: PATHWAY_MODE_COLORS[mode],
+      modeClass: PATHWAY_MODE_CLASS[mode],
       dashed: mode === 'STAIRS',
     });
   }

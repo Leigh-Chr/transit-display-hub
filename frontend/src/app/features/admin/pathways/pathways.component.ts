@@ -122,7 +122,8 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
                       [attr.y1]="edge.y1"
                       [attr.x2]="edge.x2"
                       [attr.y2]="edge.y2"
-                      [attr.stroke]="edge.color"
+                      [class]="'pathway-edge ' + edge.modeClass"
+                      stroke="currentColor"
                       [attr.stroke-width]="edge.strokeWidth"
                       [attr.stroke-dasharray]="edge.dash"
                       stroke-linecap="round"
@@ -132,17 +133,17 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
                     @if (!edge.bidirectional) {
                       <polygon
                         [attr.points]="edge.arrowPoints"
-                        [attr.fill]="edge.color" />
+                        [class]="'pathway-arrow ' + edge.modeClass"
+                        fill="currentColor" />
                     }
                   }
                   @for (node of g.nodes; track node.id) {
-                    <g [class.is-current]="node.isCurrent">
+                    <g [class.is-current]="node.isCurrent" class="pathway-node">
                       <circle
                         [attr.cx]="node.x"
                         [attr.cy]="node.y"
                         [attr.r]="node.isCurrent ? 9 : 6"
-                        [attr.fill]="node.isCurrent ? '#4338ca' : '#ffffff'"
-                        [attr.stroke]="node.isCurrent ? '#4338ca' : '#9ca3af'"
+                        class="pathway-node-circle"
                         stroke-width="1.5">
                         <title>{{ node.name }}</title>
                       </circle>
@@ -151,7 +152,7 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
                         [attr.y]="node.y - (node.isCurrent ? 14 : 10)"
                         text-anchor="middle"
                         font-size="10"
-                        [attr.fill]="node.isCurrent ? '#4338ca' : 'currentColor'"
+                        class="pathway-node-label"
                         [attr.font-weight]="node.isCurrent ? 600 : 400">
                         {{ node.shortName }}
                       </text>
@@ -161,7 +162,7 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
                 <div class="graph-legend">
                   @for (item of g.legend; track item.mode) {
                     <span class="legend-chip">
-                      <span class="legend-swatch" [style.backgroundColor]="item.color" [class.legend-dashed]="item.dashed"></span>
+                      <span [class]="'legend-swatch ' + item.modeClass" [class.legend-dashed]="item.dashed"></span>
                       {{ item.label }}
                     </span>
                   }
@@ -396,10 +397,46 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
       width: 22px;
       height: 3px;
       border-radius: 2px;
+      background-color: currentColor;
     }
     .legend-swatch.legend-dashed {
-      background: none !important;
-      border-top: 3px dashed var(--swatch-color, #888);
+      background: none;
+      border-top: 3px dashed currentColor;
+    }
+    /* --- Pathway mode palette ---
+       One CSS class per GTFS pathway_mode value. The SVG markup uses
+       stroke=currentColor (lines) and fill=currentColor (arrowheads,
+       legend swatches) so the colour on the wrapping class flows
+       through without the layout helper having to hardcode a hex.
+       STAIRS / ESCALATOR / ELEVATOR map to the same critical / warning
+       / success semantic tokens used elsewhere so a theme change
+       automatically lights up the right hue. */
+    .pathway-mode-walkway        { color: var(--mat-sys-outline, #6b7280); }
+    .pathway-mode-stairs         { color: var(--app-critical, #dc2626); }
+    .pathway-mode-moving-sidewalk{ color: var(--app-info, #0ea5e9); }
+    .pathway-mode-escalator      { color: var(--app-warning, #f59e0b); }
+    .pathway-mode-elevator       { color: var(--app-success, #16a34a); }
+    .pathway-mode-fare-gate,
+    .pathway-mode-exit-gate      { color: var(--app-chip-accent-fg, #a855f7); }
+
+    /* --- Pathway nodes ---
+       Default node = white fill on the surface, with the inactive
+       outline. The .is-current modifier (added to the wrapping group)
+       promotes the node to the chip-info token so the focused stop
+       pops without us hardcoding indigo-700 inline. */
+    .pathway-node-circle {
+      fill: var(--mat-sys-surface, #ffffff);
+      stroke: var(--mat-sys-outline-variant, #9ca3af);
+    }
+    .pathway-node-label {
+      fill: currentColor;
+    }
+    .pathway-node.is-current .pathway-node-circle {
+      fill: var(--app-chip-info-fg);
+      stroke: var(--app-chip-info-fg);
+    }
+    .pathway-node.is-current .pathway-node-label {
+      fill: var(--app-chip-info-fg);
     }
   `,
 })
