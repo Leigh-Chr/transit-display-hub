@@ -191,7 +191,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   background: rgba(56, 142, 235, 0.16);
-  color: rgb(34, 105, 192);
+  color: var(--app-info);
   border: 1px solid rgba(56, 142, 235, 0.55);
   white-space: nowrap;
 }

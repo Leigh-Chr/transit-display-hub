@@ -56,22 +56,22 @@
 }
 .meta-pill.meta-tad {
   background: rgba(56, 142, 235, 0.16);
-  color: rgb(34, 105, 192);
+  color: var(--app-info);
   border: 1px solid rgba(56, 142, 235, 0.55);
 }
 .meta-pill.meta-access {
   background: rgba(46, 204, 113, 0.16);
-  color: rgb(46, 174, 96);
+  color: var(--app-success);
   border: 1px solid rgba(46, 204, 113, 0.55);
 }
 .meta-pill.meta-no-access {
   background: rgba(231, 76, 60, 0.14);
-  color: rgb(180, 50, 38);
+  color: var(--app-critical);
   border: 1px solid rgba(231, 76, 60, 0.5);
 }
 .meta-pill.meta-zone {
   background: rgba(96, 56, 200, 0.14);
-  color: rgb(72, 38, 156);
+  color: var(--app-chip-info-fg);
   border: 1px solid rgba(96, 56, 200, 0.5);
 }
 
@@ -155,13 +155,13 @@
   gap: 2px;
   padding: 10px 14px;
   background: var(--mat-sys-surface-container-low);
-  border-left: 3px solid rgb(56, 142, 235);
+  border-left: 3px solid var(--app-info);
   border-radius: 4px;
 }
 .flex-window-time {
   font-size: var(--m3-type-body-medium);
   font-weight: 700;
-  color: rgb(34, 105, 192);
+  color: var(--app-info);
   font-variant-numeric: tabular-nums;
 }
 .flex-window-headsign {

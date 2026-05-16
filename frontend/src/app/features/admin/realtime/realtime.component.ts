@@ -324,7 +324,7 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
     }
     .alert-card { border-left: 3px solid var(--mat-sys-outline-variant); }
     .alert-card.severity-warning { border-left-color: rgb(241, 158, 11); }
-    .alert-card.severity-critical { border-left-color: rgb(220, 38, 38); }
+    .alert-card.severity-critical { border-left-color: var(--app-critical); }
 
     .alert-head {
       display: flex;

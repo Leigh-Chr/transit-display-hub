@@ -225,9 +225,9 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     }
 
     .status-icon { font-size: var(--m3-type-headline-small); width: 22px; height: 22px; }
-    .status-icon.success { color: rgb(46, 174, 96); }
+    .status-icon.success { color: var(--app-success); }
     .status-icon.skipped { color: var(--mat-sys-outline); }
-    .status-icon.failed { color: rgb(220, 38, 38); }
+    .status-icon.failed { color: var(--app-critical); }
     .status-icon.running { color: rgb(241, 158, 11); }
 
     .counts {
@@ -258,7 +258,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .error { color: rgb(220, 38, 38); }
+    .error { color: var(--app-critical); }
 
     tr.row-failed {
       background: rgba(220, 38, 38, 0.05);
@@ -288,7 +288,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     }
     .badge.errors {
       background: rgba(220, 38, 38, 0.12);
-      color: rgb(220, 38, 38);
+      color: var(--app-critical);
     }
     .badge.warnings {
       background: rgba(241, 158, 11, 0.16);
@@ -296,13 +296,13 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     }
     .badge.clean {
       background: rgba(46, 174, 96, 0.12);
-      color: rgb(46, 174, 96);
+      color: var(--app-success);
     }
     .validation-badge.failed {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      color: rgb(220, 38, 38);
+      color: var(--app-critical);
       font-size: var(--m3-type-body-medium);
     }
     .report-link {

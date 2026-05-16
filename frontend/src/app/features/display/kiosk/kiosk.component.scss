@@ -230,7 +230,7 @@
   text-transform: uppercase;
   vertical-align: middle;
   background: rgba(46, 204, 113, 0.18);
-  color: rgb(46, 174, 96);
+  color: var(--app-success);
   border: 1px solid rgba(46, 204, 113, 0.6);
   /* Pulsing dot evokes the "live data" idiom from broadcast UIs */
   animation: live-pulse 2s ease-in-out infinite;
@@ -269,7 +269,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   background: var(--mat-sys-tertiary-container, rgba(96, 56, 200, 0.18));
-  color: var(--mat-sys-on-tertiary-container, rgb(72, 38, 156));
+  color: var(--mat-sys-on-tertiary-container, var(--app-chip-info-fg));
   border: 1px solid var(--mat-sys-tertiary, rgba(96, 56, 200, 0.55));
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
@@ -289,7 +289,7 @@
   letter-spacing: 0.02em;
   vertical-align: middle;
   background: rgba(56, 142, 235, 0.16);
-  color: rgb(34, 105, 192);
+  color: var(--app-info);
   border: 1px solid rgba(56, 142, 235, 0.55);
 }
 

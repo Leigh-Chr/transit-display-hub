@@ -223,7 +223,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       background: var(--mat-sys-outline);
     }
     .rt-active .rt-dot {
-      background: rgb(46, 174, 96);
+      background: var(--app-success);
       box-shadow: 0 0 0 3px rgba(46, 174, 96, 0.15);
       animation: rt-pulse 2s ease-in-out infinite;
     }

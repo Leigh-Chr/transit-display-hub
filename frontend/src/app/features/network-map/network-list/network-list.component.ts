@@ -169,7 +169,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     .search-field { min-width: 280px; }
 
     .muted { color: var(--mat-sys-on-surface-variant); }
-    .error { color: rgb(220, 38, 38); }
+    .error { color: var(--app-critical); }
 
     .lines-section, .stops-section {
       background: var(--mat-sys-surface-container);
