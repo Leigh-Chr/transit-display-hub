@@ -528,6 +528,9 @@ html.large-text-theme {
       // same `!important` here on the visible nodes (text + icon) to take
       // back the cascade. Any future cleanup must be visually verified in the
       // browser — a silent regression here turns the sidebar invisible.
+      // Re-confirmed 2026-05-16 on @angular/material 21.2.10: removing this
+      // block (relying on the --mdc-list-item-label-text-color tokens above)
+      // leaves the nav text invisible against the dark sidebar background.
       .mdc-list-item__primary-text,
       .mat-mdc-list-item-title,
       [matlistitemtitle],
