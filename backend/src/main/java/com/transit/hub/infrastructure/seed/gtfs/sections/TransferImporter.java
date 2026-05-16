@@ -6,21 +6,16 @@ import com.transit.hub.infrastructure.persistence.TransferRepository;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseIntOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
-import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
 /**
@@ -36,7 +31,8 @@ public class TransferImporter {
 
     /**
      * Reads {@code transfers.txt} when present (the file is GTFS-optional).
-     * Resolves both endpoints through the persisted stop index.
+     * Resolves both endpoints through the persisted stop index; rows that
+     * reference an unknown stop are skipped and counted in the log line.
      *
      * @param transfersFile path to transfers.txt inside the extracted zip
      * @param stopImport    stop index built by {@link StopImporter}
@@ -45,50 +41,45 @@ public class TransferImporter {
         // Wipe before re-importing — Transfer has no externalId/UNIQUE
         // constraint, so without this each daily refresh would duplicate
         // every row in the table.
-        transferRepository.deleteAllInBatch();
-        transferRepository.flush();
+        GtfsSectionImporter.runWithStats(
+                transferRepository,
+                transfersFile,
+                "transfers",
+                (record, skip) -> mapRow(record, stopImport, skip),
+                log
+        );
+    }
 
-        if (!Files.exists(transfersFile)) {
-            log.info("GTFS import: transfers.txt missing, skipping");
-            return;
+    private static Optional<Transfer> mapRow(
+            org.apache.commons.csv.CSVRecord record,
+            StopImport stopImport,
+            GtfsSectionImporter.SkipTracker skip
+    ) {
+        String fromGtfs = optional(record, "from_stop_id");
+        String toGtfs = optional(record, "to_stop_id");
+        if (isBlank(fromGtfs) || isBlank(toGtfs)) {
+            return Optional.empty();
         }
-        List<Transfer> batch = new ArrayList<>();
-        int skippedUnknownStop = 0;
-        try (CSVParser parser = openCsv(transfersFile)) {
-            for (CSVRecord record : parser) {
-                String fromGtfs = optional(record, "from_stop_id");
-                String toGtfs = optional(record, "to_stop_id");
-                if (isBlank(fromGtfs) || isBlank(toGtfs)) { continue; }
-
-                Stop fromStop = stopImport.stopsByGtfsId().get(fromGtfs);
-                Stop toStop = stopImport.stopsByGtfsId().get(toGtfs);
-                if (fromStop == null || toStop == null) {
-                    skippedUnknownStop++;
-                    continue;
-                }
-                // self-transfer rows describe waiting at a station for a
-                // different platform's service; we keep them — the route-
-                // finder ignores zero-length edges anyway.
-
-                short transferType = (short) parseInt(optional(record, "transfer_type"), 0);
-                Integer minTransferTime = parseIntOrNull(optional(record, "min_transfer_time"));
-
-                batch.add(Transfer.builder()
-                        .fromStop(fromStop)
-                        .toStop(toStop)
-                        .transferType(transferType)
-                        .minTransferTime(minTransferTime)
-                        .fromRouteId(truncate(optional(record, "from_route_id"), 100))
-                        .toRouteId(truncate(optional(record, "to_route_id"), 100))
-                        .fromTripId(truncate(optional(record, "from_trip_id"), 100))
-                        .toTripId(truncate(optional(record, "to_trip_id"), 100))
-                        .build());
-            }
+        Stop fromStop = stopImport.stopsByGtfsId().get(fromGtfs);
+        Stop toStop = stopImport.stopsByGtfsId().get(toGtfs);
+        if (fromStop == null || toStop == null) {
+            skip.skip("unknown stop");
+            return Optional.empty();
         }
-        if (!batch.isEmpty()) {
-            transferRepository.saveAll(batch);
-        }
-        log.info("GTFS import: {} transfers created ({} rows skipped — unknown stop)",
-                batch.size(), skippedUnknownStop);
+        // self-transfer rows describe waiting at a station for a different
+        // platform's service; we keep them — the route-finder ignores
+        // zero-length edges anyway.
+        short transferType = (short) parseInt(optional(record, "transfer_type"), 0);
+        Integer minTransferTime = parseIntOrNull(optional(record, "min_transfer_time"));
+        return Optional.of(Transfer.builder()
+                .fromStop(fromStop)
+                .toStop(toStop)
+                .transferType(transferType)
+                .minTransferTime(minTransferTime)
+                .fromRouteId(truncate(optional(record, "from_route_id"), 100))
+                .toRouteId(truncate(optional(record, "to_route_id"), 100))
+                .fromTripId(truncate(optional(record, "from_trip_id"), 100))
+                .toTripId(truncate(optional(record, "to_trip_id"), 100))
+                .build());
     }
 }

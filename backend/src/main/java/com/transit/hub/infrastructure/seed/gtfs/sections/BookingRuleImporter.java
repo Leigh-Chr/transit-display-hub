@@ -6,21 +6,19 @@ import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsParse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseIntOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
-import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
 /**
@@ -43,56 +41,52 @@ public class BookingRuleImporter {
      * when the file is absent or contains no parseable rows.
      */
     public Map<String, BookingRule> importBookingRules(Path bookingRulesFile) throws IOException {
-        bookingRuleRepository.deleteAllInBatch();
-        bookingRuleRepository.flush();
-
         Map<String, BookingRule> result = new HashMap<>();
-        if (!Files.exists(bookingRulesFile)) {
-            log.info("GTFS import: booking_rules.txt missing, skipping");
-            return result;
-        }
-        int skippedBadType = 0;
-        try (CSVParser parser = openCsv(bookingRulesFile)) {
-            for (CSVRecord record : parser) {
-                String externalId = optional(record, "booking_rule_id");
-                if (isBlank(externalId)) { continue; }
-                Integer typeCode = parseIntOrNull(optional(record, "booking_type"));
-                if (typeCode == null) {
-                    skippedBadType++;
-                    continue;
-                }
-                BookingType bookingType = BookingType.fromGtfsCode(typeCode);
-                if (bookingType == null) {
-                    skippedBadType++;
-                    continue;
-                }
-                LocalTime cutoff = GtfsParse.parseGtfsTime(optional(record, "prior_notice_last_time"));
-
-                String trimmed = externalId.trim();
-                BookingRule rule = BookingRule.builder()
-                        .externalId(truncate(trimmed, 100))
-                        .bookingType(bookingType)
-                        .priorNoticeDurationMin(parseIntOrNull(optional(record, "prior_notice_duration_min")))
-                        .priorNoticeDurationMax(parseIntOrNull(optional(record, "prior_notice_duration_max")))
-                        .priorNoticeLastDay(parseIntOrNull(optional(record, "prior_notice_last_day")))
-                        .priorNoticeLastTime(cutoff)
-                        .priorNoticeStartDay(parseIntOrNull(optional(record, "prior_notice_start_day")))
-                        .phone(truncate(optional(record, "phone_number"), 30))
-                        .bookingUrl(truncate(optional(record, "booking_url"), 500))
-                        .infoUrl(truncate(optional(record, "info_url"), 500))
-                        .message(truncate(optional(record, "message"), 1000))
-                        .build();
-                result.put(trimmed, rule);
-            }
-        }
-        if (!result.isEmpty()) {
-            bookingRuleRepository.saveAll(result.values());
-        }
-        if (skippedBadType > 0) {
-            log.warn("GTFS import: skipped {} booking_rules rows with invalid booking_type",
-                    skippedBadType);
-        }
-        log.info("GTFS import: {} booking rules persisted", result.size());
+        GtfsSectionImporter.runWithStats(
+                bookingRuleRepository,
+                bookingRulesFile,
+                "booking rules",
+                (record, skip) -> mapRow(record, result, skip),
+                log
+        );
         return result;
+    }
+
+    private static Optional<BookingRule> mapRow(
+            CSVRecord record,
+            Map<String, BookingRule> resultIndex,
+            GtfsSectionImporter.SkipTracker skip
+    ) {
+        String externalId = optional(record, "booking_rule_id");
+        if (isBlank(externalId)) {
+            return Optional.empty();
+        }
+        Integer typeCode = parseIntOrNull(optional(record, "booking_type"));
+        if (typeCode == null) {
+            skip.skip("invalid booking_type");
+            return Optional.empty();
+        }
+        BookingType bookingType = BookingType.fromGtfsCode(typeCode);
+        if (bookingType == null) {
+            skip.skip("invalid booking_type");
+            return Optional.empty();
+        }
+        LocalTime cutoff = GtfsParse.parseGtfsTime(optional(record, "prior_notice_last_time"));
+        String trimmed = externalId.trim();
+        BookingRule rule = BookingRule.builder()
+                .externalId(truncate(trimmed, 100))
+                .bookingType(bookingType)
+                .priorNoticeDurationMin(parseIntOrNull(optional(record, "prior_notice_duration_min")))
+                .priorNoticeDurationMax(parseIntOrNull(optional(record, "prior_notice_duration_max")))
+                .priorNoticeLastDay(parseIntOrNull(optional(record, "prior_notice_last_day")))
+                .priorNoticeLastTime(cutoff)
+                .priorNoticeStartDay(parseIntOrNull(optional(record, "prior_notice_start_day")))
+                .phone(truncate(optional(record, "phone_number"), 30))
+                .bookingUrl(truncate(optional(record, "booking_url"), 500))
+                .infoUrl(truncate(optional(record, "info_url"), 500))
+                .message(truncate(optional(record, "message"), 1000))
+                .build();
+        resultIndex.put(trimmed, rule);
+        return Optional.of(rule);
     }
 }
