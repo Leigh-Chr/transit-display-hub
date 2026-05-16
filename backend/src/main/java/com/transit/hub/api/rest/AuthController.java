@@ -5,8 +5,6 @@ import com.transit.hub.application.dto.request.LoginRequest;
 import com.transit.hub.application.dto.response.LoginResponse;
 import com.transit.hub.application.dto.response.MeResponse;
 import com.transit.hub.application.service.AuthService;
-import com.transit.hub.domain.model.User;
-import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.infrastructure.security.AuthCookieFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,7 +35,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthCookieFactory cookieFactory;
-    private final UserRepository userRepository;
 
     @PostMapping("/login")
     @Operation(summary = "Authentifie un utilisateur",
@@ -88,8 +85,7 @@ public class AuthController {
                 || "anonymousUser".equals(authentication.getName())) {
             return ResponseEntity.status(401).build();
         }
-        return userRepository.findByUsername(authentication.getName())
-                .map(this::toMeResponse)
+        return authService.getCurrentUser(authentication.getName())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(401).build());
     }
@@ -104,10 +100,6 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-    }
-
-    private MeResponse toMeResponse(User user) {
-        return new MeResponse(user.getUsername(), user.getRole());
     }
 
     private static Optional<String> readCookie(HttpServletRequest request, String name) {

@@ -63,4 +63,37 @@ class LayeredArchitectureTest {
             .should().dependOnClassesThat()
             .resideInAPackage("..application.service..")
             .as("DTOs must not call back into application services");
+
+    /**
+     * API controllers must go through application services. Pulling
+     * a repository or a realtime cache directly into a controller
+     * blurs the layer boundary and bypasses every cross-cutting
+     * concern (logging, transactions, mapping) the application
+     * services are supposed to own.
+     *
+     * <p>The 2026-05-16 audit caught three contraventions (audit P1
+     * B-3): {@code AuthController} reading from {@code UserRepository}
+     * for {@code /me}, and the two realtime endpoints reading from
+     * {@code RealtimeAlertCache} / {@code RealtimeVehiclePositionCache}.
+     * They are now mediated by dedicated application services
+     * ({@code AuthMeService}, {@code RealtimeAdminService}), so the
+     * rule fires green and stays a gate for new code.
+     */
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnInfrastructurePersistence =
+        noClasses()
+            .that().resideInAPackage("..api..")
+            .should().dependOnClassesThat()
+            .resideInAPackage("..infrastructure.persistence..")
+            .as("API controllers must go through application services, "
+                + "never call a repository directly");
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnInfrastructureRealtime =
+        noClasses()
+            .that().resideInAPackage("..api..")
+            .should().dependOnClassesThat()
+            .resideInAPackage("..infrastructure.realtime..")
+            .as("API controllers must go through application services, "
+                + "never call a realtime cache directly");
 }
