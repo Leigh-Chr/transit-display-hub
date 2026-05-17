@@ -8,5 +8,6 @@ public record LoginResponse(
         String token,
         Instant expiresAt,
         UserRole role,
-        String username
+        String username,
+        boolean passwordMustChange
 ) {}

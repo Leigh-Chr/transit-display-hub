@@ -44,7 +44,8 @@ public class AuthService {
                 token,
                 jwtService.extractExpiration(token),
                 user.getRole(),
-                user.getUsername()
+                user.getUsername(),
+                user.isPasswordMustChange()
         );
     }
 
@@ -55,7 +56,8 @@ public class AuthService {
         Instant accessExpiresAt = jwtService.extractExpiration(access);
         RefreshTokenService.Issued refresh = refreshTokenService.issue(user, userAgent, ipAddress);
 
-        LoginResponse body = new LoginResponse(access, accessExpiresAt, user.getRole(), user.getUsername());
+        LoginResponse body = new LoginResponse(
+                access, accessExpiresAt, user.getRole(), user.getUsername(), user.isPasswordMustChange());
         return new LoginBundle(body, refresh.rawToken(), ttl(refresh.entity().getExpiresAt()));
     }
 
@@ -66,7 +68,8 @@ public class AuthService {
         String access = jwtService.generateToken(user);
         Instant accessExpiresAt = jwtService.extractExpiration(access);
 
-        LoginResponse body = new LoginResponse(access, accessExpiresAt, user.getRole(), user.getUsername());
+        LoginResponse body = new LoginResponse(
+                access, accessExpiresAt, user.getRole(), user.getUsername(), user.isPasswordMustChange());
         return new LoginBundle(body, rotated.rawToken(), ttl(rotated.entity().getExpiresAt()));
     }
 
