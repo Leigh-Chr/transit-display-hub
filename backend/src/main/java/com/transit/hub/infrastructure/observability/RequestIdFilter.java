@@ -38,8 +38,8 @@ public class RequestIdFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        String id = request.getHeader(HEADER);
-        if (id == null || id.isBlank() || id.length() > 64) {
+        String id = sanitize(request.getHeader(HEADER));
+        if (id == null) {
             id = UUID.randomUUID().toString();
         }
         MDC.put(MDC_KEY, id);
@@ -49,5 +49,24 @@ public class RequestIdFilter extends OncePerRequestFilter {
         } finally {
             MDC.remove(MDC_KEY);
         }
+    }
+
+    /**
+     * Defensive guard against HTTP response splitting (CWE-113): only
+     * accept printable ASCII without CR/LF before echoing the header
+     * back. Tomcat normally rejects bad headers up the chain, but the
+     * filter is the trust boundary so we re-validate here too.
+     */
+    private static String sanitize(String raw) {
+        if (raw == null || raw.isBlank() || raw.length() > 64) {
+            return null;
+        }
+        for (int i = 0; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (c < 0x20 || c > 0x7E) {
+                return null;
+            }
+        }
+        return raw;
     }
 }

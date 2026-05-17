@@ -4,12 +4,12 @@ plugins {
     pmd
     id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.google.protobuf") version "0.9.5"
+    id("com.google.protobuf") version "0.10.0"
     // Static analysis. SpotBugs catches bytecode-level bugs (NPE,
     // EI_EXPOSE_REP, default-encoding traps); PMD covers style and
     // best-practice patterns. Both gate `check` so a regression
     // surfaces in CI rather than at review time.
-    id("com.github.spotbugs") version "6.0.26"
+    id("com.github.spotbugs") version "6.5.4"
     // Lists outdated dependencies — manual `./gradlew dependencyUpdates`,
     // not part of `check` (informational, not a gate).
     id("com.github.ben-manes.versions") version "0.52.0"
@@ -65,7 +65,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-cache")
-    implementation("com.github.ben-manes.caffeine:caffeine")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
 
     // Prometheus scrape format on /actuator/prometheus. Spring Boot
     // wires the registry into Micrometer automatically when this
@@ -156,8 +156,8 @@ dependencies {
     // PG-only DDL; the dedicated FlywayMigrationsPostgresTest opts in
     // via @Tag("postgres") and is tagged for the same opt-in test task
     // as the real-feed suite so CI without Docker stays fast.
-    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
-    testImplementation("org.testcontainers:postgresql:1.21.3")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+    testImplementation("org.testcontainers:postgresql:1.21.4")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.flywaydb:flyway-database-postgresql")
     testRuntimeOnly("org.postgresql:postgresql")
@@ -165,20 +165,12 @@ dependencies {
     // JMH-only — Mockito lets micro-benchmarks stub the Spring Data
     // repositories with constant-time fakes so the measurement stays
     // focused on the service code (not the JPA round-trip).
-    "jmhImplementation"("org.mockito:mockito-core:5.14.2")
+    "jmhImplementation"("org.mockito:mockito-core:5.23.0")
 }
 
 // Protobuf code generation for gtfs-realtime.proto. The plugin
 // downloads the protoc binary from Maven Central as a Maven artefact;
 // no system-wide protoc install required.
-//
-// Known issue: the protobuf-gradle-plugin (0.9.5) builds the protoc
-// dependency internally with the multi-string Map notation
-// `(group, name, version, classifier, ext)` so it can append the
-// platform-specific classifier ("linux-x86_64@exe", "osx-aarch_64@exe",
-// …). Gradle 9 deprecated that notation and Gradle 10 will reject it.
-// Tracking https://github.com/google/protobuf-gradle-plugin/issues/762
-// upstream — nothing we can do from this build script.
 springBoot {
     buildInfo()
 }

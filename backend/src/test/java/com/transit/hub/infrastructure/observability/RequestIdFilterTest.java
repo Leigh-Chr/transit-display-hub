@@ -73,6 +73,26 @@ class RequestIdFilterTest {
     }
 
     @Test
+    void mintsAUuidWhenIncomingHeaderContainsControlChars() throws Exception {
+        // Caller-supplied ids with CR/LF or other control characters
+        // are treated as hostile (HTTP response splitting attempts) —
+        // the filter mints a fresh UUID rather than echoing them back
+        // on the response header.
+        String malicious = "abc\r\nSet-Cookie: evil=1";
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/x");
+        req.addHeader(RequestIdFilter.HEADER, malicious);
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        AtomicReference<String> inMdc = new AtomicReference<>();
+        FilterChain chain = (_req, _res) -> inMdc.set(MDC.get(RequestIdFilter.MDC_KEY));
+
+        filter.doFilter(req, res, chain);
+
+        assertThat(inMdc.get()).isNotEqualTo(malicious);
+        UUID.fromString(inMdc.get());
+        assertThat(res.getHeader(RequestIdFilter.HEADER)).doesNotContain("\r", "\n");
+    }
+
+    @Test
     void clearsMdcEvenWhenTheDownstreamChainThrows() {
         MockHttpServletRequest req = new MockHttpServletRequest("GET", "/x");
         MockHttpServletResponse res = new MockHttpServletResponse();
