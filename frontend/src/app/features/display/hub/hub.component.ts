@@ -19,26 +19,34 @@ import { DisplayAlertBannerComponent } from '@shared/components/display-alert-ba
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import {
   DisplayState,
-  HubDisplayState,
   HubArrivalInfo,
+  HubDisplayState,
   LineInfo,
   MessageInfo,
 } from '@shared/models';
-import { injectVisibilityListener } from '@shared/browser/visibility-listener';
 import { lineTextColor } from '@shared/utils/color.utils';
-import { LocaleService } from '@core/i18n/locale.service';
-import {
-  formatClockDate,
-  formatClockTime,
-  formatDepartureTime,
-  getMinutesUntil,
-  isImminent,
-} from '@shared/utils/time.utils';
+import { formatDepartureTime } from '@shared/utils/time.utils';
+
+import { DisplayDeparturesRowComponent } from '../_shared/display-departures-row/display-departures-row.component';
+import { useArrivalsView } from '../_shared/use-arrivals-view';
+import { useDisplayClock } from '../_shared/use-display-clock';
+import { useMessagesView } from '../_shared/use-messages-view';
+
+/** A stop's cached state goes stale after 30 minutes without a fresh push. */
+const STALE_STOP_THRESHOLD_MS = 30 * 60 * 1000;
 
 @Component({
   selector: 'app-hub',
   standalone: true,
-  imports: [NgOptimizedImage, MatIconModule, MatProgressSpinnerModule, TranslocoPipe, DisplayAlertBannerComponent, DisplayInfoTickerComponent],
+  imports: [
+    NgOptimizedImage,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    TranslocoPipe,
+    DisplayAlertBannerComponent,
+    DisplayInfoTickerComponent,
+    DisplayDeparturesRowComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hub.component.html',
   styleUrl: './hub.component.scss',
@@ -48,29 +56,22 @@ export class HubComponent {
   private readonly displayService = inject(DisplayService);
   private readonly hubWsService = inject(HubWebSocketService);
   private readonly transloco = inject(TranslocoService);
-  private readonly localeService = inject(LocaleService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly visibility = injectVisibilityListener();
   private readonly queryParamsSignal = toSignal<Params, Params>(this.route.queryParams, { initialValue: {} });
 
   hubState = signal<HubDisplayState | null>(null);
   error = signal<string | null>(null);
-  currentTime = signal(this.formatTime(new Date()));
-  currentDate = signal(this.formatDate(new Date()));
+
+  /** Shared 1Hz wall clock — pauses while the tab is hidden, exposes
+   *  pre-formatted date/time strings and the isStale helpers. */
+  protected readonly clock = useDisplayClock();
+  protected readonly currentTime = this.clock.currentTime;
+  protected readonly currentDate = this.clock.currentDate;
 
   // Exposed to the template: prefer the server-resolved foreground color
   // (route_text_color) before falling back to a YIQ-derived contrast.
   readonly lineTextColor = lineTextColor;
-
-  /** ARIA label for the booking badge — screen readers announce
-   *  "réservation 0123456789, 30 minutes minimum" rather than just
-   *  "phone_callback 0123456789". Mirrors the kiosk implementation. */
-  bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
-    const parts: string[] = [this.transloco.translate('kiosk.booking.aria')];
-    if (b.phone) {parts.push(b.phone);}
-    if (b.priorNoticeMinutes) {parts.push(`${b.priorNoticeMinutes} minutes minimum`);}
-    return parts.join(', ');
-  }
+  readonly formatDepartureTime = formatDepartureTime;
 
   private stopIds: string[] = [];
   private hubName = 'Hub';
@@ -78,90 +79,37 @@ export class HubComponent {
    *  Anything older than STALE_STOP_THRESHOLD_MS is dropped from the rebuild
    *  so a deleted stop (backend stops emitting) doesn't keep showing forever. */
   private readonly stopStates = new Map<string, { state: DisplayState; receivedAt: number }>();
-  private timeInterval: ReturnType<typeof setInterval> | null = null;
   /** Wall-clock timestamp of the most recent state update; drives the
    *  stale-data banner when the WS link is up but the backend has gone quiet. */
   lastUpdate = signal<number | null>(null);
-  private static readonly STALE_THRESHOLD_MS = 3 * 60 * 1000;
-  isStale = computed(() => {
-    this.currentTime();
-    const last = this.lastUpdate();
-    if (last === null) { return false; }
-    return Date.now() - last > HubComponent.STALE_THRESHOLD_MS;
-  });
-  staleMinutes = computed(() => {
-    this.currentTime();
-    const last = this.lastUpdate();
-    if (last === null) { return 0; }
-    return Math.floor((Date.now() - last) / 60000);
-  });
+  isStale = computed(() => this.clock.isStale(this.lastUpdate()));
+  staleMinutes = computed(() => this.clock.staleMinutes(this.lastUpdate()));
 
-  private static readonly MAX_VISIBLE_ARRIVALS = 8;
-  // Dwell time per visible arrival when the list scrolls. 4s gives readers
-  // a comfortable beat to scan multi-platform info.
-  private static readonly SECONDS_PER_ARRIVAL = 4;
-  /** A stop's cached state goes stale after 30 minutes without a fresh push. */
-  private static readonly STALE_STOP_THRESHOLD_MS = 30 * 60 * 1000;
+  /** Split of messages into critical / info plus the two scroll-cycle
+   *  durations the banner + ticker bind to. */
+  private readonly messagesSignal = computed(() => this.hubState()?.messages ?? []);
+  protected readonly messagesView = useMessagesView(this.messagesSignal);
+  criticalMessages = computed(() => this.messagesView().critical);
+  infoMessages = computed(() => this.messagesView().info);
+  tickerDuration = computed(() => this.messagesView().tickerDuration);
+  alertDuration = computed(() => this.messagesView().alertDuration);
 
-  allArrivals = computed(() => {
-    this.currentTime();
-
-    const arrivals = this.hubState()?.arrivals ?? [];
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    return arrivals.filter(arrival => {
-      const parts = arrival.scheduledTime.split(':');
-      const arrivalMinutes = parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
-      // Wrap arrivals across midnight: a scheduled time earlier than `now` with a
-      // large gap (>6h) is tomorrow's arrival (night service into early morning).
-      let delta = arrivalMinutes - currentMinutes;
-      if (delta < -360) { delta += 1440; }
-      return delta >= 0;
-    });
-  });
-
-  needsScrolling = computed(() => {
-    const arrivals = this.allArrivals();
-    const criticalCount = this.criticalMessages().length;
-    const hasInfoMessages = this.infoMessages().length > 0;
-    const maxVisible = Math.max(4, Math.min(8, HubComponent.MAX_VISIBLE_ARRIVALS - criticalCount + (hasInfoMessages ? 0 : 1)));
-    return arrivals.length > maxVisible;
-  });
-
-  scrollDuration = computed(() => {
-    const arrivals = this.allArrivals();
-    const duration = arrivals.length * HubComponent.SECONDS_PER_ARRIVAL;
-    return `${Math.max(10, duration)}s`;
-  });
-
-  criticalMessages = computed(() =>
-    (this.hubState()?.messages ?? []).filter(m => m.severity === 'CRITICAL')
-  );
-
-  infoMessages = computed(() =>
-    (this.hubState()?.messages ?? []).filter(m => m.severity !== 'CRITICAL')
-  );
-
-  tickerDuration = computed(() => {
-    const messages = this.infoMessages();
-    const totalLength = messages.reduce((acc, m) =>
-      acc + m.title.length + m.content.length, 0
-    );
-    // Info ticker: shorter base than before (12s vs 20s) so short messages
-    // don't linger forever — content-length scaling still kicks in.
-    const duration = Math.max(10, 12 + Math.floor(totalLength / 50) * 2);
-    return `${duration}s`;
-  });
-
-  alertDuration = computed(() => {
-    const messages = this.criticalMessages();
-    const totalLength = messages.reduce((acc, m) =>
-      acc + m.title.length + m.content.length, 0
-    );
-    const duration = Math.max(12, 15 + Math.floor(totalLength / 50) * 3);
-    return `${duration}s`;
-  });
+  /** Filter + scroll metrics for the arrivals list. Hub keeps 8 visible
+   *  rows by default, dropping to 4 once critical messages steal real
+   *  estate (`max-visible - criticalCount + (hasInfoMessages ? 0 : 1)`,
+   *  clamped to `[4, 8]`). */
+  private readonly arrivalsSignal = computed(() => this.hubState()?.arrivals ?? []);
+  private readonly arrivalsConfigSignal = computed(() => ({
+    maxVisibleArrivals: 8,
+    minVisibleArrivals: 4,
+    maxVisibleAfterPenalty: 8,
+    criticalMessagesCount: this.criticalMessages().length,
+    hasInfoMessages: this.infoMessages().length > 0,
+  }));
+  protected readonly arrivalsView = useArrivalsView(this.arrivalsSignal, this.clock.now, this.arrivalsConfigSignal);
+  allArrivals = computed(() => this.arrivalsView().allArrivals);
+  needsScrolling = computed(() => this.arrivalsView().needsScrolling);
+  scrollDuration = computed(() => this.arrivalsView().scrollDuration);
 
   connected = computed(() => this.hubWsService.isConnected());
 
@@ -188,45 +136,16 @@ export class HubComponent {
       this.loadInitialState();
     });
 
-    // Pause the clock while the tab is hidden — hubs running 24/7 don't
-    // need to burn CPU updating an off-screen clock once a second. The
-    // shared visibility listener cleans up its DOM hook on destroy.
-    this.startClock();
-    this.visibility.onHidden(() => this.stopClock());
-    this.visibility.onVisible(() => {
-      this.refreshClock();
-      this.startClock();
-    });
-
     this.destroyRef.onDestroy(() => {
-      this.stopClock();
       this.hubWsService.disconnect();
     });
-  }
-
-  private startClock(): void {
-    if (this.timeInterval !== null) { return; }
-    this.timeInterval = setInterval(() => this.refreshClock(), 1000);
-  }
-
-  private stopClock(): void {
-    if (this.timeInterval !== null) {
-      clearInterval(this.timeInterval);
-      this.timeInterval = null;
-    }
-  }
-
-  private refreshClock(): void {
-    const now = new Date();
-    this.currentTime.set(this.formatTime(now));
-    this.currentDate.set(this.formatDate(now));
   }
 
   private loadInitialState(): void {
     this.displayService.getHubState(this.stopIds, this.hubName).subscribe({
       next: state => {
         this.lastUpdate.set(Date.now());
-    this.hubState.set(state);
+        this.hubState.set(state);
         this.subscribeToUpdates();
       },
       error: () => {
@@ -284,7 +203,7 @@ export class HubComponent {
         this.stopStates.delete(id);
         continue;
       }
-      if (now - entry.receivedAt > HubComponent.STALE_STOP_THRESHOLD_MS) {
+      if (now - entry.receivedAt > STALE_STOP_THRESHOLD_MS) {
         // No update from this stop for too long — likely deleted upstream.
         // Skip it in the rebuild but keep the entry: a fresh push will revive it.
         continue;
@@ -337,37 +256,5 @@ export class HubComponent {
       version: (current?.version ?? 0) + 1,
       generatedAt: new Date().toISOString(),
     });
-  }
-
-  private formatTime(date: Date): string {
-    return formatClockTime(date, this.localeService.current());
-  }
-
-  private formatDate(date: Date): string {
-    return formatClockDate(date, this.localeService.current());
-  }
-
-  formatDepartureTime(time: string): string {
-    return formatDepartureTime(time);
-  }
-
-  getMinutesUntil(time: string): number {
-    this.currentTime();
-    return getMinutesUntil(time, new Date());
-  }
-
-  formatRelativeTime(time: string): string {
-    const minutes = this.getMinutesUntil(time);
-    if (minutes === 0) {
-      return this.transloco.translate('kiosk.imminent');
-    }
-    return this.transloco.translate('kiosk.minutesShort', { minutes });
-  }
-
-  /** Whether the next departure is happening now (within the same minute).
-   *  Drives the highlighted `.imminent` styling on the relative-time pill. */
-  isImminent(time: string): boolean {
-    this.currentTime();
-    return isImminent(time, new Date());
   }
 }

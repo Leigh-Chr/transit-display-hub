@@ -42,32 +42,14 @@
              [style.animationDuration]="scrollDuration()">
           <div class="departures-list">
             @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.platform + '-' + arrival.destinationName)) {
-              <div class="departure-row">
-                <span
-                  class="line-badge"
-                  [style.backgroundColor]="arrival.line.color"
-                  [style.color]="lineTextColor(arrival.line)"
-                >
-                  {{ arrival.line.code }}
-                </span>
-                <span class="platform">{{ arrival.platform }}</span>
-                <span class="destination">
-                  {{ arrival.destinationName }}
-                  @if (arrival.booking; as b) {
-                    <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
-                      <mat-icon class="booking-icon">phone_callback</mat-icon>
-                      @if (b.phone) { {{ b.phone }} } @else { {{ 'kiosk.booking.label' | transloco }} }
-                    </span>
-                  }
-                </span>
-                <span class="time-info">
-                  <span
-                    class="time-relative"
-                    [class.imminent]="isImminent(arrival.scheduledTime)"
-                  >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
-                  <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
-                </span>
-              </div>
+              <app-display-departures-row
+                [line]="arrival.line"
+                [time]="arrival.scheduledTime"
+                [now]="clock.now()"
+                [platform]="arrival.platform"
+                [booking]="arrival.booking ?? null">
+                {{ arrival.destinationName }}
+              </app-display-departures-row>
             } @empty {
               <div class="no-departures">
                 {{ 'kiosk.noScheduledDepartures' | transloco }}
@@ -79,32 +61,14 @@
             <div class="list-divider"></div>
             <div class="departures-list">
               @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.platform + '-' + arrival.destinationName)) {
-                <div class="departure-row">
-                  <span
-                    class="line-badge"
-                    [style.backgroundColor]="arrival.line.color"
-                    [style.color]="lineTextColor(arrival.line)"
-                  >
-                    {{ arrival.line.code }}
-                  </span>
-                  <span class="platform">{{ arrival.platform }}</span>
-                  <span class="destination">
-                    {{ arrival.destinationName }}
-                    @if (arrival.booking; as b) {
-                      <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
-                        <mat-icon class="booking-icon">phone_callback</mat-icon>
-                        @if (b.phone) { {{ b.phone }} } @else { {{ 'kiosk.booking.label' | transloco }} }
-                      </span>
-                    }
-                  </span>
-                  <span class="time-info">
-                    <span
-                    class="time-relative"
-                    [class.imminent]="isImminent(arrival.scheduledTime)"
-                  >{{ formatRelativeTime(arrival.scheduledTime) }}</span>
-                    <span class="time-absolute">{{ formatDepartureTime(arrival.scheduledTime) }}</span>
-                  </span>
-                </div>
+                <app-display-departures-row
+                  [line]="arrival.line"
+                  [time]="arrival.scheduledTime"
+                  [now]="clock.now()"
+                  [platform]="arrival.platform"
+                  [booking]="arrival.booking ?? null">
+                  {{ arrival.destinationName }}
+                </app-display-departures-row>
               }
             </div>
           }

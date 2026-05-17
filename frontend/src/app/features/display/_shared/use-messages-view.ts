@@ -16,8 +16,12 @@ const ALERT_FLOOR_SECONDS = 12;
 const ALERT_BUMP_PER_50_CHARS = 3;
 
 export interface MessagesView {
-  readonly critical: readonly MessageInfo[];
-  readonly info: readonly MessageInfo[];
+  /** Non-readonly so consumers can pass the slice directly to the
+   *  shared display components whose `messages` inputs expect a
+   *  mutable `MessageInfo[]`. The arrays returned here are fresh
+   *  allocations per call — there is no shared mutable state. */
+  readonly critical: MessageInfo[];
+  readonly info: MessageInfo[];
   /** CSS-friendly seconds for the info ticker scroll cycle. */
   readonly tickerDuration: string;
   /** CSS-friendly seconds for the critical alert scroll cycle. */
