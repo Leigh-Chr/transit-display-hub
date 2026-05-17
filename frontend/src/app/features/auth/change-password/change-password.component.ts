@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
@@ -224,6 +224,10 @@ export class ChangePasswordComponent {
 
   protected readonly MIN_PASSWORD_LENGTH = MIN_PASSWORD_LENGTH;
 
+  // Plain fields drive ngModel two-way binding. We can't back them with
+  // signals here because Material's [(ngModel)] writes into a property,
+  // not a Signal setter — and ngModelChange would only fire on blur,
+  // which would leave the submit button stale until the user tabs out.
   currentPassword = '';
   newPassword = '';
   confirmPassword = '';
@@ -231,19 +235,17 @@ export class ChangePasswordComponent {
   error = signal<string | null>(null);
 
   /** Submit stays disabled until both fields are filled, the new password
-   *  is long enough, and the confirmation matches. The button still
-   *  performs a redundant client check on submit so toggling the bound
-   *  values via the DOM does not bypass the gate. */
-  protected readonly canSubmit = computed(() => {
-    // Reading the signals here intentionally — `computed` re-runs on every
-    // change-detection pass since this template binds to the values
-    // directly, so the gate is effectively recomputed on each keystroke.
+   *  is long enough, and the confirmation matches. Plain method (not
+   *  computed) so OnPush re-evaluates it on every change-detection pass —
+   *  computed would never re-fire because the inputs are primitive fields
+   *  that don't register as signal reads. */
+  protected canSubmit(): boolean {
     return (
       this.currentPassword.length > 0 &&
       this.newPassword.length >= MIN_PASSWORD_LENGTH &&
       this.confirmPassword === this.newPassword
     );
-  });
+  }
 
   onSubmit(): void {
     if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {

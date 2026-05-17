@@ -62,11 +62,16 @@ public class GtfsDataLoader implements CommandLineRunner {
     }
 
     private void createUsers() {
+        // Match Flyway V52's intent — the seeded admin must rotate on first
+        // login. The dev profile re-creates this user from scratch on every
+        // boot (H2 is in-memory), so without this flag we'd silently drift
+        // away from the production behaviour the e2e suite relies on.
         userRepository.save(User.builder()
                 .username("admin")
                 .password(passwordEncoder.encode("admin123"))
                 .role(UserRole.ADMIN)
                 .enabled(true)
+                .passwordMustChange(true)
                 .build());
 
         userRepository.save(User.builder()
