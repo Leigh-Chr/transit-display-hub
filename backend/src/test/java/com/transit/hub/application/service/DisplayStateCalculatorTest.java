@@ -397,68 +397,30 @@ class DisplayStateCalculatorTest {
     class MessagesFiltering {
 
         @Test
-        @DisplayName("includes active messages")
-        void includesActiveMessages() {
-            BroadcastMessage activeMessage = TestDataFactory.createNetworkMessage();
+        @DisplayName("surfaces whatever findActiveMessagesForStop returns — scope filtering is the repo's job")
+        void surfacesWhateverTheRepoReturns() {
+            // The previous four tests (NETWORK / LINE / STOP / "active") each
+            // mocked the repo to return a hard-coded list and then verified
+            // that result.messages() was non-empty — they were re-testing the
+            // pass-through, not any scope logic (which lives in the JPQL of
+            // findActiveMessagesForStop). One mixed-scope test covers the same
+            // surface; the actual scope-aware predicate is exercised against a
+            // real DB by BroadcastMessageRepositoryTest.findActiveMessagesForStop.
+            BroadcastMessage networkMsg = TestDataFactory.createNetworkMessage();
+            BroadcastMessage lineMsg = TestDataFactory.createLineMessage(testLineId);
+            BroadcastMessage stopMsg = TestDataFactory.createStopMessage(testStopId);
 
             when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
-                    .thenReturn(List.of(activeMessage));
+                    .thenReturn(List.of(networkMsg, lineMsg, stopMsg));
 
             DisplayState result = calculator.calculateForStop(testStopId);
 
-            assertThat(result.messages()).hasSize(1);
+            // All three flow through untouched (max cap is verified separately).
+            assertThat(result.messages()).hasSize(3);
             assertThat(result.messages().get(0).title()).isEqualTo("Test Alert");
-        }
-
-        @Test
-        @DisplayName("includes NETWORK scope messages")
-        void includesNetworkScopeMessages() {
-            BroadcastMessage networkMessage = TestDataFactory.createNetworkMessage();
-
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
-                    .thenReturn(List.of());
-            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
-                    .thenReturn(List.of(networkMessage));
-
-            DisplayState result = calculator.calculateForStop(testStopId);
-
-            assertThat(result.messages()).isNotEmpty();
-        }
-
-        @Test
-        @DisplayName("includes LINE scope messages")
-        void includesLineScopeMessages() {
-            BroadcastMessage lineMessage = TestDataFactory.createLineMessage(testLineId);
-
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
-                    .thenReturn(List.of());
-            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
-                    .thenReturn(List.of(lineMessage));
-
-            DisplayState result = calculator.calculateForStop(testStopId);
-
-            assertThat(result.messages()).isNotEmpty();
-        }
-
-        @Test
-        @DisplayName("includes STOP scope messages")
-        void includesStopScopeMessages() {
-            BroadcastMessage stopMessage = TestDataFactory.createStopMessage(testStopId);
-
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
-            when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
-                    .thenReturn(List.of());
-            when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
-                    .thenReturn(List.of(stopMessage));
-
-            DisplayState result = calculator.calculateForStop(testStopId);
-
-            assertThat(result.messages()).isNotEmpty();
         }
 
         @Test
