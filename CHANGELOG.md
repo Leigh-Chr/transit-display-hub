@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.20.1] — 2026-05-17
+
 Post-v1.20.0 finishing wave: closes the three Lot-6 items the marathon
 had deferred (stop-autocomplete sharing, pathways bridge cleanup, kiosk
-speech/arrival extraction).
+speech/arrival extraction). Strictly internal — no user-facing API
+change, but ships as a tagged patch rather than carrying over as
+`[Unreleased]` indefinitely.
 
 ### Added
 
