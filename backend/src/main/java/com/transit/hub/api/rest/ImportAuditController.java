@@ -18,9 +18,9 @@ import java.util.UUID;
 
 /**
  * Admin timeline of GTFS import attempts. Capped to 200 rows per call so
- * an excited query string can't blow up the response. Two extra endpoints
- * serve the MobilityData validator report files (JSON and HTML) the
- * orchestrator wrote on disk during the matching import.
+ * an excited query string can't blow up the response. The HTML validator
+ * report is served from a sibling endpoint; the front never consumed the
+ * JSON variant, so it stayed off the list.
  */
 @RestController
 @RequestMapping("/api/admin/import-audit")
@@ -35,15 +35,6 @@ public class ImportAuditController {
     public ResponseEntity<List<ImportAuditResponse>> getRecent(
             @RequestParam(name = "limit", required = false) Integer limit) {
         return ResponseEntity.ok(importAuditService.getRecent(limit));
-    }
-
-    @GetMapping("/{id}/validation-report")
-    public ResponseEntity<byte[]> getValidationReportJson(@PathVariable UUID id) throws IOException {
-        return importAuditService.readValidationReport(id, "report.json")
-                .map(bytes -> ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(bytes))
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/validation-report.html")
