@@ -9,6 +9,14 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { ImportAudit } from '@shared/models';
 import { testTranslocoModule } from '../../../../test-translations';
 
+/** Match the helper's flush — rxResource settles a value across two
+ *  microtask boundaries plus a TestBed tick. */
+async function flushResource(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  TestBed.tick();
+}
+
 const translocoLang = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Delete' } };
 const translocoLangFr = { admin: { importAudit: { status: {} }, common: {}, navigation: {} }, common: { delete: 'Supprimer' } };
 
@@ -61,8 +69,9 @@ describe('ImportAuditComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('loads audits on init and clears the loading flag', () => {
+  it('loads audits on init and clears the loading flag', async () => {
     fixture.detectChanges();
+    await flushResource();
 
     expect(mockService.getImportAudit).toHaveBeenCalledOnce();
     expect(component.audits()).toEqual([mockAudit]);
@@ -94,10 +103,15 @@ describe('ImportAuditComponent', () => {
     expect(component.rowClass(mockAudit)).toBe('');
   });
 
-  it('error path sets an empty list and clears loading', () => {
+  it('error path sets an empty list and clears loading', async () => {
     mockService.getImportAudit = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
+    // Re-create the component so the resource's first fetch already
+    // uses the failing mock.
+    fixture = TestBed.createComponent(ImportAuditComponent);
+    component = fixture.componentInstance;
 
     fixture.detectChanges();
+    await flushResource();
 
     expect(component.audits()).toEqual([]);
     expect(component.loading()).toBe(false);
