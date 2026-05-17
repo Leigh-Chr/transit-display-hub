@@ -43,6 +43,9 @@ class NetworkMapPublisherTest {
     private NetworkMapService networkMapService;
 
     @Mock
+    private NetworkAlertsService networkAlertsService;
+
+    @Mock
     private CacheManager cacheManager;
 
     @Mock
@@ -71,7 +74,7 @@ class NetworkMapPublisherTest {
         when(cacheManager.getCache("networkMap")).thenReturn(networkMapCache);
         when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
         when(networkMapService.getNetworkMap()).thenReturn(emptyMap());
-        when(networkMapService.getAlerts()).thenReturn(emptyAlerts());
+        when(networkAlertsService.getAlerts()).thenReturn(emptyAlerts());
         when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(true);
 
         publisher.onNetworkChanged(new NetworkChangedEvent(this, Set.of()));
@@ -107,7 +110,7 @@ class NetworkMapPublisherTest {
     void evictsAlertsCacheAndPushesOnMessageChangedEvent() {
         Cache networkAlertsCache = mock(Cache.class);
         when(cacheManager.getCache("networkAlerts")).thenReturn(networkAlertsCache);
-        when(networkMapService.getAlerts()).thenReturn(emptyAlerts());
+        when(networkAlertsService.getAlerts()).thenReturn(emptyAlerts());
         when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(true);
 
         publisher.onMessageChanged(new MessageChangedEvent(this, Set.of()));
@@ -128,7 +131,7 @@ class NetworkMapPublisherTest {
         when(cacheManager.getCache("networkMap")).thenReturn(null);
         when(cacheManager.getCache("networkAlerts")).thenReturn(null);
         when(networkMapService.getNetworkMap()).thenReturn(emptyMap());
-        when(networkMapService.getAlerts()).thenReturn(emptyAlerts());
+        when(networkAlertsService.getAlerts()).thenReturn(emptyAlerts());
         when(activeDisplayTracker.hasNetworkMapSubscribers()).thenReturn(true);
 
         // Should not throw

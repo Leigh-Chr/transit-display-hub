@@ -9,6 +9,7 @@ import com.transit.hub.application.dto.response.StationPathwayGraphResponse;
 import com.transit.hub.application.service.BookingRuleService;
 import com.transit.hub.application.service.FlexAvailabilityService;
 import com.transit.hub.application.service.LocationService;
+import com.transit.hub.application.service.NetworkAlertsService;
 import com.transit.hub.application.service.NetworkMapService;
 import com.transit.hub.application.service.PathwayService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +33,7 @@ import java.util.UUID;
 public class NetworkMapController {
 
     private final NetworkMapService networkMapService;
+    private final NetworkAlertsService networkAlertsService;
     private final LocationService locationService;
     private final BookingRuleService bookingRuleService;
     private final PathwayService pathwayService;
@@ -44,7 +46,7 @@ public class NetworkMapController {
 
     @GetMapping("/alerts")
     public ResponseEntity<AlertsResponse> getAlerts() {
-        return ResponseEntity.ok(networkMapService.getAlerts());
+        return ResponseEntity.ok(networkAlertsService.getAlerts());
     }
 
     /**

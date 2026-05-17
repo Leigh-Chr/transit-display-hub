@@ -35,6 +35,7 @@ import java.util.Map;
 public class NetworkMapPublisher {
 
     private final NetworkMapService networkMapService;
+    private final NetworkAlertsService networkAlertsService;
     private final CacheManager cacheManager;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActiveDisplayTracker activeDisplayTracker;
@@ -70,7 +71,7 @@ public class NetworkMapPublisher {
         }
         try {
             NetworkMapResponse networkMap = networkMapService.getNetworkMap();
-            AlertsResponse alerts = networkMapService.getAlerts();
+            AlertsResponse alerts = networkAlertsService.getAlerts();
             Object payload = Map.of("type", "FULL_UPDATE", "networkMap", networkMap, "alerts", alerts);
             messagingTemplate.convertAndSend("/topic/network-map", payload);
             log.debug("Pushed network map update via WebSocket");
@@ -85,7 +86,7 @@ public class NetworkMapPublisher {
             return;
         }
         try {
-            AlertsResponse alerts = networkMapService.getAlerts();
+            AlertsResponse alerts = networkAlertsService.getAlerts();
             Object payload = Map.of("type", "ALERTS_UPDATE", "alerts", alerts);
             messagingTemplate.convertAndSend("/topic/network-map", payload);
             log.debug("Pushed alerts update via WebSocket");
