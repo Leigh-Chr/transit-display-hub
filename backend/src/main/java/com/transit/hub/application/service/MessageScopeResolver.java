@@ -8,7 +8,7 @@ import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * duplicating the two bulk-query methods and the per-message scope
  * switch across both services.
  */
-@Component
+@Service
 @RequiredArgsConstructor
 public class MessageScopeResolver {
 

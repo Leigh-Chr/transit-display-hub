@@ -3,7 +3,7 @@ package com.transit.hub.application.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * synchronous code paths (admin manual probe, integration tests that
  * assert immediately) so the existing contract stays intact.
  */
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class HeartbeatBuffer {

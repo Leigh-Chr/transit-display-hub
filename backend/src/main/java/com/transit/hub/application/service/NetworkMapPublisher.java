@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -29,7 +29,7 @@ import java.util.Map;
  * longer reads from {@link SimpMessagingTemplate} or
  * {@link ActiveDisplayTracker}, just from the JPA repositories.
  */
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class NetworkMapPublisher {

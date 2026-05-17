@@ -7,7 +7,7 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ import java.util.Set;
  * or matches the stop's GTFS id, any of its lines' GTFS ids, or any
  * of those lines' agency ids.
  */
-@Component
+@Service
 @RequiredArgsConstructor
 public class RealtimeAlertMatcher {
 
