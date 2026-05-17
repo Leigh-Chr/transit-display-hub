@@ -17,7 +17,7 @@ import { testTranslocoModule } from '../../../../../test-translations';
  * *something*) are left to the Transloco fallback that ships the
  * key as-is.
  */
-export const SCHEMATIC_MAP_TRANSLATIONS = {
+const SCHEMATIC_MAP_TRANSLATIONS = {
   map: {
     schematic: {
       emptySelection: 'Select a line',
@@ -41,12 +41,12 @@ export const MOCK_STOPS: LayoutStop[] = [
   { id: 's5', name: 'Delta', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L2'], x: 920, y: 600 },
 ];
 
-export const MOCK_LINES: NetworkLine[] = [
+const MOCK_LINES: NetworkLine[] = [
   { id: 'line1', code: 'L1', name: 'Line 1', color: '#FF0000', type: null, itineraries: [['s1', 's2', 's3']] },
   { id: 'line2', code: 'L2', name: 'Line 2', color: '#0000FF', type: null, itineraries: [['s4', 's2', 's5']] },
 ];
 
-export const MOCK_LINE_COLOR_MAP = new Map<string, string>([
+const MOCK_LINE_COLOR_MAP = new Map<string, string>([
   ['L1', '#FF0000'],
   ['L2', '#0000FF'],
 ]);

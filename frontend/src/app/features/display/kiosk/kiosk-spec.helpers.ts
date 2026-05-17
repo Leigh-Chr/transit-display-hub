@@ -17,7 +17,7 @@ import { testTranslocoModule } from '../../../../test-translations';
  * (~700 lines, 39 tests) so it was split by domain — every spec
  * imports {@link setupKioskFixture} to skip the boilerplate.
  */
-export const KIOSK_TRANSLATIONS = {
+const KIOSK_TRANSLATIONS = {
   en: {
     kiosk: {
       errors: {
