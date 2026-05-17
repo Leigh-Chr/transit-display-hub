@@ -93,6 +93,7 @@ Types:
 - `docs`: documentation
 - `style`: formatting, no code changes
 - `refactor`: refactoring
+- `perf`: performance improvement (no functional change)
 - `test`: adding or modifying tests
 - `chore`: maintenance
 
