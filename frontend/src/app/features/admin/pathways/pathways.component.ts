@@ -117,13 +117,5 @@ export class PathwaysComponent implements OnInit {
     return this.transloco.translate(`map.transit.pathwayMode.${mode}`);
   }
 
-  /** Static bridge kept so the existing spec keeps compiling — forwards to
-   *  the buildPathwayGraphLayout pure helper extracted in v1.19.0. The
-   *  pathway-graph-layout.ts module is the canonical entry point for any
-   *  new caller.
-   */
-  static buildLayout(pathways: Pathway[], rootStopId: string, transloco?: TranslocoService): PathwayGraphLayout {
-    return buildPathwayGraphLayout(pathways, rootStopId, transloco);
-  }
 }
 

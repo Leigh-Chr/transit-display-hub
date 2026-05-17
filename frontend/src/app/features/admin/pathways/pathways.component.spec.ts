@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PathwaysComponent } from './pathways.component';
+import { buildPathwayGraphLayout } from './pathway-graph-layout';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { StopService } from '@core/api/stop.service';
 import { Pathway, Stop } from '@shared/models';
@@ -129,7 +130,7 @@ describe('PathwaysComponent', () => {
 
     it('lays out a small chain rooted at the selected stop', () => {
       // a -> b -> c, BFS depths 0/1/2.
-      const layout = PathwaysComponent.buildLayout([
+      const layout = buildPathwayGraphLayout([
         pathway({ id: 'p1', fromStopId: 'a', fromStopName: 'A',
                   toStopId: 'b', toStopName: 'B' }),
         pathway({ id: 'p2', fromStopId: 'b', fromStopName: 'B',
@@ -150,7 +151,7 @@ describe('PathwaysComponent', () => {
     });
 
     it('marks STAIRS edges with a dash pattern', () => {
-      const layout = PathwaysComponent.buildLayout([
+      const layout = buildPathwayGraphLayout([
         pathway({ pathwayMode: 'STAIRS' }),
       ], 'a');
       expect(layout.edges).toHaveLength(1);
@@ -158,26 +159,26 @@ describe('PathwaysComponent', () => {
     });
 
     it('uses no dash for non-STAIRS modes', () => {
-      const layout = PathwaysComponent.buildLayout([
+      const layout = buildPathwayGraphLayout([
         pathway({ pathwayMode: 'ELEVATOR' }),
       ], 'a');
       expect(layout.edges[0]!.dash).toBeNull();
     });
 
     it('emits an arrowPoints triangle for one-way pathways and empty for bidirectional', () => {
-      const directed = PathwaysComponent.buildLayout([
+      const directed = buildPathwayGraphLayout([
         pathway({ pathwayMode: 'EXIT_GATE', bidirectional: false }),
       ], 'a');
       expect(directed.edges[0]!.arrowPoints).not.toBe('');
 
-      const both = PathwaysComponent.buildLayout([
+      const both = buildPathwayGraphLayout([
         pathway({ pathwayMode: 'WALKWAY', bidirectional: true }),
       ], 'a');
       expect(both.edges[0]!.arrowPoints).toBe('');
     });
 
     it('builds a legend with one entry per pathway mode used', () => {
-      const layout = PathwaysComponent.buildLayout([
+      const layout = buildPathwayGraphLayout([
         pathway({ id: 'p1', pathwayMode: 'WALKWAY' }),
         pathway({ id: 'p2', pathwayMode: 'STAIRS', toStopId: 'c', toStopName: 'C' }),
         pathway({ id: 'p3', pathwayMode: 'WALKWAY', toStopId: 'd', toStopName: 'D' }),
