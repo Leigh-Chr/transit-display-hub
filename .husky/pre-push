@@ -1,5 +1,12 @@
 echo "Running pre-push checks..."
 
+# Light by default — lint + compile only. CI re-runs the full test
+# suite and the rest of the gradle check chain (jacoco, spotbugs, pmd,
+# archunit) on every push, so duplicating it client-side just slows
+# small commits down and discourages frequent pushes. Set PUSH_FULL=1
+# in the environment for the original full behaviour, e.g.:
+#   PUSH_FULL=1 git push
+
 REMOTE_SHA=$(git rev-parse @{u} 2>/dev/null || git rev-parse HEAD~1)
 CHANGED_FILES=$(git diff --name-only "$REMOTE_SHA"..HEAD)
 
@@ -10,14 +17,24 @@ PIDS=""
 EXIT_CODE=0
 
 if [ "$FRONTEND_CHANGED" -gt 0 ]; then
-  echo "  -> Running frontend lint + knip + tests..."
-  (cd frontend && npm run lint && npm run knip && npm test) &
+  if [ "${PUSH_FULL:-0}" = "1" ]; then
+    echo "  -> PUSH_FULL=1, running frontend lint + knip + tests..."
+    (cd frontend && npm run lint && npm run knip && npm test) &
+  else
+    echo "  -> Running frontend lint (set PUSH_FULL=1 for full suite)..."
+    (cd frontend && npm run lint) &
+  fi
   PIDS="$PIDS $!"
 fi
 
 if [ "$BACKEND_CHANGED" -gt 0 ]; then
-  echo "  -> Running backend check (test + jacoco + spotbugs + pmd)..."
-  (cd backend && ./gradlew check --no-daemon -q) &
+  if [ "${PUSH_FULL:-0}" = "1" ]; then
+    echo "  -> PUSH_FULL=1, running backend check (test + jacoco + spotbugs + pmd)..."
+    (cd backend && ./gradlew check --no-daemon -q) &
+  else
+    echo "  -> Compiling backend main + tests (set PUSH_FULL=1 for full check)..."
+    (cd backend && ./gradlew compileJava compileTestJava --no-daemon -q) &
+  fi
   PIDS="$PIDS $!"
 fi
 
