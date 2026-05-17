@@ -58,6 +58,9 @@ SD card.
 git clone https://github.com/Leigh-Chr/transit-display-hub.git
 cd transit-display-hub
 
+# Backend requires a JWT signing key — fail-fast if missing.
+export JWT_SECRET=$(openssl rand -base64 48)
+
 # Backend (Spring Boot, port 8080)
 (cd backend && ./gradlew bootRun)
 
@@ -65,8 +68,9 @@ cd transit-display-hub
 (cd frontend && npm install && npm start)
 ```
 
-Open <http://localhost:4200>. Default credentials live in the
-[Quick start](#access-and-credentials) section below.
+Open <http://localhost:4200>. Login `admin` / `admin123`. **You will be
+forced to change `admin123` on first login** — the new password must be
+at least 12 characters.
 
 For a turnkey kiosk on a Raspberry Pi, see
 [`docs/kiosk-raspberry-pi.md`](docs/kiosk-raspberry-pi.md):
