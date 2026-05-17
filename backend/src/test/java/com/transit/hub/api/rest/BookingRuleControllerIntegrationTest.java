@@ -1,68 +1,88 @@
 package com.transit.hub.api.rest;
 
-import com.transit.hub.application.dto.response.BookingRuleResponse;
-import com.transit.hub.application.service.BookingRuleService;
+import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.domain.model.enums.BookingType;
-import com.transit.hub.infrastructure.security.JwtAuthenticationFilter;
-import com.transit.hub.infrastructure.security.JwtService;
-import com.transit.hub.infrastructure.security.LoginRateLimitFilter;
+import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
+import com.transit.hub.infrastructure.persistence.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.cache.CacheManager;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
-import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = BookingRuleController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@DisplayName("BookingRuleController — WebMvcTest slice")
+@Execution(ExecutionMode.SAME_THREAD)
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Transactional
+@DisplayName("BookingRuleController Integration Tests")
 class BookingRuleControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private BookingRuleRepository bookingRuleRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private com.transit.hub.testutil.AuthTestHelper authHelper;
 
-    @MockitoBean
-    private BookingRuleService bookingRuleService;
+    private String adminToken;
+    private String agentToken;
 
-    // Infrastructure beans — not under test here; mocked to satisfy the
-    // application context when addFilters = false.
-    @MockitoBean private JwtService jwtService;
-    @MockitoBean private JwtAuthenticationFilter jwtAuthenticationFilter;
-    @MockitoBean private LoginRateLimitFilter loginRateLimitFilter;
-    @MockitoBean private CacheManager cacheManager;
+    @BeforeEach
+    void setUp() {
+        bookingRuleRepository.deleteAll();
+        userRepository.deleteAll();
+
+        adminToken = authHelper.createAdminToken();
+        agentToken = authHelper.createAgentToken();
+    }
 
     @Test
-    @DisplayName("returns 200 with empty list when service returns nothing")
-    void emptyList() throws Exception {
-        when(bookingRuleService.browse()).thenReturn(List.of());
-
+    @DisplayName("anonymous gets 401")
+    void requiresAuth() throws Exception {
         mockMvc.perform(get("/api/admin/booking-rules"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("agent gets 403 (admin-only)")
+    void agentForbidden() throws Exception {
+        mockMvc.perform(get("/api/admin/booking-rules")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("admin gets 200 with empty list when no booking rule exists")
+    void emptyList() throws Exception {
+        mockMvc.perform(get("/api/admin/booking-rules")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
-    @DisplayName("returns each booking rule with its phone / notice metadata")
-    void returnsServiceResult() throws Exception {
-        when(bookingRuleService.browse()).thenReturn(List.of(
-                new BookingRuleResponse(
-                        UUID.randomUUID(), "BR-1", BookingType.PRIOR_DAYS,
-                        30, null, null, null, null,
-                        "+33476201234", null, "https://www.mobilites-m.fr/tad", null)
-        ));
+    @DisplayName("admin gets each booking rule with its phone / notice metadata")
+    void returnsRepositoryRow() throws Exception {
+        bookingRuleRepository.save(BookingRule.builder()
+                .externalId("BR-1")
+                .bookingType(BookingType.PRIOR_DAYS)
+                .priorNoticeDurationMin(30)
+                .phone("+33476201234")
+                .infoUrl("https://www.mobilites-m.fr/tad")
+                .build());
 
-        mockMvc.perform(get("/api/admin/booking-rules"))
+        mockMvc.perform(get("/api/admin/booking-rules")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].externalId", is("BR-1")))
@@ -72,19 +92,27 @@ class BookingRuleControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("returns multiple rules in the order the service provides")
+    @DisplayName("admin gets multiple rules ranked by booking type ordinal")
     void returnsMultipleRules() throws Exception {
-        when(bookingRuleService.browse()).thenReturn(List.of(
-                new BookingRuleResponse(UUID.randomUUID(), "BR-1", BookingType.PRIOR_DAYS,
-                        30, null, null, null, null, "+33476201234", null, null, null),
-                new BookingRuleResponse(UUID.randomUUID(), "BR-2", BookingType.REAL_TIME,
-                        null, null, null, null, null, "+33476209999", null, null, null)
-        ));
+        bookingRuleRepository.save(BookingRule.builder()
+                .externalId("BR-1")
+                .bookingType(BookingType.PRIOR_DAYS)
+                .priorNoticeDurationMin(30)
+                .phone("+33476201234")
+                .build());
+        bookingRuleRepository.save(BookingRule.builder()
+                .externalId("BR-2")
+                .bookingType(BookingType.REAL_TIME)
+                .phone("+33476209999")
+                .build());
 
-        mockMvc.perform(get("/api/admin/booking-rules"))
+        // Service sorts by booking type ordinal: REAL_TIME (0) before
+        // PRIOR_DAYS (later).
+        mockMvc.perform(get("/api/admin/booking-rules")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].externalId", is("BR-1")))
-                .andExpect(jsonPath("$[1].externalId", is("BR-2")));
+                .andExpect(jsonPath("$[0].externalId", is("BR-2")))
+                .andExpect(jsonPath("$[1].externalId", is("BR-1")));
     }
 }
