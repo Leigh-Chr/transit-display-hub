@@ -56,6 +56,16 @@ public class User {
     private boolean enabled = true;
 
     /**
+     * Forces the user to rotate the password on the next successful
+     * login. Seeded {@code TRUE} for the admin row (Flyway V52) so the
+     * default {@code admin / admin123} cannot stay live in production,
+     * defaults {@code FALSE} for every other user the admin creates.
+     */
+    @Column(name = "password_must_change", nullable = false)
+    @Builder.Default
+    private boolean passwordMustChange = false;
+
+    /**
      * Monotonic counter embedded inside every access token at mint time.
      * Bumping it invalidates every JWT this user currently holds — used
      * by disable, role change, password reset and revokeAllForUser.
@@ -63,4 +73,14 @@ public class User {
     @Column(name = "token_version", nullable = false)
     @Builder.Default
     private long tokenVersion = 0L;
+
+    /**
+     * Cleared from the password-rotation flow once a fresh password is
+     * accepted. Exposed as a dedicated mutator (rather than relying on
+     * the Lombok {@code @Setter}) so callers stay explicit about the
+     * lifecycle event they trigger.
+     */
+    public void clearPasswordMustChange() {
+        this.passwordMustChange = false;
+    }
 }
