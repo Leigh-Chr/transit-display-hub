@@ -164,7 +164,8 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/transit}
     driver-class-name: org.postgresql.Driver
     username: ${DATABASE_USER:transit}
-    password: ${DATABASE_PASSWORD:transit}
+    # Fail-closed: no default in prod (aligns with JWT_SECRET).
+    password: ${DATABASE_PASSWORD}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -219,7 +220,8 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://postgres:5432/transit}
     driver-class-name: org.postgresql.Driver
     username: ${DATABASE_USER:transit}
-    password: ${DATABASE_PASSWORD:transit}
+    # Fail-closed: no default in kiosk (aligns with JWT_SECRET).
+    password: ${DATABASE_PASSWORD}
     hikari:
       maximum-pool-size: 4
       minimum-idle: 1
