@@ -39,9 +39,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,17 @@ public class GtfsImportService {
 
     private static final double SCHEMATIC_SIZE = 1000.0;
     private static final double SCHEMATIC_MARGIN = 50.0;
+
+    /** Hard cap per zip entry — defends against a single oversized file
+     *  in an otherwise small archive. 200 MB is comfortably above the
+     *  largest stop_times.txt we have seen in the wild (Île-de-France
+     *  STIF, ~80 MB once expanded). */
+    static final long MAX_ZIP_ENTRY_BYTES = 200L * 1024 * 1024;
+
+    /** Aggregate cap across all entries — defends against a fan-out
+     *  zip-bomb whose individual entries each stay under the per-entry
+     *  cap. 500 MB sits well above any real-world GTFS feed. */
+    static final long MAX_ZIP_TOTAL_BYTES = 500L * 1024 * 1024;
 
     private final AgencyImporter agencyImporter;
     private final RouteImporter routeImporter;
@@ -225,6 +237,20 @@ public class GtfsImportService {
     }
 
     private void extractZip(Path zipPath, Path target) throws IOException {
+        extractZip(zipPath, target, MAX_ZIP_ENTRY_BYTES, MAX_ZIP_TOTAL_BYTES);
+    }
+
+    /**
+     * Extract {@code zipPath} into {@code target}, defending against
+     * zip-slip (paths that escape the target) and zip-bombs (individual
+     * entries above {@code maxEntryBytes} or aggregate output above
+     * {@code maxTotalBytes}). The decompressed bytes are counted during
+     * the copy itself rather than trusting {@code ZipEntry.getSize()},
+     * which a maliciously crafted archive can under-report or omit
+     * altogether (returns -1 for stream-mode entries).
+     */
+    static void extractZip(Path zipPath, Path target, long maxEntryBytes, long maxTotalBytes) throws IOException {
+        long[] totalBytes = {0L};
         try (ZipFile zip = new ZipFile(zipPath.toFile())) {
             zip.entries().asIterator().forEachRemaining(entry -> {
                 if (entry.isDirectory()) {
@@ -236,12 +262,38 @@ public class GtfsImportService {
                 }
                 try (InputStream in = zip.getInputStream(entry)) {
                     Files.createDirectories(out.getParent());
-                    Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);
+                    long written = copyWithCap(in, out, maxEntryBytes, entry.getName());
+                    totalBytes[0] += written;
+                    if (totalBytes[0] > maxTotalBytes) {
+                        throw new IllegalStateException("Zip archive exceeds total cap of "
+                                + maxTotalBytes + " bytes (decompressed so far: " + totalBytes[0] + ")");
+                    }
                 } catch (IOException e) {
                     throw new IllegalStateException("Failed to extract " + entry.getName(), e);
                 }
             });
         }
+    }
+
+    /** Stream {@code in} into {@code out} aborting if more than
+     *  {@code maxBytes} are produced for the single entry {@code name}. */
+    private static long copyWithCap(InputStream in, Path out, long maxBytes, String name) throws IOException {
+        long copied = 0L;
+        byte[] buf = new byte[8192];
+        try (OutputStream os = Files.newOutputStream(out,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING)) {
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                copied += n;
+                if (copied > maxBytes) {
+                    throw new IllegalStateException("Zip entry exceeds " + maxBytes
+                            + " bytes (decompressed so far: " + copied + "): " + name);
+                }
+                os.write(buf, 0, n);
+            }
+        }
+        return copied;
     }
 
     private void assignSchematicCoordinates(java.util.Collection<Stop> stops) {
