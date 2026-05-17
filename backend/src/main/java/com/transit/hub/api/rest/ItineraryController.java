@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.request.AddItineraryStopRequest;
 import com.transit.hub.application.dto.request.CreateItineraryRequest;
 import com.transit.hub.application.dto.request.UpdateItineraryStopsRequest;
 import com.transit.hub.application.dto.response.ItineraryResponse;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.service.ItineraryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,19 +39,27 @@ public class ItineraryController {
     private final ItineraryService itineraryService;
 
     @GetMapping
-    public ResponseEntity<?> getAllItineraries(
+    public ResponseEntity<PageResponse<ItineraryResponse>> getAllItineraries(
             @RequestParam(required = false) UUID lineId,
-            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false, defaultValue = "name") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String search
     ) {
-        if (page != null) {
-            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
-                    ALLOWED_ITINERARY_SORTS, "name");
-            return ResponseEntity.ok(itineraryService.getAllItineraries(lineId, search, pageable));
-        }
+        Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                ALLOWED_ITINERARY_SORTS, "name");
+        return ResponseEntity.ok(itineraryService.getAllItineraries(lineId, search, pageable));
+    }
+
+    /**
+     * Non-paginated companion for dropdowns / autocompletes. Capped by
+     * {@code UnpaginatedCap} so a runaway feed cannot DoS the response.
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<ItineraryResponse>> getAllItinerariesUnpaginated(
+            @RequestParam(required = false) UUID lineId
+    ) {
         if (lineId != null) {
             return ResponseEntity.ok(itineraryService.getItinerariesByLine(lineId));
         }

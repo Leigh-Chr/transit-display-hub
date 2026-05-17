@@ -56,7 +56,7 @@ describe('ItineraryService', () => {
         expect(itineraries).toEqual(mockItineraries);
       });
 
-      const req = httpMock.expectOne('/api/itineraries');
+      const req = httpMock.expectOne('/api/itineraries/all');
       expect(req.request.method).toBe('GET');
       expect(req.request.params.has('lineId')).toBe(false);
       req.flush(mockItineraries);
@@ -70,7 +70,7 @@ describe('ItineraryService', () => {
       });
 
       const req = httpMock.expectOne(r =>
-        r.url === '/api/itineraries' && r.params.get('lineId') === lineId
+        r.url === '/api/itineraries/all' && r.params.get('lineId') === lineId
       );
       expect(req.request.method).toBe('GET');
       req.flush([mockItinerary]);

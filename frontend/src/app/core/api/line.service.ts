@@ -12,7 +12,7 @@ export class LineService {
   private readonly http = inject(HttpClient);
 
   getAll(): Observable<Line[]> {
-    return this.http.get<Line[]>(this.baseUrl);
+    return this.http.get<Line[]>(`${this.baseUrl}/all`);
   }
 
   getAllPaginated(request: PageRequest = {}): Observable<PageResponse<Line>> {

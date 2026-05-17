@@ -20,7 +20,7 @@ export class StopService {
     if (lineId) {
       params = params.set('lineId', lineId);
     }
-    return this.http.get<Stop[]>(this.baseUrl, { params });
+    return this.http.get<Stop[]>(`${this.baseUrl}/all`, { params });
   }
 
   getAllPaginated(request: StopPageRequest = {}): Observable<PageResponse<Stop>> {

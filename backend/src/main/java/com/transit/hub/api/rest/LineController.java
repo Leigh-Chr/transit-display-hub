@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import com.transit.hub.api.rest.support.Pageables;
 import com.transit.hub.application.dto.request.CreateLineRequest;
 import com.transit.hub.application.dto.response.LineResponse;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.service.LineService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,18 +37,24 @@ public class LineController {
     private final LineService lineService;
 
     @GetMapping
-    public ResponseEntity<?> getAllLines(
-            @RequestParam(required = false) Integer page,
+    public ResponseEntity<PageResponse<LineResponse>> getAllLines(
+            @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false, defaultValue = "code") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String search
     ) {
-        if (page != null) {
-            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
-                    ALLOWED_LINE_SORTS, "code");
-            return ResponseEntity.ok(lineService.getAllLines(search, pageable));
-        }
+        Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                ALLOWED_LINE_SORTS, "code");
+        return ResponseEntity.ok(lineService.getAllLines(search, pageable));
+    }
+
+    /**
+     * Non-paginated companion for dropdowns / autocompletes. Capped by
+     * {@code UnpaginatedCap} so a runaway feed cannot DoS the response.
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<LineResponse>> getAllLinesUnpaginated() {
         return ResponseEntity.ok(lineService.getAllLines());
     }
 

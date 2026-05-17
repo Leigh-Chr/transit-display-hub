@@ -56,7 +56,7 @@ describe('LineService', () => {
         expect(lines.length).toBe(2);
       });
 
-      const req = httpMock.expectOne('/api/lines');
+      const req = httpMock.expectOne('/api/lines/all');
       expect(req.request.method).toBe('GET');
       req.flush(mockLines);
     });
@@ -67,7 +67,7 @@ describe('LineService', () => {
         expect(lines.length).toBe(0);
       });
 
-      const req = httpMock.expectOne('/api/lines');
+      const req = httpMock.expectOne('/api/lines/all');
       req.flush([]);
     });
   });

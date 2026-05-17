@@ -83,17 +83,18 @@ class StopControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /api/stops")
+    @DisplayName("GET /api/stops (paginated, default)")
     class GetAllStops {
 
         @Test
-        @DisplayName("returns 200 with all stops for ADMIN")
+        @DisplayName("returns 200 with first page of stops for ADMIN")
         void withAdminRole_Returns200() throws Exception {
             mockMvc.perform(get("/api/stops")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].name", is("Central Station")));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].name", is("Central Station")))
+                    .andExpect(jsonPath("$.totalElements", is(1)));
         }
 
         @Test
@@ -105,7 +106,7 @@ class StopControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /api/stops (paginated)")
+    @DisplayName("GET /api/stops (paginated, explicit params)")
     class GetAllStopsPaginated {
 
         @Test
@@ -119,11 +120,26 @@ class StopControllerIntegrationTest {
                     .andExpect(jsonPath("$.content", hasSize(1)))
                     .andExpect(jsonPath("$.content[0].name", is("Central Station")));
         }
+    }
+
+    @Nested
+    @DisplayName("GET /api/stops/all (unpaginated)")
+    class GetAllStopsUnpaginated {
+
+        @Test
+        @DisplayName("returns the full list as a plain array")
+        void unpaginated_ReturnsArray() throws Exception {
+            mockMvc.perform(get("/api/stops/all")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(1)))
+                    .andExpect(jsonPath("$[0].name", is("Central Station")));
+        }
 
         @Test
         @DisplayName("filters by lineId")
         void withLineIdFilter_Returns200() throws Exception {
-            mockMvc.perform(get("/api/stops")
+            mockMvc.perform(get("/api/stops/all")
                             .param("lineId", testLine.getId().toString())
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())

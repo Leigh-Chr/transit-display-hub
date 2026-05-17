@@ -99,15 +99,25 @@ class LineControllerIntegrationTest {
     class GetAllLines {
 
         @Test
-        @DisplayName("returns 200 with all lines for ADMIN")
+        @DisplayName("returns 200 with first page of lines for ADMIN")
         void withAdminRole_Returns200() throws Exception {
             mockMvc.perform(get("/api/lines")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].code", is("L1")))
+                    .andExpect(jsonPath("$.content[0].name", is("Metro Line 1")))
+                    .andExpect(jsonPath("$.content[0].color", is("#FF5733")));
+        }
+
+        @Test
+        @DisplayName("/all returns the full unpaginated list")
+        void allEndpoint_ReturnsArray() throws Exception {
+            mockMvc.perform(get("/api/lines/all")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].code", is("L1")))
-                    .andExpect(jsonPath("$[0].name", is("Metro Line 1")))
-                    .andExpect(jsonPath("$[0].color", is("#FF5733")));
+                    .andExpect(jsonPath("$[0].code", is("L1")));
         }
 
         @Test

@@ -6,7 +6,6 @@ import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.UserResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
-import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
@@ -20,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,14 +29,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    @Transactional(readOnly = true)
-    public List<UserResponse> getAll() {
-        return UnpaginatedCap.findAllCapped(userRepository, log, "UserService.getAll")
-                .stream()
-                .map(UserResponse::from)
-                .toList();
-    }
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> getAll(String search, Pageable pageable) {

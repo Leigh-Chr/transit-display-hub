@@ -21,7 +21,7 @@ export class MessageService {
     if (activeOnly) {
       params = params.set('active', 'true');
     }
-    return this.http.get<BroadcastMessage[]>(this.baseUrl, { params });
+    return this.http.get<BroadcastMessage[]>(`${this.baseUrl}/all`, { params });
   }
 
   getAllPaginated(request: MessagePageRequest = {}): Observable<PageResponse<BroadcastMessage>> {

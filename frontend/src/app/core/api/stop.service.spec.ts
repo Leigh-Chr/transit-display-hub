@@ -63,7 +63,7 @@ describe('StopService', () => {
         expect(stops.length).toBe(2);
       });
 
-      const req = httpMock.expectOne('/api/stops');
+      const req = httpMock.expectOne('/api/stops/all');
       expect(req.request.method).toBe('GET');
       expect(req.request.params.has('lineId')).toBe(false);
       req.flush(mockStops);
@@ -74,7 +74,7 @@ describe('StopService', () => {
         expect(stops).toEqual(mockStops);
       });
 
-      const req = httpMock.expectOne('/api/stops?lineId=line-123');
+      const req = httpMock.expectOne('/api/stops/all?lineId=line-123');
       expect(req.request.params.get('lineId')).toBe('line-123');
       req.flush(mockStops);
     });
@@ -84,7 +84,7 @@ describe('StopService', () => {
         expect(stops).toEqual([]);
       });
 
-      const req = httpMock.expectOne('/api/stops');
+      const req = httpMock.expectOne('/api/stops/all');
       req.flush([]);
     });
   });

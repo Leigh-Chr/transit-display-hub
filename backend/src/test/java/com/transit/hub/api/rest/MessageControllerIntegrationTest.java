@@ -115,22 +115,22 @@ class MessageControllerIntegrationTest {
     class GetAllMessages {
 
         @Test
-        @DisplayName("returns 200 with all messages for ADMIN")
+        @DisplayName("returns 200 with first page of messages for ADMIN")
         void withAdminRole_Returns200() throws Exception {
             mockMvc.perform(get("/api/messages")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].title", is("Test Alert")));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].title", is("Test Alert")));
         }
 
         @Test
-        @DisplayName("returns 200 with all messages for AGENT (both roles allowed)")
+        @DisplayName("returns 200 with first page of messages for AGENT (both roles allowed)")
         void withAgentRole_Returns200() throws Exception {
             mockMvc.perform(get("/api/messages")
                             .header("Authorization", "Bearer " + agentToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)));
+                    .andExpect(jsonPath("$.content", hasSize(1)));
         }
 
         @Test
@@ -141,8 +141,18 @@ class MessageControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("returns only active messages when active=true")
-        void withActiveFilter_ReturnsOnlyActive() throws Exception {
+        @DisplayName("/all unpaginated returns the full list as plain array")
+        void allEndpoint_ReturnsArray() throws Exception {
+            mockMvc.perform(get("/api/messages/all")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(1)))
+                    .andExpect(jsonPath("$[0].title", is("Test Alert")));
+        }
+
+        @Test
+        @DisplayName("/all?active=true returns only active messages")
+        void allEndpoint_WithActiveFilter_ReturnsOnlyActive() throws Exception {
             // Add an inactive message
             BroadcastMessage inactiveMessage = BroadcastMessage.builder()
                     .title("Past Alert")
@@ -154,7 +164,7 @@ class MessageControllerIntegrationTest {
                     .build();
             messageRepository.save(inactiveMessage);
 
-            mockMvc.perform(get("/api/messages")
+            mockMvc.perform(get("/api/messages/all")
                             .param("active", "true")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())

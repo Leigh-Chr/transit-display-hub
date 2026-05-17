@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import com.transit.hub.api.rest.support.Pageables;
 import com.transit.hub.application.dto.request.CreateUserRequest;
 import com.transit.hub.application.dto.request.UpdateUserRequest;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.UserResponse;
 import com.transit.hub.application.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,19 +37,16 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<?> getAll(
-            @RequestParam(required = false) Integer page,
+    public ResponseEntity<PageResponse<UserResponse>> getAll(
+            @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false, defaultValue = "username") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String search
     ) {
-        if (page != null) {
-            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
-                    ALLOWED_USER_SORTS, "username");
-            return ResponseEntity.ok(userService.getAll(search, pageable));
-        }
-        return ResponseEntity.ok(userService.getAll());
+        Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                ALLOWED_USER_SORTS, "username");
+        return ResponseEntity.ok(userService.getAll(search, pageable));
     }
 
     @GetMapping("/{id}")

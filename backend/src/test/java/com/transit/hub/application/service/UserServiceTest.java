@@ -71,33 +71,6 @@ class UserServiceTest {
     }
 
     @Nested
-    @DisplayName("getAll()")
-    class GetAll {
-
-        @Test
-        @DisplayName("returns all users")
-        void returnsAllUsers() {
-            when(userRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(testAdmin, testAgent)));
-
-            List<UserResponse> result = userService.getAll();
-
-            assertThat(result).hasSize(2);
-            assertThat(result).extracting(UserResponse::username).containsExactly("admin", "agent");
-        }
-
-        @Test
-        @DisplayName("returns empty list when no users")
-        void returnsEmptyList() {
-            when(userRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
-
-            List<UserResponse> result = userService.getAll();
-
-            assertThat(result).isEmpty();
-        }
-    }
-
-    @Nested
     @DisplayName("getAll(search, pageable)")
     class GetAllPaginated {
 

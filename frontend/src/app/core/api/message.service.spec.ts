@@ -62,7 +62,7 @@ describe('MessageService', () => {
         expect(messages.length).toBe(2);
       });
 
-      const req = httpMock.expectOne('/api/messages');
+      const req = httpMock.expectOne('/api/messages/all');
       expect(req.request.method).toBe('GET');
       expect(req.request.params.has('active')).toBe(false);
       req.flush(mockMessages);
@@ -73,7 +73,7 @@ describe('MessageService', () => {
         expect(messages).toEqual(mockMessages);
       });
 
-      const req = httpMock.expectOne('/api/messages?active=true');
+      const req = httpMock.expectOne('/api/messages/all?active=true');
       expect(req.request.method).toBe('GET');
       expect(req.request.params.get('active')).toBe('true');
       req.flush(mockMessages);
@@ -84,7 +84,7 @@ describe('MessageService', () => {
         expect(messages).toEqual(mockMessages);
       });
 
-      const req = httpMock.expectOne('/api/messages');
+      const req = httpMock.expectOne('/api/messages/all');
       expect(req.request.params.has('active')).toBe(false);
       req.flush(mockMessages);
     });
@@ -94,7 +94,7 @@ describe('MessageService', () => {
         expect(messages).toEqual([]);
       });
 
-      const req = httpMock.expectOne('/api/messages');
+      const req = httpMock.expectOne('/api/messages/all');
       req.flush([]);
     });
   });

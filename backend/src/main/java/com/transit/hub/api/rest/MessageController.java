@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import com.transit.hub.api.rest.support.Pageables;
 import com.transit.hub.application.dto.request.CreateMessageRequest;
 import com.transit.hub.application.dto.response.MessageResponse;
+import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.service.MessageService;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -36,20 +38,30 @@ public class MessageController {
     private final MessageService messageService;
 
     @GetMapping
-    public ResponseEntity<?> getMessages(
+    public ResponseEntity<PageResponse<MessageResponse>> getMessages(
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) MessageSeverity severity,
-            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false, defaultValue = "startTime") String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search
     ) {
-        if (page != null) {
-            Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
-                    ALLOWED_MESSAGE_SORTS, "startTime");
-            return ResponseEntity.ok(messageService.getAllMessages(active, severity, search, pageable));
-        }
+        Pageable pageable = Pageables.fromWhitelisted(page, size, sortBy, sortDir,
+                ALLOWED_MESSAGE_SORTS, "startTime");
+        return ResponseEntity.ok(messageService.getAllMessages(active, severity, search, pageable));
+    }
+
+    /**
+     * Non-paginated companion for callers that want the entire list
+     * (dashboard, real-time push). Honours the {@code active=true}
+     * shortcut for the active-only stream. Capped by
+     * {@code UnpaginatedCap} so a runaway feed cannot DoS the response.
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<MessageResponse>> getAllMessagesUnpaginated(
+            @RequestParam(required = false) Boolean active
+    ) {
         if (active != null && active) {
             return ResponseEntity.ok(messageService.getActiveMessages());
         }

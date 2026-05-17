@@ -85,12 +85,13 @@ class UserControllerIntegrationTest {
     class GetAllUsers {
 
         @Test
-        @DisplayName("returns 200 with all users for ADMIN")
+        @DisplayName("returns 200 with first page of users for ADMIN (paginated)")
         void withAdminRole_Returns200() throws Exception {
             mockMvc.perform(get("/api/users")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(2)));
+                    .andExpect(jsonPath("$.content", hasSize(2)))
+                    .andExpect(jsonPath("$.totalElements", is(2)));
         }
 
         @Test

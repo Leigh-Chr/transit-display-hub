@@ -27,7 +27,7 @@ export class ItineraryService {
     if (lineId) {
       params = params.set('lineId', lineId);
     }
-    return this.http.get<Itinerary[]>(this.baseUrl, { params });
+    return this.http.get<Itinerary[]>(`${this.baseUrl}/all`, { params });
   }
 
   getAllPaginated(request: ItineraryPageRequest = {}): Observable<PageResponse<Itinerary>> {

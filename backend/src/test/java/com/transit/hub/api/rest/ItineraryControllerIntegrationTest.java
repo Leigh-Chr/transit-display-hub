@@ -88,27 +88,36 @@ class ItineraryControllerIntegrationTest {
     class GetAllItineraries {
 
         @Test
-        @DisplayName("returns 200 without authentication (public)")
+        @DisplayName("returns 200 without authentication (public, paginated)")
         void withoutAuth_Returns200() throws Exception {
             mockMvc.perform(get("/api/itineraries"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].name", is("Direction North")));
+        }
+
+        @Test
+        @DisplayName("/all (unpaginated) returns the full list")
+        void allEndpoint_ReturnsArray() throws Exception {
+            mockMvc.perform(get("/api/itineraries/all"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(1)))
                     .andExpect(jsonPath("$[0].name", is("Direction North")));
         }
 
         @Test
-        @DisplayName("filters by lineId")
-        void withLineIdFilter_Returns200() throws Exception {
-            mockMvc.perform(get("/api/itineraries")
+        @DisplayName("/all filters by lineId")
+        void allEndpoint_WithLineIdFilter_Returns200() throws Exception {
+            mockMvc.perform(get("/api/itineraries/all")
                             .param("lineId", testLine.getId().toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(1)));
         }
 
         @Test
-        @DisplayName("returns 404 for unknown lineId filter")
-        void withUnknownLineId_Returns404() throws Exception {
-            mockMvc.perform(get("/api/itineraries")
+        @DisplayName("/all returns 404 for unknown lineId filter")
+        void allEndpoint_WithUnknownLineId_Returns404() throws Exception {
+            mockMvc.perform(get("/api/itineraries/all")
                             .param("lineId", UUID.randomUUID().toString()))
                     .andExpect(status().isNotFound());
         }
