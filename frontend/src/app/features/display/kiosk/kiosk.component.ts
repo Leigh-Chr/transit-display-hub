@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   OnInit,
-  OnDestroy,
   signal,
   computed,
   inject,
@@ -23,6 +22,7 @@ import { WebSocketService } from '@core/websocket/websocket.service';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
+import { injectVisibilityListener } from '@shared/browser/visibility-listener';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { LocaleService } from '@core/i18n/locale.service';
 import { effectiveTime } from './kiosk-arrival';
@@ -52,13 +52,14 @@ import {
   templateUrl: './kiosk.component.html',
   styleUrl: './kiosk.component.scss',
 })
-export class KioskComponent implements OnInit, OnDestroy {
+export class KioskComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly displayService = inject(DisplayService);
   private readonly wsService = inject(WebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly localeService = inject(LocaleService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly visibility = injectVisibilityListener();
   /** Exposed to the template so the a11y toolbar can bind to its
    *  three signals (dark / contrast / large text) directly. */
   readonly themeService = inject(ThemeService);
@@ -198,13 +199,65 @@ export class KioskComponent implements OnInit, OnDestroy {
         this.pageIndex.set(0);
       }
     });
+
+    // Pause the clock while the tab is hidden — kiosks running 24/7
+    // don't need to burn CPU updating an off-screen clock once a
+    // second. The shared visibility listener cleans up its DOM hook on
+    // destroy.
+    this.visibility.onHidden(() => this.stopClock());
+    this.visibility.onVisible(() => {
+      this.refreshClock();
+      this.startClock();
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.stopClock();
+      this.stopPageSwap();
+      if (this.mql && this.mqlChangeHandler) {
+        this.mql.removeEventListener('change', this.mqlChangeHandler);
+        this.mql = null;
+        this.mqlChangeHandler = null;
+      }
+      this.wsService.disconnect();
+    });
+  }
+
+  // ngOnInit kept on purpose: the route param + query param subscribes
+  // need synchronous Subject-driven semantics for the existing tests
+  // (they call `subject.next()` and assert immediately). Migrating
+  // those to effect + toSignal would require a fixture.detectChanges()
+  // tick after every emission, which is a sweeping spec-rewrite that
+  // belongs to its own change.
+  ngOnInit(): void {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const routeStopId = String(params['stopId'] ?? '');
+      if (routeStopId) {
+        this.stopId = routeStopId;
+        this.initializeWithStopId();
+      }
+    });
+
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.token = String(params['token'] ?? '') || null;
+      const queryStopId = String(params['stopId'] ?? '') || null;
+
+      if (this.token) {
+        this.initializeWithToken();
+      } else if (queryStopId && !this.stopId) {
+        this.stopId = queryStopId;
+        this.initializeWithStopId();
+      } else if (!this.stopId && !this.token) {
+        this.error.set(this.transloco.translate('kiosk.errors.missingDeviceOrStop'));
+      }
+    });
+
+    this.startClock();
   }
 
   private token: string | null = null;
   private stopId: string | null = null;
   private deviceId: string | null = null;
   private timeInterval: ReturnType<typeof setInterval> | null = null;
-  private visibilityHandler: (() => void) | null = null;
   private mql: MediaQueryList | null = null;
   private mqlChangeHandler: ((e: MediaQueryListEvent) => void) | null = null;
   /** Wall-clock timestamp of the most recent state update (initial fetch or
@@ -346,58 +399,6 @@ export class KioskComponent implements OnInit, OnDestroy {
   connected = computed(
     () => this.wsService.connectionState() === 'CONNECTED'
   );
-
-  ngOnInit(): void {
-    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const routeStopId = String(params['stopId'] ?? '');
-      if (routeStopId) {
-        this.stopId = routeStopId;
-        this.initializeWithStopId();
-      }
-    });
-
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      this.token = String(params['token'] ?? '') || null;
-      const queryStopId = String(params['stopId'] ?? '') || null;
-
-      if (this.token) {
-        this.initializeWithToken();
-      } else if (queryStopId && !this.stopId) {
-        this.stopId = queryStopId;
-        this.initializeWithStopId();
-      } else if (!this.stopId && !this.token) {
-        this.error.set(this.transloco.translate('kiosk.errors.missingDeviceOrStop'));
-      }
-    });
-
-    this.startClock();
-    // Pause the clock while the tab is hidden — kiosks running 24/7 don't need
-    // to burn CPU updating an off-screen clock once a second.
-    this.visibilityHandler = () => {
-      if (document.hidden) {
-        this.stopClock();
-      } else {
-        this.refreshClock();
-        this.startClock();
-      }
-    };
-    document.addEventListener('visibilitychange', this.visibilityHandler);
-  }
-
-  ngOnDestroy(): void {
-    this.stopClock();
-    this.stopPageSwap();
-    if (this.visibilityHandler) {
-      document.removeEventListener('visibilitychange', this.visibilityHandler);
-      this.visibilityHandler = null;
-    }
-    if (this.mql && this.mqlChangeHandler) {
-      this.mql.removeEventListener('change', this.mqlChangeHandler);
-      this.mql = null;
-      this.mqlChangeHandler = null;
-    }
-    this.wsService.disconnect();
-  }
 
   private startPageSwap(): void {
     if (this.pageInterval !== null) { return; }
