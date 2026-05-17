@@ -1,6 +1,8 @@
 package com.transit.hub.api.rest;
 
+import com.transit.hub.application.dto.response.ImportAuditResponse;
 import com.transit.hub.application.service.GtfsImportOrchestrator;
+import com.transit.hub.application.service.ImportAuditService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +34,7 @@ import java.util.UUID;
 public class GtfsAdminController {
 
     private final GtfsImportOrchestrator orchestrator;
+    private final ImportAuditService importAuditService;
 
     @Value("${app.data-loader.gtfs.url:}")
     private String feedUrl;
@@ -51,11 +56,19 @@ public class GtfsAdminController {
         String triggeredBy = authentication != null ? authentication.getName() : "admin";
         log.info("Manual GTFS refresh triggered by {}", triggeredBy);
         UUID importId = orchestrator.runImportAsync(feedUrl, triggeredBy);
-        // TODO: companion endpoint `GET /api/admin/gtfs/imports/{id}` to be wired
-        // in a follow-up lot (the ImportAudit row is already persisted, only the
-        // read-side controller is missing). Keeping the Location header now so
-        // clients can adopt the async contract immediately.
         URI location = URI.create("/api/admin/gtfs/imports/" + importId);
         return ResponseEntity.accepted().location(location).build();
+    }
+
+    @GetMapping("/imports/{id}")
+    @Operation(summary = "Lecture d'un audit d'import",
+               description = "Renvoie l'état d'un import GTFS déclenché via /reimport "
+                       + "(RUNNING, SUCCESS, FAILED, SKIPPED). 404 si l'identifiant "
+                       + "ne correspond à aucun audit. Sert de companion à l'en-tête "
+                       + "Location du 202 Accepted.")
+    public ResponseEntity<ImportAuditResponse> getImport(@PathVariable UUID id) {
+        return importAuditService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

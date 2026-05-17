@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `GET /api/admin/gtfs/imports/{id}` — read companion to the `/reimport`
+  202 Accepted contract. Resolves the audit row referenced by the
+  `Location` header to its full `ImportAuditResponse`, returns 404 when
+  the id is unknown, ADMIN-only. Closes the TODO left by v1.21.0.
+
 ## [1.23.0] — 2026-05-17
 
 Lot F — polish: a11y + i18n cleanup, zero ESLint warnings, dead i18n

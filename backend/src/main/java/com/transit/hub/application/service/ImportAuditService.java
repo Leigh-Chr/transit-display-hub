@@ -43,6 +43,11 @@ public class ImportAuditService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public Optional<ImportAuditResponse> getById(UUID auditId) {
+        return auditRepository.findById(auditId).map(ImportAuditResponse::from);
+    }
+
     /**
      * Reads a single MobilityData report file off disk for the given
      * audit. Returns {@link Optional#empty()} when the audit doesn't
