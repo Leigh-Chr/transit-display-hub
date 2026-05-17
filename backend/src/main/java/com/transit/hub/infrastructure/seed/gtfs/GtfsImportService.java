@@ -117,19 +117,19 @@ public class GtfsImportService {
 
             persistFeedInfo(workDir.resolve("feed_info.txt"), sourceUrl, sourceHash);
 
-            Map<String, Agency> agenciesByGtfsId = importAgencies(workDir.resolve("agency.txt"));
-            Map<String, Line> linesByGtfsId = importRoutes(workDir.resolve("routes.txt"), agenciesByGtfsId);
-            StopImport stopImport = importStops(workDir.resolve("stops.txt"));
+            Map<String, Agency> agenciesByGtfsId = agencyImporter.importAgencies(workDir.resolve("agency.txt"));
+            Map<String, Line> linesByGtfsId = routeImporter.importRoutes(workDir.resolve("routes.txt"), agenciesByGtfsId);
+            StopImport stopImport = stopImporter.importStops(workDir.resolve("stops.txt"));
 
             // Flush each upstream section so the next one's saveAll
             // doesn't bundle their pending statements into a single
             // unsortable batch. Each flush still respects order_inserts.
             entityManager.flush();
 
-            Map<String, Shape> shapesByGtfsId = importShapes(workDir.resolve("shapes.txt"));
+            Map<String, Shape> shapesByGtfsId = shapeImporter.importShapes(workDir.resolve("shapes.txt"));
             entityManager.flush();
 
-            ItineraryImport itineraryImport = importItineraries(
+            ItineraryImport itineraryImport = itineraryImporter.importItineraries(
                     workDir.resolve("trips.txt"),
                     workDir.resolve("stop_times.txt"),
                     linesByGtfsId,
@@ -137,36 +137,39 @@ public class GtfsImportService {
                     shapesByGtfsId);
             entityManager.flush();
 
-            Map<String, List<FrequencyWindow>> frequencies = loadFrequencies(workDir.resolve("frequencies.txt"));
+            Map<String, List<FrequencyWindow>> frequencies =
+                    scheduleImporter.loadFrequencies(workDir.resolve("frequencies.txt"));
 
             // Booking rules must land before schedules so each Schedule can
             // resolve its pickup_booking_rule_id / drop_off_booking_rule_id
             // FK during import. The rules table is small, so loading it
             // upfront has no measurable cost.
-            Map<String, BookingRule> bookingRules = importBookingRules(workDir.resolve("booking_rules.txt"));
+            Map<String, BookingRule> bookingRules =
+                    bookingRuleImporter.importBookingRules(workDir.resolve("booking_rules.txt"));
 
             // Locations + location groups must land before schedules so the
             // flex_stop_times rows materialised inside importSchedules can
             // resolve their location_id / location_group_id FKs in a single
             // pass.
-            importLocations(workDir.resolve("locations.geojson"));
-            importLocationGroups(workDir, stopImport);
+            locationImporter.importLocations(workDir.resolve("locations.geojson"));
+            locationGroupImporter.importLocationGroups(workDir, stopImport);
 
-            int schedules = importSchedules(workDir, itineraryImport, stopImport, frequencies, bookingRules);
+            int schedules = scheduleImporter.importSchedules(workDir, itineraryImport, stopImport,
+                    frequencies, bookingRules);
 
-            importTransfers(workDir.resolve("transfers.txt"), stopImport);
+            transferImporter.importTransfers(workDir.resolve("transfers.txt"), stopImport);
 
-            importStationLevels(workDir.resolve("levels.txt"));
+            stationLevelImporter.importStationLevels(workDir.resolve("levels.txt"));
 
-            importPathways(workDir.resolve("pathways.txt"), stopImport);
+            pathwayImporter.importPathways(workDir.resolve("pathways.txt"), stopImport);
 
-            importTranslations(workDir.resolve("translations.txt"));
+            translationImporter.importTranslations(workDir.resolve("translations.txt"));
 
-            importFares(workDir, linesByGtfsId, agenciesByGtfsId);
+            fareV1Importer.importFares(workDir, linesByGtfsId, agenciesByGtfsId);
 
-            importFaresV2(workDir, stopImport, linesByGtfsId);
+            fareV2Importer.importFaresV2(workDir, stopImport, linesByGtfsId);
 
-            importAttributions(workDir.resolve("attributions.txt"));
+            attributionImporter.importAttributions(workDir.resolve("attributions.txt"));
 
             assignSchematicCoordinates(stopImport.stopsByGtfsId().values());
 
@@ -241,88 +244,6 @@ public class GtfsImportService {
                 }
             });
         }
-    }
-
-    private Map<String, Agency> importAgencies(Path agenciesFile) throws IOException {
-        return agencyImporter.importAgencies(agenciesFile);
-    }
-
-    private Map<String, Line> importRoutes(Path routesFile, Map<String, Agency> agencies)
-            throws IOException {
-        return routeImporter.importRoutes(routesFile, agencies);
-    }
-
-
-    private StopImport importStops(Path stopsFile) throws IOException {
-        return stopImporter.importStops(stopsFile);
-    }
-
-
-    private ItineraryImport importItineraries(
-            Path tripsFile,
-            Path stopTimesFile,
-            Map<String, Line> linesByGtfsId,
-            StopImport stopImport,
-            Map<String, Shape> shapesByGtfsId) throws IOException {
-        return itineraryImporter.importItineraries(tripsFile, stopTimesFile,
-                linesByGtfsId, stopImport, shapesByGtfsId);
-    }
-
-    private Map<String, List<FrequencyWindow>> loadFrequencies(Path frequenciesFile) throws IOException {
-        return scheduleImporter.loadFrequencies(frequenciesFile);
-    }
-
-    private int importSchedules(Path workDir, ItineraryImport itineraryImport, StopImport stopImport,
-                                Map<String, List<FrequencyWindow>> frequencies,
-                                Map<String, BookingRule> bookingRules) throws IOException {
-        return scheduleImporter.importSchedules(workDir, itineraryImport, stopImport,
-                frequencies, bookingRules);
-    }
-
-    private Map<String, Shape> importShapes(Path shapesFile) throws IOException {
-        return shapeImporter.importShapes(shapesFile);
-    }
-
-    private void importTransfers(Path transfersFile, StopImport stopImport) throws IOException {
-        transferImporter.importTransfers(transfersFile, stopImport);
-    }
-
-    private void importStationLevels(Path levelsFile) throws IOException {
-        stationLevelImporter.importStationLevels(levelsFile);
-    }
-
-    private void importPathways(Path pathwaysFile, StopImport stopImport) throws IOException {
-        pathwayImporter.importPathways(pathwaysFile, stopImport);
-    }
-
-    private void importTranslations(Path translationsFile) throws IOException {
-        translationImporter.importTranslations(translationsFile);
-    }
-
-    private void importFares(Path workDir, Map<String, Line> linesByGtfsId,
-                             Map<String, Agency> agenciesByGtfsId) throws IOException {
-        fareV1Importer.importFares(workDir, linesByGtfsId, agenciesByGtfsId);
-    }
-
-    private void importFaresV2(Path workDir, StopImport stopImport,
-                               Map<String, Line> linesByGtfsId) throws IOException {
-        fareV2Importer.importFaresV2(workDir, stopImport, linesByGtfsId);
-    }
-
-    private void importLocationGroups(Path workDir, StopImport stopImport) throws IOException {
-        locationGroupImporter.importLocationGroups(workDir, stopImport);
-    }
-
-    private void importLocations(Path locationsFile) throws IOException {
-        locationImporter.importLocations(locationsFile);
-    }
-
-    private Map<String, BookingRule> importBookingRules(Path bookingRulesFile) throws IOException {
-        return bookingRuleImporter.importBookingRules(bookingRulesFile);
-    }
-
-    private void importAttributions(Path attributionsFile) throws IOException {
-        attributionImporter.importAttributions(attributionsFile);
     }
 
     private void assignSchematicCoordinates(java.util.Collection<Stop> stops) {
