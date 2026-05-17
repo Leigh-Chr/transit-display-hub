@@ -3,7 +3,8 @@
 #
 #   - postgres   : persistent feed storage
 #   - backend    : Spring Boot API on :8080
-#   - frontend   : Nginx serving the Angular bundle on :80
+#   - frontend   : Nginx serving the Angular bundle on :8080 internally,
+#                  mapped to host :80 (nginx-unprivileged can't bind <1024)
 #
 # Usage:
 #   GTFS_FEED_URL=https://… docker compose -f docker-compose.kiosk.yml up -d --build
@@ -59,7 +60,8 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      # External 80 → internal 8080 (nginx-unprivileged binds above 1024).
+      - "80:8080"
 
 volumes:
   postgres-data:

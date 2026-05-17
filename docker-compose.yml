@@ -32,7 +32,8 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      # External 80 → internal 8080 (nginx-unprivileged binds above 1024).
+      - "80:8080"
     depends_on:
       - backend
     networks:
