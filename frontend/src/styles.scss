@@ -131,12 +131,6 @@ html {
   --app-on-info: #FFFFFF;
   --app-on-info-container: #01579B;
 
-  // Transparent container variants (for overlays on varied backgrounds)
-  --app-success-container-alpha: rgba(46, 125, 50, 0.12);
-  --app-warning-container-alpha: rgba(245, 124, 0, 0.12);
-  --app-critical-container-alpha: rgba(198, 40, 40, 0.12);
-  --app-info-container-alpha: rgba(2, 136, 209, 0.12);
-
   // === Chip palette (semantic — light theme) ===
   // Used by admin status pills (realtime occupancy, flex-stop-times
   // pickup/dropoff types, rule tags). Light surface: deep -700 text on
@@ -269,9 +263,6 @@ html {
   --app-z-overlay: 10;
   --app-z-overlay-raised: 20;
   --app-z-overlay-top: 30;
-  --app-z-tooltip: 40;
-  --app-z-modal: 50;
-  --app-z-snackbar: 100;
   --app-z-skip-link: 1000;
 }
 
@@ -305,12 +296,6 @@ html {
   --app-info: #29B6F6;
   --app-info-container: rgba(41, 182, 246, 0.15);
   --app-on-info-container: #81D4FA;
-
-  // Transparent container variants (same as containers in dark mode)
-  --app-success-container-alpha: rgba(76, 175, 80, 0.15);
-  --app-warning-container-alpha: rgba(255, 152, 0, 0.15);
-  --app-critical-container-alpha: rgba(239, 83, 80, 0.15);
-  --app-info-container-alpha: rgba(41, 182, 246, 0.15);
 
   // === Chip palette (semantic — dark theme overrides) ===
   --app-chip-success-bg: rgba(16, 185, 129, 0.28);
