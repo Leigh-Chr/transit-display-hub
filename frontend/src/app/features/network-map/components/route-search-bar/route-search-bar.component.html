@@ -58,7 +58,12 @@
           </div>
         }
         <div class="segment-block">
-          <div class="segment-header" [class.expandable]="segment.stopNames.length > 2" (click)="toggleSegment($index)">
+          <button
+            type="button"
+            class="segment-header"
+            [class.expandable]="segment.stopNames.length > 2"
+            (click)="toggleSegment($index)"
+          >
             <span class="segment-badge" [style.backgroundColor]="segment.lineColor">{{ segment.lineCode }}</span>
             <div class="segment-info">
               <span class="segment-endpoints">{{ segment.stopNames[0] }} → {{ segment.stopNames[segment.stopNames.length - 1] }}</span>
@@ -67,7 +72,7 @@
             @if (segment.stopNames.length > 2) {
               <mat-icon class="expand-icon">{{ expandedSegments().has($index) ? 'expand_less' : 'expand_more' }}</mat-icon>
             }
-          </div>
+          </button>
           @if (expandedSegments().has($index) && segment.stopNames.length > 2) {
             <div class="segment-stops-list">
               @for (name of segment.stopNames; track name) {

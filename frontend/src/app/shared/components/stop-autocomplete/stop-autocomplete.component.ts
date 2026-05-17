@@ -117,7 +117,7 @@ export class StopAutocompleteComponent {
       // `onPick` already handled the selection and updated the text.
       return;
     }
-    this.query.set(value ?? '');
+    this.query.set(value);
   }
 
   protected onPick(event: MatAutocompleteSelectedEvent): void {

@@ -81,13 +81,14 @@
           </a>
 
           @if (authService.isAdmin()) {
-            <a
+            <button
+              type="button"
               mat-list-item
               (click)="openHubDisplay(); closeSidenavOnMobile()"
             >
               <mat-icon matListItemIcon>hub</mat-icon>
               <span matListItemTitle>{{ t('admin.navigation.hubDisplay') }}</span>
-            </a>
+            </button>
           }
 
           <mat-divider></mat-divider>

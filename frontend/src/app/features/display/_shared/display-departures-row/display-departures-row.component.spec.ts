@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 
@@ -41,7 +41,7 @@ describe('DisplayDeparturesRowComponent', () => {
     fixture.componentRef.setInput('now', new Date('2026-05-17T22:00:00'));
     fixture.detectChanges();
 
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const text = (fixture.nativeElement as HTMLElement).textContent;
     expect(text).toContain('A');
     expect(text).toMatch(/5\s*min/);
     expect(text).toContain('22:05');
@@ -54,7 +54,7 @@ describe('DisplayDeparturesRowComponent', () => {
     fixture.componentRef.setInput('now', new Date('2026-05-17T22:00:30'));
     fixture.detectChanges();
 
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const text = (fixture.nativeElement as HTMLElement).textContent;
     expect(text).toContain('Imminent');
     const relative = (fixture.nativeElement as HTMLElement).querySelector('.time-relative');
     expect(relative?.classList.contains('imminent')).toBe(true);
@@ -117,6 +117,7 @@ describe('DisplayDeparturesRowComponent', () => {
   selector: 'app-test-host',
   standalone: true,
   imports: [DisplayDeparturesRowComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-display-departures-row
       [line]="line"

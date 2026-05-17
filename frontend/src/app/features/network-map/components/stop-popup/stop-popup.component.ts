@@ -300,7 +300,7 @@ export class StopPopupComponent {
   }
 
   bookingTypeLabel(rule: BookingRule): string {
-    const key = `map.stopPopup.bookingType.${rule.bookingType ?? 'default'}`;
+    const key = `map.stopPopup.bookingType.${rule.bookingType}`;
     const translated = this.transloco.translate(key);
     return translated === key
       ? this.transloco.translate('map.stopPopup.bookingType.default')
