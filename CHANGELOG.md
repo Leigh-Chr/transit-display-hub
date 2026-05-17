@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Tests
+
+- Switch `AttributionControllerIntegrationTest` and
+  `BookingRuleControllerIntegrationTest` from `@WebMvcTest` slices to
+  the shared `@SpringBootTest + AuthTestHelper` pattern used by the 22
+  other controller ITs. Each test used to spin up a dedicated Spring
+  context that no other class reused, costing ~60 s of CPU per backend
+  build; they now hit the cached context and finish under 1 s of test
+  time. BookingRule also gains explicit admin / agent / anonymous
+  coverage. Default `./gradlew test` wall-clock drops from ~77 s to
+  ~50 s.
+- Document why `PrometheusEndpointIntegrationTest` sits at the top of
+  the slowest-tests list: it sorts before every other `@SpringBootTest`
+  alphabetically, so Gradle picks it first and it absorbs the one-time
+  Spring application-context boot the others reuse from cache.
+
 ## [1.20.2] — 2026-05-17
 
 Lot A — security hardening and onboarding alignment. Closes the
