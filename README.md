@@ -79,9 +79,14 @@ For a turnkey kiosk on a Raspberry Pi, see
 git clone https://github.com/Leigh-Chr/transit-display-hub.git
 cd transit-display-hub
 export JWT_SECRET=$(openssl rand -base64 48)
-GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
-  docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build
+export POSTGRES_PASSWORD=$(openssl rand -base64 24)
+GTFS_FEED_URL=https://your-feed.example.com/gtfs \
+  docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d
 ```
+
+`docker compose up` pulls the multi-arch images published by the release
+pipeline; pass `--build` (or `BUILD_FROM_SOURCE=1` to `install.sh`) to
+compile from source instead.
 
 ## Highlights
 

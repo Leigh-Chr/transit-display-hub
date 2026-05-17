@@ -52,9 +52,12 @@ GTFS_FEED_URL=https://your-feed.example.com/gtfs JWT_SECRET=$JWT_SECRET \
   docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build
 ```
 
-> Pre-built multi-arch GHCR images are not yet published. Until a CI
-> release pipeline is in place, the kiosk image is built locally from
-> the cloned repository.
+> **Pre-built images** are published per release to
+> `ghcr.io/leigh-chr/transit-display-hub-{backend,frontend}` (multi-arch
+> amd64 + arm64). The `install.sh` script and the kiosk compose file
+> default to pulling the latest tagged image; pass `BUILD_FROM_SOURCE=1`
+> to compile from the local checkout instead (slower on Pi 4 — ~20-40 min
+> vs ~1 min for a pull).
 
 Alternatively, the automated installer script handles Docker setup,
 cloning, and the browser launch for you:
@@ -84,12 +87,16 @@ KIOSK_URL=http://localhost/display/STA_CENTRAL \
 ./install.sh
 ```
 
-| Variable          | Purpose                                                  |
-|-------------------|----------------------------------------------------------|
-| `GTFS_FEED_URL`   | URL to a GTFS .zip imported on first boot.               |
-| `KIOSK_URL`       | URL Chromium points at — defaults to `http://localhost`. |
-| `KIOSK_BROWSER`   | Set to `none` for headless deployments.                  |
-| `INSTALL_DIR`     | Where to drop the compose file. Default `~/.transit-display-hub`. |
+| Variable             | Purpose                                                                                  |
+|----------------------|------------------------------------------------------------------------------------------|
+| `GTFS_FEED_URL`      | URL to a GTFS .zip imported on first boot.                                               |
+| `KIOSK_URL`          | URL Chromium points at — defaults to `http://localhost`.                                 |
+| `KIOSK_BROWSER`      | Set to `none` for headless deployments.                                                  |
+| `INSTALL_DIR`        | Where to drop the compose file. Default `~/.transit-display-hub`.                        |
+| `JWT_SECRET`         | JWT signing key. Auto-generated with `openssl rand -base64 48` when unset.               |
+| `POSTGRES_PASSWORD`  | Postgres user password. Auto-generated with `openssl rand -base64 24` when unset.        |
+| `BUILD_FROM_SOURCE`  | Set to `1` to compile images locally instead of pulling from GHCR. Slow on Pi 4.         |
+| `TDH_VERSION`        | Pin a specific image tag (e.g. `v1.20.2`). Defaults to `latest`.                         |
 
 ## Verifying
 
@@ -99,9 +106,10 @@ After the script finishes, three containers should be running:
 docker compose -f ~/.transit-display-hub/ops/kiosk/docker-compose.kiosk.yml ps
 ```
 
-The default credentials (Admin / `admin123`) load on first boot.
-Change them via `/admin/users` before opening the kiosk to the
-public.
+The default credentials (Admin / `admin123`) load on first boot. The
+backend forces a password rotation on the first login (minimum 12
+characters), so visit `http://<host>/login`, sign in as `admin`, and
+follow the prompt **before opening the kiosk to the public**.
 
 ## Updating
 

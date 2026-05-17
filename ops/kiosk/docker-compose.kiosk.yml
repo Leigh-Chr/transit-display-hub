@@ -20,7 +20,7 @@ services:
     environment:
       POSTGRES_DB: transit
       POSTGRES_USER: transit
-      POSTGRES_PASSWORD: transit
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - generate with: openssl rand -base64 24}"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -30,10 +30,15 @@ services:
       retries: 5
 
   backend:
+    # Default to the pre-built multi-arch GHCR image. Set TDH_VERSION
+    # to pin a specific tag (e.g. v1.20.2) or leave it on latest. The
+    # `build:` block stays declared so `docker compose build` still
+    # compiles from the local checkout when BUILD_FROM_SOURCE=1 is set.
+    image: ghcr.io/leigh-chr/transit-display-hub-backend:${TDH_VERSION:-latest}
     build:
       context: ../../backend
       dockerfile: Dockerfile
-    image: transit-display-hub-backend:local
+    pull_policy: ${TDH_PULL_POLICY:-always}
     container_name: transit-backend
     restart: unless-stopped
     depends_on:
@@ -44,17 +49,18 @@ services:
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required - generate with: openssl rand -base64 48}"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transit
       SPRING_DATASOURCE_USERNAME: transit
-      SPRING_DATASOURCE_PASSWORD: transit
+      SPRING_DATASOURCE_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - generate with: openssl rand -base64 24}"
       DATA_LOADER_GTFS_URL: ${GTFS_FEED_URL:-}
       APP_GTFS_VALIDATION_ENABLED: 'true'
     ports:
       - "8080:8080"
 
   frontend:
+    image: ghcr.io/leigh-chr/transit-display-hub-frontend:${TDH_VERSION:-latest}
     build:
       context: ../../frontend
       dockerfile: Dockerfile
-    image: transit-display-hub-frontend:local
+    pull_policy: ${TDH_PULL_POLICY:-always}
     container_name: transit-frontend
     restart: unless-stopped
     depends_on:

@@ -17,8 +17,10 @@
 #   KIOSK_BROWSER=none ./install.sh
 #
 # The release workflow publishes multi-arch (amd64 + arm64) images to
-# ghcr.io/leigh-chr/transit-display-hub-{backend,frontend}. This script
-# clones the repository for the compose file but pulls the images.
+# ghcr.io/leigh-chr/transit-display-hub-{backend,frontend}. By default
+# this script pulls those pre-built images for fast first-boot. Set
+# BUILD_FROM_SOURCE=1 to compile locally instead (slow on Pi 4 —
+# ~20-40 min vs ~1 min for a pull).
 
 set -euo pipefail
 
@@ -55,11 +57,30 @@ clone_or_update_repo() {
 }
 
 start_stack() {
-  log "Building images and bringing up the stack…"
-  (cd "$INSTALL_DIR" && \
-    JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48)}" \
-    GTFS_FEED_URL="${GTFS_FEED_URL:-}" \
-    docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build)
+  local jwt_secret postgres_password
+  jwt_secret="${JWT_SECRET:-$(openssl rand -base64 48)}"
+  postgres_password="${POSTGRES_PASSWORD:-$(openssl rand -base64 24)}"
+
+  if [ "${BUILD_FROM_SOURCE:-0}" = "1" ]; then
+    log "BUILD_FROM_SOURCE=1, compiling images locally…"
+    (cd "$INSTALL_DIR" && \
+      JWT_SECRET="$jwt_secret" \
+      POSTGRES_PASSWORD="$postgres_password" \
+      GTFS_FEED_URL="${GTFS_FEED_URL:-}" \
+      TDH_PULL_POLICY=never \
+      docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d --build)
+  else
+    log "Pulling pre-built images from GHCR…"
+    (cd "$INSTALL_DIR" && \
+      JWT_SECRET="$jwt_secret" \
+      POSTGRES_PASSWORD="$postgres_password" \
+      GTFS_FEED_URL="${GTFS_FEED_URL:-}" \
+      docker compose -f ops/kiosk/docker-compose.kiosk.yml pull && \
+      JWT_SECRET="$jwt_secret" \
+      POSTGRES_PASSWORD="$postgres_password" \
+      GTFS_FEED_URL="${GTFS_FEED_URL:-}" \
+      docker compose -f ops/kiosk/docker-compose.kiosk.yml up -d)
+  fi
 }
 
 wait_for_frontend() {
