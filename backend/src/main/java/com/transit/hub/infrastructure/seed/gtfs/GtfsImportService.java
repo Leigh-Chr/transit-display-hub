@@ -10,6 +10,7 @@ import com.transit.hub.infrastructure.seed.gtfs.model.ItineraryImport;
 import com.transit.hub.infrastructure.seed.gtfs.model.StopImport;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AgencyImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.AttributionImporter;
+import com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper;
 import com.transit.hub.infrastructure.seed.gtfs.sections.FareV1Importer;
 import com.transit.hub.infrastructure.seed.gtfs.sections.FareV2Importer;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ItineraryImporter;
@@ -33,7 +34,6 @@ import com.transit.hub.infrastructure.persistence.FeedInfoRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -63,7 +62,6 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
 @Slf4j
 public class GtfsImportService {
 
-    private static final int LINE_NAME_MAX_LENGTH = 100;
     private static final double SCHEMATIC_SIZE = 1000.0;
     private static final double SCHEMATIC_MARGIN = 50.0;
 
@@ -198,18 +196,18 @@ public class GtfsImportService {
                 .importedAt(java.time.Instant.now());
 
         if (Files.exists(feedInfoFile)) {
-            try (CSVParser parser = openCsv(feedInfoFile)) {
+            try (CSVParser parser = CsvHelper.openCsv(feedInfoFile)) {
                 for (CSVRecord record : parser) {
                     builder
-                            .publisherName(truncate(optional(record, "feed_publisher_name"), 200))
-                            .publisherUrl(truncate(optional(record, "feed_publisher_url"), 500))
-                            .lang(truncate(optional(record, "feed_lang"), 20))
-                            .defaultLang(truncate(optional(record, "default_lang"), 20))
-                            .feedVersion(truncate(optional(record, "feed_version"), 50))
-                            .contactEmail(truncate(optional(record, "feed_contact_email"), 50))
-                            .contactUrl(truncate(optional(record, "feed_contact_url"), 500))
-                            .startDate(GtfsParse.parseGtfsDate(optional(record, "feed_start_date")))
-                            .endDate(GtfsParse.parseGtfsDate(optional(record, "feed_end_date")));
+                            .publisherName(truncate(CsvHelper.optional(record, "feed_publisher_name"), 200))
+                            .publisherUrl(truncate(CsvHelper.optional(record, "feed_publisher_url"), 500))
+                            .lang(truncate(CsvHelper.optional(record, "feed_lang"), 20))
+                            .defaultLang(truncate(CsvHelper.optional(record, "default_lang"), 20))
+                            .feedVersion(truncate(CsvHelper.optional(record, "feed_version"), 50))
+                            .contactEmail(truncate(CsvHelper.optional(record, "feed_contact_email"), 50))
+                            .contactUrl(truncate(CsvHelper.optional(record, "feed_contact_url"), 500))
+                            .startDate(GtfsParse.parseGtfsDate(CsvHelper.optional(record, "feed_start_date")))
+                            .endDate(GtfsParse.parseGtfsDate(CsvHelper.optional(record, "feed_end_date")));
                     break; // GTFS spec allows only one record in feed_info.txt
                 }
             }
@@ -404,20 +402,6 @@ public class GtfsImportService {
                         + "namespace (stop∩location={}, stop∩group={}, location∩group={}). "
                         + "stop_times references may be ambiguous.",
                 total, stopVsLocation.size(), stopVsGroup.size(), locationVsGroup.size());
-    }
-
-    private CSVParser openCsv(Path file) throws IOException {
-        return CSVFormat.DEFAULT.builder()
-                .setHeader()
-                .setSkipHeaderRecord(true)
-                .setIgnoreSurroundingSpaces(true)
-                .setIgnoreEmptyLines(true)
-                .build()
-                .parse(Files.newBufferedReader(file, StandardCharsets.UTF_8));
-    }
-
-    private static String optional(CSVRecord record, String column) {
-        return record.isMapped(column) ? record.get(column) : "";
     }
 
     private static void deleteRecursively(Path path) {

@@ -13,11 +13,11 @@ import java.nio.file.Path;
  * Shared CSV parsing helpers used by every section importer.
  * Extracted so each importer stays free of boilerplate.
  */
-final class CsvHelper {
+public final class CsvHelper {
 
     private CsvHelper() {}
 
-    static CSVParser openCsv(Path file) throws IOException {
+    public static CSVParser openCsv(Path file) throws IOException {
         return CSVFormat.DEFAULT.builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
@@ -27,7 +27,7 @@ final class CsvHelper {
                 .parse(Files.newBufferedReader(file, StandardCharsets.UTF_8));
     }
 
-    static String optional(CSVRecord record, String column) {
+    public static String optional(CSVRecord record, String column) {
         return record.isMapped(column) ? record.get(column) : "";
     }
 }
