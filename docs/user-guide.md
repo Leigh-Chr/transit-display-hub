@@ -20,11 +20,12 @@ administration interface.
 | admin    | admin123 | Full Administrator      | Dev + Production |
 | agent    | agent123 | Agent (messages only)   | Dev only         |
 
-> **Important**: Change the default admin password
-> immediately in production. The `agent` account is only
-> available in the dev environment (seeded by DataLoader).
-> In production, create additional users via the admin
-> interface.
+> **Forced rotation on first sign-in** — Flyway V52 ships the admin row
+> with `password_must_change = TRUE`. The very first login redirects you
+> to `/auth/change-password` and refuses any new password shorter than
+> 12 characters. The flag is cleared on success. The `agent` account is
+> only seeded in the dev profile; in production, create additional users
+> via `/admin/users`.
 
 ### Roles
 

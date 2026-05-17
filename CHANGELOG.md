@@ -14,6 +14,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `Location` header to its full `ImportAuditResponse`, returns 404 when
   the id is unknown, ADMIN-only. Closes the TODO left by v1.21.0.
 
+### Fixed
+
+- `GtfsDataLoader.createUsers()` now seeds the dev admin row with
+  `passwordMustChange = TRUE`, matching Flyway V52. Before, the dev
+  profile silently re-created the user on every boot without the flag,
+  so the forced rotation flow never fired against H2 and broke the
+  Playwright `global-setup`.
+- `ChangePasswordComponent` switched its submit gate from `computed()`
+  (which read plain string fields and therefore never tracked them as
+  signal dependencies) to a plain method, so the button now disables /
+  re-enables correctly on every ngModel update.
+
+### Documentation
+
+- README version badge bumped to 1.23.0, project structure mentions
+  `Makefile` and `ops/prometheus/`, documentation index links to
+  `docs/i18n.md`.
+- `docs/installation.md`, `docs/deployment.md` and `docs/user-guide.md`
+  now flag the forced first-login password rotation (Flyway V52).
+- `docs/developer-guide.md` cross-references the v1.22.0+ patterns
+  (`rxResource`, `createSimpleListResource`, display composables) next
+  to the legacy `OnInit` example.
+- `e2e/i18n-public-pages.spec.ts` switched to page-specific anchors —
+  the original generic list asserted on chrome the public pages never
+  rendered, so six cases were red even on the v1.4.2 baseline.
+
 ## [1.23.0] — 2026-05-17
 
 Lot F — polish: a11y + i18n cleanup, zero ESLint warnings, dead i18n

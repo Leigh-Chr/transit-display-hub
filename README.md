@@ -4,7 +4,7 @@
 [![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![ADRs](https://img.shields.io/badge/ADRs-40-informational)](docs/adr/README.md)
-[![Version](https://img.shields.io/badge/version-1.22.0-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.23.0-success)](CHANGELOG.md)
 
 > **The only open-source transit back-office that combines GTFS
 > Schedule, Fares v2, GTFS-flex and GTFS-Realtime in a single
@@ -147,8 +147,10 @@ compile from source instead.
 | admin    | admin123 | Administrator |
 | agent    | agent123 | Agent         |
 
-> Change them via `/admin/users` before exposing the install to
-> a public network.
+> The `admin` row ships with `password_must_change = TRUE` (Flyway V52)
+> — the first sign-in redirects to `/auth/change-password` and refuses
+> any new password shorter than 12 characters. Change the other roles
+> via `/admin/users` before exposing the install to a public network.
 
 ## Project structure
 
@@ -169,16 +171,19 @@ transit-display-hub/
 │       └── layouts/         # Admin / display layouts
 ├── ops/
 │   ├── grafana/             # Dashboard JSON + provisioning
+│   ├── prometheus/          # Canonical alerts (alerts.yml)
 │   └── kiosk/               # docker-compose + install.sh
-└── docs/
-    ├── adr/                 # Architecture Decision Records (40)
-    ├── installation.md
-    ├── developer-guide.md
-    ├── deployment.md
-    ├── user-guide.md
-    ├── api.md
-    ├── kiosk-raspberry-pi.md
-    └── screenshots/         # PNG/GIF assets referenced by the README
+├── docs/
+│   ├── adr/                 # Architecture Decision Records (40)
+│   ├── installation.md
+│   ├── developer-guide.md
+│   ├── deployment.md
+│   ├── user-guide.md
+│   ├── api.md
+│   ├── i18n.md              # Translator contribution guide
+│   ├── kiosk-raspberry-pi.md
+│   └── screenshots/         # PNG/GIF assets referenced by the README
+└── Makefile                 # make dev / test / check / lint / clean
 ```
 
 ## Documentation
@@ -189,6 +194,7 @@ transit-display-hub/
 - [User guide](docs/user-guide.md) — admin interface walkthrough
 - [Deployment guide](docs/deployment.md) — production hosting
 - [Kiosk on a Raspberry Pi](docs/kiosk-raspberry-pi.md)
+- [Internationalisation guide](docs/i18n.md) — for translators
 - [Architecture Decision Records](docs/adr/README.md) — 40 ADRs
 - [Changelog](CHANGELOG.md) — version history
 - [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Security](SECURITY.md)

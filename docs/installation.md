@@ -249,7 +249,11 @@ curl -X POST http://localhost:8080/api/auth/login \
 
 1. Open <http://localhost:4200>
 2. Log in with admin / admin123
-3. The dashboard should appear
+3. **First sign-in only**: you are redirected to `/auth/change-password`
+   and must set a new password of 12+ characters (Flyway V52 ships the
+   seeded admin row with `password_must_change = TRUE`). Subsequent
+   sign-ins land directly on the dashboard.
+4. The dashboard should appear
 
 ## Troubleshooting
 

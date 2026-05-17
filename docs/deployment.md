@@ -142,7 +142,12 @@ On first startup, Flyway creates the database schema and seeds a default admin u
 - **Username**: `admin`
 - **Password**: `admin123`
 
-> **Important**: Change this password immediately after first login via the Users management page.
+> **Forced rotation** — Flyway V52 ships the admin row with
+> `password_must_change = TRUE`. The very first sign-in redirects to
+> `/auth/change-password` and refuses any new password shorter than 12
+> characters. The flag is then cleared and the redirect goes away. Pick
+> a long, unique password and store it in your password manager **before**
+> exposing the deployment to the public network.
 
 ### 7. Nginx Configuration
 

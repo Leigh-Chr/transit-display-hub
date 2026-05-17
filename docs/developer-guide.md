@@ -594,6 +594,16 @@ export class LinesComponent {
 }
 ```
 
+> **Modern pattern (v1.22.0+)**: prefer `rxResource` over manual
+> `subscribe()` and prefer `constructor + effect + destroyRef.onDestroy`
+> over `OnInit/OnDestroy`. For non-paginated admin lists, the
+> `createSimpleListResource<T>()` helper at
+> `frontend/src/app/shared/admin/simple-list-resource.ts` already wraps
+> the boilerplate (loading, error, reload). For displays with a wall
+> clock or visibility-aware logic, see the composables under
+> `frontend/src/app/features/display/_shared/`
+> (`useDisplayClock`, `useArrivalsView`, `useMessagesView`).
+
 ### Signals
 
 The project uses Angular Signals for reactivity.
