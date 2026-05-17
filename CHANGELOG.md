@@ -7,15 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Lot E — frontend refactor: shares one `<app-stop-autocomplete>` between
-the network-map route search and the fare calculator, introduces a
-non-paginated `createSimpleListResource<T>` symmetric to
-`createAdminListResource`, and modernises eight components to the
-constructor + `effect` + `destroyRef` pattern (with the shared
-`injectVisibilityListener` covering kiosk + hub).
+## [1.22.0] — 2026-05-17
+
+Lot B — frontend refactor: extracts three signal-based composables
+(`useDisplayClock`, `useArrivalsView`, `useMessagesView`), one shared
+`<app-display-departures-row>` component, and a `_display-base.scss`
+mixin partial so the hub and kiosk display boards stop carrying mirror
+copies of the same wall clock, arrivals filter, scrolling thresholds,
+banner duration formulas, and viewport / header / connection styles.
+Also folds in Lot E's earlier shared-pattern wave (stop-autocomplete,
+`createSimpleListResource`, eight components on the constructor +
+`effect` + `destroyRef` pattern, `injectVisibilityListener`).
 
 ### Added
 
+- `frontend/src/app/features/display/_shared/use-display-clock.ts` —
+  1Hz wall clock signal that pauses while the document is hidden and
+  exposes pre-formatted date/time strings plus `isStale` / `staleMinutes`
+  helpers. Hub + kiosk consume the same instance instead of each
+  carrying their own `setInterval` / `formatTime` pair.
+- `frontend/src/app/features/display/_shared/use-arrivals-view.ts` —
+  pure `computeArrivalsView` projection (midnight-wrap filter +
+  needsScrolling threshold + animated scroll duration) and a signal
+  wrapper, parameterised by `maxVisibleArrivals` so the hub (8 rows)
+  and kiosk (5 rows) configure the same logic differently.
+- `frontend/src/app/features/display/_shared/use-messages-view.ts` —
+  pure split of `MessageInfo[]` into critical / info buckets, with
+  ticker + alert scroll durations growing with cumulative content
+  length.
+- `frontend/src/app/features/display/_shared/display-departures-row/` —
+  `<app-display-departures-row>` renders the line badge, optional
+  platform column, projected destination slot, booking CTA, and the
+  relative + absolute time pair. Consumed by both displays.
+- `frontend/src/app/features/display/_shared/_display-base.scss` — SCSS
+  mixin partial covering host palette, root layout, header, board /
+  viewport / track / list / divider, connection warning, error +
+  loading states, responsive breakpoints. Consumers `@use` the partial
+  and only inline their specific column widths + per-row badge styles.
 - `frontend/src/app/shared/admin/simple-list-resource.ts` — a thin
   `rxResource` wrapper for non-paginated admin lists, exposing
   `{items, loading, error, reload}`. Drops the
@@ -29,6 +57,18 @@ constructor + `effect` + `destroyRef` pattern (with the shared
 
 ### Refactor
 
+- `HubComponent` shrinks from 373 to 260 lines (TS), 146 to 110
+  (HTML), and 371 to 77 (SCSS). The local `startClock` / `stopClock` /
+  `refreshClock` / `formatTime` / `allArrivals` / `needsScrolling` /
+  `scrollDuration` / `criticalMessages` / `infoMessages` /
+  `tickerDuration` / `alertDuration` blocks now route through the
+  three new composables; the SCSS file's 17 mixin includes replace
+  the previous 200+ inline rule lines.
+- `KioskComponent` shrinks from 563 to 470 lines (TS), 218 to 181
+  (HTML), and 508 to 218 (SCSS). Voice / speak / reduced-motion /
+  pagination / a11y toolbar logic stays local — only the duplicated
+  clock + arrivals filter + message split + viewport layout move into
+  the shared layer.
 - `RouteSearchBarComponent` now consumes the shared
   `<app-stop-autocomplete>` instead of inlining two `mat-autocomplete`
   templates with their own filter logic (closes the duplication left
@@ -56,6 +96,18 @@ constructor + `effect` + `destroyRef` pattern (with the shared
 - `buildViewport(locations)` in `flex-locations.utils` now accepts
   `readonly FlexLocation[]` so the new `SimpleListResource<T>.items`
   signal flows through without a defensive spread.
+
+### Internal
+
+- `jscpd` intra-display duplication drops from ~30 % to **3.46 %**
+  across TS (1.8 %), SCSS (2.2 %) and HTML (12 %, the remaining
+  markup clones are the header block, intentionally kept since the
+  hub renders a hub name + line strip and the kiosk renders the stop
+  name + short code + a11y toolbar).
+- Kiosk lazy chunk shrinks from 80.4 kB to 69.0 kB (-14 %).
+- 17 new tests across `useDisplayClock` (5), `computeArrivalsView`
+  (7), `computeMessagesView` (5), `DisplayDeparturesRowComponent`
+  (7). Total suite now at 1187 tests.
 
 ## [1.21.0] — 2026-05-17
 
