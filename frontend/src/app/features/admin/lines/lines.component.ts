@@ -12,15 +12,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { LineService } from '@core/api/line.service';
 import { Line, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
-import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 
@@ -395,29 +393,17 @@ export class LinesComponent {
   }
 
   deleteLine(line: Line): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.lines.confirm.deleteTitle'),
-        message: this.transloco.translate('admin.lines.confirm.deleteMessage', { name: line.name }),
-        confirmText: this.transloco.translate('common.delete'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.lines.confirm.deleteTitle',
+        messageKey: 'admin.lines.confirm.deleteMessage',
+        messageArgs: { name: line.name },
+        successKey: 'admin.lines.deleteSuccess',
+        errorKey: 'admin.lines.deleteFailed',
+        delete$: () => this.lineService.delete(line.id),
+        onSuccess: () => this.loadLines(),
       },
-      ariaLabel: this.transloco.translate('admin.lines.confirm.deleteTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.lineService.delete(line.id).subscribe({
-          next: () => {
-            this.loadLines();
-            this.notify.success(this.transloco.translate('admin.lines.deleteSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.deleteFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 }

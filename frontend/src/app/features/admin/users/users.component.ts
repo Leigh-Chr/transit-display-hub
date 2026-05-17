@@ -13,14 +13,12 @@ import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
 import { User, CreateUserRequest, UpdateUserRequest } from '@shared/models';
 import { UserDialogComponent } from './user-dialog.component';
-import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -351,29 +349,17 @@ export class UsersComponent implements AfterViewInit {
   }
 
   deleteUser(user: User): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.users.confirm.deleteTitle'),
-        message: this.transloco.translate('admin.users.confirm.deleteMessage', { username: user.username }),
-        confirmText: this.transloco.translate('common.delete'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.users.confirm.deleteTitle',
+        messageKey: 'admin.users.confirm.deleteMessage',
+        messageArgs: { username: user.username },
+        successKey: 'admin.users.deleteSuccess',
+        errorKey: 'admin.users.deleteFailed',
+        delete$: () => this.userService.delete(user.id),
+        onSuccess: () => this.loadUsers(),
       },
-      ariaLabel: this.transloco.translate('admin.users.confirm.deleteTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.userService.delete(user.id).subscribe({
-          next: () => {
-            this.loadUsers();
-            this.notify.success(this.transloco.translate('admin.users.deleteSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.deleteFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 }

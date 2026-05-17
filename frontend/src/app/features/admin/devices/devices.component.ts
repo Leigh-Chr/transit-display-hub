@@ -14,11 +14,9 @@ import { DeviceService } from '@core/api/device.service';
 import { Line, Device, DeviceStatus, DeviceRegistration, RegisterDeviceRequest } from '@shared/models';
 import { DeviceDialogComponent } from './device-dialog.component';
 import { DeviceTokenDialogComponent } from './device-token-dialog.component';
-import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -319,30 +317,19 @@ export class DevicesComponent implements OnInit {
   }
 
   deleteDevice(device: Device): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.devices.confirm.removeTitle'),
-        message: this.transloco.translate('admin.devices.confirm.removeMessage', { stopName: device.stopName }),
-        confirmText: this.transloco.translate('admin.common.remove'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.devices.confirm.removeTitle',
+        messageKey: 'admin.devices.confirm.removeMessage',
+        messageArgs: { stopName: device.stopName },
+        confirmKey: 'admin.common.remove',
+        successKey: 'admin.devices.removeSuccess',
+        errorKey: 'admin.devices.removeFailed',
+        delete$: () => this.deviceService.delete(device.id),
+        onSuccess: () => this.loadDevices(),
       },
-      ariaLabel: this.transloco.translate('admin.devices.confirm.removeTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.deviceService.delete(device.id).subscribe({
-          next: () => {
-            this.loadDevices();
-            this.notify.success(this.transloco.translate('admin.devices.removeSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.devices.removeFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 
   openKioskPreview(stopId: string): void {

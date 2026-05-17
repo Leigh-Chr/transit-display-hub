@@ -16,11 +16,9 @@ import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
 import { Line, Stop, Schedule, CreateScheduleRequest } from '@shared/models';
 import { ScheduleDialogComponent } from './schedule-dialog.component';
-import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -380,30 +378,18 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
 
   deleteSchedule(entry: Schedule): void {
     const terminusName = entry.itinerary.terminusName ?? 'unknown';
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.schedules.confirm.deleteTitle'),
-        message: this.transloco.translate('admin.schedules.confirm.deleteMessage', { time: this.formatTime(entry.time), terminus: terminusName }),
-        confirmText: this.transloco.translate('common.delete'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.schedules.confirm.deleteTitle',
+        messageKey: 'admin.schedules.confirm.deleteMessage',
+        messageArgs: { time: this.formatTime(entry.time), terminus: terminusName },
+        successKey: 'admin.schedules.deleteSuccess',
+        errorKey: 'admin.schedules.deleteFailed',
+        delete$: () => this.scheduleService.delete(entry.id),
+        onSuccess: () => this.loadSchedules(),
       },
-      ariaLabel: this.transloco.translate('admin.schedules.confirm.deleteTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.scheduleService.delete(entry.id).subscribe({
-          next: () => {
-            this.loadSchedules();
-            this.notify.success(this.transloco.translate('admin.schedules.deleteSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.deleteFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 
   formatTime(time: string): string {

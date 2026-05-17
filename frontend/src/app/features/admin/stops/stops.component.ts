@@ -18,9 +18,6 @@ import { StopService } from '@core/api/stop.service';
 import { Line, Stop, CreateStopRequest } from '@shared/models';
 import { StopDialogComponent } from './stop-dialog.component';
 import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
-import {
   HubDisplayDialogComponent,
   HubDisplayDialogResult,
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
@@ -29,6 +26,7 @@ import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -170,30 +168,18 @@ export class StopsComponent {
   }
 
   deleteStop(stop: Stop): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.stops.confirm.deleteTitle'),
-        message: this.transloco.translate('admin.stops.confirm.deleteMessage', { name: stop.name }),
-        confirmText: this.transloco.translate('common.delete'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.stops.confirm.deleteTitle',
+        messageKey: 'admin.stops.confirm.deleteMessage',
+        messageArgs: { name: stop.name },
+        successKey: 'admin.stops.deleteSuccess',
+        errorKey: 'admin.stops.deleteFailed',
+        delete$: () => this.stopService.delete(stop.id),
+        onSuccess: () => this.loadStops(),
       },
-      ariaLabel: this.transloco.translate('admin.stops.confirm.deleteTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.stopService.delete(stop.id).subscribe({
-          next: () => {
-            this.loadStops();
-            this.notify.success(this.transloco.translate('admin.stops.deleteSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.deleteFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 
   openHubDisplay(): void {

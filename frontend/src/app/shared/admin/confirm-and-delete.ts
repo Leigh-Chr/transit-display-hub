@@ -23,6 +23,11 @@ export interface ConfirmAndDeleteConfig {
   /** Translation key for the fallback error snackbar (when the
    *  server's i18n error message can't be extracted). */
   errorKey: string;
+  /** Translation key for the confirm button label.
+   *  Defaults to {@code 'common.delete'}; overridden by Devices, which
+   *  unregisters a kiosk through a "Remove" action rather than a
+   *  destructive delete. */
+  confirmKey?: string;
   /** Lazy factory so the HTTP call only fires when the user confirms. */
   delete$: () => Observable<void>;
   /** Side-effect ran after a successful delete — typically a list reload. */
@@ -41,7 +46,7 @@ export function confirmAndDelete(deps: ConfirmAndDeleteDeps, config: ConfirmAndD
     data: {
       title,
       message: deps.transloco.translate(config.messageKey, config.messageArgs),
-      confirmText: deps.transloco.translate('common.delete'),
+      confirmText: deps.transloco.translate(config.confirmKey ?? 'common.delete'),
       cancelText: deps.transloco.translate('common.cancel'),
       confirmColor: 'warn',
     },

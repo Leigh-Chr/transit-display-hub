@@ -16,14 +16,12 @@ import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
 import { Line, BroadcastMessage, MessageSeverity, CreateMessageRequest } from '@shared/models';
 import { MessageDialogComponent } from './message-dialog.component';
-import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -179,29 +177,17 @@ export class MessagesComponent {
   }
 
   deleteMessage(message: BroadcastMessage): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.messages.confirm.deleteTitle'),
-        message: this.transloco.translate('admin.messages.confirm.deleteMessage', { title: message.title }),
-        confirmText: this.transloco.translate('common.delete'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.messages.confirm.deleteTitle',
+        messageKey: 'admin.messages.confirm.deleteMessage',
+        messageArgs: { title: message.title },
+        successKey: 'admin.messages.deleteSuccess',
+        errorKey: 'admin.messages.deleteFailed',
+        delete$: () => this.messageService.delete(message.id),
+        onSuccess: () => this.loadMessages(),
       },
-      ariaLabel: this.transloco.translate('admin.messages.confirm.deleteTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.messageService.delete(message.id).subscribe({
-          next: () => {
-            this.loadMessages();
-            this.notify.success(this.transloco.translate('admin.messages.deleteSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.deleteFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 }

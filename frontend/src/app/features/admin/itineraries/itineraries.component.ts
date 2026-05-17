@@ -18,14 +18,12 @@ import { AuthService } from '@core/auth/auth.service';
 import { Itinerary, Line, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
 import { ItineraryDialogComponent } from './itinerary-dialog.component';
 import { ItineraryStopsDialogComponent } from './itinerary-stops-dialog.component';
-import {
-  ConfirmDialogComponent,
-} from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
+import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -194,29 +192,17 @@ export class ItinerariesComponent implements AfterViewInit {
   }
 
   deleteItinerary(itinerary: Itinerary): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: this.transloco.translate('admin.itineraries.confirm.deleteTitle'),
-        message: this.transloco.translate('admin.itineraries.confirm.deleteMessage', { name: itinerary.name }),
-        confirmText: this.transloco.translate('common.delete'),
-        cancelText: this.transloco.translate('common.cancel'),
-        confirmColor: 'warn',
+    confirmAndDelete(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        titleKey: 'admin.itineraries.confirm.deleteTitle',
+        messageKey: 'admin.itineraries.confirm.deleteMessage',
+        messageArgs: { name: itinerary.name },
+        successKey: 'admin.itineraries.deleteSuccess',
+        errorKey: 'admin.itineraries.deleteFailed',
+        delete$: () => this.itineraryService.delete(itinerary.id),
+        onSuccess: () => this.loadItineraries(),
       },
-      ariaLabel: this.transloco.translate('admin.itineraries.confirm.deleteTitle'),
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.itineraryService.delete(itinerary.id).subscribe({
-          next: () => {
-            this.loadItineraries();
-            this.notify.success(this.transloco.translate('admin.itineraries.deleteSuccess'));
-          },
-          error: (err: unknown) => {
-            this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.itineraries.deleteFailed')));
-          },
-        });
-      }
-    });
+    );
   }
 }
