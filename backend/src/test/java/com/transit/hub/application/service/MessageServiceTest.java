@@ -21,6 +21,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -731,122 +734,67 @@ class MessageServiceTest {
     @DisplayName("getAllMessages - paginated with filters")
     class GetAllMessagesPaginated {
 
-        // All filter combinations now route through the single
-        // JpaSpecificationExecutor.findAll(Specification, Pageable) entry point.
-        // The tests verify that the correct overload is called for every
-        // filter combination and that special inputs (blank search, false active)
-        // are treated as absent filters.
+        // All filter combinations route through the single
+        // JpaSpecificationExecutor.findAll(Specification, Pageable) entry
+        // point — the actual Specification predicates are exercised by
+        // MessageControllerIntegrationTest against a real H2/Testcontainers
+        // schema, so the value here is only verifying the dispatch path
+        // and the input-normalisation rules (blank search and active=false
+        // both fold into "no filter").
 
         @SuppressWarnings("unchecked")
-        private Page<BroadcastMessage> stubSpec(Pageable pageable, Page<BroadcastMessage> page) {
+        private void stubSpec(Pageable pageable, Page<BroadcastMessage> page) {
             when(messageRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
                     .thenReturn(page);
-            return page;
         }
 
-        @Test
-        @DisplayName("delegates all filter combinations to findAll(Specification, Pageable)")
-        void withAllFilters_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            BroadcastMessage msg = TestDataFactory.createNetworkMessage();
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(msg), pageable, 1);
-            stubSpec(pageable, page);
+        static java.util.stream.Stream<Arguments> filterCombinations() {
+            return java.util.stream.Stream.of(
+                    Arguments.of("no filters",                      null,  null,                       null),
+                    Arguments.of("active only",                     true,  null,                       null),
+                    Arguments.of("severity only",                   null,  MessageSeverity.INFO,       null),
+                    Arguments.of("search only",                     null,  null,                       "alert"),
+                    Arguments.of("active + severity",               true,  MessageSeverity.CRITICAL,   null),
+                    Arguments.of("active + search",                 true,  null,                       "test"),
+                    Arguments.of("severity + search",               null,  MessageSeverity.INFO,       "notice"),
+                    Arguments.of("active + severity + search",      true,  MessageSeverity.WARNING,    "alert")
+            );
+        }
 
-            messageService.getAllMessages(true, MessageSeverity.WARNING, "alert", pageable);
+        @ParameterizedTest(name = "[{index}] {0}")
+        @MethodSource("filterCombinations")
+        @DisplayName("delegates every filter combination to findAll(Specification, Pageable)")
+        void delegatesEveryCombination(String description, Boolean active, MessageSeverity severity, String search) {
+            Pageable pageable = PageRequest.of(0, 10);
+            stubSpec(pageable, new PageImpl<>(List.of(), pageable, 0));
+
+            messageService.getAllMessages(active, severity, search, pageable);
 
             verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
         }
 
+        @SuppressWarnings("unchecked")
         @Test
-        @DisplayName("delegates active+severity combination to findAll(Specification, Pageable)")
-        void withActiveAndSeverity_DelegatesToSpecification() {
+        @DisplayName("passes a non-null Specification even when no filter is provided")
+        void noFilters_StillPassesSpec() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
-
-            messageService.getAllMessages(true, MessageSeverity.CRITICAL, null, pageable);
-
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("delegates active+search combination to findAll(Specification, Pageable)")
-        void withActiveAndSearch_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
-
-            messageService.getAllMessages(true, null, "test", pageable);
-
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("delegates active-only filter to findAll(Specification, Pageable)")
-        void withActiveOnly_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
-
-            messageService.getAllMessages(true, null, null, pageable);
-
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("delegates severity+search combination to findAll(Specification, Pageable)")
-        void withSeverityAndSearch_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
-
-            messageService.getAllMessages(null, MessageSeverity.INFO, "notice", pageable);
-
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("delegates severity-only filter to findAll(Specification, Pageable)")
-        void withSeverityOnly_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
-
-            messageService.getAllMessages(null, MessageSeverity.INFO, null, pageable);
-
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("delegates search-only filter to findAll(Specification, Pageable)")
-        void withSearchOnly_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
-
-            messageService.getAllMessages(null, null, "alert", pageable);
-
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("delegates no-filter call to findAll(Specification, Pageable)")
-        void withNoFilters_DelegatesToSpecification() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
+            stubSpec(pageable, new PageImpl<>(List.of(), pageable, 0));
 
             messageService.getAllMessages(null, null, null, pageable);
 
-            verify(messageRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable));
+            ArgumentCaptor<org.springframework.data.jpa.domain.Specification<BroadcastMessage>> captor =
+                    ArgumentCaptor.forClass(org.springframework.data.jpa.domain.Specification.class);
+            verify(messageRepository).findAll(captor.capture(), eq(pageable));
+            assertThat(captor.getValue())
+                    .as("Specification must not be null — the service passes a 'match everything' spec, never null")
+                    .isNotNull();
         }
 
         @Test
         @DisplayName("treats blank search as no search filter")
         void withBlankSearch_TreatsAsNoSearch() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
+            stubSpec(pageable, new PageImpl<>(List.of(), pageable, 0));
 
             messageService.getAllMessages(null, null, "   ", pageable);
 
@@ -857,8 +805,7 @@ class MessageServiceTest {
         @DisplayName("treats false active flag as no active filter")
         void withFalseActive_TreatsAsNoFilter() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<BroadcastMessage> page = new PageImpl<>(List.of(), pageable, 0);
-            stubSpec(pageable, page);
+            stubSpec(pageable, new PageImpl<>(List.of(), pageable, 0));
 
             messageService.getAllMessages(false, null, null, pageable);
 
