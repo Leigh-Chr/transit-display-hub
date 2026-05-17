@@ -29,8 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -96,11 +99,11 @@ public class ItineraryService {
             return PageResponse.from(Page.empty(pageable), ItineraryResponse::from);
         }
         List<Itinerary> hydrated = itineraryRepository.findAllByIdInWithLine(idsPage.getContent());
-        java.util.Map<UUID, Itinerary> byId = hydrated.stream()
-                .collect(java.util.stream.Collectors.toMap(Itinerary::getId, i -> i));
+        Map<UUID, Itinerary> byId = hydrated.stream()
+                .collect(Collectors.toMap(Itinerary::getId, i -> i));
         List<Itinerary> ordered = idsPage.getContent().stream()
                 .map(byId::get)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .toList();
         Page<Itinerary> page = new org.springframework.data.domain.PageImpl<>(
                 ordered, pageable, idsPage.getTotalElements());

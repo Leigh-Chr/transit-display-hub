@@ -27,7 +27,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -144,7 +146,7 @@ public class DeviceService {
                 deviceRepository.save(device);
 
                 List<LineInfo> lines = device.getStop().getLines().stream()
-                        .sorted(java.util.Comparator.comparing(Line::getCode))
+                        .sorted(Comparator.comparing(Line::getCode))
                         .map(LineInfo::from)
                         .toList();
 
@@ -179,7 +181,7 @@ public class DeviceService {
      * deleted, and we don't want to spam the log every 30 s for that.
      */
     @Transactional
-    public void recordHeartbeatsBatch(java.util.Map<UUID, Instant> heartbeatsByDeviceId) {
+    public void recordHeartbeatsBatch(Map<UUID, Instant> heartbeatsByDeviceId) {
         if (heartbeatsByDeviceId.isEmpty()) {
             return;
         }

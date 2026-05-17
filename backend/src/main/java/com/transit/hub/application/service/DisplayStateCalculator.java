@@ -29,7 +29,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,7 +121,7 @@ public class DisplayStateCalculator {
         // platforms split out into their own rows. Free-standing
         // platforms (location_type=0) and stops without children skip
         // the extra query — `findChildIds` returns empty.
-        java.util.Set<UUID> targetStopIds = new java.util.HashSet<>();
+        Set<UUID> targetStopIds = new HashSet<>();
         targetStopIds.add(stopId);
         if (stop.getLocationType() == 1) {
             targetStopIds.addAll(stopRepository.findChildIds(stopId));
@@ -132,7 +134,7 @@ public class DisplayStateCalculator {
         // operator pulled the trip and we shouldn't show a phantom
         // departure.
         LocalDate tomorrow = today.plusDays(1);
-        List<Schedule> activeToday = new java.util.ArrayList<>(upcoming.size());
+        List<Schedule> activeToday = new ArrayList<>(upcoming.size());
         for (Schedule s : upcoming) {
             LocalDate effectiveDate = (crossesMidnight && s.getTime().isBefore(now)) ? tomorrow : today;
             ServiceCalendar calendar = resolveCalendar(s, calendarsById);
@@ -179,7 +181,7 @@ public class DisplayStateCalculator {
         // alerts of equivalent severity.
         List<DisplayState.MessageInfo> realtimeMessages =
                 buildRealtimeMessages(stop, instant);
-        List<DisplayState.MessageInfo> messages = new java.util.ArrayList<>(MAX_MESSAGES);
+        List<DisplayState.MessageInfo> messages = new ArrayList<>(MAX_MESSAGES);
         for (DisplayState.MessageInfo m : persistedMessages) {
             if (messages.size() >= MAX_MESSAGES) {break;}
             messages.add(m);
@@ -243,7 +245,7 @@ public class DisplayStateCalculator {
         return calendarsById.get(lazy.getId());
     }
 
-    private List<Schedule> loadUpcomingSchedules(java.util.Set<UUID> stopIds,
+    private List<Schedule> loadUpcomingSchedules(Set<UUID> stopIds,
                                                   LocalTime now, LocalTime windowEnd) {
         // Single-element fast path uses the original = comparison
         // instead of IN; saves one planning step on the hot path
@@ -262,7 +264,7 @@ public class DisplayStateCalculator {
         List<Schedule> afterMidnight = singleStop
                 ? scheduleRepository.findByStopIdAndTimeBeforeOrEqualWithItinerary(singleId, windowEnd)
                 : scheduleRepository.findByStopIdsAndTimeBeforeOrEqualWithItinerary(stopIds, windowEnd);
-        List<Schedule> combined = new java.util.ArrayList<>(beforeMidnight.size() + afterMidnight.size());
+        List<Schedule> combined = new ArrayList<>(beforeMidnight.size() + afterMidnight.size());
         combined.addAll(beforeMidnight);
         combined.addAll(afterMidnight);
         return combined;

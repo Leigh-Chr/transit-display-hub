@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -77,7 +78,7 @@ public class LineService {
         // Preserve the page's order. The hydrate query uses IN (:ids)
         // which doesn't guarantee order.
         Map<UUID, Line> byId = hydrated.stream().collect(Collectors.toMap(Line::getId, l -> l));
-        List<Line> ordered = idsPage.getContent().stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
+        List<Line> ordered = idsPage.getContent().stream().map(byId::get).filter(Objects::nonNull).toList();
         Page<Line> page = new org.springframework.data.domain.PageImpl<>(ordered, pageable, idsPage.getTotalElements());
         return PageResponse.from(page, LineResponse::from);
     }

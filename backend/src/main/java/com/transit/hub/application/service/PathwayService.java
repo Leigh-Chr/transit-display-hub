@@ -3,6 +3,7 @@ package com.transit.hub.application.service;
 import com.transit.hub.application.dto.response.PathwayResponse;
 import com.transit.hub.application.dto.response.StationPathwayGraphResponse;
 import com.transit.hub.application.dto.response.StationPathwayGraphResponse.LevelInfo;
+import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +36,7 @@ public class PathwayService {
     public List<PathwayResponse> findPathwaysForStop(UUID stopId) {
         return pathwayRepository.findTouchingStop(stopId).stream()
                 .sorted(Comparator
-                        .comparing((com.transit.hub.domain.model.Pathway p) ->
+                        .comparing((Pathway p) ->
                                 stopId.equals(p.getFromStop().getId()) ? 0 : 1)
                         .thenComparing(p -> p.getPathwayMode().ordinal())
                         .thenComparing(p -> p.getSignpostedAs() == null ? "" : p.getSignpostedAs()))
@@ -64,13 +66,13 @@ public class PathwayService {
 
             // Pathways touching the station's siblings (children of the
             // station, plus the station itself when location_type=1).
-            List<UUID> stopIds = new java.util.ArrayList<>(
+            List<UUID> stopIds = new ArrayList<>(
                     stopRepository.findChildIds(stationId));
             stopIds.add(stationId);
 
             List<PathwayResponse> pathways = pathwayRepository.findTouchingAny(stopIds).stream()
                     .sorted(Comparator
-                            .comparing((com.transit.hub.domain.model.Pathway p) -> p.getPathwayMode().ordinal())
+                            .comparing((Pathway p) -> p.getPathwayMode().ordinal())
                             .thenComparing(p -> p.getSignpostedAs() == null ? "" : p.getSignpostedAs()))
                     .map(PathwayResponse::from)
                     .toList();
