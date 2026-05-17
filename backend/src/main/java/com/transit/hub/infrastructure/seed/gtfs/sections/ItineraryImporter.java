@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.ToIntFunction;
 
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.firstNonBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
@@ -317,6 +318,30 @@ public class ItineraryImporter {
     // ---------- majority-vote helpers ----------
 
     /**
+     * Generic majority vote across the trips of a (route, direction).
+     * Counts {@code 1} (yes) vs {@code 2} (no); ignores {@code 0}
+     * (unknown). Returns {@code unknown} on a tie, on all-zero input,
+     * or when no trip matches the key.
+     */
+    private static <E extends Enum<E>> E majorityVote(
+            Map<String, TripInfo> tripInfos, RouteDirKey key,
+            ToIntFunction<TripInfo> field,
+            E yes, E no, E unknown) {
+        int yesCount = 0;
+        int noCount = 0;
+        for (TripInfo info : tripInfos.values()) {
+            if (!info.routeId().equals(key.routeId())) { continue; }
+            if (!info.directionId().equals(key.directionId())) { continue; }
+            int value = field.applyAsInt(info);
+            if (value == 1) { yesCount++; }
+            else if (value == 2) { noCount++; }
+        }
+        if (yesCount > noCount) { return yes; }
+        if (noCount > yesCount) { return no; }
+        return unknown;
+    }
+
+    /**
      * Picks the dominant {@code wheelchair_accessible} value among the trips
      * of a given (route, direction). Counts {@code 1} (accessible) vs
      * {@code 2} (not accessible); ignores {@code 0} (unknown). Falls back
@@ -324,47 +349,15 @@ public class ItineraryImporter {
      */
     public static WheelchairAccess majorityWheelchair(
             Map<String, TripInfo> tripInfos, RouteDirKey key) {
-        int yes = 0;
-        int no = 0;
-        for (TripInfo info : tripInfos.values()) {
-            if (!info.routeId().equals(key.routeId())) { continue; }
-            if (!info.directionId().equals(key.directionId())) { continue; }
-            if (info.wheelchairAccessible() == 1) { yes++; }
-            else if (info.wheelchairAccessible() == 2) { no++; }
-        }
-        if (yes == 0 && no == 0) {
-            return WheelchairAccess.UNKNOWN;
-        }
-        if (yes > no) {
-            return WheelchairAccess.ACCESSIBLE;
-        }
-        if (no > yes) {
-            return WheelchairAccess.NOT_ACCESSIBLE;
-        }
-        return WheelchairAccess.UNKNOWN;
+        return majorityVote(tripInfos, key, TripInfo::wheelchairAccessible,
+                WheelchairAccess.ACCESSIBLE, WheelchairAccess.NOT_ACCESSIBLE, WheelchairAccess.UNKNOWN);
     }
 
     /** Majority vote on {@code bikes_allowed}, mirroring {@link #majorityWheelchair}. */
     public static BikesAllowed majorityBikes(
             Map<String, TripInfo> tripInfos, RouteDirKey key) {
-        int yes = 0;
-        int no = 0;
-        for (TripInfo info : tripInfos.values()) {
-            if (!info.routeId().equals(key.routeId())) { continue; }
-            if (!info.directionId().equals(key.directionId())) { continue; }
-            if (info.bikesAllowed() == 1) { yes++; }
-            else if (info.bikesAllowed() == 2) { no++; }
-        }
-        if (yes == 0 && no == 0) {
-            return BikesAllowed.UNKNOWN;
-        }
-        if (yes > no) {
-            return BikesAllowed.ALLOWED;
-        }
-        if (no > yes) {
-            return BikesAllowed.NOT_ALLOWED;
-        }
-        return BikesAllowed.UNKNOWN;
+        return majorityVote(tripInfos, key, TripInfo::bikesAllowed,
+                BikesAllowed.ALLOWED, BikesAllowed.NOT_ALLOWED, BikesAllowed.UNKNOWN);
     }
 
     /**
@@ -373,24 +366,8 @@ public class ItineraryImporter {
      */
     public static CarsAllowed majorityCars(
             Map<String, TripInfo> tripInfos, RouteDirKey key) {
-        int yes = 0;
-        int no = 0;
-        for (TripInfo info : tripInfos.values()) {
-            if (!info.routeId().equals(key.routeId())) { continue; }
-            if (!info.directionId().equals(key.directionId())) { continue; }
-            if (info.carsAllowed() == 1) { yes++; }
-            else if (info.carsAllowed() == 2) { no++; }
-        }
-        if (yes == 0 && no == 0) {
-            return CarsAllowed.UNKNOWN;
-        }
-        if (yes > no) {
-            return CarsAllowed.ALLOWED;
-        }
-        if (no > yes) {
-            return CarsAllowed.NOT_ALLOWED;
-        }
-        return CarsAllowed.UNKNOWN;
+        return majorityVote(tripInfos, key, TripInfo::carsAllowed,
+                CarsAllowed.ALLOWED, CarsAllowed.NOT_ALLOWED, CarsAllowed.UNKNOWN);
     }
 
     /**
