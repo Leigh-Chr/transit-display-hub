@@ -30,7 +30,6 @@ frontend/.env
 frontend/*.log
 frontend/screenshots/
 frontend/test-results/
-frontend/visual-test.mjs
 
 # Playwright MCP browser artifacts (screenshots, snapshots, console logs)
 .playwright-mcp/
@@ -69,3 +68,6 @@ AGENTS.md
 .windsurf*
 .aiexclude
 .aiignore
+.openhands/
+.crewai/
+.zed-ai/
