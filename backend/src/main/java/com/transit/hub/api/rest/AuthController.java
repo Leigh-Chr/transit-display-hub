@@ -1,6 +1,7 @@
 package com.transit.hub.api.rest;
 
 import com.transit.hub.application.dto.LoginBundle;
+import com.transit.hub.application.dto.request.ChangePasswordRequest;
 import com.transit.hub.application.dto.request.LoginRequest;
 import com.transit.hub.application.dto.response.LoginResponse;
 import com.transit.hub.application.dto.response.MeResponse;
@@ -73,6 +74,23 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookieFactory.clearAccessCookie().toString())
                 .header(HttpHeaders.SET_COOKIE, cookieFactory.clearRefreshCookie().toString())
                 .build();
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change le mot de passe de l'utilisateur authentifié",
+               description = "Vérifie le mot de passe courant, enregistre le nouveau et "
+                       + "efface le flag de rotation forcée. Renvoie 204 sur succès, 401 si "
+                       + "le mot de passe courant ne correspond pas, 400 si le nouveau ne "
+                       + "respecte pas les contraintes de longueur.")
+    public ResponseEntity<Void> changePassword(Authentication authentication,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            return ResponseEntity.status(401).build();
+        }
+        authService.changePassword(authentication.getName(), request);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")

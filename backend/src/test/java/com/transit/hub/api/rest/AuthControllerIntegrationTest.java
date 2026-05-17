@@ -356,6 +356,98 @@ class AuthControllerIntegrationTest {
     }
 
     @Nested
+    @DisplayName("POST /api/auth/change-password")
+    class ChangePassword {
+
+        @Test
+        @DisplayName("rotates the password and clears the must-change flag")
+        void rotatesPasswordAndClearsFlag() throws Exception {
+            // Mark the seeded admin as having to rotate, matching the V52 default.
+            testAdmin.setPasswordMustChange(true);
+            userRepository.save(testAdmin);
+
+            LoginRequest loginRequest = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.passwordMustChange", is(true)))
+                    .andReturn();
+            Cookie access = login.getResponse().getCookie("ACCESS_TOKEN");
+            assertThat(access).isNotNull();
+
+            String payload = """
+                    { "currentPassword": "admin123", "newPassword": "Brand-New-Str0ng-Pass!" }
+                    """;
+            mockMvc.perform(post("/api/auth/change-password")
+                            .cookie(access)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isNoContent());
+
+            User reloaded = userRepository.findByUsername("admin").orElseThrow();
+            assertThat(reloaded.isPasswordMustChange()).isFalse();
+            assertThat(passwordEncoder.matches("Brand-New-Str0ng-Pass!", reloaded.getPassword())).isTrue();
+        }
+
+        @Test
+        @DisplayName("rejects a new password shorter than the minimum length")
+        void rejectsWeakPassword() throws Exception {
+            LoginRequest loginRequest = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andReturn();
+            Cookie access = login.getResponse().getCookie("ACCESS_TOKEN");
+
+            String payload = """
+                    { "currentPassword": "admin123", "newPassword": "weak" }
+                    """;
+            mockMvc.perform(post("/api/auth/change-password")
+                            .cookie(access)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("rejects a wrong current password with 401")
+        void rejectsWrongCurrentPassword() throws Exception {
+            LoginRequest loginRequest = new LoginRequest("admin", "admin123");
+            MvcResult login = mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andReturn();
+            Cookie access = login.getResponse().getCookie("ACCESS_TOKEN");
+
+            String payload = """
+                    { "currentPassword": "wrong-password", "newPassword": "Brand-New-Str0ng-Pass!" }
+                    """;
+            mockMvc.perform(post("/api/auth/change-password")
+                            .cookie(access)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("rejects an unauthenticated caller with 401")
+        void rejectsUnauthenticated() throws Exception {
+            String payload = """
+                    { "currentPassword": "admin123", "newPassword": "Brand-New-Str0ng-Pass!" }
+                    """;
+            mockMvc.perform(post("/api/auth/change-password")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/auth/me")
     class Me {
 

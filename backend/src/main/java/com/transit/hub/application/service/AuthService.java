@@ -1,9 +1,11 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.LoginBundle;
+import com.transit.hub.application.dto.request.ChangePasswordRequest;
 import com.transit.hub.application.dto.request.LoginRequest;
 import com.transit.hub.application.dto.response.LoginResponse;
 import com.transit.hub.application.dto.response.MeResponse;
+import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.User;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.infrastructure.security.JwtService;
@@ -78,6 +80,26 @@ public class AuthService {
             return;
         }
         refreshTokenService.revoke(refreshRaw);
+    }
+
+    /**
+     * Rotates the password of the authenticated caller. Clears the
+     * {@code passwordMustChange} flag so the next login no longer
+     * redirects to the rotation screen. Wrong {@code currentPassword}
+     * is surfaced as {@link BadCredentialsException} (401) by the
+     * global exception handler.
+     */
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User", username));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.clearPasswordMustChange();
     }
 
     private User authenticate(LoginRequest request) {
