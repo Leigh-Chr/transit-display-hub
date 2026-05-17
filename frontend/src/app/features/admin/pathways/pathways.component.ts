@@ -10,7 +10,7 @@ import { StopService } from '@core/api/stop.service';
 import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
 import { Pathway, PathwayMode, StationLevelInfo, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { StopAutocompleteComponent } from '@shared/components/stop-autocomplete/stop-autocomplete.component';
+import { StopAutocompleteComponent, StopAutocompleteOption } from '@shared/components/stop-autocomplete/stop-autocomplete.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-layout';
@@ -73,8 +73,12 @@ export class PathwaysComponent implements OnInit {
     });
   }
 
-  onStopSelected(stop: Stop): void {
-    this.selectedStop.set(stop);
+  /** Handler bound to the shared {@code <app-stop-autocomplete>} output.
+   *  The autocomplete is generic over {@link StopAutocompleteOption} —
+   *  the concrete row type is known here (we fed it via {@code [stops]})
+   *  so we narrow it back to {@link Stop} on the way in. */
+  onStopSelected(stop: StopAutocompleteOption): void {
+    this.selectedStop.set(stop as Stop);
     this.loadPathways();
   }
 

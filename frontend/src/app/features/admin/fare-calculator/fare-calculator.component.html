@@ -13,14 +13,14 @@
               [stops]="allStops()"
               [label]="t('admin.fareCalculator.fieldOrigin')"
               [placeholder]="t('admin.fareCalculator.fieldOriginPlaceholder')"
-              (selected)="origin.set($event)" />
+              (selected)="onOriginSelected($event)" />
 
             <app-stop-autocomplete
               class="stop-picker"
               [stops]="allStops()"
               [label]="t('admin.fareCalculator.fieldDest')"
               [placeholder]="t('admin.fareCalculator.fieldDestPlaceholder')"
-              (selected)="dest.set($event)" />
+              (selected)="onDestSelected($event)" />
 
             <button mat-flat-button
                     color="primary"

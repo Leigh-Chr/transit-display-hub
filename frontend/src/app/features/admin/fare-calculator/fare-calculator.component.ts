@@ -9,7 +9,7 @@ import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { StopService } from '@core/api/stop.service';
 import { FareCalculationResult, Stop } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
-import { StopAutocompleteComponent } from '@shared/components/stop-autocomplete/stop-autocomplete.component';
+import { StopAutocompleteComponent, StopAutocompleteOption } from '@shared/components/stop-autocomplete/stop-autocomplete.component';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
@@ -53,6 +53,17 @@ export class FareCalculatorComponent implements OnInit {
       next: (data) => this.allStops.set(data),
       error: () => this.allStops.set([]),
     });
+  }
+
+  /** Bound to the shared autocomplete output; narrows back to the
+   *  concrete {@link Stop} type since the row came from
+   *  {@code allStops()} which we typed ourselves. */
+  onOriginSelected(stop: StopAutocompleteOption): void {
+    this.origin.set(stop as Stop);
+  }
+
+  onDestSelected(stop: StopAutocompleteOption): void {
+    this.dest.set(stop as Stop);
   }
 
   calculate(): void {

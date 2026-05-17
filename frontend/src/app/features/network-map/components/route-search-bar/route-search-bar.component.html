@@ -9,24 +9,16 @@
     }
   </div>
 
-  <mat-form-field class="search-field" appearance="fill" subscriptSizing="dynamic">
-    <mat-icon matPrefix class="field-icon departure-icon">trip_origin</mat-icon>
-    <input matInput
-      [formControl]="departureCtrl"
-      [matAutocomplete]="depAuto"
+  <div class="search-field">
+    <mat-icon class="field-icon departure-icon">trip_origin</mat-icon>
+    <app-stop-autocomplete
+      class="field-input"
+      [stops]="stops()"
+      [label]="t('departure')"
       [placeholder]="t('departure')"
-    />
-    <mat-autocomplete #depAuto="matAutocomplete"
-      [displayWith]="displayFn"
-      (optionSelected)="onDepartureSelected($event)"
-    >
-      @for (stop of filteredDepartures(); track stop.id) {
-        <mat-option [value]="stop">
-          {{ stop.name }}
-        </mat-option>
-      }
-    </mat-autocomplete>
-  </mat-form-field>
+      [value]="selectedDeparture()"
+      (selected)="onDepartureSelected($event)" />
+  </div>
 
   <div class="field-separator">
     <span class="connector-line"></span>
@@ -36,24 +28,16 @@
     <span class="connector-line"></span>
   </div>
 
-  <mat-form-field class="search-field" appearance="fill" subscriptSizing="dynamic">
-    <mat-icon matPrefix class="field-icon arrival-icon">place</mat-icon>
-    <input matInput
-      [formControl]="arrivalCtrl"
-      [matAutocomplete]="arrAuto"
+  <div class="search-field">
+    <mat-icon class="field-icon arrival-icon">place</mat-icon>
+    <app-stop-autocomplete
+      class="field-input"
+      [stops]="stops()"
+      [label]="t('arrival')"
       [placeholder]="t('arrival')"
-    />
-    <mat-autocomplete #arrAuto="matAutocomplete"
-      [displayWith]="displayFn"
-      (optionSelected)="onArrivalSelected($event)"
-    >
-      @for (stop of filteredArrivals(); track stop.id) {
-        <mat-option [value]="stop">
-          {{ stop.name }}
-        </mat-option>
-      }
-    </mat-autocomplete>
-  </mat-form-field>
+      [value]="selectedArrival()"
+      (selected)="onArrivalSelected($event)" />
+  </div>
 
   @if (sameStopError()) {
     <div class="error-hint">{{ t('sameStopError') }}</div>

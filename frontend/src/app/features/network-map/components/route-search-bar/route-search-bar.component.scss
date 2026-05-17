@@ -62,7 +62,17 @@
 /* --- Form fields --- */
 
 .search-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   width: 100%;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  // Material variables inherited by the embedded <app-stop-autocomplete>
+  // — keeps the search bar visually consistent with the map overlay style.
   --mat-form-field-filled-container-color: var(--app-map-input-bg);
   --mat-form-field-filled-container-shape: 6px;
   --mat-form-field-container-height: 40px;
@@ -81,6 +91,7 @@
   width: 16px;
   height: 16px;
   margin-right: 2px;
+  flex-shrink: 0;
 }
 
 .departure-icon {

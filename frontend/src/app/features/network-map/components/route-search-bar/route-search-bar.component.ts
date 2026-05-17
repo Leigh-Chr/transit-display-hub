@@ -1,19 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
+  effect,
   input,
   output,
-  effect,
-  computed,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
+import {
+  StopAutocompleteComponent,
+  StopAutocompleteOption,
+} from '@shared/components/stop-autocomplete/stop-autocomplete.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
 
@@ -21,11 +20,8 @@ import { RouteResult } from '../../services/route-finder.service';
   selector: 'app-route-search-bar',
   standalone: true,
   imports: [
-    ReactiveFormsModule,
-    MatAutocompleteModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatIconModule,
+    StopAutocompleteComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,9 +39,11 @@ export class RouteSearchBarComponent {
   departureChanged = output<LayoutStop | null>();
   arrivalChanged = output<LayoutStop | null>();
 
-  departureCtrl = new FormControl<LayoutStop | string>('');
-  arrivalCtrl = new FormControl<LayoutStop | string>('');
-
+  /** Locally tracked selections — kept in sync with the `departureStop`
+   *  / `arrivalStop` inputs (parent → child) and emitted through the
+   *  `*Changed` outputs (child → parent). The dual-direction wiring is
+   *  needed because the map click sets the inputs while the autocomplete
+   *  selection is owned here. */
   selectedDeparture = signal<LayoutStop | null>(null);
   selectedArrival = signal<LayoutStop | null>(null);
   expandedSegments = signal(new Set<number>());
@@ -68,45 +66,18 @@ export class RouteSearchBarComponent {
     return this.routeResult() === null;
   });
 
-  filteredDepartures = computed(() => {
-    const term = this.departureFilter();
-    return this.filterStops(term);
-  });
-
-  filteredArrivals = computed(() => {
-    const term = this.arrivalFilter();
-    return this.filterStops(term);
-  });
-
-  private readonly departureFilter = signal('');
-  private readonly arrivalFilter = signal('');
-
   constructor() {
-    this.departureCtrl.valueChanges.pipe(takeUntilDestroyed()).subscribe(val => {
-      if (typeof val === 'string') {
-        this.departureFilter.set(val);
-      }
-    });
-
-    this.arrivalCtrl.valueChanges.pipe(takeUntilDestroyed()).subscribe(val => {
-      if (typeof val === 'string') {
-        this.arrivalFilter.set(val);
-      }
-    });
-
     // Reset expanded segments when route changes
     effect(() => {
       this.routeResult();
       this.expandedSegments.set(new Set());
     });
 
-    // Sync from parent (map click) → form controls
+    // Sync from parent (map click) → local selection signals.
     effect(() => {
       const stop = this.departureStop();
       if (this.suppressSync) {return;}
       this.selectedDeparture.set(stop);
-      this.departureCtrl.setValue(stop ?? '', { emitEvent: false });
-      this.departureFilter.set('');
       this.tryAutoSearch();
     });
 
@@ -114,22 +85,13 @@ export class RouteSearchBarComponent {
       const stop = this.arrivalStop();
       if (this.suppressSync) {return;}
       this.selectedArrival.set(stop);
-      this.arrivalCtrl.setValue(stop ?? '', { emitEvent: false });
-      this.arrivalFilter.set('');
       this.tryAutoSearch();
     });
   }
 
-  displayFn = (value: LayoutStop | string): string => {
-    if (!value) {return '';}
-    if (typeof value === 'string') {return value;}
-    return value.name;
-  };
-
-  onDepartureSelected(event: MatAutocompleteSelectedEvent): void {
-    const stop = event.option.value as LayoutStop;
+  onDepartureSelected(option: StopAutocompleteOption): void {
+    const stop = option as LayoutStop;
     this.selectedDeparture.set(stop);
-    this.departureFilter.set('');
     this.suppressSync = true;
     try {
       this.departureChanged.emit(stop);
@@ -139,10 +101,9 @@ export class RouteSearchBarComponent {
     this.tryAutoSearch();
   }
 
-  onArrivalSelected(event: MatAutocompleteSelectedEvent): void {
-    const stop = event.option.value as LayoutStop;
+  onArrivalSelected(option: StopAutocompleteOption): void {
+    const stop = option as LayoutStop;
     this.selectedArrival.set(stop);
-    this.arrivalFilter.set('');
     this.suppressSync = true;
     try {
       this.arrivalChanged.emit(stop);
@@ -158,10 +119,6 @@ export class RouteSearchBarComponent {
 
     this.selectedDeparture.set(arr);
     this.selectedArrival.set(dep);
-    this.departureCtrl.setValue(arr ?? '', { emitEvent: false });
-    this.arrivalCtrl.setValue(dep ?? '', { emitEvent: false });
-    this.departureFilter.set('');
-    this.arrivalFilter.set('');
 
     this.suppressSync = true;
     try {
@@ -177,10 +134,6 @@ export class RouteSearchBarComponent {
   clearSearch(): void {
     this.selectedDeparture.set(null);
     this.selectedArrival.set(null);
-    this.departureCtrl.setValue('', { emitEvent: false });
-    this.arrivalCtrl.setValue('', { emitEvent: false });
-    this.departureFilter.set('');
-    this.arrivalFilter.set('');
     this.suppressSync = true;
     try {
       this.departureChanged.emit(null);
@@ -206,12 +159,6 @@ export class RouteSearchBarComponent {
       next.add(index);
     }
     this.expandedSegments.set(next);
-  }
-
-  private filterStops(term: string): LayoutStop[] {
-    if (!term) {return this.stops();}
-    const lower = term.toLowerCase();
-    return this.stops().filter(s => s.name.toLowerCase().includes(lower));
   }
 
   private tryAutoSearch(): void {

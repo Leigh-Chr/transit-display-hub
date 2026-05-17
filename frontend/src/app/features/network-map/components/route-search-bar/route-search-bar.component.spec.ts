@@ -67,52 +67,21 @@ describe('RouteSearchBarComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render departure and arrival form fields', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    const inputs = fixture.nativeElement.querySelectorAll('input[matInput]');
-    expect(inputs.length).toBe(2);
-  });
-
-  it('should render the route search panel', async () => {
+  it('renders the panel with two embedded stop autocompletes', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
     const panel = fixture.nativeElement.querySelector('.route-search-panel');
     expect(panel).toBeTruthy();
 
+    const autocompletes = fixture.nativeElement.querySelectorAll('app-stop-autocomplete');
+    expect(autocompletes.length).toBe(2);
+
     const title = fixture.nativeElement.querySelector('.panel-title');
     expect(title.textContent.trim()).toBe('Route');
   });
 
-  it('should display all stops when no filter is typed', () => {
-    fixture.detectChanges();
-
-    const filtered = component.filteredDepartures();
-    expect(filtered.length).toBe(mockStops.length);
-  });
-
-  it('should filter stops based on typed text', () => {
-    fixture.detectChanges();
-
-    component.departureCtrl.setValue('alp');
-    fixture.detectChanges();
-
-    const filtered = component.filteredDepartures();
-    expect(filtered.length).toBe(1);
-    expect(filtered[0]!.name).toBe('Alpha');
-  });
-
-  it('should display stop name using displayFn', () => {
-    const stop = mockStops[0]!;
-    expect(component.displayFn(stop)).toBe('Alpha');
-    expect(component.displayFn('some string')).toBe('some string');
-    expect(component.displayFn(null as unknown as string)).toBe('');
-    expect(component.displayFn('')).toBe('');
-  });
-
-  it('should detect same stop error', () => {
+  it('detects same-stop selection', () => {
     fixture.detectChanges();
 
     component.selectedDeparture.set(mockStops[0]!);
@@ -121,7 +90,7 @@ describe('RouteSearchBarComponent', () => {
     expect(component.sameStopError()).toBe(true);
   });
 
-  it('should not flag same stop error for different stops', () => {
+  it('does not flag same-stop for distinct selections', () => {
     fixture.detectChanges();
 
     component.selectedDeparture.set(mockStops[0]!);
@@ -130,7 +99,7 @@ describe('RouteSearchBarComponent', () => {
     expect(component.sameStopError()).toBe(false);
   });
 
-  it('should not flag same stop error when one is null', () => {
+  it('does not flag same-stop when one side is null', () => {
     fixture.detectChanges();
 
     component.selectedDeparture.set(mockStops[0]!);
@@ -145,7 +114,6 @@ describe('RouteSearchBarComponent', () => {
 
       component.selectedDeparture.set(mockStops[0]!);
       component.selectedArrival.set(mockStops[3]!);
-      // routeResult input still defaults to null — simulates router returning no path
       expect(component.noRouteFound()).toBe(true);
     });
 
@@ -179,8 +147,6 @@ describe('RouteSearchBarComponent', () => {
     });
 
     it('renders the warning hint in the panel', async () => {
-      // Drive the warning the same way the parent does — through inputs —
-      // so the sync effect leaves selectedDeparture/Arrival in place.
       fixture.componentRef.setInput('departureStop', mockStops[0]!);
       fixture.componentRef.setInput('arrivalStop', mockStops[3]!);
       fixture.componentRef.setInput('routeResult', null);
@@ -193,8 +159,42 @@ describe('RouteSearchBarComponent', () => {
     });
   });
 
+  describe('onDepartureSelected / onArrivalSelected', () => {
+    it('emits searchRoute when both endpoints are picked through the autocomplete', () => {
+      fixture.detectChanges();
+      const searchSpy = vi.fn();
+      component.searchRoute.subscribe(searchSpy);
+
+      component.onDepartureSelected(mockStops[0]!);
+      component.onArrivalSelected(mockStops[1]!);
+
+      expect(searchSpy).toHaveBeenCalledWith({ from: 's1', to: 's2' });
+    });
+
+    it('emits departureChanged with the picked stop', () => {
+      fixture.detectChanges();
+      const depSpy = vi.fn();
+      component.departureChanged.subscribe(depSpy);
+
+      component.onDepartureSelected(mockStops[2]!);
+
+      expect(depSpy).toHaveBeenCalledWith(mockStops[2]);
+    });
+
+    it('does not emit searchRoute when both endpoints are the same stop', () => {
+      fixture.detectChanges();
+      const searchSpy = vi.fn();
+      component.searchRoute.subscribe(searchSpy);
+
+      component.onDepartureSelected(mockStops[0]!);
+      component.onArrivalSelected(mockStops[0]!);
+
+      expect(searchSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('swapStops', () => {
-    it('should swap departure and arrival selections', () => {
+    it('swaps departure and arrival selections', () => {
       fixture.detectChanges();
 
       component.selectedDeparture.set(mockStops[0]!);
@@ -206,7 +206,7 @@ describe('RouteSearchBarComponent', () => {
       expect(component.selectedArrival()?.id).toBe('s1');
     });
 
-    it('should emit departureChanged and arrivalChanged on swap', () => {
+    it('emits departureChanged and arrivalChanged on swap', () => {
       fixture.detectChanges();
 
       const depSpy = vi.fn();
@@ -225,7 +225,7 @@ describe('RouteSearchBarComponent', () => {
   });
 
   describe('clearSearch', () => {
-    it('should clear both selections and emit events', () => {
+    it('clears both selections and emits the corresponding events', () => {
       fixture.detectChanges();
 
       const depSpy = vi.fn();
@@ -249,7 +249,7 @@ describe('RouteSearchBarComponent', () => {
   });
 
   describe('toggleSegment', () => {
-    it('should toggle segment expansion state', () => {
+    it('toggles the expansion state for a given segment index', () => {
       fixture.detectChanges();
 
       expect(component.expandedSegments().has(0)).toBe(false);
@@ -263,7 +263,7 @@ describe('RouteSearchBarComponent', () => {
   });
 
   describe('route breakdown display', () => {
-    it('should not show route breakdown when no route result', async () => {
+    it('hides the breakdown when no route result is set', async () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -271,7 +271,7 @@ describe('RouteSearchBarComponent', () => {
       expect(breakdown).toBeFalsy();
     });
 
-    it('should show route breakdown when route result is provided', async () => {
+    it('renders the breakdown when a route result is provided', async () => {
       fixture.componentRef.setInput('routeResult', mockRouteResult);
       fixture.detectChanges();
       await fixture.whenStable();
@@ -285,7 +285,7 @@ describe('RouteSearchBarComponent', () => {
   });
 
   describe('clear button visibility', () => {
-    it('should not show clear button when no stops selected', async () => {
+    it('hides the clear button when no endpoints are picked', async () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -293,7 +293,7 @@ describe('RouteSearchBarComponent', () => {
       expect(clearBtn).toBeFalsy();
     });
 
-    it('should show clear button when departure is selected', async () => {
+    it('shows the clear button when departureStop input is set', async () => {
       fixture.componentRef.setInput('departureStop', mockStops[0]);
       fixture.detectChanges();
       await fixture.whenStable();

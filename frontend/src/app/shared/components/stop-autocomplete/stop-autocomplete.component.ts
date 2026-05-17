@@ -1,17 +1,29 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { Stop } from '@shared/models';
 
 const MAX_RESULTS = 30;
 
 /**
+ * Minimal contract the autocomplete needs from a stop-like row. Any
+ * concrete model that carries an id + a human-readable name fits — both
+ * the admin `Stop` and the network-map `LayoutStop` satisfy it without
+ * mapping. `platformCode` is opt-in: only the call sites that toggle
+ * `showPlatformCode` need to supply it.
+ */
+export interface StopAutocompleteOption {
+  readonly id: string;
+  readonly name: string;
+  readonly platformCode?: string | null;
+}
+
+/**
  * Reusable stop picker with a debounce-free filter over an already-loaded
- * {@link Stop} list. Three call sites (`pathways`, `fare-calculator`
- * origin + dest) used to inline the same
+ * stop list. Four call sites (`pathways`, `fare-calculator` origin +
+ * dest, `route-search-bar` departure + arrival) used to inline the same
  * `[(ngModel)]+filter→slice(0, 30)+mat-autocomplete` block.
  *
  * The component does NOT fetch the stop list itself — callers feed it via
@@ -66,14 +78,29 @@ const MAX_RESULTS = 30;
   `,
 })
 export class StopAutocompleteComponent {
-  readonly stops = input.required<readonly Stop[]>();
+  readonly stops = input.required<readonly StopAutocompleteOption[]>();
   readonly label = input.required<string>();
   readonly placeholder = input<string | null>(null);
   readonly showPlatformCode = input<boolean>(false);
-  readonly selected = output<Stop>();
+  /** Pre-fill the search text without firing `selected`. Used by
+   *  callers that own the selection state and want the field to mirror
+   *  it (e.g. {@code route-search-bar}'s map-click sync). */
+  readonly value = input<StopAutocompleteOption | null>(null);
+  readonly selected = output<StopAutocompleteOption>();
 
   private readonly query = signal('');
   protected readonly searchText = computed(() => this.query());
+
+  constructor() {
+    // Mirror an externally pushed `value` into the text query so a
+    // parent that owns the selection (e.g. a swap button) can keep
+    // the field label in sync without re-emitting `selected`.
+    effect(() => {
+      const external = this.value();
+      this.query.set(external?.name ?? '');
+    });
+  }
+
   protected readonly filtered = computed(() => {
     const q = this.query().toLowerCase().trim();
     const all = this.stops();
@@ -83,7 +110,7 @@ export class StopAutocompleteComponent {
     return all.filter(s => s.name.toLowerCase().includes(q)).slice(0, MAX_RESULTS);
   });
 
-  protected onTyped(value: string | Stop): void {
+  protected onTyped(value: string | StopAutocompleteOption): void {
     if (typeof value === 'object') {
       // Material autocomplete passes the selected object through
       // ngModel after an `optionSelected` event. Ignore those —
@@ -94,7 +121,7 @@ export class StopAutocompleteComponent {
   }
 
   protected onPick(event: MatAutocompleteSelectedEvent): void {
-    const stop = event.option.value as Stop;
+    const stop = event.option.value as StopAutocompleteOption;
     this.query.set(stop.name);
     this.selected.emit(stop);
   }
