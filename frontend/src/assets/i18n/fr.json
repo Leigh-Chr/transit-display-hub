@@ -170,9 +170,7 @@
     "alertOverlay": {
       "title": "Alertes en cours",
       "noAlerts": "Aucune alerte en cours",
-      "lineLabel": "Ligne {{ code }}",
       "linesLabel": "Lignes",
-      "stopLabel": "Arrêt {{ name }}",
       "networkLabel": "Réseau"
     },
     "lineIndex": {
@@ -182,9 +180,7 @@
       "clearAria": "Effacer la recherche",
       "summaryLinesAll": "lignes",
       "summaryLinesMatching": "lignes correspondantes",
-      "emptyState": "Aucune ligne ne correspond à \"{{ query }}\"",
-      "tooManyLines": "Trop de lignes pour l'index — utilisez les filtres",
-      "showAll": "Afficher toutes les lignes"
+      "emptyState": "Aucune ligne ne correspond à \"{{ query }}\""
     },
     "transit": {
       "lineType": {

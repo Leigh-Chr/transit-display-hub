@@ -170,9 +170,7 @@
     "alertOverlay": {
       "title": "Active alerts",
       "noAlerts": "No active alerts",
-      "lineLabel": "Line {{ code }}",
       "linesLabel": "Lines",
-      "stopLabel": "Stop {{ name }}",
       "networkLabel": "Network"
     },
     "lineIndex": {
@@ -182,9 +180,7 @@
       "clearAria": "Clear search",
       "summaryLinesAll": "lines",
       "summaryLinesMatching": "matching lines",
-      "emptyState": "No line matches \"{{ query }}\"",
-      "tooManyLines": "Too many lines for the index — use the filters",
-      "showAll": "Show all lines"
+      "emptyState": "No line matches \"{{ query }}\""
     },
     "transit": {
       "lineType": {
