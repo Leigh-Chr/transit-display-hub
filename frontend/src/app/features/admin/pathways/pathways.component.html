@@ -5,27 +5,14 @@
         <p class="page-subtitle">{{ t('admin.pathways.subtitle') }}</p>
       </div>
 
-      <mat-form-field appearance="outline" class="stop-picker">
-        <mat-label>{{ t('admin.pathways.stopPickerLabel') }}</mat-label>
-        <input
-          type="text"
-          matInput
-          [(ngModel)]="search"
-          (ngModelChange)="onSearchChange()"
-          [matAutocomplete]="auto"
-          [placeholder]="t('admin.pathways.stopPickerPlaceholder')">
-        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onStopSelected($event.option.value)">
-          @for (s of filteredStops(); track s.id) {
-            <mat-option [value]="s">
-              {{ s.name }}
-              @if (s.platformCode) {
-                <span class="platform">{{ t('admin.pathways.platform', { code: s.platformCode }) }}</span>
-              }
-            </mat-option>
-          }
-        </mat-autocomplete>
-        <mat-icon matSuffix>place</mat-icon>
-      </mat-form-field>
+      <app-stop-autocomplete
+        class="stop-picker"
+        [stops]="stops()"
+        [label]="t('admin.pathways.stopPickerLabel')"
+        [placeholder]="t('admin.pathways.stopPickerPlaceholder')"
+        [showPlatformCode]="true"
+        (selected)="onStopSelected($event)" />
+
 
       @if (selectedStop(); as stop) {
         <div class="selected-stop">

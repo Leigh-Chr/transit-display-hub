@@ -8,39 +8,19 @@
       <mat-card class="picker-card">
         <mat-card-content>
           <div class="picker-row">
-            <mat-form-field appearance="outline" class="stop-picker">
-              <mat-label>{{ t('admin.fareCalculator.fieldOrigin') }}</mat-label>
-              <input
-                matInput
-                [(ngModel)]="originText"
-                (input)="onSearch('origin')"
-                [matAutocomplete]="originAuto"
-                [placeholder]="t('admin.fareCalculator.fieldOriginPlaceholder')" />
-              <mat-autocomplete #originAuto="matAutocomplete"
-                                (optionSelected)="onStopSelected('origin', $event.option.value)"
-                                [displayWith]="displayStop">
-                @for (s of originResults(); track s.id) {
-                  <mat-option [value]="s">{{ s.name }}</mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
+            <app-stop-autocomplete
+              class="stop-picker"
+              [stops]="allStops()"
+              [label]="t('admin.fareCalculator.fieldOrigin')"
+              [placeholder]="t('admin.fareCalculator.fieldOriginPlaceholder')"
+              (selected)="origin.set($event)" />
 
-            <mat-form-field appearance="outline" class="stop-picker">
-              <mat-label>{{ t('admin.fareCalculator.fieldDest') }}</mat-label>
-              <input
-                matInput
-                [(ngModel)]="destText"
-                (input)="onSearch('dest')"
-                [matAutocomplete]="destAuto"
-                [placeholder]="t('admin.fareCalculator.fieldDestPlaceholder')" />
-              <mat-autocomplete #destAuto="matAutocomplete"
-                                (optionSelected)="onStopSelected('dest', $event.option.value)"
-                                [displayWith]="displayStop">
-                @for (s of destResults(); track s.id) {
-                  <mat-option [value]="s">{{ s.name }}</mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
+            <app-stop-autocomplete
+              class="stop-picker"
+              [stops]="allStops()"
+              [label]="t('admin.fareCalculator.fieldDest')"
+              [placeholder]="t('admin.fareCalculator.fieldDestPlaceholder')"
+              (selected)="dest.set($event)" />
 
             <button mat-flat-button
                     color="primary"

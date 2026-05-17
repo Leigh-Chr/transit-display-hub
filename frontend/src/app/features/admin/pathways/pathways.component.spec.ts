@@ -96,18 +96,8 @@ describe('PathwaysComponent', () => {
     expect(component.modeIcon('MOVING_SIDEWALK')).toBe('commit');
   });
 
-  it('search filters by name', () => {
-    fixture.detectChanges();
-    component.stops.set([
-      mockStop,
-      { ...mockStop, id: 's2', name: 'Châtelet' },
-    ]);
-
-    component.search = 'châ';
-    component.onSearchChange();
-    expect(component.filteredStops().length).toBe(1);
-    expect(component.filteredStops()[0]?.name).toBe('Châtelet');
-  });
+  // Search/filter is now owned by the shared <app-stop-autocomplete> and
+  // covered by stop-autocomplete.component.spec.ts.
 
   describe('graphLayout', () => {
     function pathway(overrides: Partial<Pathway> = {}): Pathway {
