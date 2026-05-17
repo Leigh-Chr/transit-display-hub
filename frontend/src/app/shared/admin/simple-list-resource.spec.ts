@@ -55,6 +55,23 @@ describe('createSimpleListResource', () => {
     expect(resource.items()).toEqual([]);
   });
 
+  it('unwraps non-Error throwables so HTTP error payloads stay accessible', async () => {
+    // Mirrors HttpClient: rxResource wraps non-Error values in a
+    // ResourceWrappedError whose .cause is the original payload. The
+    // helper hands the original back so callers don't have to know
+    // about the envelope.
+    const httpErr = { status: 500, error: { message: 'Boom from server' } };
+    const fetcher = vi.fn().mockReturnValue(throwError(() => httpErr));
+
+    const resource = runInInjectionContext(injector, () =>
+      createSimpleListResource(fetcher),
+    );
+
+    await flush();
+
+    expect(resource.error()).toBe(httpErr);
+  });
+
   it('reload() re-invokes the fetcher and updates the snapshot', async () => {
     const subject = new Subject<readonly { id: string }[]>();
     const fetcher = vi.fn().mockReturnValue(subject.asObservable());

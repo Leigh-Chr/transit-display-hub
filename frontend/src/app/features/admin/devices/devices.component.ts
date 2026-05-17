@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
@@ -17,6 +17,7 @@ import { DeviceTokenDialogComponent } from './device-token-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
+import { createSimpleListResource } from '@shared/admin/simple-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -39,7 +40,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
   templateUrl: './devices.component.html',
   styleUrl: './devices.component.scss',
 })
-export class DevicesComponent implements OnInit {
+export class DevicesComponent {
   private readonly deviceService = inject(DeviceService);
   private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
@@ -47,34 +48,32 @@ export class DevicesComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly transloco = inject(TranslocoService);
 
-  loading = signal(true);
-  loadError = signal<string | null>(null);
-  devices = signal<Device[]>([]);
-  lines = signal<Line[]>([]);
+  // Status filter is bound to the <mat-select>; loadDevices() is called by
+  // (selectionChange) so the resource re-fetches with the updated value.
   statusFilter: DeviceStatus | '' = '';
 
-  ngOnInit(): void {
-    this.loadDevices();
+  private readonly devicesResource = createSimpleListResource<Device>(() =>
+    this.deviceService.getAll(this.statusFilter || undefined),
+  );
+  readonly devices = this.devicesResource.items;
+  readonly loading = this.devicesResource.loading;
+  readonly loadError = computed(() => {
+    const err = this.devicesResource.error();
+    return err ? httpErrorMessage(err, this.transloco.translate('admin.devices.loadFailed')) : null;
+  });
+
+  private readonly linesSignal = signal<Line[]>([]);
+  readonly lines = this.linesSignal.asReadonly();
+
+  constructor() {
     this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (lines) => this.lines.set(lines),
+      next: (lines) => this.linesSignal.set(lines),
       error: () => this.notify.error(this.transloco.translate('admin.devices.loadLinesFailed')),
     });
   }
 
   loadDevices(): void {
-    this.loading.set(true);
-    this.loadError.set(null);
-    const status = this.statusFilter || undefined;
-    this.deviceService.getAll(status).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (devices) => {
-        this.devices.set(devices);
-        this.loading.set(false);
-      },
-      error: (err: unknown) => {
-        this.loading.set(false);
-        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.devices.loadFailed')));
-      },
-    });
+    this.devicesResource.reload();
   }
 
   openCreateDialog(): void {

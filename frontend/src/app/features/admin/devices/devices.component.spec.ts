@@ -49,6 +49,15 @@ const translocoLangFr = {
   common: { delete: 'Supprimer' },
 };
 
+/** rxResource bridges its initial load through queueMicrotask / async
+ *  effects. Flushing a couple of microtasks + a TestBed tick gives the
+ *  loader enough room to commit a value or an error to the signals. */
+async function flushResource(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  TestBed.tick();
+}
+
 describe('DevicesComponent', () => {
   let component: DevicesComponent;
   let fixture: ComponentFixture<DevicesComponent>;
@@ -133,9 +142,10 @@ describe('DevicesComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngOnInit', () => {
-    it('should load devices and lines', () => {
+  describe('initial load', () => {
+    it('should load devices and lines', async () => {
       fixture.detectChanges();
+      await flushResource();
 
       expect(mockDeviceService.getAll).toHaveBeenCalled();
       expect(mockLineService.getAll).toHaveBeenCalled();
@@ -146,51 +156,71 @@ describe('DevicesComponent', () => {
   });
 
   describe('loadDevices', () => {
-    it('should call getAll without filter when statusFilter is empty', () => {
+    it('should call getAll without filter when statusFilter is empty', async () => {
+      fixture.detectChanges();
+      await flushResource();
       component.statusFilter = '';
+      mockDeviceService.getAll.mockClear();
 
       component.loadDevices();
+      await flushResource();
 
       expect(mockDeviceService.getAll).toHaveBeenCalledWith(undefined);
       expect(component.devices()).toEqual([mockDevice]);
       expect(component.loading()).toBe(false);
     });
 
-    it('should call getAll with status filter when statusFilter is set', () => {
+    it('should call getAll with status filter when statusFilter is set', async () => {
+      fixture.detectChanges();
+      await flushResource();
       component.statusFilter = 'ONLINE';
+      mockDeviceService.getAll.mockClear();
 
       component.loadDevices();
+      await flushResource();
 
       expect(mockDeviceService.getAll).toHaveBeenCalledWith('ONLINE');
     });
 
-    it('should handle error by surfacing the load error inline', () => {
+    it('should handle error by surfacing the load error inline', async () => {
+      // Re-create the component with the failing mock in place so the
+      // resource's first fetch already trips the error path.
       const error = { error: { message: 'Server error' } };
       mockDeviceService.getAll.mockReturnValue(throwError(() => error));
+      fixture = TestBed.createComponent(DevicesComponent);
+      component = fixture.componentInstance;
 
-      component.loadDevices();
+      fixture.detectChanges();
+      await flushResource();
 
       expect(component.loading()).toBe(false);
       expect(component.loadError()).toBe('Server error');
     });
 
-    it('should show fallback message when error has no message', () => {
+    it('should show fallback message when error has no message', async () => {
       mockDeviceService.getAll.mockReturnValue(throwError(() => ({ error: {} })));
+      fixture = TestBed.createComponent(DevicesComponent);
+      component = fixture.componentInstance;
 
-      component.loadDevices();
+      fixture.detectChanges();
+      await flushResource();
 
       expect(component.loadError()).toBe('Failed to load devices');
     });
   });
 
   describe('openCreateDialog', () => {
-    it('should open token dialog and reload when the dialog closes with a registration', () => {
+    it('should open token dialog and reload when the dialog closes with a registration', async () => {
+      fixture.detectChanges();
+      await flushResource();
+      mockDeviceService.getAll.mockClear();
       const afterClosed$ = new Subject<unknown>();
       // First open() call = DeviceDialogComponent; second = DeviceTokenDialogComponent
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
 
       component.openCreateDialog();
       afterClosed$.next(mockRegistration);
+      await flushResource();
 
       expect(mockDialog.open).toHaveBeenCalledTimes(2);
       expect(mockDeviceService.getAll).toHaveBeenCalled();
@@ -242,12 +272,16 @@ describe('DevicesComponent', () => {
   });
 
   describe('deleteDevice', () => {
-    it('should delete and reload when confirmed', () => {
+    it('should delete and reload when confirmed', async () => {
+      fixture.detectChanges();
+      await flushResource();
+      mockDeviceService.getAll.mockClear();
       const afterClosed$ = new Subject<unknown>();
       mockDialog.open.mockReturnValue({ afterClosed: () => afterClosed$.asObservable() } as MatDialogRef<unknown>);
 
       component.deleteDevice(mockDevice);
       afterClosed$.next(true);
+      await flushResource();
 
       expect(mockDeviceService.delete).toHaveBeenCalledWith('d1');
       expect(mockDeviceService.getAll).toHaveBeenCalled();

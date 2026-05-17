@@ -9,7 +9,12 @@ export interface SimpleListResource<T> {
   readonly items: Signal<readonly T[]>;
   /** True while the underlying request is in flight. */
   readonly loading: Signal<boolean>;
-  /** Last error thrown by the fetcher; {@code null} otherwise. */
+  /** Last error thrown by the fetcher; {@code null} otherwise. The
+   *  original error is unwrapped — Angular's {@code rxResource} wraps
+   *  non-{@code Error} values (such as the {@code HttpErrorResponse}
+   *  payloads emitted by our API client) in a {@code ResourceWrappedError}
+   *  whose {@code .cause} holds the original. Consumers expect the raw
+   *  HTTP error, not the wrapper. */
   readonly error: Signal<unknown>;
   /** Re-trigger the fetcher (e.g. after a create / delete). */
   reload(): void;
@@ -40,9 +45,25 @@ export function createSimpleListResource<T>(
   return {
     items: computed(() => (resource.hasValue() ? resource.value() : [])),
     loading: computed(() => resource.isLoading()),
-    error: computed(() => resource.error()),
+    error: computed(() => unwrapResourceError(resource.error())),
     reload: () => {
       resource.reload();
     },
   };
+}
+
+/** Returns the original error thrown by the fetcher. Strips Angular's
+ *  {@code ResourceWrappedError} envelope so HTTP errors keep their
+ *  {@code {error: {message}}} shape downstream. */
+function unwrapResourceError(err: Error | undefined): unknown {
+  if (err === undefined) {
+    return undefined;
+  }
+  // ResourceWrappedError is not exported by @angular/core, so we match
+  // on its constructor name plus the presence of a .cause Angular sets
+  // when wrapping. Falls back to the error itself when it's a real Error.
+  if (err.constructor.name === 'ResourceWrappedError' && 'cause' in err && err.cause !== undefined) {
+    return err.cause;
+  }
+  return err;
 }
