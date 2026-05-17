@@ -29,7 +29,8 @@ describe('authInterceptor', () => {
     token: 'new.jwt.token',
     expiresAt: '2026-05-12T00:00:00Z',
     role: 'ADMIN',
-    username: 'admin'
+    username: 'admin',
+    passwordMustChange: false
   };
 
   beforeEach(() => {

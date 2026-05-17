@@ -17,7 +17,8 @@ describe('AuthService', () => {
     token: 'access.jwt.token',
     expiresAt: '2026-05-12T00:00:00Z',
     role: 'ADMIN',
-    username: 'admin'
+    username: 'admin',
+    passwordMustChange: false
   };
 
   beforeEach(() => {
@@ -203,6 +204,42 @@ describe('AuthService', () => {
 
     it('returns null when anonymous', () => {
       expect(service.getRole()).toBeNull();
+    });
+  });
+
+  describe('passwordMustChange', () => {
+    it('is false by default', () => {
+      expect(service.passwordMustChange()).toBe(false);
+    });
+
+    it('mirrors the flag returned by /api/auth/login', () => {
+      service.login({ username: 'admin', password: 'admin123' }).subscribe();
+      httpMock.expectOne('/api/auth/login').flush({ ...sampleLogin, passwordMustChange: true });
+      expect(service.passwordMustChange()).toBe(true);
+    });
+
+    it('clears after a successful changePassword call', () => {
+      service.login({ username: 'admin', password: 'admin123' }).subscribe();
+      httpMock.expectOne('/api/auth/login').flush({ ...sampleLogin, passwordMustChange: true });
+      expect(service.passwordMustChange()).toBe(true);
+
+      service.changePassword({ currentPassword: 'old', newPassword: 'a-new-strong-password' }).subscribe();
+      const req = httpMock.expectOne('/api/auth/change-password');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.withCredentials).toBe(true);
+      req.flush(null);
+
+      expect(service.passwordMustChange()).toBe(false);
+    });
+
+    it('resets on logout', () => {
+      service.login({ username: 'admin', password: 'admin123' }).subscribe();
+      httpMock.expectOne('/api/auth/login').flush({ ...sampleLogin, passwordMustChange: true });
+
+      service.logout();
+      httpMock.expectOne('/api/auth/logout').flush(null);
+
+      expect(service.passwordMustChange()).toBe(false);
     });
   });
 });

@@ -63,6 +63,12 @@ export interface LoginResponse {
   expiresAt: string;
   role: UserRole;
   username: string;
+  passwordMustChange: boolean;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // Authenticated user (from JWT token)

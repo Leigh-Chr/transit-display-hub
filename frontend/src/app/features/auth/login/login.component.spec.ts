@@ -151,7 +151,8 @@ describe('LoginComponent', () => {
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
-        username: 'admin'
+        username: 'admin',
+        passwordMustChange: false
       }));
 
       component.username = 'admin';
@@ -169,7 +170,8 @@ describe('LoginComponent', () => {
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
-        username: 'admin'
+        username: 'admin',
+        passwordMustChange: false
       }));
 
       component.username = 'admin';
@@ -185,7 +187,8 @@ describe('LoginComponent', () => {
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
-        username: 'admin'
+        username: 'admin',
+        passwordMustChange: false
       }));
 
       component.error.set('Previous error');
@@ -204,7 +207,8 @@ describe('LoginComponent', () => {
         token: 'token',
         expiresAt: new Date().toISOString(),
         role: 'ADMIN',
-        username: 'admin'
+        username: 'admin',
+        passwordMustChange: false
       }));
     });
 

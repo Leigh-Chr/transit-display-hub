@@ -2,7 +2,13 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom, Observable, Subject, tap } from 'rxjs';
-import { AuthUser, LoginRequest, LoginResponse, UserRole } from '@shared/models';
+import {
+  AuthUser,
+  ChangePasswordRequest,
+  LoginRequest,
+  LoginResponse,
+  UserRole,
+} from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +32,13 @@ export class AuthService {
    *  re-login so the user lands back where they were. */
   private readonly redirectUrlSignal = signal<string | null>(null);
 
+  /** Mirrors the backend {@code passwordMustChange} flag — true when the
+   *  caller landed on a freshly-seeded account (V52 seeded admin) or when
+   *  an admin scheduled a forced rotation. The auth guard reads this and
+   *  routes the user through {@code /auth/change-password} before letting
+   *  them reach the admin shell. */
+  private readonly passwordMustChangeSignal = signal(false);
+
   /** Fires once per logout so long-lived peripherals (WebSocket clients) can
    *  drop their session along with the token, instead of staying subscribed
    *  on behalf of an account that no longer exists in this tab. */
@@ -37,6 +50,10 @@ export class AuthService {
   readonly currentUser = computed<AuthUser | null>(() => this.userSignal());
 
   readonly isAdmin = computed(() => this.userSignal()?.role === 'ADMIN');
+
+  /** Read-only flag indicating the backend asked us to rotate the password
+   *  before letting the user continue (see {@code passwordMustChangeSignal}). */
+  readonly passwordMustChange = this.passwordMustChangeSignal.asReadonly();
 
   /** Called once at app boot via provideAppInitializer. /api/auth/me reads
    *  the httpOnly ACCESS_TOKEN cookie and rebuilds the session if it's
@@ -54,6 +71,7 @@ export class AuthService {
     } catch {
       this.userSignal.set(null);
       this.accessTokenSignal.set(null);
+      this.passwordMustChangeSignal.set(false);
     }
   }
 
@@ -64,6 +82,7 @@ export class AuthService {
         tap(response => {
           this.userSignal.set({ username: response.username, role: response.role });
           this.accessTokenSignal.set(response.token);
+          this.passwordMustChangeSignal.set(response.passwordMustChange);
         })
       );
   }
@@ -78,6 +97,7 @@ export class AuthService {
         tap(response => {
           this.userSignal.set({ username: response.username, role: response.role });
           this.accessTokenSignal.set(response.token);
+          this.passwordMustChangeSignal.set(response.passwordMustChange);
         })
       );
   }
@@ -91,8 +111,19 @@ export class AuthService {
 
     this.userSignal.set(null);
     this.accessTokenSignal.set(null);
+    this.passwordMustChangeSignal.set(false);
     this.logoutSubject.next();
     void this.router.navigate(['/login']);
+  }
+
+  /** Posts the rotation payload, clears the must-change flag on success
+   *  so the next guard pass stops redirecting through the change-password
+   *  route, and lets the caller component handle navigation. The backend
+   *  returns 204 No Content, hence the {@code null} response type. */
+  changePassword(request: ChangePasswordRequest): Observable<null> {
+    return this.http
+      .post<null>('/api/auth/change-password', request, { withCredentials: true })
+      .pipe(tap(() => this.passwordMustChangeSignal.set(false)));
   }
 
   /** Returns the current access JWT used by the STOMP CONNECT header.
