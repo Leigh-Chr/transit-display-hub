@@ -30,10 +30,12 @@ public class AuthService {
     private final Clock clock;
 
     /**
-     * Legacy access-token-only flow kept for the unit test surface and
-     * any direct programmatic caller. New entry points should prefer
-     * {@link #loginWithRefresh} so that the cookie-based session can be
-     * established on the response.
+     * Access-token-only flow used exclusively by {@code AuthServiceTest}
+     * to exercise {@link #authenticate} without having to stub
+     * {@link RefreshTokenService}. Production controllers should always
+     * call {@link #loginWithRefresh} so the cookie-based session is
+     * established on the response. Confirmed test-surface-only by the
+     * cross-axis audit (HEAD 5247109): zero production callers.
      */
     public LoginResponse login(LoginRequest request) {
         User user = authenticate(request);
