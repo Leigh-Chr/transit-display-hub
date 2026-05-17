@@ -39,6 +39,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *       import has run (the meters are registered at construction
  *       time).</li>
  * </ol>
+ *
+ * <p><b>Note on runtime:</b> this class often appears at the top of the
+ * "slowest tests" list (~20 s wall-clock) because Gradle picks it first
+ * — its {@code com.transit.hub.api.actuator} package sorts before
+ * {@code com.transit.hub.api.rest}. The four assertions themselves run
+ * in ~1 s; the rest is the one-time Spring application-context boot
+ * that every other {@code @SpringBootTest} reuses from cache afterward.
+ * Switching the package or annotation wouldn't reduce the total wall
+ * time — it would just shift the cold-start cost to whichever IT lands
+ * first.</p>
  */
 @Execution(ExecutionMode.SAME_THREAD)
 @SpringBootTest
