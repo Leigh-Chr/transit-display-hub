@@ -117,7 +117,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
-    @DisplayName("handleIllegalArgument — message pass-through")
+    @DisplayName("handleIllegalArgument — localised generic message")
     class HandleIllegalArgument {
 
         @ParameterizedTest(name = "[{index}] {0}")
@@ -126,9 +126,9 @@ class GlobalExceptionHandlerTest {
             "time-order,    Start time must be before end time",
             "negative,      Value must be positive",
         })
-        @DisplayName("returns 400 and echoes the IllegalArgumentException message")
-        void returnsBadRequestWithMessage(String description, String message) {
-            IllegalArgumentException exception = new IllegalArgumentException(message);
+        @DisplayName("returns 400 with a generic localised message regardless of the raw cause")
+        void returnsBadRequestWithLocalisedMessage(String description, String rawMessage) {
+            IllegalArgumentException exception = new IllegalArgumentException(rawMessage);
 
             ResponseEntity<GlobalExceptionHandler.ApiError> response =
                     exceptionHandler.handleIllegalArgument(exception, webRequest);
@@ -136,7 +136,9 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().status()).isEqualTo(400);
-            assertThat(response.getBody().message()).isEqualTo(message);
+            assertThat(response.getBody().message()).isEqualTo("Invalid request");
+            // The raw cause must not leak to the client, only to the log.
+            assertThat(response.getBody().message()).doesNotContain(rawMessage);
         }
     }
 

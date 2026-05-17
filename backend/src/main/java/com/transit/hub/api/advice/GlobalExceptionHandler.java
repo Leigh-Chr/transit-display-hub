@@ -72,8 +72,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
+        // The full reason stays in the server log (useful for triage) but the
+        // client gets a generic, localised message — IllegalArgumentException
+        // is thrown from low-level utilities (Pageables, parsers, internal
+        // assertions) whose raw messages are not safe to surface and would
+        // never be translated.
         log.warn("Illegal argument: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), null, request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, t("error.request.invalid"), null, request);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
