@@ -46,6 +46,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: i18n hardcoded-text guardrail
+        working-directory: ${{ github.workspace }}
+        run: scripts/check-i18n-hardcoded.sh
+
       - name: Knip dead code check
         run: npm run knip -- --reporter github-actions
 

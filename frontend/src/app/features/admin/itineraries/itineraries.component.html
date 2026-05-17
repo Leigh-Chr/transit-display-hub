@@ -108,9 +108,9 @@
           <th mat-header-cell *matHeaderCellDef>{{ t('admin.itineraries.colDirection') }}</th>
           <td mat-cell *matCellDef="let itinerary">
             @if (itinerary.directionId === 0) {
-              <span class="dir-badge dir-out" matTooltip="GTFS direction_id = 0 (outbound)">→ Aller</span>
+              <span class="dir-badge dir-out" [matTooltip]="t('admin.itineraries.directionOutboundTooltip')">{{ t('admin.itineraries.directionOutbound') }}</span>
             } @else if (itinerary.directionId === 1) {
-              <span class="dir-badge dir-back" matTooltip="GTFS direction_id = 1 (inbound)">← Retour</span>
+              <span class="dir-badge dir-back" [matTooltip]="t('admin.itineraries.directionInboundTooltip')">{{ t('admin.itineraries.directionInbound') }}</span>
             }
           </td>
         </ng-container>
