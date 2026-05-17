@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-transitdb}
       POSTGRES_USER: ${POSTGRES_USER:-transit}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -21,8 +21,8 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-transitdb}
       DATABASE_USER: ${POSTGRES_USER:-transit}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - generate via 'openssl rand -base64 32'}
     depends_on:
       postgres:
         condition: service_healthy
