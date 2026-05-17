@@ -11,21 +11,40 @@ import { test, expect, Page } from '@playwright/test';
  * string on a public page.
  *
  * Strategy: visit each public page in both languages and assert on
- * three anchor strings that are translated for each language. If any
- * future component lands with hardcoded English in the FR pass (or
- * hardcoded French in the EN pass), one of these checks fails.
+ * page-specific anchor strings that are translated for each language.
+ * If any future component lands with hardcoded English in the FR pass
+ * (or hardcoded French in the EN pass), one of these checks fails.
+ *
+ * Anchors are page-specific because the public pages have no shared
+ * chrome (no navbar with "Login"), so a single global anchor list
+ * doesn't apply — see the original v1.4.2 design vs reality.
  */
 
-const PUBLIC_PAGES = ['/login', '/map', '/map/list', '/not-found'] as const;
+interface PageAnchors {
+  fr: string[];
+  en: string[];
+}
 
-/**
- * Anchor strings the FR pass must show and the EN pass must NOT show
- * (and vice-versa). Drawn from the auth.login namespace which exists
- * on every public page reachable from /login. Add new anchors when
- * other namespaces start appearing on public pages.
- */
-const FR_ONLY = ['Connexion', 'Identifiants', 'Mot de passe'];
-const EN_ONLY = ['Login', 'Username', 'Password'];
+const PUBLIC_PAGES: ReadonlyArray<readonly [string, PageAnchors]> = [
+  ['/login', {
+    fr: ['Connexion', 'Identifiants', 'Mot de passe'],
+    en: ['Login', 'Username', 'Password'],
+  }],
+  ['/map', {
+    // The schematic page renders <h1>{{ 'map.networkMap' | transloco }}</h1>
+    fr: ['Carte du réseau'],
+    en: ['Network Map'],
+  }],
+  ['/map/list', {
+    // The list view renders <h1>{{ t('map.title') }} — {{ t('map.viewList') }}</h1>
+    fr: ['Plan du réseau'],
+    en: ['Network map'],
+  }],
+  ['/not-found', {
+    fr: ['Page introuvable'],
+    en: ['Page not found'],
+  }],
+];
 
 async function setLanguage(page: Page, lang: 'fr' | 'en'): Promise<void> {
   // LocaleService consults localStorage["lang"] before navigator.language,
@@ -35,7 +54,7 @@ async function setLanguage(page: Page, lang: 'fr' | 'en'): Promise<void> {
   );
 }
 
-for (const path of PUBLIC_PAGES) {
+for (const [path, anchors] of PUBLIC_PAGES) {
   test(`${path} in fr-FR shows French strings and no English anchors`, async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -45,15 +64,15 @@ for (const path of PUBLIC_PAGES) {
     const body = page.locator('body');
     // At least one French anchor must render — proves Transloco resolved.
     let frHits = 0;
-    for (const a of FR_ONLY) {
+    for (const a of anchors.fr) {
       if (await body.getByText(a, { exact: false }).count() > 0) {
         frHits++;
       }
     }
-    expect(frHits, `Expected at least one of ${FR_ONLY.join(', ')} on ${path}`).toBeGreaterThan(0);
+    expect(frHits, `Expected at least one of ${anchors.fr.join(', ')} on ${path}`).toBeGreaterThan(0);
 
     // No English anchor on a French page — the regression we're guarding.
-    for (const a of EN_ONLY) {
+    for (const a of anchors.en) {
       await expect(
         body.getByText(a, { exact: true }),
         `English anchor "${a}" leaked into ${path} on the FR locale`,
@@ -70,14 +89,14 @@ for (const path of PUBLIC_PAGES) {
 
     const body = page.locator('body');
     let enHits = 0;
-    for (const a of EN_ONLY) {
+    for (const a of anchors.en) {
       if (await body.getByText(a, { exact: false }).count() > 0) {
         enHits++;
       }
     }
-    expect(enHits, `Expected at least one of ${EN_ONLY.join(', ')} on ${path}`).toBeGreaterThan(0);
+    expect(enHits, `Expected at least one of ${anchors.en.join(', ')} on ${path}`).toBeGreaterThan(0);
 
-    for (const a of FR_ONLY) {
+    for (const a of anchors.fr) {
       await expect(
         body.getByText(a, { exact: true }),
         `French anchor "${a}" leaked into ${path} on the EN locale`,
