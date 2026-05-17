@@ -32,9 +32,22 @@ spring:
       # threads than concurrent ticks ever need.
       pool:
         size: 4
+  lifecycle:
+    # Upper bound on how long Spring waits for SmartLifecycle beans
+    # (broker, scheduler, executors) to stop after SIGTERM. Pairs with
+    # server.shutdown=graceful so an in-flight GTFS import or REST
+    # call gets a chance to drain before the connector closes.
+    timeout-per-shutdown-phase: 30s
 
 server:
   port: 8080
+  # Stop accepting new requests on SIGTERM and let the in-flight ones
+  # finish (capped by spring.lifecycle.timeout-per-shutdown-phase).
+  # Without this the Tomcat connector closes immediately and any
+  # request mid-flight returns a broken connection to the caller — a
+  # particular problem for the GTFS reimport endpoint and the WebSocket
+  # broker drain.
+  shutdown: graceful
 
 app:
   # Operator-facing local time used for schedule comparisons. Override via
