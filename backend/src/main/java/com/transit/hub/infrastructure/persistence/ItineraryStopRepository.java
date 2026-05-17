@@ -45,6 +45,16 @@ public interface ItineraryStopRepository extends JpaRepository<ItineraryStop, UU
            "WHERE is.itinerary.id = :itineraryId AND is.position >= :fromPosition")
     void shiftPositionsFrom(UUID itineraryId, int fromPosition);
 
+    /**
+     * Bulk-shifts positions strictly greater than {@code removedPosition} down by 1.
+     * Used after deleting an ItineraryStop to keep positions dense without issuing
+     * one UPDATE per remaining row.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE ItineraryStop is SET is.position = is.position - 1 " +
+           "WHERE is.itinerary.id = :itineraryId AND is.position > :removedPosition")
+    int compactPositionsAbove(UUID itineraryId, int removedPosition);
+
     @Query("SELECT MAX(is.position) FROM ItineraryStop is WHERE is.itinerary.id = :itineraryId")
     Integer findMaxPositionByItineraryId(UUID itineraryId);
 }

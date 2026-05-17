@@ -375,6 +375,27 @@ class ItineraryServiceTest {
         }
 
         @Test
+        @DisplayName("compacts remaining positions via a single bulk UPDATE — no per-row setPosition")
+        void compactsRemainingPositionsInBulk() {
+            Stop stopA = TestDataFactory.createStopWithId(UUID.randomUUID(), "A", testLine);
+            Stop stopB = TestDataFactory.createStopWithId(UUID.randomUUID(), "B", testLine);
+            Stop stopC = TestDataFactory.createStopWithId(UUID.randomUUID(), "C", testLine);
+            Itinerary itinerary = TestDataFactory.createItineraryWithStops(testLine, "Direction East", stopA, stopB, stopC);
+            UUID itineraryId = itinerary.getId();
+            UUID removedStopId = stopB.getId(); // position 1 — 1 stop above to shift
+
+            when(itineraryRepository.findByIdWithLineAndStops(itineraryId)).thenReturn(Optional.of(itinerary));
+            when(stopRepository.existsById(removedStopId)).thenReturn(true);
+            when(itineraryRepository.save(any(Itinerary.class))).thenReturn(itinerary);
+
+            itineraryService.removeStopFromItinerary(itineraryId, removedStopId);
+
+            // The bulk SQL shift is the single source of position compaction.
+            verify(itineraryStopRepository).compactPositionsAbove(itineraryId, 1);
+            verifyNoMoreInteractions(itineraryStopRepository);
+        }
+
+        @Test
         @DisplayName("throws ValidationException when stop exists but is not part of itinerary")
         void throwsWhenStopNotInItinerary() {
             UUID otherStopId = UUID.randomUUID();

@@ -236,19 +236,24 @@ public class ItineraryService {
             throw new EntityNotFoundException("Stop", stopId);
         }
 
+        // Capture the position before the orphan removal flushes — needed to bulk-shift
+        // every stop above it in one SQL UPDATE instead of N per-row updates.
+        int removedPosition = itinerary.getItineraryStops().stream()
+                .filter(is -> is.getStop().getId().equals(stopId))
+                .map(ItineraryStop::getPosition)
+                .findFirst()
+                .orElseThrow(() -> ValidationException.ofKey("error.itinerary.stopNotInItinerary"));
+
         boolean removed = itinerary.removeItineraryStopIf(is -> is.getStop().getId().equals(stopId));
         if (!removed) {
             throw ValidationException.ofKey("error.itinerary.stopNotInItinerary");
         }
-
-        // Reorder remaining stops
-        List<ItineraryStop> stops = new ArrayList<>(itinerary.getItineraryStops());
-        stops.sort((a, b) -> a.getPosition().compareTo(b.getPosition()));
-        for (int i = 0; i < stops.size(); i++) {
-            stops.get(i).setPosition(i);
-        }
-
         itineraryRepository.save(itinerary);
+
+        // Single bulk UPDATE — replaces the previous loop that issued one
+        // setPosition call per remaining stop (N-1 row updates on an N-stop itinerary).
+        itineraryStopRepository.compactPositionsAbove(itineraryId, removedPosition);
+
         eventPublisher.publishEvent(new NetworkChangedEvent(this, Set.of(stopId)));
         return ItineraryResponse.from(itineraryRepository.findByIdWithLineAndStops(itineraryId).orElseThrow());
     }
