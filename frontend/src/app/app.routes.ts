@@ -27,92 +27,76 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
       {
-        path: 'lines',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/lines/lines.component').then(m => m.LinesComponent)
-      },
-      {
-        path: 'stops',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/stops/stops.component').then(m => m.StopsComponent)
-      },
-      {
-        path: 'itineraries',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/itineraries/itineraries.component').then(m => m.ItinerariesComponent)
-      },
-      {
-        path: 'schedules',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/schedules/schedules.component').then(m => m.SchedulesComponent)
-      },
-      {
         path: 'messages',
         loadComponent: () => import('./features/admin/messages/messages.component').then(m => m.MessagesComponent)
       },
       {
-        path: 'devices',
-        canActivate: [roleGuard],
+        // Anonymous intermediate (`path: ''` with no component) so the
+        // ADMIN-only `canActivateChild` applies to every nested route
+        // without changing the URL. Collapses what used to be 14 copies
+        // of `canActivate: [roleGuard], data: { requiredRole: 'ADMIN' }`
+        // into one rule.
+        path: '',
+        canActivateChild: [roleGuard],
         data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/devices/devices.component').then(m => m.DevicesComponent)
-      },
-      {
-        path: 'realtime',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
-      },
-      {
-        path: 'gtfs-data',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/gtfs-data/gtfs-data.component').then(m => m.GtfsDataComponent)
-      },
-      {
-        path: 'import-audit',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
-      },
-      {
-        path: 'pathways',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/pathways/pathways.component').then(m => m.PathwaysComponent)
-      },
-      {
-        path: 'shapes',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/shapes/shapes.component').then(m => m.ShapesComponent)
-      },
-      {
-        path: 'tad-zones',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/tad-zones/tad-zones.component').then(m => m.TadZonesComponent)
-      },
-      {
-        path: 'flex-stop-times',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/flex-stop-times/flex-stop-times.component').then(m => m.FlexStopTimesComponent)
-      },
-      {
-        path: 'fare-calculator',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/fare-calculator/fare-calculator.component').then(m => m.FareCalculatorComponent)
-      },
-      {
-        path: 'users',
-        canActivate: [roleGuard],
-        data: { requiredRole: 'ADMIN' },
-        loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
+        children: [
+          {
+            path: 'lines',
+            loadComponent: () => import('./features/admin/lines/lines.component').then(m => m.LinesComponent)
+          },
+          {
+            path: 'stops',
+            loadComponent: () => import('./features/admin/stops/stops.component').then(m => m.StopsComponent)
+          },
+          {
+            path: 'itineraries',
+            loadComponent: () => import('./features/admin/itineraries/itineraries.component').then(m => m.ItinerariesComponent)
+          },
+          {
+            path: 'schedules',
+            loadComponent: () => import('./features/admin/schedules/schedules.component').then(m => m.SchedulesComponent)
+          },
+          {
+            path: 'devices',
+            loadComponent: () => import('./features/admin/devices/devices.component').then(m => m.DevicesComponent)
+          },
+          {
+            path: 'realtime',
+            loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
+          },
+          {
+            path: 'gtfs-data',
+            loadComponent: () => import('./features/admin/gtfs-data/gtfs-data.component').then(m => m.GtfsDataComponent)
+          },
+          {
+            path: 'import-audit',
+            loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
+          },
+          {
+            path: 'pathways',
+            loadComponent: () => import('./features/admin/pathways/pathways.component').then(m => m.PathwaysComponent)
+          },
+          {
+            path: 'shapes',
+            loadComponent: () => import('./features/admin/shapes/shapes.component').then(m => m.ShapesComponent)
+          },
+          {
+            path: 'tad-zones',
+            loadComponent: () => import('./features/admin/tad-zones/tad-zones.component').then(m => m.TadZonesComponent)
+          },
+          {
+            path: 'flex-stop-times',
+            loadComponent: () => import('./features/admin/flex-stop-times/flex-stop-times.component').then(m => m.FlexStopTimesComponent)
+          },
+          {
+            path: 'fare-calculator',
+            loadComponent: () => import('./features/admin/fare-calculator/fare-calculator.component').then(m => m.FareCalculatorComponent)
+          },
+          {
+            path: 'users',
+            loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
+          }
+        ]
       }
     ]
   },
