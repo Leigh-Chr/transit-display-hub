@@ -10,15 +10,16 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Rate-limits POST /api/auth/login per client IP. Default: five
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
  * backing store to Hazelcast or Redis.
  */
 @Component
+@Slf4j
 public class LoginRateLimitFilter extends OncePerRequestFilter {
 
     @Value("${app.security.login-rate-limit.max-attempts:5}")
@@ -39,12 +41,14 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     private int windowMinutes;
 
     /**
-     * CSV of remote addresses (the {@link HttpServletRequest#getRemoteAddr()
-     * value Tomcat reports for the TCP peer) that are allowed to claim a
-     * different client IP via {@code X-Forwarded-For}. Empty by default —
-     * any operator standing the app behind a reverse proxy must opt in
-     * by listing the proxy's IP, otherwise an attacker can defeat the
-     * rate-limit by sending one bogus header per attempt.
+     * CSV of trusted-proxy entries — each one is either a literal IP
+     * ({@code 10.0.0.1}) or a CIDR block ({@code 10.0.0.0/8}). The
+     * {@link HttpServletRequest#getRemoteAddr() TCP peer} must match
+     * one of them for the filter to honour the {@code X-Forwarded-For}
+     * header. Empty by default — any operator standing the app behind
+     * a reverse proxy must opt in by listing the proxy's IP or subnet,
+     * otherwise an attacker can defeat the rate-limit by sending one
+     * bogus header per attempt.
      */
     @Value("${app.security.trusted-proxies:}")
     private String trustedProxiesCsv;
@@ -62,14 +66,23 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             .maximumSize(100_000)
             .build();
 
-    private Set<String> trustedProxies = Set.of();
+    private List<IpAddressMatcher> trustedProxies = List.of();
 
     @PostConstruct
     void parseTrustedProxies() {
-        trustedProxies = Arrays.stream(trustedProxiesCsv.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
+        List<IpAddressMatcher> matchers = new ArrayList<>();
+        for (String raw : trustedProxiesCsv.split(",")) {
+            String entry = raw.trim();
+            if (entry.isEmpty()) {
+                continue;
+            }
+            try {
+                matchers.add(new IpAddressMatcher(entry));
+            } catch (IllegalArgumentException ex) {
+                log.warn("Ignoring invalid trusted-proxy entry '{}': {}", entry, ex.getMessage());
+            }
+        }
+        trustedProxies = List.copyOf(matchers);
     }
 
     @Override
@@ -107,10 +120,11 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
 
     private String clientIp(HttpServletRequest req) {
         String remote = req.getRemoteAddr();
-        // Only honour X-Forwarded-For if the TCP peer is a proxy we've
-        // explicitly trusted. Otherwise any client can mint a fresh
-        // rate-limit bucket by rolling a random IP through the header.
-        if (remote == null || !trustedProxies.contains(remote)) {
+        // Only honour X-Forwarded-For if the TCP peer matches one of the
+        // explicitly trusted proxies (literal IP or CIDR block). Otherwise
+        // any client can mint a fresh rate-limit bucket by rolling a
+        // random IP through the header.
+        if (remote == null || !isTrustedProxy(remote)) {
             return remote;
         }
         String fwd = req.getHeader("X-Forwarded-For");
@@ -118,5 +132,14 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             return fwd.split(",")[0].trim();
         }
         return remote;
+    }
+
+    private boolean isTrustedProxy(String remote) {
+        for (IpAddressMatcher matcher : trustedProxies) {
+            if (matcher.matches(remote)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -110,6 +110,59 @@ class LoginRateLimitFilterTest {
         assertThat(otherRes.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
     }
 
+    @Test
+    void honoursXForwardedForWhenRemoteMatchesACidrBlock() throws Exception {
+        // The .env.example documents CSV entries of the shape
+        // "10.0.0.0/8,192.168.0.0/16". The filter must parse the CIDR
+        // block and treat any address inside it as a trusted proxy —
+        // otherwise the rate-limit bucket is shared by every client
+        // sitting behind the corporate NAT.
+        ReflectionTestUtils.setField(filter, "trustedProxiesCsv", "10.0.0.0/8,192.168.0.0/16");
+        filter.parseTrustedProxies();
+
+        // Five attempts from one real client via a proxy at 10.4.5.6
+        // — bucket is keyed on the XFF value, not the proxy.
+        for (int i = 0; i < 5; i++) {
+            MockHttpServletRequest r = loginRequest("10.4.5.6");
+            r.addHeader("X-Forwarded-For", "203.0.113.30");
+            filter.doFilter(r, new MockHttpServletResponse(), chain);
+        }
+        MockHttpServletRequest sixth = loginRequest("10.4.5.6");
+        sixth.addHeader("X-Forwarded-For", "203.0.113.30");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        filter.doFilter(sixth, res, chain);
+        assertThat(res.getStatus()).isEqualTo(429);
+
+        // A different client behind a different proxy inside the same
+        // /8 block still has its own quota.
+        MockHttpServletRequest other = loginRequest("10.99.99.99");
+        other.addHeader("X-Forwarded-For", "198.51.100.7");
+        MockHttpServletResponse otherRes = new MockHttpServletResponse();
+        filter.doFilter(other, otherRes, chain);
+        assertThat(otherRes.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+    }
+
+    @Test
+    void ignoresInvalidTrustedProxyEntriesAndKeepsTheValidOnes() throws Exception {
+        ReflectionTestUtils.setField(filter, "trustedProxiesCsv",
+                "not-an-ip, 10.0.0.0/8 , bogus/99 ,192.168.1.1");
+        filter.parseTrustedProxies();
+
+        // The /8 entry must still match — invalid entries are skipped, not fatal.
+        MockHttpServletRequest req = loginRequest("10.1.2.3");
+        req.addHeader("X-Forwarded-For", "203.0.113.40");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        filter.doFilter(req, res, chain);
+        assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+
+        // Literal "192.168.1.1" entry still works post-CIDR refactor.
+        MockHttpServletRequest req2 = loginRequest("192.168.1.1");
+        req2.addHeader("X-Forwarded-For", "203.0.113.41");
+        MockHttpServletResponse res2 = new MockHttpServletResponse();
+        filter.doFilter(req2, res2, chain);
+        assertThat(res2.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+    }
+
     private MockHttpServletRequest loginRequest(String ip) {
         MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/auth/login");
         req.setRemoteAddr(ip);
