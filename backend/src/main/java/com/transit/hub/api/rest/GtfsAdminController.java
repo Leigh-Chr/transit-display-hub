@@ -1,7 +1,6 @@
 package com.transit.hub.api.rest;
 
 import com.transit.hub.application.service.GtfsImportOrchestrator;
-import com.transit.hub.domain.model.enums.ImportStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +11,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.net.URI;
+import java.util.UUID;
 
 /**
  * Admin endpoint to force a GTFS refresh on demand. Mirrors the cron
@@ -34,24 +36,26 @@ public class GtfsAdminController {
 
     @PostMapping("/reimport")
     @Operation(summary = "Force un réimport GTFS",
-               description = "Synchrone : télécharge le feed (avec cache If-Modified-Since), "
-                       + "calcule le SHA-256, importe si modifié, et écrit une ligne d'audit. "
-                       + "Identifie l'utilisateur via l'identité authentifiée pour la traçabilité.")
-    public ResponseEntity<RefreshResponse> reimport(Authentication authentication) {
+               description = "Asynchrone : enregistre une ligne d'audit RUNNING, "
+                       + "déclenche le téléchargement + import en tâche de fond "
+                       + "et retourne 202 Accepted avec un en-tête Location pointant "
+                       + "vers la ligne d'audit pour suivre l'avancement. "
+                       + "Renvoie 409 si un import est déjà en cours.")
+    public ResponseEntity<Void> reimport(Authentication authentication) {
         if (feedUrl == null || feedUrl.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(new RefreshResponse(null, null, "No GTFS URL configured"));
+            // Same semantics as before — pas de feed configuré = 400 Bad Request.
+            // On expose un Location nul plutôt qu'un body verbeux pour rester
+            // cohérent avec le contrat 202/Void choisi pour l'happy path.
+            return ResponseEntity.badRequest().build();
         }
         String triggeredBy = authentication != null ? authentication.getName() : "admin";
         log.info("Manual GTFS refresh triggered by {}", triggeredBy);
-        GtfsImportOrchestrator.ImportOutcome outcome = orchestrator.runImport(feedUrl, triggeredBy);
-        Integer scheduleCount = outcome.result() != null ? outcome.result().schedules() : null;
-        return ResponseEntity.ok(new RefreshResponse(
-                outcome.status(),
-                scheduleCount,
-                outcome.message()
-        ));
+        UUID importId = orchestrator.runImportAsync(feedUrl, triggeredBy);
+        // TODO: companion endpoint `GET /api/admin/gtfs/imports/{id}` to be wired
+        // in a follow-up lot (the ImportAudit row is already persisted, only the
+        // read-side controller is missing). Keeping the Location header now so
+        // clients can adopt the async contract immediately.
+        URI location = URI.create("/api/admin/gtfs/imports/" + importId);
+        return ResponseEntity.accepted().location(location).build();
     }
-
-    public record RefreshResponse(ImportStatus status, Integer schedulesCount, String message) {}
 }

@@ -1,5 +1,6 @@
 package com.transit.hub.application.service;
 
+import com.transit.hub.application.exception.ImportAlreadyRunningException;
 import com.transit.hub.domain.model.ImportAudit;
 import com.transit.hub.domain.model.enums.ImportStatus;
 import com.transit.hub.infrastructure.metrics.GtfsImportMetrics;
@@ -22,6 +23,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -93,14 +95,64 @@ public class GtfsImportOrchestrator {
             return new ImportOutcome(ImportStatus.SKIPPED_UNCHANGED, null,
                     "Another import is already running");
         }
-        Timer.Sample sample = metrics.startSample();
+        ImportAudit audit = persistRunningAudit(feedUrl, triggeredBy);
+        try {
+            return runImportLocked(audit, feedUrl, triggeredBy);
+        } finally {
+            importLock.unlock();
+        }
+    }
+
+    /**
+     * Asynchronous variant of {@link #runImport}: acquires the lock + persists
+     * the running audit row synchronously (so the caller gets an audit id back
+     * immediately) and runs the heavy lifting on a daemon thread. Used by the
+     * admin {@code POST /api/admin/gtfs/reimport} endpoint so HTTP clients get
+     * a {@code 202 Accepted + Location} response instead of holding a request
+     * open for the multi-minute import.
+     *
+     * @return the {@code ImportAudit.id} that the {@code GET .../imports/{id}}
+     *         status endpoint will key on.
+     * @throws ImportAlreadyRunningException when another import already holds the lock.
+     */
+    public UUID runImportAsync(String feedUrl, String triggeredBy) {
+        if (!importLock.tryLock()) {
+            log.warn("GTFS import already running, refusing async trigger from {}", triggeredBy);
+            throw new ImportAlreadyRunningException("error.gtfs.importAlreadyRunning");
+        }
+        ImportAudit audit;
+        try {
+            audit = persistRunningAudit(feedUrl, triggeredBy);
+        } catch (RuntimeException e) {
+            importLock.unlock();
+            throw e;
+        }
+        UUID auditId = audit.getId();
+        Thread worker = new Thread(() -> {
+            try {
+                runImportLocked(audit, feedUrl, triggeredBy);
+            } finally {
+                importLock.unlock();
+            }
+        }, "gtfs-import-" + auditId);
+        worker.setDaemon(true);
+        worker.start();
+        return auditId;
+    }
+
+    private ImportAudit persistRunningAudit(String feedUrl, String triggeredBy) {
         ImportAudit audit = ImportAudit.builder()
                 .sourceUrl(feedUrl)
                 .startedAt(Instant.now(clock))
                 .status(ImportStatus.RUNNING)
                 .triggeredBy(triggeredBy)
                 .build();
-        audit = auditRepository.save(audit);
+        return auditRepository.save(audit);
+    }
+
+    /** Caller MUST hold {@link #importLock} and is responsible for releasing it. */
+    private ImportOutcome runImportLocked(ImportAudit audit, String feedUrl, String triggeredBy) {
+        Timer.Sample sample = metrics.startSample();
         try {
             Path feed = downloader.downloadOrCached(feedUrl);
             String hash = sha256(feed);
@@ -144,8 +196,6 @@ public class GtfsImportOrchestrator {
             finalizeAudit(audit, ImportStatus.FAILED, null, truncate(e.getMessage(), 1000));
             metrics.recordFailure(sample);
             return new ImportOutcome(ImportStatus.FAILED, null, e.getMessage());
-        } finally {
-            importLock.unlock();
         }
     }
 

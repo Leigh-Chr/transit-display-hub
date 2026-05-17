@@ -1,6 +1,7 @@
 package com.transit.hub.api.advice;
 
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.exception.ImportAlreadyRunningException;
 import com.transit.hub.application.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -134,6 +135,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleOptimisticLock(OptimisticLockingFailureException ex, WebRequest request) {
         log.warn("Optimistic lock conflict: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.CONFLICT, t("error.data.optimisticLock"), null, request);
+    }
+
+    @ExceptionHandler(ImportAlreadyRunningException.class)
+    public ResponseEntity<ApiError> handleImportAlreadyRunning(ImportAlreadyRunningException ex, WebRequest request) {
+        log.warn("GTFS import already running, refused trigger: {}", ex.getMessageKey());
+        return buildErrorResponse(HttpStatus.CONFLICT, t(ex.getMessageKey()), null, request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
