@@ -33,18 +33,33 @@ When more captures are added (e.g. a fares calculator demo or a
 GTFS-Realtime walk-through), update both this table and the one
 in the root README.
 
-## How to recapture
+## Regenerating screenshots
+
+Screenshots are captured by Playwright via a dedicated spec
+(`frontend/e2e/screenshots.spec.ts`) gated by the
+`SCREENSHOTS_ENABLED` env var. It self-skips in default CI / local
+runs so a normal `npm test` does not overwrite the committed PNGs.
 
 ```bash
-# Boot the stack with the rich fixture
+# 1. Boot the backend with the rich fixture and an ephemeral JWT secret
+JWT_SECRET=$(openssl rand -base64 48) \
+SPRING_PROFILES_ACTIVE=dev \
 DATA_LOADER_GTFS_URL=classpath:fixtures/gtfs-rich/ \
   ./backend/gradlew -p backend bootRun &
-(cd frontend && npm start) &
 
-# Open the URLs above and capture with your OS shortcut, then
-# drop the resulting files in this folder.
+# 2. Run the Playwright spec — the spec auto-starts the frontend dev
+# server via its `webServer` config and writes PNGs straight into
+# this folder.
+cd frontend
+SCREENSHOTS_ENABLED=1 npx playwright test screenshots.spec.ts --project=chromium
 ```
 
-Recordings can use [`vhs`](https://github.com/charmbracelet/vhs)
-or [`peek`](https://github.com/phw/peek) for GIFs, or the native
-browser DevTools recorder for WebM.
+For multi-language captures, switch the default Transloco locale
+before running the spec (e.g. via the language menu in the admin
+layout, or by tweaking the fixture). See [`../i18n.md`](../i18n.md)
+for the i18n contributor flow.
+
+Commit the resulting diff like any other change. Walk-through
+recordings (GIF / WebM) can use [`vhs`](https://github.com/charmbracelet/vhs)
+or [`peek`](https://github.com/phw/peek), or the native browser
+DevTools recorder.
