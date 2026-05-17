@@ -25,10 +25,6 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
     Optional<Line> findByIdWithStopsAndRoutes(UUID id);
 
     @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.agency " +
-           "LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries ORDER BY l.code")
-    List<Line> findAllWithStopsAndRoutes();
-
-    @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.agency " +
            "LEFT JOIN FETCH l.itineraries i LEFT JOIN FETCH i.itineraryStops ist " +
            "LEFT JOIN FETCH ist.stop ORDER BY l.code")
     List<Line> findAllWithItineraryStops();
@@ -57,11 +53,6 @@ public interface LineRepository extends JpaRepository<Line, UUID> {
     @Query("SELECT DISTINCT l FROM Line l LEFT JOIN FETCH l.agency " +
            "LEFT JOIN FETCH l.stops LEFT JOIN FETCH l.itineraries WHERE l.id IN :ids")
     List<Line> findAllByIdInWithStopsAndRoutes(List<UUID> ids);
-
-    @Query("SELECT l FROM Line l WHERE " +
-           "LOWER(l.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(l.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Line> findBySearch(String search, Pageable pageable);
 
     @Override
     Page<Line> findAll(Pageable pageable);

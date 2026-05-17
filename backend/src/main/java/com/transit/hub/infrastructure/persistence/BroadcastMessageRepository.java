@@ -2,10 +2,6 @@ package com.transit.hub.infrastructure.persistence;
 
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.enums.MessageScope;
-import com.transit.hub.domain.model.enums.MessageSeverity;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -34,40 +30,10 @@ public interface BroadcastMessageRepository
 
     void deleteByScopeTypeAndScopeId(MessageScope scopeType, UUID scopeId);
 
-    // The 7 filter-combination methods below (findActiveMessages/paginated,
-    // findBySearch, findActiveBySearch, findBySeverity, findBySeverityAndSearch,
-    // findActiveBySeverity, findActiveBySeverityAndSearch) are replaced by the
-    // JpaSpecificationExecutor.findAll(Specification, Pageable) entry point.
-    // They are kept here so that existing integration tests and any external
-    // callers compile without changes; the service layer no longer calls them.
-
-    @Query("SELECT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now")
-    Page<BroadcastMessage> findActiveMessages(Instant now, Pageable pageable);
-
-    @Query("SELECT m FROM BroadcastMessage m WHERE " +
-           "LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<BroadcastMessage> findBySearch(String search, Pageable pageable);
-
-    @Query("SELECT m FROM BroadcastMessage m WHERE m.startTime <= :now AND m.endTime > :now AND " +
-           "(LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<BroadcastMessage> findActiveBySearch(Instant now, String search, Pageable pageable);
-
-    Page<BroadcastMessage> findBySeverity(MessageSeverity severity, Pageable pageable);
-
-    @Query("SELECT m FROM BroadcastMessage m WHERE m.severity = :severity AND " +
-           "(LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<BroadcastMessage> findBySeverityAndSearch(MessageSeverity severity, String search, Pageable pageable);
-
-    @Query("SELECT m FROM BroadcastMessage m WHERE m.severity = :severity AND " +
-           "m.startTime <= :now AND m.endTime > :now")
-    Page<BroadcastMessage> findActiveBySeverity(Instant now, MessageSeverity severity, Pageable pageable);
-
-    @Query("SELECT m FROM BroadcastMessage m WHERE m.severity = :severity AND " +
-           "m.startTime <= :now AND m.endTime > :now AND " +
-           "(LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(m.content) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<BroadcastMessage> findActiveBySeverityAndSearch(Instant now, MessageSeverity severity, String search, Pageable pageable);
+    // The seven specific filter-combination paged queries that used to
+    // live here (findActiveMessages(Pageable), findBySearch, findActiveBySearch,
+    // findBySeverity, findBySeverityAndSearch, findActiveBySeverity,
+    // findActiveBySeverityAndSearch) have been removed — every paged call
+    // now goes through JpaSpecificationExecutor.findAll(Specification, Pageable)
+    // and the spec is assembled in MessageService.
 }

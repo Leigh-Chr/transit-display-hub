@@ -200,43 +200,6 @@ class LineRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findAllWithStopsAndRoutes")
-    class FindAllWithStopsAndRoutes {
-
-        @Test
-        @DisplayName("returns all lines ordered by code with stops and itineraries")
-        void returnsAllLinesOrderedByCode() {
-            List<Line> result = repository.findAllWithStopsAndRoutes();
-
-            assertThat(result).hasSize(3);
-            assertThat(result.get(0).getCode()).isEqualTo("B2");
-            assertThat(result.get(1).getCode()).isEqualTo("M1");
-            assertThat(result.get(2).getCode()).isEqualTo("T3");
-        }
-
-        @Test
-        @DisplayName("eagerly loads stops and itineraries")
-        void eagerlyLoadsAssociations() {
-            List<Line> result = repository.findAllWithStopsAndRoutes();
-
-            Line m1 = result.stream()
-                    .filter(l -> l.getCode().equals("M1"))
-                    .findFirst().orElseThrow();
-            assertThat(m1.getStops()).hasSize(2);
-            assertThat(m1.getItineraries()).hasSize(1);
-        }
-
-        @Test
-        @DisplayName("returns distinct lines even with multiple associations")
-        void returnsDistinctLines() {
-            List<Line> result = repository.findAllWithStopsAndRoutes();
-
-            long m1Count = result.stream().filter(l -> l.getCode().equals("M1")).count();
-            assertThat(m1Count).isEqualTo(1);
-        }
-    }
-
-    @Nested
     @DisplayName("findAllWithItineraryStops")
     class FindAllWithItineraryStops {
 
@@ -330,28 +293,6 @@ class LineRepositoryTest {
             Page<UUID> idsPage = repository.findAllIds(PageRequest.of(1, 2));
 
             assertThat(idsPage.getContent()).hasSize(1);
-        }
-    }
-
-    @Nested
-    @DisplayName("findBySearch")
-    class FindBySearch {
-
-        @Test
-        @DisplayName("searches by code or name")
-        void searchesByCodeOrName() {
-            Page<Line> result = repository.findBySearch("metro", PageRequest.of(0, 10));
-
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().getCode()).isEqualTo("M1");
-        }
-
-        @Test
-        @DisplayName("returns empty page when no match")
-        void returnsEmptyWhenNoMatch() {
-            Page<Line> result = repository.findBySearch("xyz", PageRequest.of(0, 10));
-
-            assertThat(result.getContent()).isEmpty();
         }
     }
 
