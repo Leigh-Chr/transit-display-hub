@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Post-v1.20.0 finishing wave: closes the three Lot-6 items the marathon
+had deferred (stop-autocomplete sharing, pathways bridge cleanup, kiosk
+speech/arrival extraction).
+
+### Added
+
+- **`<app-stop-autocomplete>`** in `shared/components/` — picker for an
+  already-loaded {@link Stop} list with built-in name filter (case-
+  insensitive substring, cap at 30 results) and optional platform-code
+  suffix. Replaces two inlined variants (`pathways`,
+  `fare-calculator`'s origin + dest fields) — three call sites, ~80
+  duplicated lines removed. Three specs cover the default render,
+  filter, and the 30-result cap.
+- **`kiosk-arrival.ts`** — extracts the `effectiveTime(arrival)`
+  projection (scheduled time + realtime delay, wrap past midnight) to
+  a pure module. Five specs cover the no-delay / positive / negative /
+  forward-wrap / backward-wrap branches without needing a TestBed.
+- **`kiosk-speech.ts`** — extracts `speakNextDepartureText(transloco,
+  next)` (pure builder, picks the right `kiosk.speak.*` translation
+  key depending on realtime delay state) and `speak(transloco, text)`
+  (side-effectful sibling that talks to `window.speechSynthesis`).
+  Five specs cover the no-arrivals / no-realtime / on-time / delayed /
+  early branches.
+
+### Changed
+
+- **`PathwaysComponent`** drops the `static buildLayout()` test-only
+  bridge — `pathway-graph-layout.ts`'s `buildPathwayGraphLayout` is
+  now the canonical entry point everywhere (including the
+  pathways spec, which migrated).
+- **`KioskComponent`** delegates `speakNextDeparture` and
+  `effectiveTime` to the new pure modules; the component sheds 45
+  lines of stateful speech / time-math code that always wanted to be
+  side-effect-free.
+
 ## [1.20.0] — 2026-05-17
 
 Second 35-commit marathon kicked off by a fresh 4-agent cross-axis
