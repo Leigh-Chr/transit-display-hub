@@ -3,10 +3,10 @@ import {
   Component,
   DestroyRef,
   OnInit,
-  signal,
   computed,
-  inject,
   effect,
+  inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
@@ -22,18 +22,26 @@ import { WebSocketService } from '@core/websocket/websocket.service';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
-import { injectVisibilityListener } from '@shared/browser/visibility-listener';
 import { lineTextColor } from '@shared/utils/color.utils';
-import { LocaleService } from '@core/i18n/locale.service';
-import { effectiveTime } from './kiosk-arrival';
-import { speak, speakNextDepartureText } from './kiosk-speech';
 import {
-  formatClockDate,
-  formatClockTime,
   formatDepartureTime,
   getMinutesUntil,
-  isImminent,
+  isImminent as isImminentTimeUtil,
 } from '@shared/utils/time.utils';
+
+import { DisplayDeparturesRowComponent } from '../_shared/display-departures-row/display-departures-row.component';
+import { useArrivalsView } from '../_shared/use-arrivals-view';
+import { useDisplayClock } from '../_shared/use-display-clock';
+import { useMessagesView } from '../_shared/use-messages-view';
+
+import { effectiveTime } from './kiosk-arrival';
+import { speak, speakNextDepartureText } from './kiosk-speech';
+
+/** Seconds between page-swaps in reduced-motion mode. 8s per page gives
+ *  a passenger enough time to read all rows before the next set appears. */
+const REDUCED_MOTION_PAGE_DWELL_MS = 8000;
+/** Maximum arrivals that fit on screen without scrolling. */
+const MAX_VISIBLE_ARRIVALS = 5;
 
 @Component({
   selector: 'app-kiosk',
@@ -47,6 +55,7 @@ import {
     TranslocoPipe,
     DisplayAlertBannerComponent,
     DisplayInfoTickerComponent,
+    DisplayDeparturesRowComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './kiosk.component.html',
@@ -57,12 +66,16 @@ export class KioskComponent implements OnInit {
   private readonly displayService = inject(DisplayService);
   private readonly wsService = inject(WebSocketService);
   private readonly transloco = inject(TranslocoService);
-  private readonly localeService = inject(LocaleService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly visibility = injectVisibilityListener();
   /** Exposed to the template so the a11y toolbar can bind to its
    *  three signals (dark / contrast / large text) directly. */
   readonly themeService = inject(ThemeService);
+
+  /** Shared 1Hz wall clock — pauses while the tab is hidden, exposes
+   *  pre-formatted date/time strings and the isStale helpers. */
+  protected readonly clock = useDisplayClock();
+  protected readonly currentTime = this.clock.currentTime;
+  protected readonly currentDate = this.clock.currentDate;
 
   /** Cached on construction so the template's `[disabled]` binding
    *  doesn't probe the platform on every change-detection run. */
@@ -71,8 +84,6 @@ export class KioskComponent implements OnInit {
 
   displayState = signal<DisplayState | null>(null);
   error = signal<string | null>(null);
-  currentTime = signal(this.formatTime(new Date()));
-  currentDate = signal(this.formatDate(new Date()));
 
   // Exposed to the template so badges pick the server-resolved foreground
   // color (route_text_color from GTFS) before falling back to YIQ contrast.
@@ -146,18 +157,6 @@ export class KioskComponent implements OnInit {
     return stopPlatform !== arrivalPlatform;
   }
 
-  /** ARIA label for the booking badge — screen readers announce
-   *  "réservation 0123456789, 30 minutes minimum" rather than just
-   *  "phone_callback 0123456789". */
-  bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
-    const parts: string[] = [this.transloco.translate('kiosk.booking.aria')];
-    if (b.phone) {parts.push(b.phone);}
-    if (b.priorNoticeMinutes) {
-      parts.push(this.transloco.translate('kiosk.booking.minMinutes', { minutes: b.priorNoticeMinutes }));
-    }
-    return parts.join(', ');
-  }
-
   /** Template wrapper around the pure {@link effectiveTime} helper. */
   effectiveTime(arrival: ArrivalInfo | HubArrivalInfo): string {
     return effectiveTime(arrival);
@@ -193,25 +192,13 @@ export class KioskComponent implements OnInit {
     // so we don't land on an empty page.
     effect(() => {
       const total = this.allArrivals().length;
-      const pageSize = KioskComponent.MAX_VISIBLE_ARRIVALS;
-      const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+      const maxPage = Math.max(0, Math.ceil(total / MAX_VISIBLE_ARRIVALS) - 1);
       if (this.pageIndex() > maxPage) {
         this.pageIndex.set(0);
       }
     });
 
-    // Pause the clock while the tab is hidden — kiosks running 24/7
-    // don't need to burn CPU updating an off-screen clock once a
-    // second. The shared visibility listener cleans up its DOM hook on
-    // destroy.
-    this.visibility.onHidden(() => this.stopClock());
-    this.visibility.onVisible(() => {
-      this.refreshClock();
-      this.startClock();
-    });
-
     this.destroyRef.onDestroy(() => {
-      this.stopClock();
       this.stopPageSwap();
       if (this.mql && this.mqlChangeHandler) {
         this.mql.removeEventListener('change', this.mqlChangeHandler);
@@ -250,50 +237,19 @@ export class KioskComponent implements OnInit {
         this.error.set(this.transloco.translate('kiosk.errors.missingDeviceOrStop'));
       }
     });
-
-    this.startClock();
   }
 
   private token: string | null = null;
   private stopId: string | null = null;
   private deviceId: string | null = null;
-  private timeInterval: ReturnType<typeof setInterval> | null = null;
   private mql: MediaQueryList | null = null;
   private mqlChangeHandler: ((e: MediaQueryListEvent) => void) | null = null;
   /** Wall-clock timestamp of the most recent state update (initial fetch or
    *  WebSocket push). Used to surface "data is stale" when the WS link is
    *  technically open but the backend has gone quiet (deleted stop, etc.). */
   lastUpdate = signal<number | null>(null);
-  /** Threshold past which we consider the displayed state stale: 3 minutes.
-   *  Long enough to ride out normal WS gaps, short enough to warn passengers
-   *  before they trust ghost departures. */
-  private static readonly STALE_THRESHOLD_MS = 3 * 60 * 1000;
-  /** Re-evaluates against currentTime so the banner appears even if no new
-   *  state ever arrives — the 1s clock signal drives the recompute. */
-  isStale = computed(() => {
-    this.currentTime();
-    const last = this.lastUpdate();
-    if (last === null) { return false; }
-    return Date.now() - last > KioskComponent.STALE_THRESHOLD_MS;
-  });
-  /** Minutes since the last update, formatted for the banner. */
-  staleMinutes = computed(() => {
-    this.currentTime();
-    const last = this.lastUpdate();
-    if (last === null) { return 0; }
-    return Math.floor((Date.now() - last) / 60000);
-  });
-
-  // Maximum arrivals that fit on screen without scrolling
-  private static readonly MAX_VISIBLE_ARRIVALS = 5;
-  // Seconds to display each arrival during scroll
-  // Dwell time per visible arrival when the list scrolls. 4s gives a passenger
-  // in motion a comfortable beat to scan line + destination + time without
-  // feeling chased by the next row.
-  private static readonly SECONDS_PER_ARRIVAL = 4;
-  // Seconds between page-swaps in reduced-motion mode. 8s per page gives a
-  // passenger enough time to read all rows before the next set appears.
-  private static readonly REDUCED_MOTION_PAGE_DWELL_MS = 8000;
+  isStale = computed(() => this.clock.isStale(this.lastUpdate()));
+  staleMinutes = computed(() => this.clock.staleMinutes(this.lastUpdate()));
 
   /** True when the OS/browser signals that animations should be minimised.
    *  Reactive: updated via a MediaQueryList change event so the signal stays
@@ -306,27 +262,29 @@ export class KioskComponent implements OnInit {
   /** Page-swap interval reference — held so we can clear it on destroy. */
   private pageInterval: ReturnType<typeof setInterval> | null = null;
 
-  // All arrivals from display state, filtered to exclude past departures
-  allArrivals = computed(() => {
-    // Re-evaluate when time changes
-    this.currentTime();
+  /** Split of messages into critical / info plus the two scroll-cycle
+   *  durations the banner + ticker bind to. */
+  private readonly messagesSignal = computed(() => this.displayState()?.messages ?? []);
+  protected readonly messagesView = useMessagesView(this.messagesSignal);
+  criticalMessages = computed(() => this.messagesView().critical);
+  infoMessages = computed(() => this.messagesView().info);
+  tickerDuration = computed(() => this.messagesView().tickerDuration);
+  alertDuration = computed(() => this.messagesView().alertDuration);
 
-    const arrivals = this.displayState()?.arrivals ?? [];
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    return arrivals.filter(arrival => {
-      const parts = arrival.scheduledTime.split(':');
-      const arrivalMinutes = parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
-      // Wrap arrivals across midnight: when the scheduled time looks earlier than
-      // `now` and the gap is large (>6h), treat it as tomorrow's arrival (night
-      // service running into early morning). Anything older than 6h is genuinely
-      // past and gets dropped.
-      let delta = arrivalMinutes - currentMinutes;
-      if (delta < -360) { delta += 1440; }
-      return delta >= 0;
-    });
-  });
+  /** Filter + scroll metrics for the arrivals list. Kiosk caps visible
+   *  rows at 5 by default, dropping to 3 once critical messages steal
+   *  real estate (`5 - criticalCount + (hasInfoMessages ? 0 : 1)`,
+   *  clamped to `[3, 6]`). */
+  private readonly arrivalsSignal = computed(() => this.displayState()?.arrivals ?? []);
+  private readonly arrivalsConfigSignal = computed(() => ({
+    maxVisibleArrivals: MAX_VISIBLE_ARRIVALS,
+    minVisibleArrivals: 3,
+    maxVisibleAfterPenalty: 6,
+    criticalMessagesCount: this.criticalMessages().length,
+    hasInfoMessages: this.infoMessages().length > 0,
+  }));
+  protected readonly arrivalsView = useArrivalsView(this.arrivalsSignal, this.clock.now, this.arrivalsConfigSignal);
+  allArrivals = computed(() => this.arrivalsView().allArrivals);
 
   /** Arrivals shown in the template. Under normal motion shows all arrivals
    *  (the CSS scroll animation handles overflow). Under reduced-motion, shows
@@ -335,79 +293,80 @@ export class KioskComponent implements OnInit {
   visibleArrivals = computed(() => {
     const all = this.allArrivals();
     if (!this.reducedMotion()) { return all; }
-    const pageSize = KioskComponent.MAX_VISIBLE_ARRIVALS;
-    const start = this.pageIndex() * pageSize;
-    return all.slice(start, start + pageSize);
+    const start = this.pageIndex() * MAX_VISIBLE_ARRIVALS;
+    return all.slice(start, start + MAX_VISIBLE_ARRIVALS);
   });
 
   // Whether we need vertical scrolling (more arrivals than fit on screen).
   // Always false under reduced-motion — pagination replaces continuous scroll.
   needsScrolling = computed(() => {
     if (this.reducedMotion()) { return false; }
-    const arrivals = this.allArrivals();
-    const criticalCount = this.criticalMessages().length;
-    const hasInfoMessages = this.infoMessages().length > 0;
-    // Adjust visible count based on messages (same logic as before)
-    const maxVisible = Math.max(3, Math.min(6, KioskComponent.MAX_VISIBLE_ARRIVALS - criticalCount + (hasInfoMessages ? 0 : 1)));
-    return arrivals.length > maxVisible;
+    return this.arrivalsView().needsScrolling;
   });
 
-  // Duration for one complete scroll cycle
-  scrollDuration = computed(() => {
-    const arrivals = this.allArrivals();
-    // Time proportional to number of arrivals
-    const duration = arrivals.length * KioskComponent.SECONDS_PER_ARRIVAL;
-    return `${Math.max(10, duration)}s`;
-  });
-
-  criticalMessages = computed(() =>
-    (this.displayState()?.messages ?? []).filter(
-      (m) => m.severity === 'CRITICAL'
-    )
-  );
-
-  infoMessages = computed(() =>
-    (this.displayState()?.messages ?? []).filter(
-      (m) => m.severity !== 'CRITICAL'
-    )
-  );
-
-  // Calculate ticker scroll duration based on content length (slower = more readable)
-  tickerDuration = computed(() => {
-    const messages = this.infoMessages();
-    const totalLength = messages.reduce((acc, m) =>
-      acc + m.title.length + m.content.length, 0
-    );
-    // Base: 20s, add 2s per 50 characters for readability
-    // Info ticker: shorter base (12s) than before so brief messages don't
-    // hang on screen for a full 20s every cycle. Still grows with content.
-    const duration = Math.max(10, 12 + Math.floor(totalLength / 50) * 2);
-    return `${duration}s`;
-  });
-
-  // Calculate alert scroll duration (slower than info ticker for critical messages)
-  alertDuration = computed(() => {
-    const messages = this.criticalMessages();
-    const totalLength = messages.reduce((acc, m) =>
-      acc + m.title.length + m.content.length, 0
-    );
-    // Slower pace for critical messages: 15s base, add 3s per 50 chars
-    const duration = Math.max(12, 15 + Math.floor(totalLength / 50) * 3);
-    return `${duration}s`;
-  });
+  scrollDuration = computed(() => this.arrivalsView().scrollDuration);
 
   connected = computed(
     () => this.wsService.connectionState() === 'CONNECTED'
   );
 
+  /** Wrapper exposed for the existing template + spec call sites. */
+  formatDepartureTime(time: string): string {
+    return formatDepartureTime(time);
+  }
+
+  /** Wrapper exposed for the existing spec assertions. Reads `new Date()`
+   *  directly so test specs that fake the system clock via
+   *  `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime(...)`
+   *  pick up the frozen value immediately, without waiting for the
+   *  shared clock signal's 1Hz tick to land. */
+  getMinutesUntil(time: string): number {
+    // Reading the signal keeps consumers reactive on the 1Hz tick.
+    this.clock.now();
+    return getMinutesUntil(time, new Date());
+  }
+
+  /** Format the relative-time label rendered on each row. Templates
+   *  bind to {@code formatRelativeTime(time)} but the new shared row
+   *  computes the same thing internally — this stays around for the
+   *  kiosk-only template loop (per-arrival platform badge) and for
+   *  the existing spec assertions. */
+  formatRelativeTime(time: string): string {
+    const minutes = this.getMinutesUntil(time);
+    if (minutes === 0) {
+      return this.transloco.translate('kiosk.imminent');
+    }
+    return this.transloco.translate('kiosk.minutesShort', { minutes });
+  }
+
+  /** Whether the next departure is happening within the current minute.
+   *  Drives the highlighted `.imminent` styling on the relative-time pill. */
+  isImminent(time: string): boolean {
+    this.clock.now();
+    return isImminentTimeUtil(time, new Date());
+  }
+
+  /** ARIA label for the booking badge — screen readers announce
+   *  "réservation 0123456789, ≥ 30 min" rather than just
+   *  "phone_callback 0123456789". The shared row carries its own
+   *  copy but the kiosk template's per-row override (when phone is
+   *  null, etc.) still binds to this helper. */
+  bookingAria(b: { phone: string | null; priorNoticeMinutes: number | null }): string {
+    const parts: string[] = [this.transloco.translate('kiosk.booking.aria')];
+    if (b.phone) {parts.push(b.phone);}
+    if (b.priorNoticeMinutes) {
+      parts.push(this.transloco.translate('kiosk.booking.minMinutes', { minutes: b.priorNoticeMinutes }));
+    }
+    return parts.join(', ');
+  }
+
   private startPageSwap(): void {
     if (this.pageInterval !== null) { return; }
     this.pageInterval = setInterval(() => {
       const total = this.allArrivals().length;
-      const pageSize = KioskComponent.MAX_VISIBLE_ARRIVALS;
-      const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+      const maxPage = Math.max(0, Math.ceil(total / MAX_VISIBLE_ARRIVALS) - 1);
       this.pageIndex.set(this.pageIndex() < maxPage ? this.pageIndex() + 1 : 0);
-    }, KioskComponent.REDUCED_MOTION_PAGE_DWELL_MS);
+    }, REDUCED_MOTION_PAGE_DWELL_MS);
   }
 
   private stopPageSwap(): void {
@@ -415,24 +374,6 @@ export class KioskComponent implements OnInit {
       clearInterval(this.pageInterval);
       this.pageInterval = null;
     }
-  }
-
-  private startClock(): void {
-    if (this.timeInterval !== null) { return; }
-    this.timeInterval = setInterval(() => this.refreshClock(), 1000);
-  }
-
-  private stopClock(): void {
-    if (this.timeInterval !== null) {
-      clearInterval(this.timeInterval);
-      this.timeInterval = null;
-    }
-  }
-
-  private refreshClock(): void {
-    const now = new Date();
-    this.currentTime.set(this.formatTime(now));
-    this.currentDate.set(this.formatDate(now));
   }
 
   private initializeWithToken(): void {
@@ -525,39 +466,5 @@ export class KioskComponent implements OnInit {
         },
       });
     }
-  }
-
-  private formatTime(date: Date): string {
-    return formatClockTime(date, this.localeService.current());
-  }
-
-  private formatDate(date: Date): string {
-    return formatClockDate(date, this.localeService.current());
-  }
-
-  formatDepartureTime(time: string): string {
-    return formatDepartureTime(time);
-  }
-
-  getMinutesUntil(time: string): number {
-    // Trigger recalculation when currentTime changes
-    this.currentTime();
-    return getMinutesUntil(time, new Date());
-  }
-
-  formatRelativeTime(time: string): string {
-    const minutes = this.getMinutesUntil(time);
-    if (minutes === 0) {
-      return this.transloco.translate('kiosk.imminent');
-    }
-    return this.transloco.translate('kiosk.minutesShort', { minutes });
-  }
-
-  /** Whether the next departure is happening now (within the same minute).
-   *  Drives the highlighted `.imminent` styling on the relative-time pill. */
-  isImminent(time: string): boolean {
-    // Trigger recalculation when currentTime changes
-    this.currentTime();
-    return isImminent(time, new Date());
   }
 }

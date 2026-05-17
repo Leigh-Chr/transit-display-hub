@@ -3,58 +3,23 @@
    Target: 1920x1080 screens, 3-5m viewing distance
    =========================================== */
 
-:host {
-  display: block;
-  background: var(--app-kiosk-surface);
-  color: var(--app-kiosk-on-surface);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+@use '../_shared/display-base' as base;
 
-.kiosk {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 2vh 2.5vw;
-  box-sizing: border-box;
-  /* Map the kiosk palette onto the aliases the shared display
-     components (<app-display-alert-banner>,
-     <app-display-info-ticker>) consume. */
-  --app-display-alert-bg: var(--app-kiosk-alert-bg);
-  --app-display-info-bg: var(--app-kiosk-info-bg);
-  --app-display-info-bg-subtle: var(--app-kiosk-info-bg-subtle);
-  --app-display-info-border: var(--app-kiosk-info-border);
-  --app-display-info-accent: var(--app-kiosk-info-accent);
-  --app-display-warning-accent: var(--app-kiosk-warning-accent);
-  --app-display-on-surface-muted: var(--app-kiosk-on-surface-muted);
-}
+:host { @include base.display-host; }
+
+.kiosk { @include base.display-root; }
 
 /* --- Header --- */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 1.5vh;
-  border-bottom: 0.4vh solid var(--app-kiosk-border);
-  margin-bottom: 1.5vh;
-  gap: 2vw;
-}
+.header { @include base.display-header; }
+.header-logo { @include base.display-header-logo; }
+.stop-name { @include base.display-stop-name; }
+.header-lines { @include base.display-header-lines; }
+.header-line-badge { @include base.display-header-line-badge; }
+.clock-container { @include base.display-clock-container; }
+.date { @include base.display-date; }
+.clock { @include base.display-clock; }
 
-.header-logo {
-  width: 5vh;
-  height: 5vh;
-  flex-shrink: 0;
-  filter: brightness(0) invert(1);
-  opacity: 0.9;
-}
-
-.stop-name {
-  font-size: 6vh;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-
+/* Kiosk-only short stop code rendered next to the stop name. */
 .stop-short-code {
   display: inline-block;
   margin-left: 1.2vw;
@@ -69,40 +34,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.header-lines {
-  display: flex;
-  gap: 0.8vw;
-  margin-top: 0.8vh;
-}
-
-.header-line-badge {
-  padding: 0.5vh 1vw;
-  border-radius: 0.5vh;
-  font-size: 3vh;
-  font-weight: 700;
-  color: var(--app-kiosk-on-surface);
-  text-shadow: 0 1px 2px var(--app-kiosk-text-shadow);
-}
-
-.clock-container {
-  text-align: right;
-}
-
-.date {
-  font-size: 3vh;
-  font-weight: 500;
-  color: var(--app-kiosk-on-surface-muted);
-  margin-bottom: 0.5vh;
-}
-
-.clock {
-  font-size: 8vh;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-
-/* --- Accessibility toolbar --- */
+/* --- Accessibility toolbar (kiosk only) --- */
 .a11y-controls {
   display: flex;
   align-items: center;
@@ -129,31 +61,9 @@
   height: 3vh;
 }
 
-/* The .alert-banner styles + alert-scroll keyframes were lifted into
-   the shared <app-display-alert-banner> component. The host hooks the
-   palette onto --app-display-alert-bg in the .kiosk block above. */
-
 /* --- Departures Board --- */
-.departures {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.departures-header {
-  display: flex;
-  align-items: center;
-  padding: 1vh 1vw;
-  font-size: 3vh;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--app-kiosk-on-surface-muted);
-  border-bottom: 0.1vh solid var(--app-kiosk-border-subtle);
-  flex-shrink: 0;
-}
+.departures { @include base.display-board; }
+.departures-header { @include base.display-board-header; }
 
 .col-line {
   width: 8vw;
@@ -170,34 +80,9 @@
   text-align: right;
 }
 
-.departure-row {
-  display: flex;
-  align-items: center;
-  padding: 1.5vh 1vw;
-  border-bottom: 0.1vh solid var(--app-kiosk-border-faint);
-}
-
-.line-badge {
-  width: 8vw;
-  text-align: center;
-  font-size: clamp(3vh, 4vh, 5vh);
-  font-weight: 700;
-  padding: 1vh 0;
-  border-radius: 0.5vh;
-  color: var(--app-kiosk-on-surface);
-  text-shadow: 0 1px 3px var(--app-kiosk-text-shadow-strong);
-  flex-shrink: 0;
-}
-
-.destination {
-  flex: 1;
-  font-size: clamp(3vh, 4.5vh, 6vh);
-  font-weight: 500;
-  padding-left: 2vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* --- Per-row badges projected into the shared <app-display-departures-row>
+     destination slot. Each badge stays defined in the kiosk SCSS because
+     the hub doesn't render them. --- */
 
 .pickup-badge {
   display: inline-block;
@@ -275,37 +160,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* TAD booking CTA — phone or "Réservation" inline so a passenger
-   reading a TAD arrival sees the action immediately. */
-.booking-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4vw;
-  margin-left: 1vw;
-  padding: 0.3vh 0.8vw;
-  border-radius: 0.4vh;
-  font-size: clamp(1.5vh, 2vh, 2.5vh);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  vertical-align: middle;
-  background: rgba(56, 142, 235, 0.16);
-  color: var(--app-info);
-  border: 1px solid rgba(56, 142, 235, 0.55);
-}
-
-.booking-icon {
-  font-size: clamp(2vh, 2.5vh, 3vh) !important;
-  width: clamp(2vh, 2.5vh, 3vh) !important;
-  height: clamp(2vh, 2.5vh, 3vh) !important;
-}
-
-.booking-notice {
-  font-size: 0.85em;
-  font-weight: 500;
-  opacity: 0.8;
-  margin-left: 0.4vw;
-}
-
 .access-icon {
   vertical-align: middle;
   margin-left: 0.8vw;
@@ -323,60 +177,14 @@
   opacity: 0.85;
 }
 
-.time-info {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
-  gap: 1.5vw;
-  min-width: 22vw;
-  text-align: right;
-}
-
-.time-relative {
-  font-size: clamp(3.5vh, 5vh, 7vh);
-  font-weight: 700;
-  color: var(--app-kiosk-on-surface);
-}
-
-/* Imminent: the bus is leaving now. Pop visually so a passenger
-   glancing across the platform spots it without parsing every row. */
-.time-relative.imminent {
-  color: var(--app-kiosk-info-accent);
-  animation: imminentPulse 1.4s ease-in-out infinite;
-}
-
-@keyframes imminentPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.62; }
-}
-
-.time-absolute {
-  font-size: clamp(2.5vh, 3.5vh, 5vh);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--app-kiosk-on-surface-muted);
-}
-
 /* --- Departures Viewport (scrolling container) --- */
-.departures-viewport {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
+.departures-viewport { @include base.display-viewport; }
+.departures-track { @include base.display-track; }
+.departures-list { @include base.display-list; }
+.list-divider { @include base.display-list-divider; }
+.no-departures { @include base.display-no-departures; }
 
-.departures-track {
-  display: flex;
-  flex-direction: column;
-}
-
-.departures-track.scrolling {
-  animation: vertical-scroll linear infinite;
-}
-
-@keyframes vertical-scroll {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
-}
+@include base.display-keyframes-scroll;
 
 /* prefers-reduced-motion: replace continuous scroll with discrete page-swaps.
    The .reduced-motion class is applied by the component when the media query
@@ -391,118 +199,20 @@
   }
 }
 
-.departures-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.list-divider {
-  height: 0.3vh;
-  margin: 2vh 5vw;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-}
-
-.no-departures {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4vh;
-  color: var(--app-kiosk-on-surface-muted);
-  min-height: 20vh;
-}
-
-/* The .info-ticker styles + ticker-scroll keyframes were lifted into
-   the shared <app-display-info-ticker> component. The host hooks the
-   palette onto --app-display-info-* in the .kiosk block at the top. */
-
-/* --- Connection Warning (only shown when disconnected) --- */
-.connection-warning {
-  position: fixed;
-  bottom: 1.5vh;
-  right: 2vw;
-  display: flex;
-  align-items: center;
-  gap: 0.8vw;
-  background: var(--app-kiosk-connection-error);
-  padding: 0.8vh 1.5vw;
-  border-radius: 0.5vh;
-  font-size: 3vh;
-  font-weight: 500;
-  /* Calm pulse instead of harsh blink — passengers in a station already
-     have enough flicker around them. */
-  animation: connectionPulse 2.4s ease-in-out infinite;
-}
-
-.connection-warning mat-icon {
-  font-size: 3vh;
-  width: 3vh;
-  height: 3vh;
-}
-
-/* Stale variant — link is up but the server has gone quiet. Less alarming
-   than the disconnected state but still flagged so passengers don't
-   trust ghost departures. */
-.connection-warning.stale-warning {
-  background: var(--app-kiosk-warning-accent);
-  color: #1a1a1a;
-  animation: none;
-}
-
-@keyframes connectionPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.78; }
-}
+/* --- Connection Warning --- */
+.connection-warning { @include base.display-connection-warning; }
+@include base.display-keyframes-connection-pulse;
 
 /* --- Error & Loading States --- */
-.error-state,
-.loading-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
+@include base.display-status-states;
 
-.error-state mat-icon {
-  font-size: 12vh;
-  width: 12vh;
-  height: 12vh;
-  color: var(--app-kiosk-error-icon);
-  margin-bottom: 3vh;
-}
+/* --- Responsive --- */
+@include base.display-responsive-small-height;
+@include base.display-responsive-portrait;
 
-.error-state h1,
-.loading-state h1 {
-  font-size: 5vh;
-  font-weight: 600;
-  margin: 2vh 0;
-}
-
-.error-state p {
-  font-size: 3vh;
-  color: var(--app-kiosk-on-surface-muted);
-  max-width: 60vw;
-}
-
-.loading-state mat-spinner {
-  margin-bottom: 3vh;
-}
-
-/* --- Responsive for smaller screens --- */
-@media (max-height: 800px) {
-  .stop-name { font-size: 5vh; }
-  .clock { font-size: 6vh; }
-  .ticker-item { font-size: 3vh; }
-  .ticker-item mat-icon { font-size: 3vh; width: 3vh; height: 3vh; }
-}
-
-/* Portrait mode optimization */
+/* Kiosk-specific portrait widths — wider line badge + time column
+   because rows pack the per-arrival badge stack into the destination. */
 @media (orientation: portrait) {
-  .header { flex-direction: column; align-items: flex-start; gap: 1vh; }
-  .clock-container { align-self: flex-end; }
-  .clock { font-size: 6vh; }
-  .line-badge { width: 12vw; }
-  .time-info { min-width: 28vw; }
+  .col-line { width: 12vw; }
+  .col-time { min-width: 28vw; }
 }

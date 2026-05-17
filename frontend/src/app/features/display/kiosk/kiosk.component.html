@@ -82,66 +82,41 @@
              [style.animationDuration]="scrollDuration()">
           <div class="departures-list">
             @for (arrival of visibleArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
-              <div class="departure-row">
-                <span
-                  class="line-badge"
-                  [style.backgroundColor]="arrival.line.color"
-                  [style.color]="lineTextColor(arrival.line)"
-                >
-                  {{ arrival.line.code }}
-                </span>
+              <app-display-departures-row
+                [line]="arrival.line"
+                [time]="effectiveTime(arrival)"
+                [now]="clock.now()"
+                [booking]="arrival.booking ?? null">
+                {{ arrival.destinationName }}
                 @if (showPerArrivalPlatform(arrival)) {
                   <span class="platform-badge"
                         [attr.aria-label]="'kiosk.accessibility.platform' | transloco:{ code: arrival.platformCode }">
                     {{ arrival.platformCode }}
                   </span>
                 }
-                <span class="destination">
-                  {{ arrival.destinationName }}
-                  @if (arrival.wheelchairAccessible === 'ACCESSIBLE') {
-                    <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.wheelchairYes' | transloco">accessible_forward</mat-icon>
-                  } @else if (arrival.wheelchairAccessible === 'NOT_ACCESSIBLE') {
-                    <mat-icon class="access-icon access-no" [attr.aria-label]="'kiosk.accessibility.wheelchairNo' | transloco">do_not_disturb</mat-icon>
-                  }
-                  @if (arrival.bikesAllowed === 'ALLOWED') {
-                    <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.bikesAllowed' | transloco">directions_bike</mat-icon>
-                  }
-                  @if (pickupBadge(arrival.pickupKind); as badge) {
-                    <span class="pickup-badge">{{ badge }}</span>
-                  }
-                  @if (frequencyLabel(arrival.frequencyHeadwaySeconds); as freq) {
-                    <span class="pickup-badge frequency-badge">{{ freq }}</span>
-                  }
-                  @if (isLive(arrival.realtimeDelaySeconds)) {
-                    <span class="live-badge"
-                          [class.delay-late]="(arrival.realtimeDelaySeconds ?? 0) > 60"
-                          [class.delay-early]="(arrival.realtimeDelaySeconds ?? 0) < -60"
-                          [attr.aria-label]="'kiosk.accessibility.liveData' | transloco">
-                      ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
-                    </span>
-                  }
-                  @if (arrival.booking; as b) {
-                    <span class="booking-badge" [attr.aria-label]="bookingAria(b)">
-                      <mat-icon class="booking-icon">phone_callback</mat-icon>
-                      @if (b.phone) {
-                        {{ b.phone }}
-                      } @else {
-                        {{ 'kiosk.booking.label' | transloco }}
-                      }
-                      @if (b.priorNoticeMinutes) {
-                        <span class="booking-notice">≥ {{ b.priorNoticeMinutes }} min</span>
-                      }
-                    </span>
-                  }
-                </span>
-                <span class="time-info">
-                  <span
-                    class="time-relative"
-                    [class.imminent]="isImminent(effectiveTime(arrival))"
-                  >{{ formatRelativeTime(effectiveTime(arrival)) }}</span>
-                  <span class="time-absolute">{{ formatDepartureTime(effectiveTime(arrival)) }}</span>
-                </span>
-              </div>
+                @if (arrival.wheelchairAccessible === 'ACCESSIBLE') {
+                  <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.wheelchairYes' | transloco">accessible_forward</mat-icon>
+                } @else if (arrival.wheelchairAccessible === 'NOT_ACCESSIBLE') {
+                  <mat-icon class="access-icon access-no" [attr.aria-label]="'kiosk.accessibility.wheelchairNo' | transloco">do_not_disturb</mat-icon>
+                }
+                @if (arrival.bikesAllowed === 'ALLOWED') {
+                  <mat-icon class="access-icon access-yes" [attr.aria-label]="'kiosk.accessibility.bikesAllowed' | transloco">directions_bike</mat-icon>
+                }
+                @if (pickupBadge(arrival.pickupKind); as badge) {
+                  <span class="pickup-badge">{{ badge }}</span>
+                }
+                @if (frequencyLabel(arrival.frequencyHeadwaySeconds); as freq) {
+                  <span class="pickup-badge frequency-badge">{{ freq }}</span>
+                }
+                @if (isLive(arrival.realtimeDelaySeconds)) {
+                  <span class="live-badge"
+                        [class.delay-late]="(arrival.realtimeDelaySeconds ?? 0) > 60"
+                        [class.delay-early]="(arrival.realtimeDelaySeconds ?? 0) < -60"
+                        [attr.aria-label]="'kiosk.accessibility.liveData' | transloco">
+                    ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
+                  </span>
+                }
+              </app-display-departures-row>
             } @empty {
               <div class="no-departures">
                 {{ 'kiosk.noScheduledDepartures' | transloco }}
@@ -155,28 +130,16 @@
             <div class="list-divider"></div>
             <div class="departures-list">
               @for (arrival of allArrivals(); track (arrival.line.code + '-' + arrival.destinationName)) {
-                <div class="departure-row">
-                  <span
-                    class="line-badge"
-                    [style.backgroundColor]="arrival.line.color"
-                    [style.color]="lineTextColor(arrival.line)"
-                  >
-                    {{ arrival.line.code }}
-                  </span>
-                  <span class="destination">
-                    {{ arrival.destinationName }}
-                    @if (pickupBadge(arrival.pickupKind); as badge) {
-                      <span class="pickup-badge">{{ badge }}</span>
-                    }
-                  </span>
-                  <span class="time-info">
-                    <span
-                    class="time-relative"
-                    [class.imminent]="isImminent(effectiveTime(arrival))"
-                  >{{ formatRelativeTime(effectiveTime(arrival)) }}</span>
-                    <span class="time-absolute">{{ formatDepartureTime(effectiveTime(arrival)) }}</span>
-                  </span>
-                </div>
+                <app-display-departures-row
+                  [line]="arrival.line"
+                  [time]="effectiveTime(arrival)"
+                  [now]="clock.now()"
+                  [booking]="arrival.booking ?? null">
+                  {{ arrival.destinationName }}
+                  @if (pickupBadge(arrival.pickupKind); as badge) {
+                    <span class="pickup-badge">{{ badge }}</span>
+                  }
+                </app-display-departures-row>
               }
             </div>
           }
