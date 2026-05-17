@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.20.2] — 2026-05-17
+
+Lot A — security hardening and onboarding alignment. Closes the
+`admin/admin123` Flyway risk by forcing rotation on first login, and
+fixes the Quick start / kiosk friction that broke new contributors
+straight out of the gate.
+
+### Security
+
+- Force admin password rotation on first login. Flyway V52 adds a
+  `password_must_change` column and seeds it `TRUE` for the V2 admin
+  row; the backend propagates the flag through `LoginResponse`, the
+  Angular auth guard redirects to a new `/auth/change-password` screen,
+  and the new `POST /api/auth/change-password` endpoint validates the
+  current password before persisting a new one (minimum 12 characters).
+- SHA-pin every supply-chain critical action in `release.yml` (checkout,
+  docker/{login,buildx,setup-qemu,build-push}, attest-build-provenance,
+  sbom-action, action-gh-release, setup-java, upload-artifact). Dependabot
+  already covers the github-actions ecosystem and will rewrite the SHAs
+  alongside the `# v<major>` comment.
+- Externalise the `POSTGRES_PASSWORD` in the kiosk Docker Compose file
+  with fail-fast `${VAR:?message}` syntax; the previous hardcoded
+  `transit` value is gone from both the postgres and backend services.
+
+### Documentation
+
+- README Quick start now exports `JWT_SECRET` upfront and flags the
+  forced first-login rotation.
+- Kiosk Quick start exports `POSTGRES_PASSWORD` and drops the
+  `--build` flag now that GHCR images are the default.
+- `docs/kiosk-raspberry-pi.md` removes the "not yet published" paragraph
+  (the release pipeline ships multi-arch images per tag), documents the
+  new `BUILD_FROM_SOURCE=1` / `TDH_VERSION` / `POSTGRES_PASSWORD`
+  environment variables, and aligns the credentials section with the
+  forced rotation flow.
+- `CONTRIBUTING.md` rewritten: requirements, first-time setup, the
+  full quality-gates matrix, commit message format with real examples,
+  separate backend / frontend / i18n code standards, and the release
+  procedure.
+
+### Added
+
+- New backend endpoint `POST /api/auth/change-password` (204 on
+  success, 401 on wrong current password, 400 on weak new password).
+- New Angular standalone component `ChangePasswordComponent` with
+  bilingual i18n keys under `auth.changePassword.*`.
+- `ops/kiosk/install.sh` now branches on `BUILD_FROM_SOURCE`: defaults
+  to `docker compose pull` + `up -d`, falls back to `up -d --build`
+  with `TDH_PULL_POLICY=never` when the contributor explicitly opts in.
+
 ## [1.20.1] — 2026-05-17
 
 Post-v1.20.0 finishing wave: closes the three Lot-6 items the marathon
