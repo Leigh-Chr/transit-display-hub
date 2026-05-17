@@ -8,7 +8,6 @@ import com.transit.hub.application.exception.ValidationException;
 import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.event.MessageChangedEvent;
 import com.transit.hub.domain.model.BroadcastMessage;
-import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;

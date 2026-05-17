@@ -76,8 +76,8 @@ class LayeredArchitectureTest {
      * for {@code /me}, and the two realtime endpoints reading from
      * {@code RealtimeAlertCache} / {@code RealtimeVehiclePositionCache}.
      * They are now mediated by dedicated application services
-     * ({@code AuthMeService}, {@code RealtimeAdminService}), so the
-     * rule fires green and stays a gate for new code.
+     * ({@code AuthService#getCurrentUser}, {@code RealtimeAdminService}),
+     * so the rule fires green and stays a gate for new code.
      */
     @ArchTest
     static final ArchRule apiDoesNotDependOnInfrastructurePersistence =
