@@ -74,8 +74,8 @@ public class NetworkMapService {
     /** Single COUNT(*) GROUP BY query so the per-line lookup stays O(1). */
     private Map<UUID, Long> buildScheduleCountByLine() {
         Map<UUID, Long> result = new HashMap<>();
-        for (Object[] row : scheduleRepository.countByLineId()) {
-            result.put((UUID) row[0], (Long) row[1]);
+        for (ScheduleRepository.LineScheduleCount row : scheduleRepository.countByLineId()) {
+            result.put(row.getLineId(), row.getCount());
         }
         return result;
     }

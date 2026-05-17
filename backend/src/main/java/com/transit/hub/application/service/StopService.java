@@ -111,8 +111,8 @@ public class StopService {
         }
         List<UUID> ids = stops.stream().map(Stop::getId).toList();
         Map<UUID, Integer> counts = new HashMap<>();
-        for (Object[] row : scheduleRepository.countByStopIdIn(ids)) {
-            counts.put((UUID) row[0], ((Number) row[1]).intValue());
+        for (ScheduleRepository.ScheduleStopCount row : scheduleRepository.countByStopIdIn(ids)) {
+            counts.put(row.getStopId(), (int) row.getCount());
         }
         return counts;
     }

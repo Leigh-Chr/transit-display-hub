@@ -74,10 +74,18 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     /**
      * Bulk schedule-count lookup for a batch of stops, used by listing endpoints
      * to avoid the N+1 fetch that calling stop.getSchedules().size() would
-     * trigger on each row.
+     * trigger on each row. Typed projection — beats {@code List<Object[]>} on both
+     * readability (no [0]/[1] indexing) and safety (no UUID/Long casts).
      */
-    @Query("SELECT s.stop.id, COUNT(s) FROM Schedule s WHERE s.stop.id IN :stopIds GROUP BY s.stop.id")
-    List<Object[]> countByStopIdIn(java.util.Collection<UUID> stopIds);
+    @Query("SELECT s.stop.id AS stopId, COUNT(s) AS count FROM Schedule s "
+            + "WHERE s.stop.id IN :stopIds GROUP BY s.stop.id")
+    List<ScheduleStopCount> countByStopIdIn(java.util.Collection<UUID> stopIds);
+
+    /** Projection row for {@link #countByStopIdIn}. */
+    interface ScheduleStopCount {
+        UUID getStopId();
+        long getCount();
+    }
 
     boolean existsByStopIdAndItineraryIdAndTime(UUID stopId, UUID itineraryId, LocalTime time);
 
@@ -102,8 +110,15 @@ public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
      *  a fatter trace than one with 200. The aggregate is rough — it
      *  doesn't normalise per stop or per service day — but it lets
      *  consumers rank lines by activity without shipping every
-     *  schedule. */
-    @Query("SELECT i.line.id, COUNT(s) FROM Schedule s JOIN s.itinerary i GROUP BY i.line.id")
-    List<Object[]> countByLineId();
+     *  schedule. Typed projection so callers don't index into Object[]. */
+    @Query("SELECT i.line.id AS lineId, COUNT(s) AS count FROM Schedule s "
+            + "JOIN s.itinerary i GROUP BY i.line.id")
+    List<LineScheduleCount> countByLineId();
+
+    /** Projection row for {@link #countByLineId}. */
+    interface LineScheduleCount {
+        UUID getLineId();
+        long getCount();
+    }
 
 }
