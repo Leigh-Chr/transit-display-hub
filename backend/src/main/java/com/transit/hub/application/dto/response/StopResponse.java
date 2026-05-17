@@ -1,10 +1,8 @@
 package com.transit.hub.application.dto.response;
 
-import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.WheelchairAccess;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,10 +55,7 @@ public record StopResponse(
     }
 
     public static StopResponse from(Stop stop, int scheduleCount) {
-        List<LineInfo> lineInfos = stop.getLines().stream()
-                .sorted(Comparator.comparing(Line::getCode))
-                .map(LineInfo::from)
-                .toList();
+        List<LineInfo> lineInfos = LineInfo.fromSorted(stop.getLines());
 
         Stop parent = stop.getParentStop();
         return new StopResponse(

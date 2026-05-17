@@ -8,7 +8,6 @@ import com.transit.hub.application.dto.response.LineInfo;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.model.Device;
-import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.DeviceStatus;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
@@ -27,7 +26,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -145,10 +143,7 @@ public class DeviceService {
                 device.recordHeartbeat(Instant.now(clock));
                 deviceRepository.save(device);
 
-                List<LineInfo> lines = device.getStop().getLines().stream()
-                        .sorted(Comparator.comparing(Line::getCode))
-                        .map(LineInfo::from)
-                        .toList();
+                List<LineInfo> lines = LineInfo.fromSorted(device.getStop().getLines());
 
                 return new DeviceAuthResponse(
                         true,

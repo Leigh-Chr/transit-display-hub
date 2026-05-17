@@ -1,11 +1,9 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Device;
-import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.enums.DeviceStatus;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,10 +16,7 @@ public record DeviceResponse(
         Instant lastHeartbeat
 ) {
     public static DeviceResponse from(Device device) {
-        List<LineInfo> lines = device.getStop().getLines().stream()
-                .sorted(Comparator.comparing(Line::getCode))
-                .map(LineInfo::from)
-                .toList();
+        List<LineInfo> lines = LineInfo.fromSorted(device.getStop().getLines());
 
         return new DeviceResponse(
                 device.getId(),
