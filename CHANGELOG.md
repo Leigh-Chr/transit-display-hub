@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.21.0] — 2026-05-17
+
+Lot C — backend refactor: shrinks `NetworkMapService` by extracting two
+single-responsibility helpers, replaces N per-row updates with a single
+bulk SQL on stop removal, and converts `/api/admin/gtfs/reimport` to a
+proper async contract (202 + Location, 409 when busy). Plus Lot D test
+slice cleanup that drops the default backend test suite from ~77 s to
+~50 s of wall-clock.
+
+### Refactor
+
+- Split `NetworkMapService` (388 lines, 8 dependencies) into three
+  cohesive units: `NetworkMapService` (327 lines, 7 deps — line / stop
+  / transfer / area / schedule / flex repositories + `StopHierarchyResolver`),
+  the new `NetworkAlertsService` (broadcast-message repository + clock,
+  carrying the `@Cacheable("networkAlerts")` boundary), and the pure
+  `StopHierarchyResolver` helper that maps platforms to their parent
+  station. `NetworkMapController` and `NetworkMapPublisher` now route
+  alerts directly through the dedicated service.
+- Drop three dead encapsulation-bypassing mutators from `Itinerary`
+  (`addStop`, `removeStop`, `clearStops`, plus the private `reorderStops`
+  helper) — they slipped past the proper `addItineraryStop` /
+  `removeItineraryStop` / `clearItineraryStops` / `removeItineraryStopIf`
+  mutators sitting just above them in the same file. All call sites
+  (`TestDataFactory`, `ItineraryControllerIntegrationTest`,
+  `ScheduleControllerIntegrationTest`, `DisplayStateCalculatorTest`,
+  `ItineraryTest`) migrated to the correct mutators.
+- `ScheduleRepository.countByStopIdIn` and `countByLineId` switched
+  from `List<Object[]>` to typed `ScheduleStopCount` /
+  `LineScheduleCount` interface projections — call sites (`StopService`,
+  `NetworkMapService`) drop the `(UUID) row[0]` / `(Long) row[1]` casts.
+
+### Performance
+
+- `ItineraryService.removeStopFromItinerary`: single
+  `compactPositionsAbove` bulk UPDATE replaces the previous N-1 per-row
+  `setPosition` loop. On an N-stop itinerary the JPA flush now issues
+  one SQL UPDATE instead of N-1, and the loop allocations disappear.
+- `GtfsImportService.validateGlobalIdUniqueness` now reads only the
+  external-id column via JPQL projections on `StopRepository`,
+  `LocationRepository`, `LocationGroupRepository`. The previous version
+  ran three full `findAll()` calls, hydrating entire Stop / Location /
+  LocationGroup entities (lines, devices, parent_stop, members) just to
+  read one string per row — a major win on multi-thousand-stop feeds.
+
+### API
+
+- `POST /api/admin/gtfs/reimport` is now async-friendly: returns
+  `202 Accepted` with a `Location: /api/admin/gtfs/imports/{auditId}`
+  header pointing at the running `ImportAudit` row, and `409 Conflict`
+  (`error.gtfs.importAlreadyRunning`, EN + FR) when another import is
+  already in flight. The boot loader and the cron scheduler keep using
+  the synchronous `runImport` path; only the admin endpoint takes the
+  new `runImportAsync` lane so the HTTP call no longer holds a request
+  open for the multi-minute parse-and-load.
+
 ### Tests
 
 - Switch `AttributionControllerIntegrationTest` and
@@ -22,6 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the slowest-tests list: it sorts before every other `@SpringBootTest`
   alphabetically, so Gradle picks it first and it absorbs the one-time
   Spring application-context boot the others reuse from cache.
+- New `StopHierarchyResolverTest` (4 cases) and `NetworkAlertsServiceTest`
+  (4 cases) covering the freshly-extracted helpers. `NetworkMapServiceTest`
+  drops the now-irrelevant alerts class. `ItineraryServiceTest` gains
+  `compactsRemainingPositionsInBulk` to pin the `compactPositionsAbove`
+  contract.
 
 ## [1.20.2] — 2026-05-17
 
