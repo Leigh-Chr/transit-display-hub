@@ -24,6 +24,11 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixels: 100 },
   },
   fullyParallel: true,
+  // CI runners hit transient timing flakiness on the slow first cold-start
+  // (Angular dev server warm-up + Spring Boot context load). Two retries
+  // absorb most of those without masking a genuinely broken spec.
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
   globalSetup: './e2e/global-setup',
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
