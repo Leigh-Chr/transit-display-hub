@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Lot E — frontend refactor: shares one `<app-stop-autocomplete>` between
+the network-map route search and the fare calculator, introduces a
+non-paginated `createSimpleListResource<T>` symmetric to
+`createAdminListResource`, and modernises eight components to the
+constructor + `effect` + `destroyRef` pattern (with the shared
+`injectVisibilityListener` covering kiosk + hub).
+
+### Added
+
+- `frontend/src/app/shared/admin/simple-list-resource.ts` — a thin
+  `rxResource` wrapper for non-paginated admin lists, exposing
+  `{items, loading, error, reload}`. Drops the
+  `loading + loadError + items + ngOnInit/load()` boilerplate to a
+  single field initialiser plus a `reload()` call after a mutation.
+- `frontend/src/app/shared/browser/visibility-listener.ts` —
+  `injectVisibilityListener()` tracks `document.visibilityState` as a
+  signal and exposes `onVisible` / `onHidden` callbacks. Auto-cleans
+  via `DestroyRef`, so callers don't have to remember the listener
+  teardown.
+
+### Refactor
+
+- `RouteSearchBarComponent` now consumes the shared
+  `<app-stop-autocomplete>` instead of inlining two `mat-autocomplete`
+  templates with their own filter logic (closes the duplication left
+  open by `84069cb`).
+- Four admin pages migrated onto `createSimpleListResource`:
+  `devices`, `tad-zones`, `flex-stop-times`, `import-audit`.
+  `schedules` and `shapes` skipped on purpose — their load is
+  conditional on a user-selected dropdown and uses a
+  `MatTableDataSource` / single-shape signal that doesn't fit the
+  list-resource contract.
+- `HubComponent` drops `OnInit` + `OnDestroy` in favour of a
+  constructor effect on `toSignal(route.queryParams)`, the shared
+  `injectVisibilityListener`, and a `destroyRef.onDestroy` block for
+  clock + websocket teardown.
+- `KioskComponent` drops `OnDestroy` (clock, page-swap interval, mql
+  listener, websocket disconnect all consolidated under
+  `destroyRef.onDestroy`) and consumes the shared
+  `injectVisibilityListener`. Kept `OnInit` for the route + query
+  param subscribes because the existing spec relies on synchronous
+  `Subject.next()` semantics — converting it would have cascaded into
+  a spec-wide rewrite for no functional gain.
+- `StopPopupComponent`, `GtfsDataComponent`, `RealtimeComponent`,
+  `FareCalculatorComponent` move their initialisation work into the
+  constructor and drop `OnInit`.
+- `buildViewport(locations)` in `flex-locations.utils` now accepts
+  `readonly FlexLocation[]` so the new `SimpleListResource<T>.items`
+  signal flows through without a defensive spread.
+
 ## [1.21.0] — 2026-05-17
 
 Lot C — backend refactor: shrinks `NetworkMapService` by extracting two
