@@ -67,10 +67,6 @@ describe('PathwaysComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('loads stops on init for the autocomplete', () => {
     fixture.detectChanges();
     expect(mockStopService.getAll).toHaveBeenCalledOnce();

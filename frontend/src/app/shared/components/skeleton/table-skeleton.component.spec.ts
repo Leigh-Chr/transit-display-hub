@@ -14,10 +14,6 @@ describe('TableSkeletonComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should have default rows=5', () => {
     expect(component.rows()).toBe(5);
   });

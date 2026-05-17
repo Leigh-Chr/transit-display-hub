@@ -26,10 +26,6 @@ describe('SearchInputComponent', () => {
     vi.useRealTimers();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initial state', () => {
     it('should have empty search value by default', () => {
       expect(component.searchValue).toBe('');

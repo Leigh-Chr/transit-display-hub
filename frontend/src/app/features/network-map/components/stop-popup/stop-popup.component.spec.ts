@@ -188,11 +188,6 @@ describe('StopPopupComponent', () => {
     };
   });
 
-  it('should create', () => {
-    createComponent();
-    expect(component).toBeTruthy();
-  });
-
   it('should display the stop name', async () => {
     createComponent();
     fixture.detectChanges();

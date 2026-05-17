@@ -79,10 +79,6 @@ describe('RealtimeComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('loads both feeds on init', () => {
     fixture.detectChanges();
 

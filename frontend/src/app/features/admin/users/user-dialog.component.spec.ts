@@ -106,10 +106,6 @@ describe('UserDialogComponent', () => {
   describe('create mode', () => {
     beforeEach(() => createComponent({ isEdit: false }));
 
-    it('should create the component', () => {
-      expect(component).toBeTruthy();
-    });
-
     it('should display "New User" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
       expect(title.textContent).toContain('New User');

@@ -33,11 +33,6 @@ describe('ConfirmDialogComponent', () => {
   }
 
   describe('rendering', () => {
-    it('should create the component', () => {
-      createComponent();
-      expect(component).toBeTruthy();
-    });
-
     it('should display the title', () => {
       createComponent();
       const titleEl = fixture.nativeElement.querySelector('[mat-dialog-title]');

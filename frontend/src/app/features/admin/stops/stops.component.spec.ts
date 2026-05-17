@@ -145,10 +145,6 @@ describe('StopsComponent', () => {
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('loading state', () => {
     it('should be loading after detectChanges (resource initiated)', () => {
       fixture.detectChanges();

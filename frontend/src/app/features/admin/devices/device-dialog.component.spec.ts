@@ -92,10 +92,6 @@ describe('DeviceDialogComponent', () => {
   describe('create mode', () => {
     beforeEach(() => createComponent());
 
-    it('should create the component', () => {
-      expect(component).toBeTruthy();
-    });
-
     it('should display "Register New Device" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
       expect(title.textContent).toContain('Register New Device');

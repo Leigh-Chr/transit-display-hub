@@ -64,11 +64,7 @@ describe('ChangePasswordComponent', () => {
   });
 
   describe('initial state', () => {
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
-    it('should have empty form fields', () => {
+      it('should have empty form fields', () => {
       expect(component.currentPassword).toBe('');
       expect(component.newPassword).toBe('');
       expect(component.confirmPassword).toBe('');

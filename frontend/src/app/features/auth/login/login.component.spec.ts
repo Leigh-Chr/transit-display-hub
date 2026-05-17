@@ -78,11 +78,7 @@ describe('LoginComponent', () => {
   });
 
   describe('initial state', () => {
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
-    it('should have empty username', () => {
+      it('should have empty username', () => {
       expect(component.username).toBe('');
     });
 

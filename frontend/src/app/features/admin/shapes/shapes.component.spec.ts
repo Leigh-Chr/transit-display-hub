@@ -62,10 +62,6 @@ describe('ShapesComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('loads itineraries on init for the autocomplete', () => {
     fixture.detectChanges();
 

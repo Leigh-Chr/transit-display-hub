@@ -150,10 +150,6 @@ describe('DashboardComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('loadData (admin)', () => {
     it('should call the aggregated dashboard endpoint exactly once', async () => {
       await detectAndFlush(fixture);

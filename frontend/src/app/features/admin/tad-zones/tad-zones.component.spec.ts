@@ -68,10 +68,6 @@ describe('TadZonesComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('loads locations on init and renders one path per ring', async () => {
     fixture.detectChanges();
     await flushResource();

@@ -117,10 +117,6 @@ describe('SchedulesComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('ngOnInit', () => {
     it('should load lines on init', () => {
       fixture.detectChanges();

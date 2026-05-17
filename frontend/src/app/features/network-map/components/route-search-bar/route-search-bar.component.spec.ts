@@ -62,11 +62,6 @@ describe('RouteSearchBarComponent', () => {
     fixture.componentRef.setInput('stops', mockStops);
   });
 
-  it('should create', () => {
-    fixture.detectChanges();
-    expect(component).toBeTruthy();
-  });
-
   it('renders the panel with two embedded stop autocompletes', async () => {
     fixture.detectChanges();
     await fixture.whenStable();

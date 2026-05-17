@@ -191,10 +191,6 @@ describe('KioskComponent', () => {
     fixture.destroy();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization via stopId route param', () => {
     it('should load display state from route stopId', () => {
       fixture.detectChanges();

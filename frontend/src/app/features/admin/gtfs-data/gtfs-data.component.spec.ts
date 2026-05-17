@@ -114,10 +114,6 @@ describe('GtfsDataComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('loads fares, booking rules, translations and fares v2 on init', () => {
     fixture.detectChanges();
 

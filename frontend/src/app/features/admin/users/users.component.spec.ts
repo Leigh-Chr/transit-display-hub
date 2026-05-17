@@ -132,10 +132,6 @@ describe('UsersComponent', () => {
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should be loading after detectChanges (resource initiated)', () => {
     fixture.detectChanges();
     expect(component.loading()).toBe(true);

@@ -15,10 +15,6 @@ describe('EmptyStateComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should render default icon and title', async () => {
     fixture.detectChanges();
     await fixture.whenStable();

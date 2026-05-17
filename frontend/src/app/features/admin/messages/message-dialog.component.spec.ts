@@ -138,10 +138,6 @@ describe('MessageDialogComponent', () => {
   describe('create mode', () => {
     beforeEach(() => createComponent());
 
-    it('should create the component', () => {
-      expect(component).toBeTruthy();
-    });
-
     it('should display "New Broadcast Message" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
       expect(title.textContent).toContain('New Broadcast Message');

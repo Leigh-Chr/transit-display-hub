@@ -65,10 +65,6 @@ describe('ImportAuditComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('loads audits on init and clears the loading flag', async () => {
     fixture.detectChanges();
     await flushResource();

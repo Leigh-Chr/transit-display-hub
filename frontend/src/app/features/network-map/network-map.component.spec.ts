@@ -191,10 +191,6 @@ describe('NetworkMapComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should load network on init', () => {
     fixture.detectChanges();
 

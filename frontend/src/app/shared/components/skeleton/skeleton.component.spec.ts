@@ -14,10 +14,6 @@ describe('SkeletonComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should have default inputs', () => {
     expect(component.width()).toBe('100%');
     expect(component.height()).toBe('20px');

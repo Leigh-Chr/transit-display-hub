@@ -96,10 +96,6 @@ describe('StopDialogComponent', () => {
   describe('create mode', () => {
     beforeEach(() => createComponent());
 
-    it('should create the component', () => {
-      expect(component).toBeTruthy();
-    });
-
     it('should display "New Stop" title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
       expect(title.textContent).toContain('New Stop');

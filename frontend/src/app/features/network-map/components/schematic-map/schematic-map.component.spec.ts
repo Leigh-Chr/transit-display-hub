@@ -82,11 +82,6 @@ describe('SchematicMapComponent', () => {
     fixture.componentRef.setInput('visibleLineCodes', ['L1', 'L2']);
   });
 
-  it('should create', () => {
-    fixture.detectChanges();
-    expect(component).toBeTruthy();
-  });
-
   it('should compute sortedLines alphabetically/numerically', () => {
     fixture.detectChanges();
 

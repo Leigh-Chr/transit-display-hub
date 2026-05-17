@@ -138,10 +138,6 @@ describe('DevicesComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initial load', () => {
     it('should load devices and lines', async () => {
       fixture.detectChanges();

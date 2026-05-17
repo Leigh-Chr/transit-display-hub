@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { StatsSkeletonComponent } from './stats-skeleton.component';
 
 describe('StatsSkeletonComponent', () => {
-  let component: StatsSkeletonComponent;
   let fixture: ComponentFixture<StatsSkeletonComponent>;
 
   beforeEach(() => {
@@ -11,11 +10,6 @@ describe('StatsSkeletonComponent', () => {
       imports: [StatsSkeletonComponent],
     });
     fixture = TestBed.createComponent(StatsSkeletonComponent);
-    component = fixture.componentInstance;
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   it('should render 3 stat cards', async () => {

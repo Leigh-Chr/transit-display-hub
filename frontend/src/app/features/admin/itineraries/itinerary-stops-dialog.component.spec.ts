@@ -123,10 +123,6 @@ describe('ItineraryStopsDialogComponent', () => {
   describe('initialization', () => {
     beforeEach(() => createComponent());
 
-    it('should create the component', () => {
-      expect(component).toBeTruthy();
-    });
-
     it('should display the itinerary name in the title', () => {
       const title = fixture.nativeElement.querySelector('[mat-dialog-title]');
       expect(title.textContent).toContain('Direction East');

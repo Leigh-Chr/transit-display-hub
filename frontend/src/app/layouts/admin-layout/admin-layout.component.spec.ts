@@ -129,10 +129,6 @@ describe('AdminLayoutComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('sidenavOpen initialization', () => {
     it('should default to true when no localStorage value is set', () => {
       expect(component.sidenavOpen()).toBe(true);

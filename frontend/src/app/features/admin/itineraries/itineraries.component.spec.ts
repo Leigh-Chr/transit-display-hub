@@ -142,10 +142,6 @@ describe('ItinerariesComponent', () => {
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initial load', () => {
     it('should load lines and itineraries', async () => {
       await detectAndFlush(fixture);

@@ -14,10 +14,6 @@ describe('CardSkeletonComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should default showIcon to false', () => {
     expect(component.showIcon()).toBe(false);
   });
