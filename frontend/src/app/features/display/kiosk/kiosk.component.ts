@@ -25,6 +25,8 @@ import { DisplayInfoTickerComponent } from '@shared/components/display-info-tick
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { LocaleService } from '@core/i18n/locale.service';
+import { effectiveTime } from './kiosk-arrival';
+import { speak, speakNextDepartureText } from './kiosk-speech';
 import {
   formatClockDate,
   formatClockTime,
@@ -127,50 +129,9 @@ export class KioskComponent implements OnInit, OnDestroy {
    *  template gates the button on {@link speechAvailable} but a
    *  defensive check stays cheap. */
   speakNextDeparture(): void {
-    const next = this.allArrivals()[0];
-    if (!next) {
-      this.speak(this.transloco.translate('kiosk.speak.noArrivals'));
-      return;
-    }
-    const time = this.formatScheduledTime(next.scheduledTime);
-    const delay = next.realtimeDelaySeconds ?? null;
-    const params = { line: next.line.code, destination: next.destinationName, time };
-    let text: string;
-    if (delay === null) {
-      text = this.transloco.translate('kiosk.speak.next', params);
-    } else if (delay === 0) {
-      text = this.transloco.translate('kiosk.speak.nextOnTime', params);
-    } else if (delay > 0) {
-      text = this.transloco.translate('kiosk.speak.nextDelayed', { ...params, minutes: Math.round(delay / 60) });
-    } else {
-      text = this.transloco.translate('kiosk.speak.nextEarly', { ...params, minutes: Math.round(Math.abs(delay) / 60) });
-    }
-    this.speak(text);
-  }
-
-  /** Wraps {@code window.speechSynthesis} so the speak handlers stay
-   *  one-liners. Cancels any in-flight utterance first so a rapid
-   *  double-press never queues two spoken announcements on top of
-   *  each other. The BCP-47 tag is sourced from the active i18n
-   *  bundle so an EN-resolved kiosk doesn't get a French voice. */
-  private speak(text: string): void {
     if (!this.speechAvailable) {return;}
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = this.transloco.translate('kiosk.speak.bcp47');
-    utterance.rate = 0.95;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  }
-
-  /** Pretty-prints a GTFS time string (HH:mm:ss or HH:mm) for vocal
-   *  output. The synthesiser handles bare digits poorly ("zero
-   *  eight forty-two"); the localised template wraps them in the
-   *  natural-sounding wording for the active language ("huit heures
-   *  quarante-deux" / "08:42"). */
-  private formatScheduledTime(raw: string): string {
-    const trimmed = raw.length >= 5 ? raw.substring(0, 5) : raw;
-    const [hh = '0', mm = '00'] = trimmed.split(':');
-    return this.transloco.translate('kiosk.speak.time', { hh: parseInt(hh, 10), mm });
+    const text = speakNextDepartureText(this.transloco, this.allArrivals()[0]);
+    speak(this.transloco, text);
   }
 
   /** True when the per-arrival platform_code adds information vs.
@@ -196,28 +157,9 @@ export class KioskComponent implements OnInit, OnDestroy {
     return parts.join(', ');
   }
 
-  /** Adds the realtime delay to the scheduled HH:mm so the relative
-   *  countdown and absolute time both reflect what the passenger
-   *  will actually see at the stop. The scheduled time on the
-   *  payload stays untouched — we only project it forward at the
-   *  render layer. */
+  /** Template wrapper around the pure {@link effectiveTime} helper. */
   effectiveTime(arrival: ArrivalInfo | HubArrivalInfo): string {
-    const delay = arrival.realtimeDelaySeconds;
-    if (delay === null || delay === undefined || delay === 0) {
-      return arrival.scheduledTime;
-    }
-    const parts = arrival.scheduledTime.split(':');
-    const hours = parseInt(parts[0] ?? '0', 10);
-    const minutes = parseInt(parts[1] ?? '0', 10);
-    const seconds = parseInt(parts[2] ?? '0', 10);
-    const total = hours * 3600 + minutes * 60 + seconds + delay;
-    // Wrap into [0, 86400) so a late-night delay of 5 min on 23:58
-    // displays as 00:03 the next day rather than 24:03.
-    const wrapped = ((total % 86400) + 86400) % 86400;
-    const hh = Math.floor(wrapped / 3600);
-    const mm = Math.floor((wrapped % 3600) / 60);
-    const ss = wrapped % 60;
-    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+    return effectiveTime(arrival);
   }
 
   constructor() {
