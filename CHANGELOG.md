@@ -7,6 +7,176 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.20.0] — 2026-05-17
+
+Second 35-commit marathon kicked off by a fresh 4-agent cross-axis
+audit (backend, frontend, infra/CI/sec, cross-cutting). The audit
+caught a regression in `SecurityConfig` (401/403 JSON hard-coded in
+English, the i18n P0 reintroduced) and the perf bug
+`RouteImporter.uniqueCode` O(n²). The rest of the work is a sweep of
+dead code, naming alignment, the last 10 admin component templates
+externalised, two new generic helpers (`Pages.hydrate`,
+`confirmAndDelete`), and infra hardening (DB password fail-closed,
+docker-compose `${VAR:?}`, nginx-unprivileged, Temurin noble image).
+
+### Fixed
+
+- **`SecurityConfig` 401/403 JSON** now resolved through
+  `MessageSource` + `LocaleContextHolder` instead of inline English
+  strings (`Authentication required` / `Access denied: insufficient
+  permissions`). Closes the regression of the v1.14.1 i18n P0 — the
+  two auth handlers were the only entrypoints in the codebase still
+  bypassing `messages.properties`. New keys: `error.auth.required`
+  (EN + FR); the existing `error.security.accessDenied` is reused.
+- **`DATABASE_PASSWORD`** fail-closed in `prod` and `kiosk` profiles
+  (no `${DATABASE_PASSWORD:transit}` fallback) so a missing env var
+  trips Spring Boot's startup check loudly rather than silently
+  starting on the dev default.
+- **`docker-compose.yml`** root now requires `JWT_SECRET` and
+  `DATABASE_PASSWORD` via `${VAR:?...}` syntax (aligned with the
+  kiosk compose). `docker compose up` without them fails with a
+  readable error pointing at the missing variable.
+- **`RouteImporter.uniqueCode`** is O(n) instead of O(n²): the
+  `Set<String> taken` of already-claimed codes is hoisted into the
+  caller and mutated as we go, instead of being rebuilt from
+  `result.values()` on every row.
+
+### Added
+
+- **`Pages.hydrate(idsPage, hydrated, idExtractor)`** helper in
+  `application/support/` — collapses the two-step paginated hydration
+  idiom shared by `StopService` / `LineService` / `ItineraryService` /
+  `DashboardService`. The four call sites that used to inline
+  `stream.toMap → stream.map(byId::get).filter(Objects::nonNull)`
+  shrink to a one-liner. Three specs cover ordering, missing-row
+  resilience, and empty-hydrated.
+- **`LineInfo.fromSorted(Collection<Line>)`** static factory — three
+  call sites (`StopResponse`, `DeviceResponse`, `DeviceService`)
+  stop reinventing
+  `sorted(Comparator.comparing(Line::getCode)).map(LineInfo::from)`.
+- **Generic `majorityVote(...)`** in `ItineraryImporter` replaces the
+  three nearly-identical `majorityWheelchair` / `majorityBikes` /
+  `majorityCars` voters with one parameterised helper. The public
+  voters become 4-liners delegating to it.
+- **Sealed `AffectedStopsEvent` parent** (`domain/event/`) — common
+  base for `MessageChangedEvent` + `NetworkChangedEvent`; subclasses
+  drop to 9 lines each, listeners stay type-discriminated.
+- **`ActiveDisplayTracker.handleSafely(...)`** — single try/catch
+  wrapper around the three event listeners (subscribe / unsubscribe /
+  disconnect). Removes three copies of the same boilerplate.
+- **`confirmAndDelete(deps, config)`** helper in `shared/admin/` —
+  centralises the dialog → confirm → service.delete → notify flow
+  shared by 7 admin pages (lines, users, messages, stops,
+  itineraries, schedules, devices). Net 92 LoC removed. Three specs
+  cover the success / error / cancel paths.
+- **`GtfsLimits`** — single home for `LINE_NAME_MAX_LENGTH=100`,
+  previously triplicated in `GtfsImportService` (unused),
+  `RouteImporter`, and `ItineraryImporter`.
+- **`error.auth.required`** translation key (EN + FR) for the new
+  i18n auth entrypoint.
+- **`.nvmrc`** + `engines: { node: ">=20.19" }` in
+  `frontend/package.json` — pins the Node version the project boots
+  against so a future CI runner on Node 22 doesn't silently shift
+  the floor.
+- **JSCpD scope extended** to `backend/src/main/java` (excluding
+  `*Test.java`) so the duplication report covers both tiers.
+- **`perf` commit type** in `commitlint.config.mjs` + listed in
+  `CONTRIBUTING.md` — the perf fix above (`RouteImporter`) was the
+  trigger.
+
+### Changed
+
+- **Routes**: 14 admin sub-routes that each carried
+  `canActivate: [roleGuard], data: { requiredRole: 'ADMIN' }` are
+  now wrapped under a single anonymous parent
+  (`path: '', canActivateChild: [roleGuard], ...`). 80 lines saved,
+  `dashboard` and `messages` (AGENT-accessible) stay outside the
+  group.
+- **10 admin component templates externalised** to
+  `templateUrl` + `styleUrl`: `pathways`, `lines`, `schedules`,
+  `import-audit`, `shapes`, `users`, `tad-zones`, `devices`,
+  `fare-calculator`, plus `admin-layout`. After v1.19.0 took the
+  first six, every admin page is now externalised — ~2 100 lines
+  moved out of the `.ts` files.
+- **`@angular/*` packages aligned** on `21.2.x`. The minor-version
+  drift between `@angular/core` (21.1.2) and `@angular/build`
+  (21.2.10) is closed.
+- **`GtfsImportService`** loses 16 private one-line delegators
+  (~80 lines) — the orchestration calls now hit
+  `agencyImporter.importAgencies(...)`, `routeImporter.importRoutes(...)`
+  etc. directly. `importFromZip` stays under 80 lines despite the
+  inline.
+- **`lineTextColor`** trusts the server-resolved `textColor` and
+  falls back to white only for hand-built test fixtures. Production
+  rows have carried `textColor` since v1.x. The `readableTextColor`
+  helper stays for the schematic-map / shapes call sites that
+  compute contrast on user-typed hex.
+- **`@DataJpaTest` classes** now annotated `@Execution(SAME_THREAD)`
+  so they don't race on the H2 in-memory database when the pre-push
+  hook runs backend + frontend tests concurrently.
+- **`@Component` → `@Service`** on `MessageScopeResolver`,
+  `HeartbeatBuffer`, `RealtimeAlertMatcher`, `NetworkMapPublisher` —
+  they all live in `application/service/` and logically *are*
+  services. Aligns with the 31 siblings.
+- **`BookingRuleService.browse()`** kept (the audit cross-cutting
+  flagged it for rename to `getAll()`, but `browse()` is the deliberate
+  GTFS-data read convention used by 5 services; only `UserService`'s
+  CRUD uses `getAll()`).
+- **`AuthService.login()`** doc-comment clarifies it's
+  test-surface only (no production caller; lets `AuthServiceTest`
+  exercise `authenticate()` without stubbing `RefreshTokenService`).
+- **CSS tokens**: 7 unused tokens dropped from `styles.scss`
+  (`--app-{success,warning,critical,info}-container-alpha`,
+  `--app-z-{tooltip,modal,snackbar}`).
+- **i18n**: 4 dead keys dropped from `en.json` / `fr.json`
+  (`map.alertOverlay.{lineLabel,stopLabel}`,
+  `map.lineIndex.{tooManyLines,showAll}`).
+- **Test data**: 2 unused `TestDataFactory` builders dropped
+  (`createMessageWithTimes`, `createScheduleWithId`).
+- **GTFS helpers**: `CsvHelper.openCsv` / `optional` made `public`,
+  `GtfsImportService` migrated to them (drops 2 duplicate private
+  methods + 1 unused constant).
+- **23 frontend types** lose their `export` because they're only
+  re-exported via the barrel and never imported elsewhere
+  (`BookingInfo`, `BookingType`, the 12 `Fare*` types, the 2
+  `NetworkMap*Update` union variants, `ItineraryInfo`,
+  `ItineraryStopInfo`, `ScopeInfo`, `ValidationStatus`). 23 lines
+  drop from the public API surface; bundle stays unchanged.
+- **`backend/Dockerfile`** switches from `eclipse-temurin:21-jdk-alpine`
+  to `eclipse-temurin:21-jdk-noble` (musl → glibc) and gains
+  `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=50"`
+  so the JVM respects the container cgroup memory limit on
+  small hosts (Raspberry Pi kiosks).
+- **`frontend/Dockerfile`** runs on `nginxinc/nginx-unprivileged:1.27-alpine`
+  with both master and worker as non-root user; nginx binds to 8080
+  (non-root can't bind <1024), compose maps host 80 → container 8080.
+- **CI**: `playwright.config.ts` adds `retries: 2` and `workers: 1`
+  under `process.env.CI` to absorb the cold-start flakiness on first
+  runs without masking genuine regressions.
+- **`.env.example`** documents 4 previously undocumented variables
+  (`APP_GTFS_VALIDATION_ENABLED`, `APP_GTFS_VALIDATION_REPORT_BASE_DIR`,
+  `APP_SECURITY_BCRYPT_STRENGTH`, `APP_DATA_LOADER_GTFS_REFRESH_CRON`).
+- **`.gitignore`** stale entry (`frontend/visual-test.mjs`) dropped;
+  three new AI tool prevention paths added (`.openhands/`, `.crewai/`,
+  `.zed-ai/`).
+
+### Removed
+
+- **`GET /api/admin/import-audit/{id}/validation-report`** JSON
+  variant. The HTML sibling stays — it's the only one the front
+  consumes.
+- **23 instances of FQN `java.util.*` references** replaced by
+  imports across `DisplayStateCalculator`, `LineService`,
+  `ItineraryService`, `DashboardService`, `PathwayService`,
+  `DeviceService`. Same noise cleanup applied to the 16 FQN enum
+  references in `ItineraryImporter`.
+
+### Inherited from the post-v1.19.0 backlog
+
+The 22 commits that landed on `main` between the v1.19.0 tag and the
+2026-05-17 audit (originally documented as `[Unreleased]`) ship as
+part of v1.20.0. The entries below describe that wave.
+
 Post-v1.19.0 marathon (21 commits, 2026-05-16 → 2026-05-17): closes
 the entire 14-item P2/P3 backlog of the cross-axis audit shipped on
 2026-05-16. Splits naturally into a perf / hygiene wave (the seven
