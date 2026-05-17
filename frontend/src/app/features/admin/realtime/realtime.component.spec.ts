@@ -127,8 +127,12 @@ describe('RealtimeComponent', () => {
   });
 
   it('swallows the alerts error path silently (empty state covers it)', () => {
+    // Re-create the fixture so the failing mock is in place when the
+    // constructor fires getAlerts() — the original beforeEach already
+    // ran with the happy-path mock.
     mockService.getAlerts = vi.fn().mockReturnValue(throwError(() => new Error('fail')));
-
+    fixture = TestBed.createComponent(RealtimeComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
 
     expect(component.alerts()).toEqual([]);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -49,7 +49,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
   templateUrl: './gtfs-data.component.html',
   styleUrl: './gtfs-data.component.scss',
 })
-export class GtfsDataComponent implements OnInit {
+export class GtfsDataComponent {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
@@ -77,7 +77,7 @@ export class GtfsDataComponent implements OnInit {
   readonly v2MediaColumns = ['externalId', 'name', 'mediaType'];
   readonly v2LegJoinColumns = ['fromNetwork', 'toNetwork', 'fromStop', 'toStop'];
 
-  ngOnInit(): void {
+  constructor() {
     this.gtfsData.getFares().subscribe({
       next: (data) => this.fares.set(data),
       error: () => {

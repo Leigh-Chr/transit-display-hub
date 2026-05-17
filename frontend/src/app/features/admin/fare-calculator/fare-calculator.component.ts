@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -35,7 +35,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
   templateUrl: './fare-calculator.component.html',
   styleUrl: './fare-calculator.component.scss',
 })
-export class FareCalculatorComponent implements OnInit {
+export class FareCalculatorComponent {
   private readonly fareService = inject(FareCalculatorService);
   private readonly stopService = inject(StopService);
 
@@ -48,7 +48,7 @@ export class FareCalculatorComponent implements OnInit {
   readonly v1Cols = ['fareId', 'price', 'transfers', 'match'];
   readonly v2Cols = ['product', 'amount', 'from', 'to', 'priority'];
 
-  ngOnInit(): void {
+  constructor() {
     this.stopService.getAll().subscribe({
       next: (data) => this.allStops.set(data),
       error: () => this.allStops.set([]),

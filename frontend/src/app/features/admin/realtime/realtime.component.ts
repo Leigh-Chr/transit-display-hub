@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -45,10 +45,15 @@ import { httpErrorMessage } from '@shared/utils/http.utils';
   templateUrl: './realtime.component.html',
   styleUrl: './realtime.component.scss',
 })
-export class RealtimeComponent implements OnInit {
+export class RealtimeComponent {
   private readonly realtime = inject(RealtimeService);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
+
+  constructor() {
+    this.loadAlerts();
+    this.loadVehicles();
+  }
 
   severityLabel(severity: string | null | undefined, t: (key: string) => string): string {
     switch (severity) {
@@ -69,11 +74,6 @@ export class RealtimeComponent implements OnInit {
   readonly refreshingVehicles = signal(false);
 
   readonly vehicleColumns = ['vehicle', 'route', 'trip', 'position', 'speed', 'status', 'occupancy', 'bearing', 'congestion', 'timestamp'];
-
-  ngOnInit(): void {
-    this.loadAlerts();
-    this.loadVehicles();
-  }
 
   refreshAlerts(): void {
     this.refreshingAlerts.set(true);
