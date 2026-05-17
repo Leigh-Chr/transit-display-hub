@@ -24,14 +24,15 @@ export function readableTextColor(bgHex: string): string {
   return yiq >= 160 ? '#1a1a1a' : '#fff';
 }
 
-/** Resolve the foreground color for a line. Prefers the server-resolved
- *  {@code textColor} (set at GTFS import or admin save) and falls back to
- *  computing the YIQ contrast on the fly for legacy rows. Centralised so
- *  badges, filter chips and route overlays always agree on the choice.
+/** Resolve the foreground color for a line. Trusts the server-resolved
+ *  {@code textColor} (set at GTFS import or admin save — see
+ *  {@code ColorContrast.readableTextColor}). Falls back to white only for
+ *  the rare row a test fixture builds by hand without going through the
+ *  service layer; production rows always carry it.
  *
  *  Accepts the structural shape `{color, textColor?}` rather than a full
  *  Line so it works equally with `LineInfo`, `NetworkLine` and the admin
  *  `Line` DTOs without coupling to any of them. */
 export function lineTextColor(line: { color: string; textColor?: string | null }): string {
-  return line.textColor ?? readableTextColor(line.color);
+  return line.textColor ?? '#fff';
 }
