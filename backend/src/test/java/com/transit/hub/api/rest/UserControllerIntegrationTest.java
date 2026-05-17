@@ -97,7 +97,16 @@ class UserControllerIntegrationTest {
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
             mockMvc.perform(get("/api/users"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message", is("Authentication required")));
+        }
+
+        @Test
+        @DisplayName("returns 401 with localised FR message when Accept-Language=fr")
+        void withoutAuth_Returns401LocalisedFr() throws Exception {
+            mockMvc.perform(get("/api/users").header("Accept-Language", "fr"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message", is("Authentification requise")));
         }
 
         @Test
@@ -105,7 +114,18 @@ class UserControllerIntegrationTest {
         void withAgentRole_Returns403() throws Exception {
             mockMvc.perform(get("/api/users")
                             .header("Authorization", "Bearer " + agentToken))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message", is("Access denied: insufficient permissions")));
+        }
+
+        @Test
+        @DisplayName("returns 403 with localised FR message when Accept-Language=fr")
+        void withAgentRole_Returns403LocalisedFr() throws Exception {
+            mockMvc.perform(get("/api/users")
+                            .header("Authorization", "Bearer " + agentToken)
+                            .header("Accept-Language", "fr"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message", is("Accès refusé : permissions insuffisantes")));
         }
     }
 

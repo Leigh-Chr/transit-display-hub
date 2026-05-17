@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.transit.hub.infrastructure.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
@@ -43,6 +45,7 @@ public class SecurityConfig {
     private final LoginRateLimitFilter loginRateLimitFilter;
     private final Environment environment;
     private final AuthProperties authProperties;
+    private final MessageSource messageSource;
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsCsv;
@@ -142,7 +145,7 @@ public class SecurityConfig {
                                     "timestamp", Instant.now().toString(),
                                     "status", 401,
                                     "error", "Unauthorized",
-                                    "message", "Authentication required",
+                                    "message", localised("error.auth.required"),
                                     "path", request.getRequestURI()
                             ));
                         })
@@ -153,7 +156,7 @@ public class SecurityConfig {
                                     "timestamp", Instant.now().toString(),
                                     "status", 403,
                                     "error", "Forbidden",
-                                    "message", "Access denied: insufficient permissions",
+                                    "message", localised("error.security.accessDenied"),
                                     "path", request.getRequestURI()
                             ));
                         })
@@ -224,5 +227,12 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
+    }
+
+    /** Resolve a message key against the active locale (Accept-Language).
+     *  Falls back to the key itself if a translation is missing so the
+     *  response stays JSON-safe even on a misconfigured deploy. */
+    private String localised(String key) {
+        return messageSource.getMessage(key, null, key, LocaleContextHolder.getLocale());
     }
 }
