@@ -121,15 +121,6 @@ public final class TestDataFactory {
         return createSchedule(LocalTime.of(8, 30), stop, itinerary);
     }
 
-    public static Schedule createScheduleWithId(UUID id, LocalTime time, Stop stop, Itinerary itinerary) {
-        return Schedule.builder()
-                .id(id)
-                .time(time)
-                .stop(stop)
-                .itinerary(itinerary)
-                .build();
-    }
-
     // ============== BROADCAST MESSAGE ==============
 
     public static BroadcastMessage createMessage(MessageScope scope, UUID scopeId) {
@@ -156,24 +147,6 @@ public final class TestDataFactory {
 
     public static BroadcastMessage createStopMessage(UUID stopId) {
         return createMessage(MessageScope.STOP, stopId);
-    }
-
-    public static BroadcastMessage createMessageWithTimes(
-            MessageScope scope,
-            UUID scopeId,
-            Instant startTime,
-            Instant endTime
-    ) {
-        return BroadcastMessage.builder()
-                .id(UUID.randomUUID())
-                .title("Scheduled Alert")
-                .content("This is a scheduled alert message")
-                .severity(MessageSeverity.WARNING)
-                .startTime(startTime)
-                .endTime(endTime)
-                .scopeType(scope)
-                .scopeId(scopeId)
-                .build();
     }
 
     public static BroadcastMessage createCriticalMessage(MessageScope scope, UUID scopeId) {
