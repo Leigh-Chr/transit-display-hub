@@ -71,6 +71,10 @@ public class RouteImporter {
 
         Map<String, Line> result = new LinkedHashMap<>();
         Set<UUID> seenIds = new HashSet<>();
+        // Single set mutated as we go so each call to uniqueCode stays
+        // O(1) instead of rebuilding a set from result.values() each row
+        // (O(n²) over a 10k-line feed).
+        Set<String> takenCodes = new HashSet<>();
         try (CSVParser parser = openCsv(routesFile)) {
             for (CSVRecord record : parser) {
                 String routeId = record.get("route_id");
@@ -102,7 +106,9 @@ public class RouteImporter {
                         ? existingByExternalId.get(externalId)
                         : new Line();
                 line.setExternalId(externalId);
-                line.setCode(uniqueCode(code, result.values()));
+                String unique = uniqueCode(code, takenCodes);
+                takenCodes.add(unique);
+                line.setCode(unique);
                 line.setName(name);
                 line.setColor(formattedColor);
                 line.setTextColor(formattedTextColor);
@@ -257,9 +263,13 @@ public class RouteImporter {
         return null;
     }
 
-    private static String uniqueCode(String preferred, Collection<Line> existing) {
-        Set<String> taken = new HashSet<>();
-        for (Line l : existing) { taken.add(l.getCode()); }
+    /**
+     * Picks the first non-colliding line code: {@code preferred} when
+     * available, otherwise {@code preferred-2}, {@code preferred-3}, …
+     * Callers maintain {@code taken} across iterations so we stay
+     * linear in the number of routes instead of quadratic.
+     */
+    private static String uniqueCode(String preferred, Set<String> taken) {
         if (!taken.contains(preferred)) { return preferred; }
         for (int i = 2; i < 10000; i++) {
             String candidate = truncate(preferred,
