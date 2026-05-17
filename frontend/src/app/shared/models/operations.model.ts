@@ -4,7 +4,7 @@
 import { DeviceStatus, LineInfo, MessageScope, MessageSeverity, UserRole } from './common.model';
 
 // Message
-export interface ScopeInfo {
+interface ScopeInfo {
   name: string;
 }
 

@@ -49,7 +49,7 @@ export interface DataOverview {
   realtime: DataOverviewRealtime;
 }
 
-export interface DataOverviewStaticGtfs {
+interface DataOverviewStaticGtfs {
   agencies: number;
   lines: number;
   stops: number;
@@ -72,7 +72,7 @@ export interface DataOverviewStaticGtfs {
   attributions: number;
 }
 
-export interface DataOverviewRealtime {
+interface DataOverviewRealtime {
   alerts: number;
   tripUpdates: number;
   vehiclePositions: number;
@@ -116,7 +116,7 @@ export interface VehiclePosition {
 }
 
 // GTFS booking rules (TAD — admin browse)
-export type BookingType = 'REAL_TIME' | 'SAME_DAY' | 'PRIOR_DAYS';
+type BookingType = 'REAL_TIME' | 'SAME_DAY' | 'PRIOR_DAYS';
 
 export interface BookingRule {
   id: string;
@@ -197,7 +197,7 @@ export type ImportStatus = 'RUNNING' | 'SUCCESS' | 'SKIPPED_UNCHANGED' | 'FAILED
 /** Outcome of the post-import MobilityData runner — orthogonal to
  *  `status`. SUCCESS means the runner completed (the feed itself
  *  may still hold ERROR-level notices). */
-export type ValidationStatus = 'SUCCESS' | 'FAILED' | 'SKIPPED';
+type ValidationStatus = 'SUCCESS' | 'FAILED' | 'SKIPPED';
 
 export interface ImportAudit {
   id: string;

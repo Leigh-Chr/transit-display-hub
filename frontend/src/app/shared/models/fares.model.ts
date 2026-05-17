@@ -2,7 +2,7 @@
 // admin browse surfaces. Self-contained: no cross-domain imports.
 
 // GTFS fares calculation result (public)
-export interface FareV1Option {
+interface FareV1Option {
   fareId: string;
   price: number | null;
   currency: string;
@@ -15,7 +15,7 @@ export interface FareV1Option {
   matchedDestinationZone: string | null;
 }
 
-export interface FareV2Option {
+interface FareV2Option {
   legGroupId: string | null;
   fareProductId: string | null;
   fareProductName: string | null;
@@ -43,7 +43,7 @@ export interface FareCalculationResult {
 }
 
 // GTFS Fares v1 (admin browse)
-export type FarePaymentMethod = 'ON_BOARD' | 'BEFORE_BOARDING';
+type FarePaymentMethod = 'ON_BOARD' | 'BEFORE_BOARDING';
 
 export interface FareAttribute {
   id: string;
@@ -60,7 +60,7 @@ export interface FareAttribute {
   rules: FareRuleSummary[];
 }
 
-export interface FareRuleSummary {
+interface FareRuleSummary {
   id: string;
   routeId: string | null;
   routeCode: string | null;
@@ -89,14 +89,14 @@ export interface FareLegJoinRule {
   toStopName: string | null;
 }
 
-export interface FareNetwork {
+interface FareNetwork {
   id: string;
   externalId: string;
   name: string | null;
   routeCount: number;
 }
 
-export interface FareMedia {
+interface FareMedia {
   id: string;
   externalId: string;
   name: string | null;
@@ -105,14 +105,14 @@ export interface FareMedia {
   mediaType: number | null;
 }
 
-export interface FareArea {
+interface FareArea {
   id: string;
   externalId: string;
   name: string | null;
   stopCount: number;
 }
 
-export interface FareTimeframe {
+interface FareTimeframe {
   id: string;
   timeframeGroupId: string;
   /** ISO-8601 "HH:mm:ss". */
@@ -121,7 +121,7 @@ export interface FareTimeframe {
   serviceId: string | null;
 }
 
-export interface FareProduct {
+interface FareProduct {
   id: string;
   externalId: string;
   name: string | null;
@@ -130,7 +130,7 @@ export interface FareProduct {
   currency: string;
 }
 
-export interface FareLegRule {
+interface FareLegRule {
   id: string;
   legGroupId: string | null;
   networkId: string | null;
@@ -144,7 +144,7 @@ export interface FareLegRule {
   rulePriority: number | null;
 }
 
-export interface FareTransferRule {
+interface FareTransferRule {
   id: string;
   fromLegGroupId: string | null;
   toLegGroupId: string | null;

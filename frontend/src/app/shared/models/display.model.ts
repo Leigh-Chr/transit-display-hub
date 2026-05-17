@@ -56,7 +56,7 @@ export interface ArrivalInfo {
   booking?: BookingInfo | null;
 }
 
-export interface BookingInfo {
+interface BookingInfo {
   phone: string | null;
   bookingUrl: string | null;
   infoUrl: string | null;

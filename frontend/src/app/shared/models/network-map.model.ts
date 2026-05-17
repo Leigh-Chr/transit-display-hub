@@ -86,13 +86,13 @@ export interface NetworkMapAlerts {
   stopAlerts: Record<string, AlertMessage[]>;
 }
 
-export interface NetworkMapFullUpdate {
+interface NetworkMapFullUpdate {
   type: 'FULL_UPDATE';
   networkMap: NetworkMap;
   alerts: NetworkMapAlerts;
 }
 
-export interface NetworkMapAlertsUpdate {
+interface NetworkMapAlertsUpdate {
   type: 'ALERTS_UPDATE';
   alerts: NetworkMapAlerts;
 }

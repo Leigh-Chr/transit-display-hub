@@ -44,7 +44,7 @@ export interface CreateLineRequest {
 }
 
 // Itinerary
-export interface ItineraryStopInfo {
+interface ItineraryStopInfo {
   id: string;
   name: string;
   position: number;
@@ -125,7 +125,7 @@ export interface CreateStopRequest {
 }
 
 // Schedule
-export interface ItineraryInfo {
+interface ItineraryInfo {
   id: string;
   name: string;
   terminusName: string | null;
