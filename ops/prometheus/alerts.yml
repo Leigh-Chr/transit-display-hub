@@ -1,0 +1,57 @@
+# Transit Display Hub — canonical Prometheus alerting rules.
+#
+# Load via prometheus.yml:
+#
+#   rule_files:
+#     - "alerts.yml"
+#
+# Every rule targets a metric the Spring Boot app actually exposes
+# on /actuator/prometheus today — either a Micrometer custom meter
+# (see backend/src/main/java/com/transit/hub/infrastructure/metrics/)
+# or a JVM/HTTP series provided out of the box by Spring Actuator.
+
+groups:
+  - name: transit-display-hub
+    interval: 30s
+    rules:
+
+      # 1. GTFS import slowness — the import is offline (run from the
+      # admin UI) but a 10-minute p95 still means the operator is
+      # waiting, which usually correlates with a stuck DB lock or an
+      # oversized feed. Warning-only because it does not impact end
+      # users immediately.
+      - alert: GtfsImportDurationHigh
+        expr: histogram_quantile(0.95, sum by (le) (rate(gtfs_import_duration_seconds_bucket[10m]))) > 600
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GTFS import p95 duration > 10 min"
+          description: "P95 of {{ $value }}s on instance {{ $labels.instance }}. Check DB load and the feed size on the import-audit page."
+
+      # 2. Stale GTFS data — every operator reimports its feed at least
+      # once a day (overnight cron or manual midnight refresh). A 24-h
+      # gap with zero successful imports is the loudest "we're serving
+      # yesterday's bus" signal we can reasonably produce without an
+      # explicit RT feed-age metric.
+      - alert: NoSuccessfulGtfsImportLast24h
+        expr: sum(increase(gtfs_import_completed_total{status="success"}[24h])) == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful GTFS import in the last 24 hours"
+          description: "Passenger-facing displays may be serving stale schedules. Verify the operator's nightly import job."
+
+      # 3. JVM heap pressure — Caffeine + the in-process realtime cache
+      # are sized for ~512 MiB. Sustained heap above 85 % of max points
+      # at a cache-bucket misconfiguration or a leak; either way it's
+      # the canary before an OutOfMemoryError takes down /actuator.
+      - alert: JvmHeapHigh
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap usage > 85 % for 5 min"
+          description: "Heap = {{ $value | humanizePercentage }} on {{ $labels.instance }}. Investigate Caffeine sizing or a leak in the realtime caches."

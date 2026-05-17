@@ -40,11 +40,9 @@ referenced via the `${DS_PROMETHEUS}` template variable). Adjust the
 variable on first import if your Prometheus datasource is named
 otherwise — Grafana will prompt for it.
 
-## Suggested alerts (not committed here)
+## Alerts
 
-- `sum(increase(gtfs_import_completed_total{status="success"}[24h])) == 0`
-  — no successful GTFS import in the last 24 hours.
-- `histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m]))) > 1`
-  — p95 HTTP latency over one second sustained for 10 minutes.
-- `sum(rate(http_server_requests_seconds_count{outcome="SERVER_ERROR"}[5m])) > 0.01`
-  — server-side error rate above 1 % for 10 minutes.
+See [`../prometheus/alerts.yml`](../prometheus/alerts.yml) for the
+canonical alerting rules (GTFS import duration, no successful import
+in 24 h, JVM heap pressure). Load that file from your `prometheus.yml`
+via the `rule_files` directive.
