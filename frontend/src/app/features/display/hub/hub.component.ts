@@ -2,15 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
-  OnDestroy,
-  signal,
   computed,
+  effect,
   inject,
+  signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Params } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -25,6 +24,7 @@ import {
   LineInfo,
   MessageInfo,
 } from '@shared/models';
+import { injectVisibilityListener } from '@shared/browser/visibility-listener';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { LocaleService } from '@core/i18n/locale.service';
 import {
@@ -43,13 +43,15 @@ import {
   templateUrl: './hub.component.html',
   styleUrl: './hub.component.scss',
 })
-export class HubComponent implements OnInit, OnDestroy {
+export class HubComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly displayService = inject(DisplayService);
   private readonly hubWsService = inject(HubWebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly localeService = inject(LocaleService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly visibility = injectVisibilityListener();
+  private readonly queryParamsSignal = toSignal<Params, Params>(this.route.queryParams, { initialValue: {} });
 
   hubState = signal<HubDisplayState | null>(null);
   error = signal<string | null>(null);
@@ -77,7 +79,6 @@ export class HubComponent implements OnInit, OnDestroy {
    *  so a deleted stop (backend stops emitting) doesn't keep showing forever. */
   private readonly stopStates = new Map<string, { state: DisplayState; receivedAt: number }>();
   private timeInterval: ReturnType<typeof setInterval> | null = null;
-  private visibilityHandler: (() => void) | null = null;
   /** Wall-clock timestamp of the most recent state update; drives the
    *  stale-data banner when the WS link is up but the backend has gone quiet. */
   lastUpdate = signal<number | null>(null);
@@ -164,8 +165,12 @@ export class HubComponent implements OnInit, OnDestroy {
 
   connected = computed(() => this.hubWsService.isConnected());
 
-  ngOnInit(): void {
-    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+  constructor() {
+    // Query params drive the hub identity (stop IDs, name) and trigger
+    // the initial fetch. Using effect + toSignal keeps the wiring inside
+    // an injection-aware lifecycle without an explicit subscribe/destroy.
+    effect(() => {
+      const params = this.queryParamsSignal();
       const stopIdsParam = String(params['stopIds'] ?? '');
       this.hubName = String(params['name'] ?? '') || 'Hub';
 
@@ -183,27 +188,20 @@ export class HubComponent implements OnInit, OnDestroy {
       this.loadInitialState();
     });
 
+    // Pause the clock while the tab is hidden — hubs running 24/7 don't
+    // need to burn CPU updating an off-screen clock once a second. The
+    // shared visibility listener cleans up its DOM hook on destroy.
     this.startClock();
-    // Pause the clock while the tab is hidden — hubs running 24/7 don't need
-    // to burn CPU updating an off-screen clock once a second.
-    this.visibilityHandler = () => {
-      if (document.hidden) {
-        this.stopClock();
-      } else {
-        this.refreshClock();
-        this.startClock();
-      }
-    };
-    document.addEventListener('visibilitychange', this.visibilityHandler);
-  }
+    this.visibility.onHidden(() => this.stopClock());
+    this.visibility.onVisible(() => {
+      this.refreshClock();
+      this.startClock();
+    });
 
-  ngOnDestroy(): void {
-    this.stopClock();
-    if (this.visibilityHandler) {
-      document.removeEventListener('visibilitychange', this.visibilityHandler);
-      this.visibilityHandler = null;
-    }
-    this.hubWsService.disconnect();
+    this.destroyRef.onDestroy(() => {
+      this.stopClock();
+      this.hubWsService.disconnect();
+    });
   }
 
   private startClock(): void {
