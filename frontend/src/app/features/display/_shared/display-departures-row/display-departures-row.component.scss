@@ -1,0 +1,128 @@
+/* Shared departure-row styles consumed by both hub and kiosk display
+   boards. Sizing tokens (column widths, badge sizes) intentionally
+   match the values the two components inlined before this row landed:
+   the kiosk widths (8vw / 22vw min-width) are slightly wider than the
+   hub's (7vw / 20vw) — the wider variant works for both because the
+   hub layout has a separate column for the per-row platform name. */
+
+:host {
+  display: contents;
+}
+
+.departure-row {
+  display: flex;
+  align-items: center;
+  padding: 1.5vh 1vw;
+  border-bottom: 0.1vh solid var(--app-kiosk-border-faint);
+}
+
+.line-badge {
+  width: 8vw;
+  text-align: center;
+  font-size: clamp(3vh, 4vh, 5vh);
+  font-weight: 700;
+  padding: 1vh 0;
+  border-radius: 0.5vh;
+  color: var(--app-kiosk-on-surface);
+  text-shadow: 0 1px 3px var(--app-kiosk-text-shadow-strong);
+  flex-shrink: 0;
+}
+
+.platform {
+  width: 15vw;
+  font-size: clamp(2.5vh, 3.5vh, 4.5vh);
+  font-weight: 500;
+  padding-left: 1.5vw;
+  color: var(--app-kiosk-on-surface-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.destination {
+  flex: 1;
+  font-size: clamp(3vh, 4.5vh, 6vh);
+  font-weight: 500;
+  padding-left: 1.5vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+}
+
+/* TAD booking CTA — phone or "Réservation" inline so a passenger
+   reading a TAD arrival sees the action immediately. */
+.booking-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4vw;
+  margin-left: 1vw;
+  padding: 0.3vh 0.8vw;
+  border-radius: 0.4vh;
+  font-size: clamp(1.5vh, 2vh, 2.5vh);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  background: rgba(56, 142, 235, 0.16);
+  color: var(--app-info);
+  border: 1px solid rgba(56, 142, 235, 0.55);
+  white-space: nowrap;
+}
+
+.booking-icon {
+  font-size: clamp(2vh, 2.5vh, 3vh) !important;
+  width: clamp(2vh, 2.5vh, 3vh) !important;
+  height: clamp(2vh, 2.5vh, 3vh) !important;
+}
+
+.booking-notice {
+  font-size: 0.85em;
+  font-weight: 500;
+  opacity: 0.8;
+  margin-left: 0.4vw;
+}
+
+.time-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 1.5vw;
+  min-width: 22vw;
+  text-align: right;
+}
+
+.time-relative {
+  font-size: clamp(3.5vh, 5vh, 7vh);
+  font-weight: 700;
+  color: var(--app-kiosk-on-surface);
+}
+
+/* Imminent: the vehicle is leaving now. Pop visually so a passenger
+   glancing across the platform spots it without parsing every row. */
+.time-relative.imminent {
+  color: var(--app-kiosk-info-accent);
+  animation: imminentPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes imminentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.62; }
+}
+
+.time-absolute {
+  font-size: clamp(2.5vh, 3.5vh, 5vh);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-kiosk-on-surface-muted);
+}
+
+/* Portrait mode: line badge needs more horizontal room when the
+   screen is tall and narrow, time column too. */
+@media (orientation: portrait) {
+  .line-badge { width: 12vw; }
+  .platform { width: 18vw; }
+  .time-info { min-width: 28vw; }
+}
