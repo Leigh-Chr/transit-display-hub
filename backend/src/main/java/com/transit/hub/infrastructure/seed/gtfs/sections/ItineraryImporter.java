@@ -7,6 +7,7 @@ import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
+import com.transit.hub.infrastructure.seed.gtfs.GtfsLimits;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsParse;
 import com.transit.hub.infrastructure.seed.gtfs.model.ItineraryImport;
 import com.transit.hub.infrastructure.seed.gtfs.model.RouteDirKey;
@@ -50,8 +51,6 @@ import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.option
 @RequiredArgsConstructor
 @Slf4j
 public class ItineraryImporter {
-
-    private static final int LINE_NAME_MAX_LENGTH = 100;
 
     private final ItineraryRepository itineraryRepository;
     private final StopRepository stopRepository;
@@ -259,7 +258,7 @@ public class ItineraryImporter {
         itinerary.setExternalId(externalId);
         itinerary.setLine(linesByGtfsId.get(key.routeId()));
         itinerary.setName(truncate(buildItineraryName(info.headsign(), key.directionId()),
-                LINE_NAME_MAX_LENGTH));
+                GtfsLimits.LINE_NAME_MAX_LENGTH));
         itinerary.setDirectionId(directionId);
         itinerary.setWheelchairDefault(wheelchairDefault);
         itinerary.setBikesAllowedDefault(bikesDefault);

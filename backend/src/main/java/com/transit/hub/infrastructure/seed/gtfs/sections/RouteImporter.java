@@ -5,6 +5,7 @@ import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.util.ColorContrast;
 import com.transit.hub.infrastructure.persistence.LineRepository;
+import com.transit.hub.infrastructure.seed.gtfs.GtfsLimits;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
@@ -43,7 +44,6 @@ import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.option
 public class RouteImporter {
 
     private static final int LINE_CODE_MAX_LENGTH = 30;
-    private static final int LINE_NAME_MAX_LENGTH = 100;
     private static final int LINE_CATEGORY_MAX_LENGTH = 50;
     private static final String DEFAULT_COLOR = "#888888";
 
@@ -83,7 +83,7 @@ public class RouteImporter {
                 String agencyId = optional(record, "agency_id");
 
                 String code = truncate(firstNonBlank(shortName, longName, routeId), LINE_CODE_MAX_LENGTH);
-                String name = truncate(firstNonBlank(longName, shortName, routeId), LINE_NAME_MAX_LENGTH);
+                String name = truncate(firstNonBlank(longName, shortName, routeId), GtfsLimits.LINE_NAME_MAX_LENGTH);
                 LineType type = mapRouteType(routeType);
                 String category = truncate(deriveCategory(networkId, routeType), LINE_CATEGORY_MAX_LENGTH);
                 String formattedColor = formatColor(color);
