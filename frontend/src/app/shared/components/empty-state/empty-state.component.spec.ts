@@ -13,9 +13,12 @@ describe('EmptyStateComponent', () => {
 
     fixture = TestBed.createComponent(EmptyStateComponent);
     component = fixture.componentInstance;
+    // title is required since the default English string was removed —
+    // every real caller provides a localised value via Transloco.
+    fixture.componentRef.setInput('title', 'Nothing here');
   });
 
-  it('should render default icon and title', async () => {
+  it('should render default icon and the provided title', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -23,7 +26,7 @@ describe('EmptyStateComponent', () => {
     expect(iconEl.textContent.trim()).toBe('inbox');
 
     const titleEl = fixture.nativeElement.querySelector('.empty-title');
-    expect(titleEl.textContent.trim()).toBe('No items found');
+    expect(titleEl.textContent.trim()).toBe('Nothing here');
   });
 
   it('should render custom icon and title', async () => {

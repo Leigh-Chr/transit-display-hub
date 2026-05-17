@@ -113,24 +113,24 @@
           <td mat-cell *matCellDef="let stop">
             <span class="stop-name-cell">
               @if (stop.locationType === 1) {
-                <mat-icon class="stop-type-icon" matTooltip="Station (parent)">apartment</mat-icon>
+                <mat-icon class="stop-type-icon" [matTooltip]="t('admin.stops.tooltipParentStation')">apartment</mat-icon>
               }
               <span>{{ stop.name }}</span>
               @if (stop.platformCode) {
-                <span class="platform-badge" matTooltip="Quai">{{ stop.platformCode }}</span>
+                <span class="platform-badge" [matTooltip]="t('admin.stops.tooltipPlatform')">{{ stop.platformCode }}</span>
               }
               @if (stop.zoneId) {
-                <span class="zone-badge" matTooltip="GTFS fare zone (origin/destination/contains_id)">
-                  Zone {{ stop.zoneId }}
+                <span class="zone-badge" [matTooltip]="t('admin.stops.tooltipFareZone')">
+                  {{ t('admin.stops.badgeZone') }} {{ stop.zoneId }}
                 </span>
               }
               @if (stop.stopAccess === 1) {
-                <span class="access-restricted" matTooltip="GTFS stop_access = 1 (staff-only)">
-                  <mat-icon>lock</mat-icon> Personnel
+                <span class="access-restricted" [matTooltip]="t('admin.stops.tooltipStaffOnly')">
+                  <mat-icon>lock</mat-icon> {{ t('admin.stops.badgeStaff') }}
                 </span>
               }
               @if (stop.parentStopName) {
-                <span class="parent-hint" matTooltip="Rattaché à">— {{ stop.parentStopName }}</span>
+                <span class="parent-hint" [matTooltip]="t('admin.stops.tooltipParentLink')">— {{ stop.parentStopName }}</span>
               }
             </span>
           </td>

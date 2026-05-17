@@ -32,6 +32,7 @@ const stopPopupDict = {
       moreInfo: 'Plus d\'infos',
       loadingSchedules: 'Chargement des horaires…',
       loadingSchedulesAria: 'Chargement des horaires',
+      loadSchedulesFailed: 'Failed to load schedules',
       noDepartures: 'No scheduled departures',
     },
     accessibility: {
@@ -245,6 +246,8 @@ describe('StopPopupComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
+    // The component asks Transloco for map.stopPopup.loadSchedulesFailed.
+    // The test transloco module returns the EN string.
     expect(component.error()).toBe('Failed to load schedules');
     expect(component.loading()).toBe(false);
   });

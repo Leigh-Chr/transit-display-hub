@@ -23,6 +23,15 @@
       "deviceToken": "Device token",
       "loadingDisplay": "Loading display",
       "loadingHubDisplay": "Loading hub display"
+    },
+    "empty": {
+      "defaultTitle": "No items found"
+    },
+    "feedCredits": {
+      "aria": "GTFS feed credits",
+      "roleProducer": "producer",
+      "roleOperator": "operator",
+      "roleAuthority": "authority"
     }
   },
   "auth": {
@@ -250,7 +259,9 @@
       "moreInfo": "More info",
       "loadingSchedules": "Loading schedules…",
       "loadingSchedulesAria": "Loading schedules",
-      "noDepartures": "No scheduled departures"
+      "loadSchedulesFailed": "Failed to load schedules",
+      "noDepartures": "No scheduled departures",
+      "ariaDepartures": "Departures from {{ stopName }}"
     },
     "accessibility": {
       "accessible": "Wheelchair accessible",
@@ -393,6 +404,7 @@
         "rtVehicles": "Vehicles"
       },
       "feedInfo": {
+        "defaultTitle": "GTFS feed",
         "dayLeft": "day left",
         "daysLeft": "days left",
         "imported": "Imported",
@@ -474,6 +486,13 @@
       "previewTooltip": "Preview kiosk display",
       "editTooltip": "Edit stop",
       "deleteTooltip": "Delete stop",
+      "tooltipParentStation": "Station (parent)",
+      "tooltipPlatform": "Platform",
+      "tooltipFareZone": "GTFS fare zone (origin/destination/contains_id)",
+      "tooltipStaffOnly": "GTFS stop_access = 1 (staff only)",
+      "tooltipParentLink": "Attached to",
+      "badgeZone": "Zone",
+      "badgeStaff": "Staff",
       "emptyNoLines": "Create a line first",
       "emptyNoLinesDesc": "You need to create at least one line before adding stops.",
       "emptyTitle": "No stops found",
@@ -941,6 +960,7 @@
       "colHash": "Hash",
       "colError": "Error",
       "running": "in progress…",
+      "triggeredBy": "by {{ user }}",
       "validationNotRun": "MobilityData validation disabled or not run",
       "validationFailed": "The validator could not run",
       "validationFailedLabel": "Failed",
@@ -1006,6 +1026,7 @@
       "levelsTooltip": "Declared station levels — GTFS levels.txt",
       "stationDefault": "Station",
       "levelDefault": "level {{ index }}",
+      "levelIndexTooltip": "level_index = {{ index }}",
       "loadFailed": "Failed to load pathways",
       "emptyPathwayTitle": "No pathways for this stop",
       "emptyPathwayDesc": "Either the station has no declared indoor topology, or the stop is a simple pole.",

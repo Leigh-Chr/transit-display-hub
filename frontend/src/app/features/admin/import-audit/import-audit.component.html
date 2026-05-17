@@ -45,7 +45,7 @@
               <td mat-cell *matCellDef="let a">
                 <div>{{ a.startedAt | date:'dd/MM HH:mm:ss' }}</div>
                 @if (a.triggeredBy) {
-                  <div class="muted">par {{ a.triggeredBy }}</div>
+                  <div class="muted">{{ t('admin.importAudit.triggeredBy', { user: a.triggeredBy }) }}</div>
                 }
               </td>
             </ng-container>

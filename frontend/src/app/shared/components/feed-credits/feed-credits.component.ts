@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { AttributionService } from '@core/api/attribution.service';
 import { Attribution } from '@shared/models';
@@ -13,11 +14,12 @@ import { Attribution } from '@shared/models';
 @Component({
   selector: 'app-feed-credits',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [MatIconModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-container *transloco="let t">
     @if (attributions().length > 0) {
-      <footer class="feed-credits" aria-label="GTFS feed credits">
+      <footer class="feed-credits" [attr.aria-label]="t('common.feedCredits.aria')">
         <mat-icon class="credits-icon" aria-hidden="true">verified</mat-icon>
         @for (attr of attributions(); track $index; let last = $last) {
           <span class="credit-item">
@@ -27,15 +29,16 @@ import { Attribution } from '@shared/models';
               {{ attr.organizationName }}
             }
             <span class="roles">
-              @if (attr.producer) { <span class="role role-producer">producer</span> }
-              @if (attr.operator) { <span class="role role-operator">operator</span> }
-              @if (attr.authority) { <span class="role role-authority">authority</span> }
+              @if (attr.producer) { <span class="role role-producer">{{ t('common.feedCredits.roleProducer') }}</span> }
+              @if (attr.operator) { <span class="role role-operator">{{ t('common.feedCredits.roleOperator') }}</span> }
+              @if (attr.authority) { <span class="role role-authority">{{ t('common.feedCredits.roleAuthority') }}</span> }
             </span>
           </span>
           @if (!last) { <span class="separator" aria-hidden="true">·</span> }
         }
       </footer>
     }
+    </ng-container>
   `,
   styles: `
     .feed-credits {

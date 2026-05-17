@@ -22,7 +22,7 @@
               <mat-icon class="levels-icon" [matTooltip]="t('admin.pathways.levelsTooltip')">layers</mat-icon>
               <span class="levels-label">{{ stationName() || t('admin.pathways.stationDefault') }} :</span>
               @for (lvl of stationLevels(); track lvl.id) {
-                <span class="level-chip" [matTooltip]="'level_index = ' + lvl.index">
+                <span class="level-chip" [matTooltip]="t('admin.pathways.levelIndexTooltip', { index: lvl.index })">
                   {{ lvl.name || t('admin.pathways.levelDefault', { index: lvl.index }) }}
                 </span>
               }

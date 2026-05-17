@@ -28,7 +28,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
           <div class="feed-header">
             <mat-icon class="feed-icon" [matTooltip]="statusTooltip(t)">{{ statusIcon() }}</mat-icon>
             <div class="feed-title">
-              <strong>{{ info.publisherName || 'GTFS feed' }}</strong>
+              <strong>{{ info.publisherName || t('admin.dashboard.feedInfo.defaultTitle') }}</strong>
               @if (info.feedVersion) {
                 <span class="feed-version">v{{ info.feedVersion }}</span>
               }

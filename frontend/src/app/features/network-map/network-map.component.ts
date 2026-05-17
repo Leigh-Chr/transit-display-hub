@@ -585,7 +585,7 @@ export class NetworkMapComponent implements OnInit {
       width: '460px',
       maxWidth: '95vw',
       autoFocus: false,
-      ariaLabel: `Departures from ${stop.name}`,
+      ariaLabel: this.transloco.translate('map.stopPopup.ariaDepartures', { stopName: stop.name }),
     });
 
     this.stopDialogRef.afterClosed().subscribe(() => {

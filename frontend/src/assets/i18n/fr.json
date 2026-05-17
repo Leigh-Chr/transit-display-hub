@@ -23,6 +23,15 @@
       "deviceToken": "Jeton appareil",
       "loadingDisplay": "Chargement de l'affichage",
       "loadingHubDisplay": "Chargement du hub"
+    },
+    "empty": {
+      "defaultTitle": "Aucun élément"
+    },
+    "feedCredits": {
+      "aria": "Crédits du flux GTFS",
+      "roleProducer": "producteur",
+      "roleOperator": "opérateur",
+      "roleAuthority": "autorité"
     }
   },
   "auth": {
@@ -250,7 +259,9 @@
       "moreInfo": "Plus d'infos",
       "loadingSchedules": "Chargement des horaires…",
       "loadingSchedulesAria": "Chargement des horaires",
-      "noDepartures": "Aucun passage prévu"
+      "loadSchedulesFailed": "Échec du chargement des horaires",
+      "noDepartures": "Aucun passage prévu",
+      "ariaDepartures": "Départs depuis {{ stopName }}"
     },
     "accessibility": {
       "accessible": "Accessible PMR",
@@ -393,6 +404,7 @@
         "rtVehicles": "Véhicules"
       },
       "feedInfo": {
+        "defaultTitle": "Flux GTFS",
         "dayLeft": "jour restant",
         "daysLeft": "jours restants",
         "imported": "Importé le",
@@ -474,6 +486,13 @@
       "previewTooltip": "Aperçu de l'affichage kiosque",
       "editTooltip": "Modifier l'arrêt",
       "deleteTooltip": "Supprimer l'arrêt",
+      "tooltipParentStation": "Station (parent)",
+      "tooltipPlatform": "Quai",
+      "tooltipFareZone": "Zone tarifaire GTFS (origine/destination/contains_id)",
+      "tooltipStaffOnly": "GTFS stop_access = 1 (réservé personnel)",
+      "tooltipParentLink": "Rattaché à",
+      "badgeZone": "Zone",
+      "badgeStaff": "Personnel",
       "emptyNoLines": "Créez d'abord une ligne",
       "emptyNoLinesDesc": "Vous devez créer au moins une ligne avant d'ajouter des arrêts.",
       "emptyTitle": "Aucun arrêt trouvé",
@@ -941,6 +960,7 @@
       "colHash": "Hash",
       "colError": "Erreur",
       "running": "en cours…",
+      "triggeredBy": "par {{ user }}",
       "validationNotRun": "Validation MobilityData désactivée ou non exécutée",
       "validationFailed": "Le validateur n'a pas pu s'exécuter",
       "validationFailedLabel": "Échec",
@@ -1006,6 +1026,7 @@
       "levelsTooltip": "Niveaux déclarés pour la station — GTFS levels.txt",
       "stationDefault": "Station",
       "levelDefault": "niveau {{ index }}",
+      "levelIndexTooltip": "level_index = {{ index }}",
       "loadFailed": "Impossible de charger les pathways",
       "emptyPathwayTitle": "Pas de pathway pour cet arrêt",
       "emptyPathwayDesc": "Soit la station n'a pas de topologie indoor déclarée, soit l'arrêt est un poteau bus.",

@@ -80,7 +80,10 @@ import { MatIconModule } from '@angular/material/icon';
 export class EmptyStateComponent {
   readonly icon = input('inbox');
   readonly iconColor = input<'default' | 'primary'>('default');
-  readonly title = input('No items found');
+  // Required so every call site forwards a localised string — every
+  // current usage already does, the previous English default was a
+  // silent regression trap waiting for the next forgotten caller.
+  readonly title = input.required<string>();
   readonly description = input<string | undefined>(undefined);
   readonly actionLabel = input<string | undefined>(undefined);
   readonly actionIcon = input<string | undefined>(undefined);

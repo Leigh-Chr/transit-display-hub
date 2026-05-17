@@ -337,7 +337,7 @@ export class StopPopupComponent {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Failed to load schedules');
+        this.error.set(this.transloco.translate('map.stopPopup.loadSchedulesFailed'));
         this.loading.set(false);
       }
     });
