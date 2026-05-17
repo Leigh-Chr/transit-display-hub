@@ -177,26 +177,19 @@
       "stop": "Arrêt",
       "terminus": "Terminus",
       "interchange": "Correspondance",
-      "tad": "À la demande (TAD)",
-      "selected": "Sélectionné",
-      "wheelchair": "Accessible PMR",
       "hiddenLine": "Ligne masquée",
       "alert": "Perturbation"
     },
     "lineFilter": {
       "all": "Toutes",
       "selectAria": "Filtrer par ligne",
-      "categoryAria": "Filtrer par type de ligne",
       "chipTitle": "Cliquer pour basculer {{ code }} · double-clic pour cibler"
     },
     "alertOverlay": {
-      "title": "Alertes en cours",
-      "noAlerts": "Aucune alerte en cours",
       "linesLabel": "Lignes",
       "networkLabel": "Réseau"
     },
     "lineIndex": {
-      "title": "Lignes",
       "subtitle": "Choisissez une ligne pour voir son tracé complet",
       "searchPlaceholder": "Rechercher une ligne par code ou nom",
       "clearAria": "Effacer la recherche",
@@ -760,8 +753,6 @@
         "fieldNamePlaceholder": "ex. Direction Terminus Est",
         "fieldNameHint": "Nom pour cette direction/itinéraire",
         "fieldNameRequired": "Le nom est requis",
-        "fieldTerminus": "Terminus",
-        "fieldTerminusPlaceholder": "ex. Terminus Nord",
         "infoAfterCreate": "Après avoir créé l'itinéraire, vous pouvez ajouter des arrêts pour définir le terminus.",
         "terminusLabel": "Terminus :",
         "terminusHint": "Le terminus est automatiquement dérivé du dernier arrêt.",
@@ -776,15 +767,7 @@
         "noStopsYet": "Aucun arrêt ajouté. Ajoutez des arrêts pour définir l'itinéraire.",
         "terminusLabel": "Terminus :",
         "loadFailed": "Impossible de charger les arrêts",
-        "available": "Arrêts disponibles",
-        "selected": "Arrêts sélectionnés",
-        "searchPlaceholder": "Rechercher un arrêt…",
-        "noStopsAvailable": "Plus d'arrêts disponibles",
-        "noStopsSelected": "Aucun arrêt ajouté. Ajoutez des arrêts pour définir l'itinéraire.",
-        "addTooltip": "Ajouter l'arrêt",
         "removeTooltip": "Retirer l'arrêt",
-        "moveUpTooltip": "Monter",
-        "moveDownTooltip": "Descendre",
         "actionSave": "Enregistrer"
       },
       "confirm": {
@@ -1020,7 +1003,6 @@
       "subtitle": "Connexions piétonnes intra-station — escaliers, ascenseurs, sorties — depuis pathways.txt. Sélectionne un arrêt pour voir ses segments entrants et sortants.",
       "stopPickerLabel": "Arrêt",
       "stopPickerPlaceholder": "Tape le nom de l'arrêt…",
-      "platform": "— quai {{ code }}",
       "levelsTooltip": "Niveaux déclarés pour la station — GTFS levels.txt",
       "stationDefault": "Station",
       "levelDefault": "niveau {{ index }}",

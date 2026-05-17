@@ -177,26 +177,19 @@
       "stop": "Stop",
       "terminus": "Terminus",
       "interchange": "Interchange",
-      "tad": "On-demand (TAD)",
-      "selected": "Selected",
-      "wheelchair": "Wheelchair accessible",
       "hiddenLine": "Hidden line",
       "alert": "Service alert"
     },
     "lineFilter": {
       "all": "All",
       "selectAria": "Filter by line",
-      "categoryAria": "Filter by line type",
       "chipTitle": "Click to toggle {{ code }} · double-click to focus"
     },
     "alertOverlay": {
-      "title": "Active alerts",
-      "noAlerts": "No active alerts",
       "linesLabel": "Lines",
       "networkLabel": "Network"
     },
     "lineIndex": {
-      "title": "Lines",
       "subtitle": "Pick a line to view its full route",
       "searchPlaceholder": "Search a line by code or name",
       "clearAria": "Clear search",
@@ -760,8 +753,6 @@
         "fieldNamePlaceholder": "e.g., Direction Eastern Terminal",
         "fieldNameHint": "Name for this direction/itinerary",
         "fieldNameRequired": "Name is required",
-        "fieldTerminus": "Terminus",
-        "fieldTerminusPlaceholder": "e.g., North Terminal",
         "infoAfterCreate": "After creating the itinerary, you can add stops to define the terminus.",
         "terminusLabel": "Terminus:",
         "terminusHint": "The terminus is automatically derived from the last stop.",
@@ -776,15 +767,7 @@
         "noStopsYet": "No stops added yet. Add stops to define the itinerary.",
         "terminusLabel": "Terminus:",
         "loadFailed": "Failed to load stops",
-        "available": "Available stops",
-        "selected": "Selected stops",
-        "searchPlaceholder": "Search a stop…",
-        "noStopsAvailable": "No more stops available",
-        "noStopsSelected": "No stops added yet. Add stops to define the itinerary.",
-        "addTooltip": "Add stop",
         "removeTooltip": "Remove stop",
-        "moveUpTooltip": "Move up",
-        "moveDownTooltip": "Move down",
         "actionSave": "Save"
       },
       "confirm": {
@@ -1020,7 +1003,6 @@
       "subtitle": "Intra-station pedestrian connections — stairs, elevators, exits — from pathways.txt. Select a stop to see its inbound and outbound segments.",
       "stopPickerLabel": "Stop",
       "stopPickerPlaceholder": "Type the stop name…",
-      "platform": "— platform {{ code }}",
       "levelsTooltip": "Declared station levels — GTFS levels.txt",
       "stationDefault": "Station",
       "levelDefault": "level {{ index }}",
