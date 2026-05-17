@@ -184,9 +184,9 @@ class UserServiceTest {
         @Test
         @DisplayName("creates user with encoded password")
         void withValidRequest_Succeeds() {
-            CreateUserRequest request = new CreateUserRequest("newuser", "password123", UserRole.AGENT);
+            CreateUserRequest request = new CreateUserRequest("newuser", "password1234", UserRole.AGENT);
             when(userRepository.existsByUsername("newuser")).thenReturn(false);
-            when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
+            when(passwordEncoder.encode("password1234")).thenReturn("encoded_password");
             when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
                 User saved = invocation.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -202,13 +202,13 @@ class UserServiceTest {
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
             assertThat(captor.getValue().getPassword()).isEqualTo("encoded_password");
-            verify(passwordEncoder).encode("password123");
+            verify(passwordEncoder).encode("password1234");
         }
 
         @Test
         @DisplayName("throws ValidationException when username already exists")
         void withDuplicateUsername_ThrowsValidation() {
-            CreateUserRequest request = new CreateUserRequest("admin", "password123", UserRole.ADMIN);
+            CreateUserRequest request = new CreateUserRequest("admin", "password1234", UserRole.ADMIN);
             when(userRepository.existsByUsername("admin")).thenReturn(true);
 
             assertThatThrownBy(() -> userService.create(request))
@@ -241,14 +241,14 @@ class UserServiceTest {
         @Test
         @DisplayName("updates password when provided")
         void updatesPasswordWhenProvided() {
-            UpdateUserRequest request = new UpdateUserRequest("newpassword", UserRole.ADMIN, true);
+            UpdateUserRequest request = new UpdateUserRequest("newpassword12", UserRole.ADMIN, true);
             when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
-            when(passwordEncoder.encode("newpassword")).thenReturn("new_encoded_password");
+            when(passwordEncoder.encode("newpassword12")).thenReturn("new_encoded_password");
             when(userRepository.save(any(User.class))).thenReturn(testAdmin);
 
             userService.update(testAdminId, request);
 
-            verify(passwordEncoder).encode("newpassword");
+            verify(passwordEncoder).encode("newpassword12");
             assertThat(testAdmin.getPassword()).isEqualTo("new_encoded_password");
         }
 

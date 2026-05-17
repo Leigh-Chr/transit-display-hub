@@ -192,7 +192,7 @@ class UserControllerIntegrationTest {
         @Test
         @DisplayName("returns 201 with created user for ADMIN")
         void withAdminRole_Returns201() throws Exception {
-            CreateUserRequest request = new CreateUserRequest("newuser", "password123", UserRole.AGENT);
+            CreateUserRequest request = new CreateUserRequest("newuser", "password1234", UserRole.AGENT);
 
             mockMvc.perform(post("/api/users")
                             .header("Authorization", "Bearer " + adminToken)
@@ -208,7 +208,7 @@ class UserControllerIntegrationTest {
         @Test
         @DisplayName("returns 403 for AGENT role")
         void withAgentRole_Returns403() throws Exception {
-            CreateUserRequest request = new CreateUserRequest("newuser", "password123", UserRole.AGENT);
+            CreateUserRequest request = new CreateUserRequest("newuser", "password1234", UserRole.AGENT);
 
             mockMvc.perform(post("/api/users")
                             .header("Authorization", "Bearer " + agentToken)
@@ -220,7 +220,7 @@ class UserControllerIntegrationTest {
         @Test
         @DisplayName("returns 400 for duplicate username")
         void withDuplicateUsername_Returns400() throws Exception {
-            CreateUserRequest request = new CreateUserRequest("admin", "password123", UserRole.ADMIN);
+            CreateUserRequest request = new CreateUserRequest("admin", "password1234", UserRole.ADMIN);
 
             mockMvc.perform(post("/api/users")
                             .header("Authorization", "Bearer " + adminToken)
@@ -232,7 +232,7 @@ class UserControllerIntegrationTest {
         @Test
         @DisplayName("returns 400 with blank username")
         void withBlankUsername_Returns400() throws Exception {
-            String json = "{\"username\": \"\", \"password\": \"password123\", \"role\": \"ADMIN\"}";
+            String json = "{\"username\": \"\", \"password\": \"password1234\", \"role\": \"ADMIN\"}";
 
             mockMvc.perform(post("/api/users")
                             .header("Authorization", "Bearer " + adminToken)
@@ -256,7 +256,7 @@ class UserControllerIntegrationTest {
         @Test
         @DisplayName("returns 400 with missing role")
         void withMissingRole_Returns400() throws Exception {
-            String json = "{\"username\": \"newuser\", \"password\": \"password123\"}";
+            String json = "{\"username\": \"newuser\", \"password\": \"password1234\"}";
 
             mockMvc.perform(post("/api/users")
                             .header("Authorization", "Bearer " + adminToken)
