@@ -7,6 +7,7 @@ import com.transit.hub.application.dto.response.MessageResponse;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.enums.DeviceStatus;
+import com.transit.hub.application.support.Pages;
 import com.transit.hub.infrastructure.persistence.BroadcastMessageRepository;
 import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
@@ -62,11 +63,9 @@ public class DashboardService {
         List<Line> topLineEntities = topIdsPage.getContent().isEmpty()
                 ? List.of()
                 : lineRepository.findAllByIdInWithStopsAndRoutes(topIdsPage.getContent());
-        Map<UUID, Line> topLineById = topLineEntities.stream()
-                .collect(Collectors.toMap(Line::getId, l -> l));
-        List<LineResponse> topLines = topIdsPage.getContent().stream()
-                .map(topLineById::get)
-                .filter(Objects::nonNull)
+        List<LineResponse> topLines = Pages.hydrate(topIdsPage, topLineEntities, Line::getId)
+                .getContent()
+                .stream()
                 .map(LineResponse::from)
                 .toList();
 

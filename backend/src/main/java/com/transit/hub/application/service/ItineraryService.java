@@ -7,6 +7,7 @@ import com.transit.hub.application.dto.response.ItineraryResponse;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.application.support.Pages;
 import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.model.Itinerary;
@@ -99,14 +100,7 @@ public class ItineraryService {
             return PageResponse.from(Page.empty(pageable), ItineraryResponse::from);
         }
         List<Itinerary> hydrated = itineraryRepository.findAllByIdInWithLine(idsPage.getContent());
-        Map<UUID, Itinerary> byId = hydrated.stream()
-                .collect(Collectors.toMap(Itinerary::getId, i -> i));
-        List<Itinerary> ordered = idsPage.getContent().stream()
-                .map(byId::get)
-                .filter(Objects::nonNull)
-                .toList();
-        Page<Itinerary> page = new org.springframework.data.domain.PageImpl<>(
-                ordered, pageable, idsPage.getTotalElements());
+        Page<Itinerary> page = Pages.hydrate(idsPage, hydrated, Itinerary::getId);
         return PageResponse.from(page, ItineraryResponse::from);
     }
 

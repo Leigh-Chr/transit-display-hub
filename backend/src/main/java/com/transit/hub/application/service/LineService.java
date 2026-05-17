@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.response.LineResponse;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.application.exception.ValidationException;
+import com.transit.hub.application.support.Pages;
 import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.event.NetworkChangedEvent;
@@ -75,11 +76,7 @@ public class LineService {
             return PageResponse.from(Page.empty(pageable), LineResponse::from);
         }
         List<Line> hydrated = lineRepository.findAllByIdInWithStopsAndRoutes(idsPage.getContent());
-        // Preserve the page's order. The hydrate query uses IN (:ids)
-        // which doesn't guarantee order.
-        Map<UUID, Line> byId = hydrated.stream().collect(Collectors.toMap(Line::getId, l -> l));
-        List<Line> ordered = idsPage.getContent().stream().map(byId::get).filter(Objects::nonNull).toList();
-        Page<Line> page = new org.springframework.data.domain.PageImpl<>(ordered, pageable, idsPage.getTotalElements());
+        Page<Line> page = Pages.hydrate(idsPage, hydrated, Line::getId);
         return PageResponse.from(page, LineResponse::from);
     }
 

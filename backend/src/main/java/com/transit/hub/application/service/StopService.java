@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.request.CreateStopRequest;
 import com.transit.hub.application.dto.response.PageResponse;
 import com.transit.hub.application.dto.response.StopResponse;
 import com.transit.hub.application.exception.EntityNotFoundException;
+import com.transit.hub.application.support.Pages;
 import com.transit.hub.application.support.UnpaginatedCap;
 import com.transit.hub.domain.event.NetworkChangedEvent;
 import com.transit.hub.domain.event.StopDeletedEvent;
@@ -93,14 +94,7 @@ public class StopService {
                     stop -> StopResponse.from(stop, 0));
         }
         List<Stop> hydrated = stopRepository.findAllByIdInWithLinesAndDevices(idsPage.getContent());
-        Map<UUID, Stop> byId = hydrated.stream()
-                .collect(java.util.stream.Collectors.toMap(Stop::getId, s -> s));
-        List<Stop> ordered = idsPage.getContent().stream()
-                .map(byId::get)
-                .filter(java.util.Objects::nonNull)
-                .toList();
-        Page<Stop> page = new org.springframework.data.domain.PageImpl<>(
-                ordered, pageable, idsPage.getTotalElements());
+        Page<Stop> page = Pages.hydrate(idsPage, hydrated, Stop::getId);
 
         Map<UUID, Integer> counts = scheduleCountsFor(page.getContent());
         return PageResponse.from(page,
