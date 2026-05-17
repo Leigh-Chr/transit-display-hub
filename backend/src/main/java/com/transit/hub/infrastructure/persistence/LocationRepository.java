@@ -37,4 +37,9 @@ public interface LocationRepository extends JpaRepository<Location, UUID> {
     List<Location> findByBoundingBoxContaining(
             @org.springframework.data.repository.query.Param("lat") double lat,
             @org.springframework.data.repository.query.Param("lon") double lon);
+
+    /** Projection used by {@code GtfsImportService.validateGlobalIdUniqueness}:
+     *  loads only the external id column instead of hydrating full Location entities. */
+    @Query("SELECT l.externalId FROM Location l WHERE l.externalId IS NOT NULL")
+    List<String> findAllExternalIds();
 }

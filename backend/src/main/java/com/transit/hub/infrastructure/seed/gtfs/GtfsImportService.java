@@ -16,8 +16,6 @@ import com.transit.hub.infrastructure.seed.gtfs.sections.FareV2Importer;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ItineraryImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.ScheduleImporter;
 import com.transit.hub.domain.model.BookingRule;
-import com.transit.hub.domain.model.Location;
-import com.transit.hub.domain.model.LocationGroup;
 import com.transit.hub.infrastructure.seed.gtfs.sections.BookingRuleImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.LocationImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.LocationGroupImporter;
@@ -295,18 +293,12 @@ public class GtfsImportService {
      *  flex zone covers exactly that stop") but we log them loudly so
      *  an operator can reach out to the publisher. */
     private void validateGlobalIdUniqueness() {
-        Set<String> stopIds = stopRepository.findAll().stream()
-                .map(Stop::getExternalId)
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
-        Set<String> locationIds = locationRepository.findAll().stream()
-                .map(Location::getExternalId)
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
-        Set<String> groupIds = locationGroupRepository.findAll().stream()
-                .map(LocationGroup::getExternalId)
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
+        // JPQL projections instead of findAll() — on a 50k-stop feed the previous
+        // version hydrated every Stop / Location / LocationGroup entity (plus
+        // their eager associations) just to read a single string per row.
+        Set<String> stopIds = new HashSet<>(stopRepository.findAllExternalIds());
+        Set<String> locationIds = new HashSet<>(locationRepository.findAllExternalIds());
+        Set<String> groupIds = new HashSet<>(locationGroupRepository.findAllExternalIds());
 
         Set<String> stopVsLocation = new HashSet<>(stopIds);
         stopVsLocation.retainAll(locationIds);

@@ -60,6 +60,12 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT s.id FROM Stop s")
     Set<UUID> findAllIds();
 
+    /** Projection used by {@code GtfsImportService.validateGlobalIdUniqueness}:
+     *  loads only the external id column instead of hydrating full Stop entities
+     *  (lines, devices, parent_stop, etc.) just to read one string per row. */
+    @Query("SELECT s.externalId FROM Stop s WHERE s.externalId IS NOT NULL")
+    List<String> findAllExternalIds();
+
     /** Returns the subset of {@code candidateIds} that match an existing
      *  Stop row. Used by {@code HubDisplayService} so a hub bound to N
      *  stop ids can filter unknown ones in a single query instead of
