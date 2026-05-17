@@ -4,6 +4,7 @@ import com.transit.hub.application.dto.response.DisplayState;
 import com.transit.hub.application.exception.EntityNotFoundException;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.Itinerary;
+import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
@@ -257,13 +258,13 @@ class DisplayStateCalculatorTest {
             // Two itineraries for the same line (e.g. eastbound and westbound)
             Itinerary eastbound = TestDataFactory.createItineraryWithId(UUID.randomUUID(), testLine, "Direction East");
             Stop eastTerminus = TestDataFactory.createStopWithId(UUID.randomUUID(), "Eastern Terminal", testLine);
-            eastbound.addStop(testStop, 0);
-            eastbound.addStop(eastTerminus, 1);
+            eastbound.addItineraryStop(ItineraryStop.builder().stop(testStop).position(0).build());
+            eastbound.addItineraryStop(ItineraryStop.builder().stop(eastTerminus).position(1).build());
 
             Itinerary westbound = TestDataFactory.createItineraryWithId(UUID.randomUUID(), testLine, "Direction West");
             Stop westTerminus = TestDataFactory.createStopWithId(UUID.randomUUID(), "Western Terminal", testLine);
-            westbound.addStop(testStop, 0);
-            westbound.addStop(westTerminus, 1);
+            westbound.addItineraryStop(ItineraryStop.builder().stop(testStop).position(0).build());
+            westbound.addItineraryStop(ItineraryStop.builder().stop(westTerminus).position(1).build());
 
             List<Schedule> bothDirections = List.of(
                     TestDataFactory.createSchedule(LocalTime.of(8, 0), testStop, eastbound),
@@ -373,8 +374,8 @@ class DisplayStateCalculatorTest {
         void usesItineraryTerminusAsDestination() {
             // Create a terminus stop and add it to the itinerary
             Stop terminusStop = TestDataFactory.createStopWithId(UUID.randomUUID(), "Eastern Terminal", testLine);
-            testItinerary.addStop(testStop, 0);
-            testItinerary.addStop(terminusStop, 1);
+            testItinerary.addItineraryStop(ItineraryStop.builder().stop(testStop).position(0).build());
+            testItinerary.addItineraryStop(ItineraryStop.builder().stop(terminusStop).position(1).build());
 
             Schedule entry = TestDataFactory.createSchedule(LocalTime.of(14, 30), testStop, testItinerary);
 

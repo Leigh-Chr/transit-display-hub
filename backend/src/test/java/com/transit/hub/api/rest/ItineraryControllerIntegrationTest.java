@@ -5,6 +5,7 @@ import com.transit.hub.application.dto.request.AddItineraryStopRequest;
 import com.transit.hub.application.dto.request.CreateItineraryRequest;
 import com.transit.hub.application.dto.request.UpdateItineraryStopsRequest;
 import com.transit.hub.domain.model.Itinerary;
+import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
@@ -353,7 +354,7 @@ class ItineraryControllerIntegrationTest {
         @DisplayName("removes stop from itinerary")
         void removesStop() throws Exception {
             // First add a stop
-            testItinerary.addStop(testStop, 0);
+            testItinerary.addItineraryStop(ItineraryStop.builder().stop(testStop).position(0).build());
             itineraryRepository.save(testItinerary);
 
             mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId() + "/stops/" + testStop.getId())
@@ -391,7 +392,7 @@ class ItineraryControllerIntegrationTest {
         @Test
         @DisplayName("returns 401 without authentication")
         void withoutAuth_Returns401() throws Exception {
-            testItinerary.addStop(testStop, 0);
+            testItinerary.addItineraryStop(ItineraryStop.builder().stop(testStop).position(0).build());
             itineraryRepository.save(testItinerary);
 
             mockMvc.perform(delete("/api/itineraries/" + testItinerary.getId() + "/stops/" + testStop.getId()).with(csrf()))

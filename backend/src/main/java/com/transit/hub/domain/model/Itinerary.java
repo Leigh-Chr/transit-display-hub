@@ -194,28 +194,4 @@ public class Itinerary {
         }
         return itineraryStops.getLast().getStop().getName();
     }
-
-    public void addStop(Stop stop, int position) {
-        ItineraryStop itineraryStop = ItineraryStop.builder()
-                .itinerary(this)
-                .stop(stop)
-                .position(position)
-                .build();
-        itineraryStops.add(itineraryStop);
-    }
-
-    public void removeStop(Stop stop) {
-        itineraryStops.removeIf(is -> is.getStop().equals(stop));
-        reorderStops();
-    }
-
-    public void clearStops() {
-        itineraryStops.clear();
-    }
-
-    private void reorderStops() {
-        for (int i = 0; i < itineraryStops.size(); i++) {
-            itineraryStops.get(i).setPosition(i);
-        }
-    }
 }

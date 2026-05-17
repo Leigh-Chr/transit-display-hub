@@ -101,7 +101,10 @@ public final class TestDataFactory {
                 .name(name)
                 .build();
         for (int i = 0; i < stops.length; i++) {
-            itinerary.addStop(stops[i], i);
+            itinerary.addItineraryStop(ItineraryStop.builder()
+                    .stop(stops[i])
+                    .position(i)
+                    .build());
         }
         return itinerary;
     }

@@ -54,15 +54,15 @@ class ItineraryTest {
     }
 
     @Nested
-    @DisplayName("addStop")
-    class AddStop {
+    @DisplayName("addItineraryStop")
+    class AddItineraryStop {
 
         @Test
-        @DisplayName("adds stop with correct position")
+        @DisplayName("adds stop with provided position")
         void addsStopWithPosition() {
             Itinerary itinerary = TestDataFactory.createItinerary(line, "Test Route");
 
-            itinerary.addStop(stopA, 0);
+            itinerary.addItineraryStop(ItineraryStop.builder().stop(stopA).position(0).build());
 
             assertThat(itinerary.getItineraryStops()).hasSize(1);
             assertThat(itinerary.getItineraryStops().getFirst().getStop()).isEqualTo(stopA);
@@ -74,9 +74,9 @@ class ItineraryTest {
         void addsMultipleStops() {
             Itinerary itinerary = TestDataFactory.createItinerary(line, "Test Route");
 
-            itinerary.addStop(stopA, 0);
-            itinerary.addStop(stopB, 1);
-            itinerary.addStop(stopC, 2);
+            itinerary.addItineraryStop(ItineraryStop.builder().stop(stopA).position(0).build());
+            itinerary.addItineraryStop(ItineraryStop.builder().stop(stopB).position(1).build());
+            itinerary.addItineraryStop(ItineraryStop.builder().stop(stopC).position(2).build());
 
             assertThat(itinerary.getItineraryStops()).hasSize(3);
             assertThat(itinerary.getItineraryStops().get(0).getStop()).isEqualTo(stopA);
@@ -85,27 +85,30 @@ class ItineraryTest {
         }
 
         @Test
-        @DisplayName("sets itinerary reference on the created ItineraryStop")
+        @DisplayName("sets the back-reference on the added ItineraryStop")
         void setsItineraryReference() {
             Itinerary itinerary = TestDataFactory.createItinerary(line, "Test Route");
 
-            itinerary.addStop(stopA, 0);
+            ItineraryStop is = ItineraryStop.builder().stop(stopA).position(0).build();
+            itinerary.addItineraryStop(is);
 
+            assertThat(is.getItinerary()).isEqualTo(itinerary);
             assertThat(itinerary.getItineraryStops().getFirst().getItinerary()).isEqualTo(itinerary);
         }
     }
 
     @Nested
-    @DisplayName("removeStop")
-    class RemoveStop {
+    @DisplayName("removeItineraryStopIf")
+    class RemoveItineraryStopIf {
 
         @Test
-        @DisplayName("removes the specified stop")
-        void removesStop() {
+        @DisplayName("removes the matching stop and reports the change")
+        void removesMatchingStop() {
             Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "Test Route", stopA, stopB, stopC);
 
-            itinerary.removeStop(stopB);
+            boolean removed = itinerary.removeItineraryStopIf(is -> is.getStop().equals(stopB));
 
+            assertThat(removed).isTrue();
             assertThat(itinerary.getItineraryStops()).hasSize(2);
             assertThat(itinerary.getItineraryStops().stream()
                     .map(is -> is.getStop().getName())
@@ -113,48 +116,32 @@ class ItineraryTest {
         }
 
         @Test
-        @DisplayName("reorders remaining stops after removal")
-        void reordersAfterRemoval() {
-            Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "Test Route", stopA, stopB, stopC);
-
-            itinerary.removeStop(stopA);
-
-            assertThat(itinerary.getItineraryStops()).hasSize(2);
-            assertThat(itinerary.getItineraryStops().get(0).getPosition()).isEqualTo(0);
-            assertThat(itinerary.getItineraryStops().get(1).getPosition()).isEqualTo(1);
-            assertThat(itinerary.getItineraryStops().get(0).getStop()).isEqualTo(stopB);
-            assertThat(itinerary.getItineraryStops().get(1).getStop()).isEqualTo(stopC);
-        }
-
-        @Test
-        @DisplayName("handles removal of middle stop correctly")
-        void removesMiddleStop() {
-            Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "Test Route", stopA, stopB, stopC);
-
-            itinerary.removeStop(stopB);
-
-            assertThat(itinerary.getItineraryStops()).hasSize(2);
-            assertThat(itinerary.getItineraryStops().get(0).getPosition()).isEqualTo(0);
-            assertThat(itinerary.getItineraryStops().get(0).getStop()).isEqualTo(stopA);
-            assertThat(itinerary.getItineraryStops().get(1).getPosition()).isEqualTo(1);
-            assertThat(itinerary.getItineraryStops().get(1).getStop()).isEqualTo(stopC);
-        }
-
-        @Test
-        @DisplayName("does nothing when stop is not in itinerary")
-        void stopNotInItinerary_DoesNothing() {
+        @DisplayName("returns false when no stop matches")
+        void noMatch_ReturnsFalse() {
             Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "Test Route", stopA, stopB);
             Stop unknownStop = TestDataFactory.createStop("Unknown Station", line);
 
-            itinerary.removeStop(unknownStop);
+            boolean removed = itinerary.removeItineraryStopIf(is -> is.getStop().equals(unknownStop));
 
+            assertThat(removed).isFalse();
             assertThat(itinerary.getItineraryStops()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("detaches the removed stop from this itinerary")
+        void detachesRemovedStop() {
+            Itinerary itinerary = TestDataFactory.createItineraryWithStops(line, "Test Route", stopA, stopB);
+            ItineraryStop toRemove = itinerary.getItineraryStops().getFirst();
+
+            itinerary.removeItineraryStopIf(is -> is.getStop().equals(stopA));
+
+            assertThat(toRemove.getItinerary()).isNull();
         }
     }
 
     @Nested
-    @DisplayName("clearStops")
-    class ClearStops {
+    @DisplayName("clearItineraryStops")
+    class ClearItineraryStops {
 
         @Test
         @DisplayName("removes all stops from itinerary")
@@ -163,7 +150,7 @@ class ItineraryTest {
 
             assertThat(itinerary.getItineraryStops()).hasSize(3);
 
-            itinerary.clearStops();
+            itinerary.clearItineraryStops();
 
             assertThat(itinerary.getItineraryStops()).isEmpty();
         }
@@ -173,7 +160,7 @@ class ItineraryTest {
         void onEmptyItinerary_DoesNothing() {
             Itinerary itinerary = TestDataFactory.createItinerary(line, "Empty Route");
 
-            itinerary.clearStops();
+            itinerary.clearItineraryStops();
 
             assertThat(itinerary.getItineraryStops()).isEmpty();
         }

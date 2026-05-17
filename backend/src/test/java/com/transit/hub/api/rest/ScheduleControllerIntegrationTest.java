@@ -3,6 +3,7 @@ package com.transit.hub.api.rest;
 import tools.jackson.databind.ObjectMapper;
 import com.transit.hub.application.dto.request.CreateScheduleRequest;
 import com.transit.hub.domain.model.Itinerary;
+import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Schedule;
 import com.transit.hub.domain.model.Stop;
@@ -71,7 +72,7 @@ class ScheduleControllerIntegrationTest {
         stopRepository.save(testStop);
 
         testItinerary = Itinerary.builder().name("Direction North").line(testLine).build();
-        testItinerary.addStop(testStop, 0);
+        testItinerary.addItineraryStop(ItineraryStop.builder().stop(testStop).position(0).build());
         itineraryRepository.save(testItinerary);
 
         testSchedule = Schedule.builder().time(LocalTime.of(8, 30)).stop(testStop).itinerary(testItinerary).build();
