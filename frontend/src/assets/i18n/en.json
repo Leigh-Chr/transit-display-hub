@@ -32,6 +32,22 @@
         "tooManyAttempts": "Too many login attempts. Please try again in a few minutes.",
         "generic": "An error occurred. Please try again."
       }
+    },
+    "changePassword": {
+      "title": "Change your password",
+      "subtitle": "Your account requires a new password before continuing.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Update password",
+      "loadingAriaLabel": "Updating password",
+      "mustChangeNotice": "You must change your password before accessing the app.",
+      "error": {
+        "invalidCurrentPassword": "The current password is incorrect.",
+        "passwordsDoNotMatch": "The two passwords do not match.",
+        "passwordTooShort": "Password must be at least 12 characters.",
+        "generic": "Could not update password. Please try again."
+      }
     }
   },
   "kiosk": {

@@ -13,6 +13,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
   {
+    path: 'auth/change-password',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auth/change-password/change-password.component')
+        .then(m => m.ChangePasswordComponent)
+  },
+  {
     path: 'admin',
     canActivate: [authGuard],
     loadComponent: () => import('./layouts/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),

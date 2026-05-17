@@ -32,6 +32,22 @@
         "tooManyAttempts": "Trop de tentatives. Réessayez dans quelques minutes.",
         "generic": "Une erreur est survenue. Veuillez réessayer."
       }
+    },
+    "changePassword": {
+      "title": "Change ton mot de passe",
+      "subtitle": "Ton compte doit utiliser un nouveau mot de passe avant de continuer.",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirme le nouveau mot de passe",
+      "submit": "Mettre à jour",
+      "loadingAriaLabel": "Mise à jour en cours",
+      "mustChangeNotice": "Tu dois changer ton mot de passe avant d'accéder à l'application.",
+      "error": {
+        "invalidCurrentPassword": "Le mot de passe actuel est incorrect.",
+        "passwordsDoNotMatch": "Les deux mots de passe ne correspondent pas.",
+        "passwordTooShort": "Le mot de passe doit faire au moins 12 caractères.",
+        "generic": "Impossible de mettre à jour le mot de passe. Veuillez réessayer."
+      }
     }
   },
   "kiosk": {
