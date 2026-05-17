@@ -1,21 +1,12 @@
 package com.transit.hub.domain.event;
 
-import org.springframework.context.ApplicationEvent;
-
 import java.util.Set;
 import java.util.UUID;
 
-public class NetworkChangedEvent extends ApplicationEvent {
+public final class NetworkChangedEvent extends AffectedStopsEvent {
     private static final long serialVersionUID = 1L;
 
-    private final Set<UUID> affectedStopIds;
-
     public NetworkChangedEvent(Object source, Set<UUID> affectedStopIds) {
-        super(source);
-        this.affectedStopIds = affectedStopIds;
-    }
-
-    public Set<UUID> getAffectedStopIds() {
-        return affectedStopIds;
+        super(source, affectedStopIds);
     }
 }
