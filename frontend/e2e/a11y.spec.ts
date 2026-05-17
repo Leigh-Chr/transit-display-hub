@@ -26,6 +26,19 @@ const publicPages = [
   { path: '/map/list',  name: 'network-list' },
 ];
 
+// Admin pages added 2026-05-18 — the audit flagged that 15+ admin views
+// were unaudited, so any contrast regression caught by the dashboard
+// baseline would slip silently through the rest. We start with a wide
+// per-page budget (the dashboards share their card / chip components so
+// the baseline counts mirror it closely) and ratchet down as fixes land.
+const adminPages = [
+  { path: '/admin/lines',     name: 'admin-lines' },
+  { path: '/admin/stops',     name: 'admin-stops' },
+  { path: '/admin/users',     name: 'admin-users' },
+  { path: '/admin/messages',  name: 'admin-messages' },
+  { path: '/admin/schedules', name: 'admin-schedules' },
+];
+
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
 // Per-page baseline: update when a pre-existing violation is fixed.
@@ -43,6 +56,15 @@ const BASELINE: Record<string, number> = {
   'kiosk-stop':      3,
   'hub':             3,
   'admin-dashboard': 5,
+  // Admin pages share the dashboard's chip / card system, so their
+  // pre-existing counts cluster around the same magnitude. 10 leaves
+  // headroom on the first CI run; tighten after the visual design v2
+  // pass lands.
+  'admin-lines':     10,
+  'admin-stops':     10,
+  'admin-users':     10,
+  'admin-messages':  10,
+  'admin-schedules': 10,
 };
 
 function assertNoNewViolations(name: string, criticalCount: number, sample: unknown): void {
@@ -142,3 +164,27 @@ test('admin-dashboard has no axe-detected critical/serious violations', async ({
     critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
   );
 });
+
+for (const p of adminPages) {
+  test(`${p.name} has no axe-detected critical/serious violations`, async ({ adminPage }) => {
+    test.setTimeout(120_000);
+    await adminPage.goto(p.path, { waitUntil: 'networkidle' });
+    // Page chrome may be slow to render the first time (tables hydrate
+    // from rxResource async) — wait for h1 just like the dashboard test.
+    await adminPage.locator('h1').waitFor({ state: 'visible', timeout: 15_000 });
+
+    const results = await new AxeBuilder({ page: adminPage })
+      .withTags(WCAG_TAGS)
+      .analyze();
+
+    const critical = results.violations.filter(
+      v => v.impact === 'critical' || v.impact === 'serious',
+    );
+
+    assertNoNewViolations(
+      p.name,
+      critical.length,
+      critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
+    );
+  });
+}
