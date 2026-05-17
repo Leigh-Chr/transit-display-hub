@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/packages/jscpd/schema.json",
-  "path": ["frontend/src"],
+  "path": ["frontend/src", "backend/src/main/java"],
   "threshold": 6,
   "minLines": 5,
   "minTokens": 50,
@@ -21,6 +21,7 @@
     "**/generated/**",
     "**/*.spec.ts",
     "**/*.test.ts",
+    "**/*Test.java",
     "**/*.min.js",
     "**/*.lock",
     "**/package-lock.json",
