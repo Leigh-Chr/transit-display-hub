@@ -1,49 +1,42 @@
 package com.transit.hub.api.rest;
 
-import com.transit.hub.application.dto.response.AttributionResponse;
-import com.transit.hub.application.service.AttributionService;
-import com.transit.hub.infrastructure.security.JwtAuthenticationFilter;
-import com.transit.hub.infrastructure.security.JwtService;
-import com.transit.hub.infrastructure.security.LoginRateLimitFilter;
+import com.transit.hub.domain.model.Attribution;
+import com.transit.hub.infrastructure.persistence.AttributionRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.cache.CacheManager;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = AttributionController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@DisplayName("AttributionController — WebMvcTest slice")
+@Execution(ExecutionMode.SAME_THREAD)
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Transactional
+@DisplayName("AttributionController Integration Tests")
 class AttributionControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private AttributionRepository attributionRepository;
 
-    @MockitoBean
-    private AttributionService attributionService;
-
-    // Infrastructure beans — not under test here; mocked to satisfy the
-    // application context when addFilters = false.
-    @MockitoBean private JwtService jwtService;
-    @MockitoBean private JwtAuthenticationFilter jwtAuthenticationFilter;
-    @MockitoBean private LoginRateLimitFilter loginRateLimitFilter;
-    @MockitoBean private CacheManager cacheManager;
+    @BeforeEach
+    void setUp() {
+        attributionRepository.deleteAll();
+    }
 
     @Test
-    @DisplayName("returns 200 + empty list when service returns nothing")
+    @DisplayName("returns 200 + empty list when no attribution rows exist")
     void emptyList() throws Exception {
-        when(attributionService.getAllAttributions()).thenReturn(List.of());
-
         mockMvc.perform(get("/api/attributions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -51,12 +44,17 @@ class AttributionControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("returns the producer / operator / authority block from the service")
-    void returnsServiceResult() throws Exception {
-        when(attributionService.getAllAttributions()).thenReturn(List.of(
-                new AttributionResponse("SMMAG", true, false, true,
-                        "https://www.smmag.fr", "contact@smmag.fr", "+33476205555")
-        ));
+    @DisplayName("returns the producer / operator / authority block from the repository")
+    void returnsRepositoryRow() throws Exception {
+        attributionRepository.save(Attribution.builder()
+                .organizationName("SMMAG")
+                .producer(true)
+                .operator(false)
+                .authority(true)
+                .url("https://www.smmag.fr")
+                .email("contact@smmag.fr")
+                .phone("+33476205555")
+                .build());
 
         mockMvc.perform(get("/api/attributions"))
                 .andExpect(status().isOk())
@@ -69,12 +67,12 @@ class AttributionControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("returns multiple entries in service order")
+    @DisplayName("returns multiple entries with producers ranked before operators")
     void returnsMultipleEntries() throws Exception {
-        when(attributionService.getAllAttributions()).thenReturn(List.of(
-                new AttributionResponse("SMMAG", true, false, true, null, null, null),
-                new AttributionResponse("TAG", false, true, false, null, null, null)
-        ));
+        attributionRepository.save(Attribution.builder()
+                .organizationName("SMMAG").producer(true).authority(true).build());
+        attributionRepository.save(Attribution.builder()
+                .organizationName("TAG").operator(true).build());
 
         mockMvc.perform(get("/api/attributions"))
                 .andExpect(status().isOk())
