@@ -370,6 +370,14 @@ class UserControllerIntegrationTest {
                             .header("Authorization", "Bearer " + agentToken))
                     .andExpect(status().isForbidden());
         }
+
+        @Test
+        @DisplayName("returns 400 when an admin tries to delete their own account")
+        void selfDelete_Returns400() throws Exception {
+            mockMvc.perform(delete("/api/users/" + testAdmin.getId())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     @Nested

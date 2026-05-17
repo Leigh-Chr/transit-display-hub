@@ -10,6 +10,7 @@ import com.transit.hub.domain.model.User;
 import com.transit.hub.domain.model.enums.UserRole;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import com.transit.hub.testutil.TestDataFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -60,6 +63,11 @@ class UserServiceTest {
         // Default: assume there is more than one active admin so destructive admin
         // tests can run; per-test setups override when checking the guard itself.
         lenient().when(userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN)).thenReturn(2L);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     @Nested
@@ -474,6 +482,22 @@ class UserServiceTest {
                     .hasMessageContaining("last active administrator");
 
             verify(userRepository, never()).deleteById(any());
+        }
+
+        @Test
+        @DisplayName("refuses to delete the currently authenticated account, even with other admins")
+        void refusesSelfDelete() {
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(testAdmin.getUsername(), "n/a"));
+            when(userRepository.findById(testAdminId)).thenReturn(Optional.of(testAdmin));
+
+            assertThatThrownBy(() -> userService.delete(testAdminId))
+                    .isInstanceOf(ValidationException.class)
+                    .satisfies(ex -> assertThat(((ValidationException) ex).getMessageKey())
+                            .isEqualTo("error.user.cannotDeleteSelf"));
+
+            verify(userRepository, never()).deleteById(any());
+            verify(userRepository, never()).countByRoleAndEnabledTrue(any());
         }
 
         @Test

@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,6 +109,16 @@ public class UserService {
     public void delete(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User", id));
+
+        // Self-delete locks the caller out of the system immediately,
+        // even if another active admin still exists — the JWT becomes
+        // invalid on the next /me lookup. The last-admin guard alone
+        // is not enough because a two-admin org would still let either
+        // one delete themselves and brick their own session.
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && user.getUsername().equals(auth.getName())) {
+            throw ValidationException.ofKey("error.user.cannotDeleteSelf");
+        }
 
         if (user.getRole() == UserRole.ADMIN && user.isEnabled()) {
             ensureAtLeastOneOtherActiveAdmin();
