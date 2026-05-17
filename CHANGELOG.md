@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.23.0] — 2026-05-17
+
+Lot F — polish: a11y + i18n cleanup, zero ESLint warnings, dead i18n
+keys removed, dependency bumps, root Makefile, canonical Prometheus
+alerts, contributor docs for translators and screenshot regeneration,
+RequestIdFilter hardened against HTTP response splitting after the
+SpotBugs 6.5.4 bump, and the two largest specs (kiosk + schematic-map)
+split into per-domain files.
+
+### Added
+
+- `Makefile` at the repo root: `make help`, `make dev`, `make test`,
+  `make check`, `make lint`, `make backend`, `make frontend`,
+  `make postgres`, `make clean`. New contributors get the same
+  commands README has been mentioning for a year.
+- `ops/prometheus/alerts.yml` — canonical alerting rules pinned to
+  metrics this app actually exposes: GTFS import duration p95 > 10 min
+  (warning), no successful GTFS import in the last 24 h (critical),
+  JVM heap usage > 85 % for 5 min (warning). The Grafana README now
+  points at this file instead of carrying suggested-only snippets.
+- `docs/i18n.md` — contributor guide for translators: adding keys,
+  adding a language, FR tutoiement convention, removing keys, and
+  reporting translation issues.
+- `frontend/src/app/features/network-map/components/schematic-map/schematic-map-spec.helpers.ts`
+  and `frontend/src/app/features/display/kiosk/kiosk-spec.helpers.ts`
+  — extracted fixtures, mocks, Transloco dictionaries and TestBed
+  setup so the two largest specs (943 l and 683 l) split cleanly
+  into per-domain files without duplicating boilerplate.
+
+### Changed
+
+- `RequestIdFilter` now sanitises the incoming `X-Request-Id` header
+  against control characters before echoing it on the response,
+  closing CWE-113 (HTTP response splitting). Tomcat already rejects
+  CR/LF headers up the chain, but the filter is the trust boundary
+  so it re-validates. A dedicated test covers the malicious-header
+  path.
+- `docs/screenshots/README.md` — replaces the manual recapture
+  instructions with the actual Playwright command
+  (`SCREENSHOTS_ENABLED=1 npx playwright test screenshots.spec.ts
+  --project=chromium`) and links it to the new i18n contributor
+  guide for multi-language captures.
+- `frontend/.npmrc` — `legacy-peer-deps=true` now carries an inline
+  comment documenting the Angular 21.2 ↔ TypeScript 6.0 peer-range
+  mismatch and a 2026-05-17 re-eval date, so the next contributor
+  knows why it is still there.
+- `schematic-map.component.spec.ts` (943 l, 80 tests) split into
+  `schematic-map.component.spec.ts` (signals, filters, interaction,
+  helpers, route overlay state, zoom controls, spacing, keyboard
+  navigation) + `schematic-map.layout.spec.ts` (empty selection,
+  alert severity, URL sync, label transforms, displayLabel, label
+  generation, centerOnStop, route overlay paths/arrows/markers,
+  accessibility / zone / fare filters, frequency-scaled stroke
+  width). Each file now sits below the 600-line file-size guardrail.
+- `kiosk.component.spec.ts` (683 l, 39 tests) split into
+  `kiosk.component.spec.ts` (init via stopId / token, computed
+  signals, duration computed signals, formatters, needsScrolling,
+  message separation) + `kiosk.component.runtime.spec.ts` (error
+  paths, connection-state display, cleanup, WebSocket update
+  propagation, query-param fallback, needsScrolling adjusted by
+  messages).
+
+### Fixed
+
+- The four remaining hardcoded English `aria-label` attributes
+  (`search-input` clear button, `device-token-dialog` token region,
+  `kiosk` and `hub` loading spinners) now read from
+  `common.ariaLabel.*` Transloco keys. French a11y users finally
+  hear the right narration.
+- Nine ESLint warnings zeroed out: 5 a11y warnings (segment-header
+  `<div>` → `<button>` in route-search-bar; hub-display `<a
+  mat-list-item>` → `<button mat-list-item>` in admin-layout) and 4
+  TypeScript warnings (redundant `?? '...'` coalescences in
+  stop-popup / stop-autocomplete / display-departures-row spec, and
+  the spec's test host now declares `OnPush`). `npx eslint
+  --max-warnings 0` exits 0.
+- `LayeredArchitectureTest` Javadoc no longer points at the
+  inexistent `AuthMeService` — the comment now references
+  `AuthService#getCurrentUser`, which is what `AuthController.me()`
+  actually delegates to.
+
+### Removed
+
+- 18 unused i18n keys deleted from `en.json` / `fr.json`
+  (`admin.itineraries.dialog.fieldTerminus*`, eight
+  `admin.itineraries.stopsDialog.*` residues, `admin.pathways.platform`,
+  `map.alertOverlay.{title,noAlerts}`, three `map.legend.*`,
+  `map.lineFilter.categoryAria`, `map.lineIndex.title`).
+- 37 redundant `expect(component).toBeTruthy()` canaries removed
+  from component specs. Each had only one assertion and added zero
+  signal beyond "the constructor didn't throw" — which the surrounding
+  tests already cover transitively. Test count is now 1150 (down
+  from 1187 but with no real coverage lost).
+- Unused `Line` import in `MessageService.java` (referenced only via
+  string literals before).
+
+### Dependencies
+
+- `org.mockito:mockito-core` 5.14.2 → 5.23.0 (jmh implementation).
+- `com.github.ben-manes.caffeine:caffeine` 3.2.3 → 3.2.4 (pinned
+  ahead of the Spring Boot BOM).
+- `org.testcontainers:{junit-jupiter,postgresql}` 1.21.3 → 1.21.4.
+- `com.github.spotbugs` plugin 6.0.26 → 6.5.4. The new release
+  flagged a latent HRS finding in `RequestIdFilter`; fix bundled
+  in this release.
+- `com.google.protobuf` plugin 0.9.5 → 0.10.0. Upstream issue 762
+  (multi-string `Map` dependency notation deprecated in Gradle 9.1)
+  was fixed in 0.9.6, so the in-build workaround comment is gone.
+- `knip` 6.14.0 → 6.14.1 (frontend devDependency).
+
 ## [1.22.0] — 2026-05-17
 
 Lot B — frontend refactor: extracts three signal-based composables
