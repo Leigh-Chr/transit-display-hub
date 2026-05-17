@@ -80,6 +80,9 @@ class NetworkMapServiceTest {
     @org.mockito.Spy
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
+    @org.mockito.Spy
+    private StopHierarchyResolver stopHierarchyResolver = new StopHierarchyResolver();
+
     @InjectMocks
     private NetworkMapService networkMapService;
 

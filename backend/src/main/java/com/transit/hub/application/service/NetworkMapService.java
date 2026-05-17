@@ -45,6 +45,7 @@ public class NetworkMapService {
     private final ScheduleRepository scheduleRepository;
     private final FlexStopTimeRepository flexStopTimeRepository;
     private final AreaRepository areaRepository;
+    private final StopHierarchyResolver stopHierarchyResolver;
     private final Clock clock;
 
     @Value("${app.data-loader.gtfs.attribution:}")
@@ -57,7 +58,7 @@ public class NetworkMapService {
         List<Stop> stops = stopRepository.findAllWithLines();
         List<Transfer> transfers = transferRepository.findAllWithStops();
 
-        Map<UUID, UUID> platformToParentId = buildPlatformToParentMap(stops);
+        Map<UUID, UUID> platformToParentId = stopHierarchyResolver.buildPlatformToParentMap(stops);
         Map<UUID, Long> scheduleCountByLineId = buildScheduleCountByLine();
         List<NetworkLine> networkLines = lines.stream()
                 .map(line -> toNetworkLine(line,
@@ -67,7 +68,7 @@ public class NetworkMapService {
 
         Set<UUID> onDemandStopIds = collectOnDemandStopIds();
         Map<UUID, List<String>> areaNamesByStopId = buildAreaNamesByStopId();
-        Map<UUID, List<Stop>> childrenByParentId = buildChildrenByParentId(stops);
+        Map<UUID, List<Stop>> childrenByParentId = stopHierarchyResolver.buildChildrenByParentId(stops);
         List<NetworkStop> networkStops = buildNetworkStops(stops, childrenByParentId,
                 onDemandStopIds, areaNamesByStopId);
         List<NetworkTransfer> networkTransfers = buildNetworkTransfers(transfers,
@@ -76,21 +77,6 @@ public class NetworkMapService {
         Bounds bounds = calculateBounds(networkStops);
         String attr = attribution == null || attribution.isBlank() ? null : attribution;
         return new NetworkMapResponse(networkLines, networkStops, networkTransfers, bounds, attr);
-    }
-
-    /** Phase 1.3 itinerary remap: the importer attaches itinerary stops
-     *  to actual platforms, but the schematic map only surfaces parent
-     *  stations. The platform→parent UUID mapping lets itineraries and
-     *  transfers rewrite their stop ids consistently with the surface
-     *  stop list. */
-    private static Map<UUID, UUID> buildPlatformToParentMap(List<Stop> stops) {
-        Map<UUID, UUID> map = new HashMap<>();
-        for (Stop s : stops) {
-            if (s.getParentStop() != null) {
-                map.put(s.getId(), s.getParentStop().getId());
-            }
-        }
-        return map;
     }
 
     /** Single COUNT(*) GROUP BY query so the per-line lookup stays O(1). */
@@ -136,19 +122,6 @@ public class NetworkMapService {
         }
         for (List<String> names : map.values()) {
             Collections.sort(names);
-        }
-        return map;
-    }
-
-    /** Phase 1.3 ripple: collapse platforms back into their parent at
-     *  render time so the schematic map keeps one node per logical
-     *  stop. Standalone stops (no parent) keep rendering as themselves. */
-    private static Map<UUID, List<Stop>> buildChildrenByParentId(List<Stop> stops) {
-        Map<UUID, List<Stop>> map = new HashMap<>();
-        for (Stop s : stops) {
-            if (s.getParentStop() != null) {
-                map.computeIfAbsent(s.getParentStop().getId(), k -> new ArrayList<>()).add(s);
-            }
         }
         return map;
     }
