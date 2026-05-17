@@ -5,6 +5,9 @@ import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.Stop;
+import com.transit.hub.domain.model.enums.BikesAllowed;
+import com.transit.hub.domain.model.enums.CarsAllowed;
+import com.transit.hub.domain.model.enums.WheelchairAccess;
 import com.transit.hub.infrastructure.persistence.ItineraryRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsLimits;
@@ -234,10 +237,10 @@ public class ItineraryImporter {
         // Majority vote across every trip matching (route, direction) so
         // the representative trip alone doesn't underestimate
         // accessibility when the longest variant is the non-accessible one.
-        com.transit.hub.domain.model.enums.WheelchairAccess wheelchairDefault =
+        WheelchairAccess wheelchairDefault =
                 majorityWheelchair(tripInfos, key);
-        com.transit.hub.domain.model.enums.BikesAllowed bikesDefault = majorityBikes(tripInfos, key);
-        com.transit.hub.domain.model.enums.CarsAllowed carsDefault = majorityCars(tripInfos, key);
+        BikesAllowed bikesDefault = majorityBikes(tripInfos, key);
+        CarsAllowed carsDefault = majorityCars(tripInfos, key);
 
         // Null shape = the feed didn't ship a shape for this trip;
         // the future map view falls back to stop-to-stop lines.
@@ -319,7 +322,7 @@ public class ItineraryImporter {
      * {@code 2} (not accessible); ignores {@code 0} (unknown). Falls back
      * to {@code UNKNOWN} when every trip is unspecified or evenly split.
      */
-    public static com.transit.hub.domain.model.enums.WheelchairAccess majorityWheelchair(
+    public static WheelchairAccess majorityWheelchair(
             Map<String, TripInfo> tripInfos, RouteDirKey key) {
         int yes = 0;
         int no = 0;
@@ -330,19 +333,19 @@ public class ItineraryImporter {
             else if (info.wheelchairAccessible() == 2) { no++; }
         }
         if (yes == 0 && no == 0) {
-            return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
+            return WheelchairAccess.UNKNOWN;
         }
         if (yes > no) {
-            return com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE;
+            return WheelchairAccess.ACCESSIBLE;
         }
         if (no > yes) {
-            return com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE;
+            return WheelchairAccess.NOT_ACCESSIBLE;
         }
-        return com.transit.hub.domain.model.enums.WheelchairAccess.UNKNOWN;
+        return WheelchairAccess.UNKNOWN;
     }
 
     /** Majority vote on {@code bikes_allowed}, mirroring {@link #majorityWheelchair}. */
-    public static com.transit.hub.domain.model.enums.BikesAllowed majorityBikes(
+    public static BikesAllowed majorityBikes(
             Map<String, TripInfo> tripInfos, RouteDirKey key) {
         int yes = 0;
         int no = 0;
@@ -353,22 +356,22 @@ public class ItineraryImporter {
             else if (info.bikesAllowed() == 2) { no++; }
         }
         if (yes == 0 && no == 0) {
-            return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
+            return BikesAllowed.UNKNOWN;
         }
         if (yes > no) {
-            return com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED;
+            return BikesAllowed.ALLOWED;
         }
         if (no > yes) {
-            return com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED;
+            return BikesAllowed.NOT_ALLOWED;
         }
-        return com.transit.hub.domain.model.enums.BikesAllowed.UNKNOWN;
+        return BikesAllowed.UNKNOWN;
     }
 
     /**
      * Majority vote on {@code cars_allowed} (post-2023 trips.txt extension),
      * mirroring {@link #majorityBikes}.
      */
-    public static com.transit.hub.domain.model.enums.CarsAllowed majorityCars(
+    public static CarsAllowed majorityCars(
             Map<String, TripInfo> tripInfos, RouteDirKey key) {
         int yes = 0;
         int no = 0;
@@ -379,15 +382,15 @@ public class ItineraryImporter {
             else if (info.carsAllowed() == 2) { no++; }
         }
         if (yes == 0 && no == 0) {
-            return com.transit.hub.domain.model.enums.CarsAllowed.UNKNOWN;
+            return CarsAllowed.UNKNOWN;
         }
         if (yes > no) {
-            return com.transit.hub.domain.model.enums.CarsAllowed.ALLOWED;
+            return CarsAllowed.ALLOWED;
         }
         if (no > yes) {
-            return com.transit.hub.domain.model.enums.CarsAllowed.NOT_ALLOWED;
+            return CarsAllowed.NOT_ALLOWED;
         }
-        return com.transit.hub.domain.model.enums.CarsAllowed.UNKNOWN;
+        return CarsAllowed.UNKNOWN;
     }
 
     /**
@@ -396,13 +399,13 @@ public class ItineraryImporter {
      * schedule row stores nothing).
      */
     public static Optional<Boolean> computeWheelchairOverride(int tripWheelchair,
-            com.transit.hub.domain.model.enums.WheelchairAccess itineraryDefault) {
+            WheelchairAccess itineraryDefault) {
         if (tripWheelchair == 1) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.ACCESSIBLE
+            return itineraryDefault == WheelchairAccess.ACCESSIBLE
                     ? Optional.empty() : Optional.of(Boolean.TRUE);
         }
         if (tripWheelchair == 2) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.WheelchairAccess.NOT_ACCESSIBLE
+            return itineraryDefault == WheelchairAccess.NOT_ACCESSIBLE
                     ? Optional.empty() : Optional.of(Boolean.FALSE);
         }
         return Optional.empty();
@@ -413,13 +416,13 @@ public class ItineraryImporter {
      * empty-means-inherit rule as {@link #computeWheelchairOverride}.
      */
     public static Optional<Boolean> computeBikesOverride(int tripBikes,
-            com.transit.hub.domain.model.enums.BikesAllowed itineraryDefault) {
+            BikesAllowed itineraryDefault) {
         if (tripBikes == 1) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.ALLOWED
+            return itineraryDefault == BikesAllowed.ALLOWED
                     ? Optional.empty() : Optional.of(Boolean.TRUE);
         }
         if (tripBikes == 2) {
-            return itineraryDefault == com.transit.hub.domain.model.enums.BikesAllowed.NOT_ALLOWED
+            return itineraryDefault == BikesAllowed.NOT_ALLOWED
                     ? Optional.empty() : Optional.of(Boolean.FALSE);
         }
         return Optional.empty();
