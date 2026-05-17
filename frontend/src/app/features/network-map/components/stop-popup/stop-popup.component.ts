@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, signal, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -81,7 +81,7 @@ interface TimetableGroup {
   templateUrl: './stop-popup.component.html',
   styleUrl: './stop-popup.component.scss'
 })
-export class StopPopupComponent implements OnInit {
+export class StopPopupComponent {
   private readonly scheduleService = inject(ScheduleService);
   private readonly networkMapData = inject(NetworkMapDataService);
   private readonly fareCalculator = inject(FareCalculatorService);
@@ -193,7 +193,7 @@ export class StopPopupComponent implements OnInit {
     INFO: 2,
   };
 
-  ngOnInit(): void {
+  constructor() {
     this.buildMessages();
     this.loadSchedules();
     // takeUntilDestroyed everywhere: a popup can be closed before its

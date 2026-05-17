@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { testTranslocoModule } from '../../../../../test-translations';
 import { StopPopupComponent, StopPopupData } from './stop-popup.component';
@@ -234,10 +234,13 @@ describe('StopPopupComponent', () => {
     expect(group.times.length).toBe(2);
   });
 
-  it('should show loading state initially', () => {
-    mockScheduleService.getForStop = vi.fn().mockReturnValue(of(mockSchedules));
+  it('should show loading state until the schedule fetch resolves', () => {
+    // Use a never-emitting Subject so we can observe the in-flight
+    // state. The constructor now fires loadSchedules() directly so a
+    // synchronously-completing of(...) would already flip loading off.
+    const pending = new Subject<Schedule[]>();
+    mockScheduleService.getForStop = vi.fn().mockReturnValue(pending.asObservable());
     createComponent();
-    // Before detectChanges, loading is true
     expect(component.loading()).toBe(true);
   });
 
