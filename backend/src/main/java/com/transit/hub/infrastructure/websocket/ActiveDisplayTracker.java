@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.messaging.AbstractSubProtocolEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,8 +36,7 @@ public class ActiveDisplayTracker {
 
     @EventListener
     public void handleSubscribe(SessionSubscribeEvent event) {
-        try {
-            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+        handleSafely(event, "subscribe", accessor -> {
             String destination = accessor.getDestination();
             String sessionId = accessor.getSessionId();
             String subscriptionId = accessor.getSubscriptionId();
@@ -63,15 +64,12 @@ public class ActiveDisplayTracker {
                         .add(subscriptionId);
                 log.debug("Client {} subscribed to network map", sessionId);
             }
-        } catch (Exception e) {
-            log.warn("Error handling subscribe event: {}", e.getMessage());
-        }
+        });
     }
 
     @EventListener
     public void handleUnsubscribe(SessionUnsubscribeEvent event) {
-        try {
-            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+        handleSafely(event, "unsubscribe", accessor -> {
             String sessionId = accessor.getSessionId();
             String subscriptionId = accessor.getSubscriptionId();
 
@@ -92,15 +90,12 @@ public class ActiveDisplayTracker {
             if (mapSubs != null && mapSubs.remove(subscriptionId) && mapSubs.isEmpty()) {
                 networkMapSubscriptions.remove(sessionId);
             }
-        } catch (Exception e) {
-            log.warn("Error handling unsubscribe event: {}", e.getMessage());
-        }
+        });
     }
 
     @EventListener
     public void handleDisconnect(SessionDisconnectEvent event) {
-        try {
-            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+        handleSafely(event, "disconnect", accessor -> {
             String sessionId = accessor.getSessionId();
 
             if (sessionId == null) {
@@ -115,8 +110,16 @@ public class ActiveDisplayTracker {
                 log.debug("Client {} disconnected, removed {} subscriptions", sessionId, subscriptions.size());
             }
             networkMapSubscriptions.remove(sessionId);
+        });
+    }
+
+    /** Wraps the STOMP header parsing in a uniform try/catch so a malformed
+     *  frame never escapes a listener and tears down the entire WS pipeline. */
+    private void handleSafely(AbstractSubProtocolEvent event, String label, Consumer<StompHeaderAccessor> body) {
+        try {
+            body.accept(StompHeaderAccessor.wrap(event.getMessage()));
         } catch (Exception e) {
-            log.warn("Error handling disconnect event: {}", e.getMessage());
+            log.warn("Error handling {} event: {}", label, e.getMessage());
         }
     }
 
