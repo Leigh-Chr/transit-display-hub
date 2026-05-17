@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -16,6 +17,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
     MatInputModule,
     MatIconModule,
     MatButtonModule,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -29,7 +31,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
         (ngModelChange)="onSearchChange($event)"
       />
       @if (searchValue) {
-        <button matSuffix mat-icon-button (click)="clearSearch()" aria-label="Clear search">
+        <button matSuffix mat-icon-button (click)="clearSearch()" [attr.aria-label]="'common.ariaLabel.clearSearch' | transloco">
           <mat-icon>close</mat-icon>
         </button>
       }

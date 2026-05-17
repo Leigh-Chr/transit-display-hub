@@ -17,7 +17,13 @@
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",
     "switchLight": "Passer en mode clair",
-    "switchDark": "Passer en mode sombre"
+    "switchDark": "Passer en mode sombre",
+    "ariaLabel": {
+      "clearSearch": "Effacer la recherche",
+      "deviceToken": "Jeton appareil",
+      "loadingDisplay": "Chargement de l'affichage",
+      "loadingHubDisplay": "Chargement du hub"
+    }
   },
   "auth": {
     "login": {

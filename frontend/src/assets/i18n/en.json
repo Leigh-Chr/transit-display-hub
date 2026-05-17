@@ -17,7 +17,13 @@
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",
     "switchLight": "Switch to light mode",
-    "switchDark": "Switch to dark mode"
+    "switchDark": "Switch to dark mode",
+    "ariaLabel": {
+      "clearSearch": "Clear search",
+      "deviceToken": "Device token",
+      "loadingDisplay": "Loading display",
+      "loadingHubDisplay": "Loading hub display"
+    }
   },
   "auth": {
     "login": {

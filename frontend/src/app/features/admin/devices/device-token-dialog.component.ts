@@ -23,7 +23,7 @@ export interface DeviceTokenDialogData {
       <h2 mat-dialog-title>{{ t('admin.devices.tokenTitle') }}</h2>
       <mat-dialog-content>
         <p class="token-instructions">{{ t('admin.devices.tokenInstructions') }}</p>
-        <div class="token-display" aria-label="Device token" role="region">{{ data.token }}</div>
+        <div class="token-display" [attr.aria-label]="t('common.ariaLabel.deviceToken')" role="region">{{ data.token }}</div>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button

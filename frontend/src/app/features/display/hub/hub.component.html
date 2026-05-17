@@ -103,7 +103,7 @@
     </div>
   } @else {
     <div class="loading-state">
-      <mat-spinner diameter="80" aria-label="Loading hub display"></mat-spinner>
+      <mat-spinner diameter="80" [attr.aria-label]="'common.ariaLabel.loadingHubDisplay' | transloco"></mat-spinner>
       <h1>{{ 'kiosk.loading' | transloco }}</h1>
     </div>
   }

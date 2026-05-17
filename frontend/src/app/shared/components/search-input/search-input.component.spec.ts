@@ -1,6 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { SearchInputComponent } from './search-input.component';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { testTranslocoModule } from '../../../../test-translations';
 
 describe('SearchInputComponent', () => {
   let component: SearchInputComponent;
@@ -10,7 +11,10 @@ describe('SearchInputComponent', () => {
     vi.useFakeTimers();
 
     TestBed.configureTestingModule({
-      imports: [SearchInputComponent],
+      imports: [
+        SearchInputComponent,
+        testTranslocoModule({ common: { ariaLabel: { clearSearch: 'Clear search' } } }),
+      ],
     });
 
     fixture = TestBed.createComponent(SearchInputComponent);
