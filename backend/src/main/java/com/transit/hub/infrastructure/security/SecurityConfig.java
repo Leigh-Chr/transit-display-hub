@@ -43,6 +43,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final LoginRateLimitFilter loginRateLimitFilter;
+    private final RefreshRateLimitFilter refreshRateLimitFilter;
     private final Environment environment;
     private final AuthProperties authProperties;
     private final MessageSource messageSource;
@@ -162,6 +163,7 @@ public class SecurityConfig {
                         })
                 )
                 .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(refreshRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         // sameOrigin needed for the H2 console iframe in dev;
