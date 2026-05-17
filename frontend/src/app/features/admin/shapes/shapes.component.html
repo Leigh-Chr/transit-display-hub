@@ -1,0 +1,123 @@
+    <ng-container *transloco="let t">
+    <div class="shapes-page">
+      <div class="page-header">
+        <h1 class="page-title">{{ t('admin.shapes.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.shapes.subtitle') }}</p>
+      </div>
+
+      <mat-form-field appearance="outline" class="itin-picker">
+        <mat-label>{{ t('admin.shapes.itinPickerLabel') }}</mat-label>
+        <input
+          type="text"
+          matInput
+          [(ngModel)]="search"
+          (ngModelChange)="onSearchChange()"
+          [matAutocomplete]="auto"
+          [placeholder]="t('admin.shapes.itinPickerPlaceholder')">
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onItinSelected($event.option.value)">
+          @for (it of filteredItins(); track it.id) {
+            <mat-option [value]="it">
+              <span class="line-chip"
+                    [style.background]="it.line.color"
+                    [style.color]="textColor(it.line)">
+                {{ it.line.code }}
+              </span>
+              {{ it.name }}
+              @if (it.terminusName) {
+                <span class="muted">→ {{ it.terminusName }}</span>
+              }
+            </mat-option>
+          }
+        </mat-autocomplete>
+        <mat-icon matSuffix>route</mat-icon>
+      </mat-form-field>
+
+      @if (selectedItin(); as itin) {
+        <mat-card class="shape-card">
+          <mat-card-content>
+            <div class="shape-header">
+              <div>
+                <span class="line-chip"
+                      [style.background]="itin.line.color"
+                      [style.color]="textColor(itin.line)">
+                  {{ itin.line.code }}
+                </span>
+                <strong>{{ itin.name }}</strong>
+                @if (itin.terminusName) {
+                  <span class="muted">→ {{ itin.terminusName }}</span>
+                }
+              </div>
+              @if (shape()) {
+                <div class="shape-stats">
+                  <span class="stat" [matTooltip]="t('admin.shapes.tooltipPoints')">
+                    <mat-icon>scatter_plot</mat-icon>
+                    {{ shape()!.points.length }} pts
+                  </span>
+                  @if (totalDistanceKm() !== null) {
+                    <span class="stat" [matTooltip]="t('admin.shapes.tooltipDistance')">
+                      <mat-icon>straighten</mat-icon>
+                      {{ totalDistanceKm()!.toFixed(1) }} km
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (loading()) {
+              <div class="shape-canvas placeholder">{{ t('admin.shapes.loading') }}</div>
+            } @else if (loadError()) {
+              <app-empty-state
+                icon="error_outline"
+                [title]="t('admin.shapes.loadFailed')"
+                [description]="t('admin.common.loadErrorDescription')"
+                [actionLabel]="t('common.refresh')"
+                actionIcon="refresh"
+                (action)="loadShape()" />
+            } @else if (!shape() || shape()!.points.length < 2) {
+              <app-empty-state
+                icon="signal_disconnected"
+                [title]="t('admin.shapes.emptyShapeTitle')"
+                [description]="t('admin.shapes.emptyShapeDesc')" />
+            } @else {
+              <svg
+                [attr.viewBox]="viewBox()"
+                preserveAspectRatio="xMidYMid meet"
+                class="shape-canvas"
+                [style.--shape-color]="itin.line.color">
+                <polyline
+                  [attr.points]="polylinePoints()"
+                  fill="none"
+                  [attr.stroke]="itin.line.color"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round" />
+                @if (firstPoint(); as first) {
+                  <circle
+                    [attr.cx]="first.x"
+                    [attr.cy]="first.y"
+                    r="4"
+                    [attr.fill]="itin.line.color"
+                    stroke="white"
+                    stroke-width="1.5" />
+                }
+                @if (lastPoint(); as last) {
+                  <circle
+                    [attr.cx]="last.x"
+                    [attr.cy]="last.y"
+                    r="4"
+                    fill="white"
+                    [attr.stroke]="itin.line.color"
+                    stroke-width="2" />
+                }
+              </svg>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @else {
+        <app-empty-state
+          icon="search"
+          [title]="t('admin.shapes.emptySelectTitle')"
+          [description]="t('admin.shapes.emptySelectDesc')" />
+      }
+    </div>
+    </ng-container>

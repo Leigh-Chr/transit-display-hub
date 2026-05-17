@@ -1,0 +1,140 @@
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: var(--m3-type-headline-large);
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .toolbar app-search-input {
+      flex: 1;
+    }
+
+    .sort-field {
+      min-width: 180px;
+    }
+
+    .lines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--app-gap-grid);
+    }
+
+    .line-card {
+      border-radius: var(--app-radius-md);
+    }
+
+    .line-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .line-code {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: var(--app-line-badge-radius);
+      color: white;
+      font-size: var(--m3-type-title-large);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .line-actions {
+      display: flex;
+      gap: 4px;
+      margin: -8px -8px 0 0;
+    }
+
+    .line-name {
+      margin: 0 0 16px;
+      font-size: var(--m3-type-title-large);
+      font-weight: 600;
+      color: var(--app-on-surface);
+    }
+
+    .line-stats {
+      display: flex;
+      gap: var(--app-gap-grid);
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--app-on-surface-variant);
+      font-size: var(--m3-type-body-medium);
+    }
+
+    .stat mat-icon {
+      font-size: var(--m3-type-title-large);
+      width: 18px;
+      height: 18px;
+      color: var(--app-on-surface-muted);
+    }
+
+    .line-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .line-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: var(--m3-type-label-medium);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .line-tag mat-icon {
+      font-size: var(--m3-type-body-medium);
+      width: 14px;
+      height: 14px;
+    }
+
+    .line-tag.tag-hop {
+      background: var(--app-tone-tertiary, rgba(99, 102, 241, 0.14));
+      color: var(--app-on-tertiary-container, var(--app-chip-info-fg));
+    }
+
+    .line-tag.tag-cemv {
+      background: var(--app-tone-success, rgba(16, 185, 129, 0.14));
+      color: var(--app-on-success-container, var(--app-chip-success-fg));
+    }
+
+    .line-tag.tag-cemv-ask {
+      background: var(--app-tone-warning, rgba(234, 179, 8, 0.18));
+      color: var(--app-on-warning-container, var(--app-chip-warning-fg));
+    }
+
+    mat-paginator {
+      margin-top: 24px;
+      border-radius: var(--app-radius-md);
+    }
+
+    mat-card:not(.line-card) {
+      border-radius: var(--app-radius-md);
+    }
+
+    /* Enter animations defined globally — see styles.scss section 13a */

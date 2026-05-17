@@ -1,0 +1,103 @@
+    <ng-container *transloco="let t">
+    <div class="devices-page">
+      <div class="page-header">
+        <h1 class="page-title">{{ t('admin.devices.title') }}</h1>
+        <button mat-flat-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          {{ t('admin.devices.registerDevice') }}
+        </button>
+      </div>
+
+      <mat-form-field appearance="outline" class="status-filter">
+        <mat-label>{{ t('admin.devices.filterStatus') }}</mat-label>
+        <mat-select [(ngModel)]="statusFilter" (selectionChange)="loadDevices()">
+          <mat-option value="">{{ t('admin.devices.allStatuses') }}</mat-option>
+          <mat-option value="ONLINE">{{ t('admin.devices.statusOnline') }}</mat-option>
+          <mat-option value="OFFLINE">{{ t('admin.devices.statusOffline') }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (loading()) {
+        <div class="devices-grid">
+          @for (i of [1, 2, 3]; track i) {
+            <app-card-skeleton [showIcon]="true" />
+          }
+        </div>
+      } @else if (loadError()) {
+        <mat-card>
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.devices.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadDevices()"
+          />
+        </mat-card>
+      } @else if (devices().length === 0) {
+        <mat-card>
+          <app-empty-state
+            icon="tv"
+            iconColor="primary"
+            [title]="t('admin.devices.emptyTitle')"
+            [description]="t('admin.devices.emptyDescription')"
+            [actionLabel]="t('admin.devices.emptyAction')"
+            actionIcon="add"
+            (action)="openCreateDialog()"
+          />
+        </mat-card>
+      } @else {
+        <div class="devices-grid" animate.enter="grid-stagger">
+          @for (device of devices(); track device.id) {
+            <mat-card class="device-card">
+              <mat-card-content>
+                <div class="device-header">
+                  <div class="device-info">
+                    <mat-icon class="device-icon">tv</mat-icon>
+                    <div>
+                      <h3 class="device-stop">{{ device.stopName }}</h3>
+                      <div class="line-badges">
+                        @for (line of device.lines; track line.code) {
+                          <span class="line-badge" [style.backgroundColor]="line.color">
+                            {{ line.code }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    class="status-badge"
+                    [class.status-online]="device.status === 'ONLINE'"
+                    [class.status-offline]="device.status === 'OFFLINE'"
+                  >
+                    {{ device.status === 'ONLINE' ? t('admin.devices.statusOnline') : t('admin.devices.statusOffline') }}
+                  </span>
+                </div>
+
+                <div class="device-meta">
+                  @if (device.lastHeartbeat) {
+                    <div class="meta-item">
+                      <span class="meta-label">{{ t('admin.devices.lastSeen') }}</span>
+                      {{ device.lastHeartbeat | date : 'short' }}
+                    </div>
+                  }
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions align="end">
+                <button mat-button (click)="openKioskPreview(device.stopId)">
+                  <mat-icon>visibility</mat-icon>
+                  {{ t('admin.devices.viewDisplay') }}
+                </button>
+                <button mat-button color="warn" (click)="deleteDevice(device)">
+                  <mat-icon>delete</mat-icon>
+                  {{ t('admin.devices.removeDevice') }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          }
+        </div>
+      }
+    </div>
+
+    </ng-container>

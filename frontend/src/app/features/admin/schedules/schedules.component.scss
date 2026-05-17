@@ -1,0 +1,72 @@
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: var(--m3-type-headline-large);
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .selector-card {
+      margin-bottom: 28px;
+      border-radius: var(--app-radius-md);
+    }
+
+    .selector-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: var(--app-gap-grid);
+    }
+
+    .selector-row mat-form-field {
+      width: 100%;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    mat-card {
+      border-radius: var(--app-radius-md);
+      overflow: hidden;
+    }
+
+    .time-cell {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: var(--m3-type-title-large);
+      font-weight: 600;
+      color: var(--app-on-surface);
+    }
+
+    .destination-cell {
+      font-size: var(--m3-type-body-medium);
+      color: var(--app-on-surface-variant);
+    }
+
+    .line-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: var(--app-line-badge-radius);
+      color: white;
+      font-size: var(--m3-type-label-medium);
+      font-weight: 600;
+    }
+
+    .actions-column {
+      text-align: right;
+      width: var(--app-actions-column-width);
+    }
+
+    /* Enter animations defined globally — see styles.scss section 13a */
+
+    @media (max-width: 600px) {
+      .selector-row {
+        grid-template-columns: 1fr;
+      }
+    }

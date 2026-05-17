@@ -1,0 +1,160 @@
+    <ng-container *transloco="let t">
+    <div class="audit-page">
+      <div class="page-header">
+        <h1 class="page-title">{{ t('admin.importAudit.title') }}</h1>
+        <p class="page-subtitle">{{ t('admin.importAudit.subtitle') }}</p>
+      </div>
+
+      <div class="toolbar">
+        <button mat-stroked-button (click)="reload()" [disabled]="loading()">
+          <mat-icon>refresh</mat-icon>
+          {{ t('admin.importAudit.refresh') }}
+        </button>
+        @if (audits().length > 0) {
+          <span class="muted">{{ audits().length }} {{ t('admin.importAudit.attempts') }}</span>
+        }
+      </div>
+
+      @if (loadError()) {
+        <app-empty-state
+          icon="error_outline"
+          [title]="t('admin.importAudit.loadFailed')"
+          [description]="t('admin.common.loadErrorDescription')"
+          [actionLabel]="t('common.refresh')"
+          actionIcon="refresh"
+          (action)="reload()" />
+      } @else if (audits().length === 0) {
+        <app-empty-state
+          icon="history"
+          [title]="t('admin.importAudit.noAudits')"
+          [description]="t('admin.importAudit.noAuditsDesc')" />
+      } @else {
+        <div class="audit-table-wrapper">
+          <table mat-table [dataSource]="audits()" class="audit-table">
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colStatus') }}</th>
+              <td mat-cell *matCellDef="let a">
+                <mat-icon [class]="'status-icon ' + statusClass(a.status)" [matTooltip]="statusLabel(a.status, t)">
+                  {{ statusIcon(a.status) }}
+                </mat-icon>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="startedAt">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colStarted') }}</th>
+              <td mat-cell *matCellDef="let a">
+                <div>{{ a.startedAt | date:'dd/MM HH:mm:ss' }}</div>
+                @if (a.triggeredBy) {
+                  <div class="muted">par {{ a.triggeredBy }}</div>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="duration">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colDuration') }}</th>
+              <td mat-cell *matCellDef="let a">
+                @if (a.durationMs !== null) {
+                  {{ formatDuration(a.durationMs) }}
+                } @else {
+                  <span class="muted">{{ t('admin.importAudit.running') }}</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="counts">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colVolume') }}</th>
+              <td mat-cell *matCellDef="let a">
+                @if (a.status === 'SUCCESS') {
+                  <span class="counts">
+                    <span [matTooltip]="t('admin.navigation.lines')">
+                      <mat-icon class="inline-icon">subway</mat-icon>
+                      {{ a.linesCount ?? 0 }}
+                    </span>
+                    <span [matTooltip]="t('admin.navigation.stops')">
+                      <mat-icon class="inline-icon">place</mat-icon>
+                      {{ a.stopsCount ?? 0 }}
+                    </span>
+                    <span [matTooltip]="t('admin.navigation.itineraries')">
+                      <mat-icon class="inline-icon">route</mat-icon>
+                      {{ a.itinerariesCount ?? 0 }}
+                    </span>
+                    <span [matTooltip]="t('admin.navigation.schedules')">
+                      <mat-icon class="inline-icon">schedule</mat-icon>
+                      {{ formatLarge(a.schedulesCount ?? 0) }}
+                    </span>
+                  </span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="validation">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colValidation') }}</th>
+              <td mat-cell *matCellDef="let a">
+                @if (!a.validationStatus || a.validationStatus === 'SKIPPED') {
+                  <span class="muted" [matTooltip]="t('admin.importAudit.validationNotRun')">—</span>
+                } @else if (a.validationStatus === 'FAILED') {
+                  <span class="validation-badge failed" [matTooltip]="t('admin.importAudit.validationFailed')">
+                    <mat-icon class="inline-icon">error_outline</mat-icon>
+                    {{ t('admin.importAudit.validationFailedLabel') }}
+                  </span>
+                } @else {
+                  <div class="validation-row">
+                    <span class="validation-counts" [matTooltip]="validationCountsTooltip(a, t)">
+                      @if ((a.validationNoticeErrors ?? 0) > 0) {
+                        <span class="badge errors">
+                          <mat-icon class="inline-icon">error</mat-icon>
+                          {{ a.validationNoticeErrors }}
+                        </span>
+                      }
+                      @if ((a.validationNoticeWarnings ?? 0) > 0) {
+                        <span class="badge warnings">
+                          <mat-icon class="inline-icon">warning</mat-icon>
+                          {{ a.validationNoticeWarnings }}
+                        </span>
+                      }
+                      @if ((a.validationNoticeErrors ?? 0) === 0 && (a.validationNoticeWarnings ?? 0) === 0) {
+                        <span class="badge clean">
+                          <mat-icon class="inline-icon">verified</mat-icon>
+                          {{ t('admin.importAudit.noValidationNotices') }}
+                        </span>
+                      }
+                    </span>
+                    <a mat-icon-button class="report-link"
+                       [href]="reportHtmlUrl(a.id)"
+                       target="_blank" rel="noopener noreferrer"
+                       [matTooltip]="t('admin.importAudit.openReport')"
+                       [attr.aria-label]="t('admin.importAudit.openReport')">
+                      <mat-icon>open_in_new</mat-icon>
+                    </a>
+                  </div>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="hash">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colHash') }}</th>
+              <td mat-cell *matCellDef="let a">
+                @if (a.sourceHash) {
+                  <code class="hash" [matTooltip]="a.sourceHash">{{ a.sourceHash.slice(0, 8) }}</code>
+                } @else { — }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="error">
+              <th mat-header-cell *matHeaderCellDef>{{ t('admin.importAudit.colError') }}</th>
+              <td mat-cell *matCellDef="let a" class="ellipsis">
+                @if (a.errorMessage) {
+                  <span class="error" [matTooltip]="a.errorMessage">{{ a.errorMessage }}</span>
+                } @else { — }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns" [class]="rowClass(row)"></tr>
+          </table>
+        </div>
+      }
+    </div>
+    </ng-container>

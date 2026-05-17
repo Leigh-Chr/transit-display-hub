@@ -1,0 +1,108 @@
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: var(--m3-type-headline-large);
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .status-filter {
+      margin-bottom: 20px;
+      width: 220px;
+    }
+
+    .devices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: var(--app-gap-grid);
+    }
+
+    .device-card {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--app-radius-md);
+    }
+
+    .device-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .device-info {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .device-icon {
+      font-size: var(--m3-type-display-large);
+      width: 36px;
+      height: 36px;
+      color: var(--app-on-surface-variant);
+    }
+
+    .device-stop {
+      margin: 0 0 6px;
+      font-size: var(--m3-type-title-large);
+      font-weight: 600;
+      color: var(--app-on-surface);
+    }
+
+    .line-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .line-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: var(--app-line-badge-radius);
+      color: white;
+      font-size: var(--m3-type-label-medium);
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: var(--app-line-badge-radius);
+      font-size: var(--m3-type-label-medium);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-online {
+      background-color: var(--app-success-container);
+      color: var(--app-on-success-container);
+    }
+
+    .status-offline {
+      background-color: var(--app-critical-container);
+      color: var(--app-on-critical-container);
+    }
+
+    .device-meta {
+      font-size: var(--m3-type-body-medium);
+      color: var(--app-on-surface-variant);
+    }
+
+    .meta-item {
+      margin-bottom: 6px;
+    }
+
+    .meta-label {
+      font-weight: 600;
+    }
+
+    /* Enter animations defined globally — see styles.scss section 13a */

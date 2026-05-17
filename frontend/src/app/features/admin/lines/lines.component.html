@@ -1,0 +1,132 @@
+    <ng-container *transloco="let t">
+    <div class="lines-page">
+      <div class="page-header">
+        <h1 class="page-title">{{ t('admin.lines.title') }}</h1>
+        <button mat-flat-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          {{ t('admin.lines.newLine') }}
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <app-search-input
+          [placeholder]="t('admin.lines.searchPlaceholder')"
+          [initialValue]="tableState.search"
+          (searchChange)="tableState.onSearchChange($event)"
+        />
+        <mat-form-field appearance="outline" class="sort-field">
+          <mat-label>{{ t('admin.common.sortBy') }}</mat-label>
+          <mat-select [(ngModel)]="tableState.sortBy" (selectionChange)="onSortChange()">
+            <mat-option value="code">{{ t('admin.lines.sortCodeAsc') }}</mat-option>
+            <mat-option value="code:desc">{{ t('admin.lines.sortCodeDesc') }}</mat-option>
+            <mat-option value="name">{{ t('admin.lines.sortNameAsc') }}</mat-option>
+            <mat-option value="name:desc">{{ t('admin.lines.sortNameDesc') }}</mat-option>
+            <mat-option value="stopCount:desc">{{ t('admin.lines.sortMostStops') }}</mat-option>
+            <mat-option value="stopCount">{{ t('admin.lines.sortFewestStops') }}</mat-option>
+            <mat-option value="itineraryCount:desc">{{ t('admin.lines.sortMostItineraries') }}</mat-option>
+            <mat-option value="itineraryCount">{{ t('admin.lines.sortFewestItineraries') }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (loading()) {
+        <div class="lines-grid">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <app-card-skeleton />
+          }
+        </div>
+      } @else if (loadError()) {
+        <mat-card>
+          <app-empty-state
+            icon="error_outline"
+            [title]="t('admin.lines.loadFailed')"
+            [description]="t('admin.common.loadErrorDescription')"
+            [actionLabel]="t('common.refresh')"
+            actionIcon="refresh"
+            (action)="loadLines()"
+          />
+        </mat-card>
+      } @else if (lines().length === 0 && !tableState.search) {
+        <mat-card>
+          <app-empty-state
+            icon="subway"
+            iconColor="primary"
+            [title]="t('admin.lines.emptyTitle')"
+            [description]="t('admin.lines.emptyDescription')"
+            [actionLabel]="t('admin.lines.emptyAction')"
+            actionIcon="add"
+            (action)="openCreateDialog()"
+          />
+        </mat-card>
+      } @else if (lines().length === 0 && tableState.search) {
+        <mat-card>
+          <app-empty-state
+            icon="search_off"
+            [title]="t('admin.lines.emptySearchTitle')"
+            [description]="t('admin.lines.emptySearchDescription')"
+          />
+        </mat-card>
+      } @else {
+        <div class="lines-grid" animate.enter="grid-stagger">
+          @for (line of lines(); track line.id) {
+            <mat-card class="line-card">
+              <mat-card-content>
+                <div class="line-header">
+                  <span class="line-code" [style.backgroundColor]="line.color">
+                    {{ line.code }}
+                  </span>
+                  <div class="line-actions">
+                    <button mat-icon-button (click)="openEditDialog(line)" [matTooltip]="t('admin.lines.editTooltip')" [attr.aria-label]="t('admin.lines.editTooltip')">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deleteLine(line)" [matTooltip]="t('admin.lines.deleteTooltip')" [attr.aria-label]="t('admin.lines.deleteTooltip')">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <h3 class="line-name">{{ line.name }}</h3>
+                <div class="line-stats">
+                  <div class="stat">
+                    <mat-icon>place</mat-icon>
+                    <span>{{ line.stopCount }} {{ 'admin.dashboard.stopsSuffix' | transloco }}</span>
+                  </div>
+                  <div class="stat">
+                    <mat-icon>directions</mat-icon>
+                    <span>{{ line.itineraryCount }} {{ 'admin.navigation.itineraries' | transloco }}</span>
+                  </div>
+                </div>
+                <div class="line-tags">
+                  @if (line.continuousPickup === 0 || line.continuousDropOff === 0) {
+                    <span class="line-tag tag-hop" [matTooltip]="t('admin.lines.tagHopOnTooltip')">
+                      <mat-icon>swap_horiz</mat-icon>
+                      {{ t('admin.lines.tagHopOn') }}
+                    </span>
+                  }
+                  @if (line.cemvSupport === 1) {
+                    <span class="line-tag tag-cemv" [matTooltip]="t('admin.lines.tagCemvTooltip')">
+                      <mat-icon>contactless</mat-icon>
+                      {{ t('admin.lines.tagCemv') }}
+                    </span>
+                  } @else if (line.cemvSupport === 2) {
+                    <span class="line-tag tag-cemv-ask" [matTooltip]="t('admin.lines.tagCemvAskTooltip')">
+                      <mat-icon>contactless</mat-icon>
+                      {{ t('admin.lines.tagCemvAsk') }}
+                    </span>
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+
+        <mat-paginator
+          [length]="totalElements()"
+          [pageIndex]="tableState.page"
+          [pageSize]="tableState.size"
+          [pageSizeOptions]="pageSizeOptions"
+          (page)="tableState.onPageChange($event)"
+          showFirstLastButtons
+        />
+      }
+    </div>
+    </ng-container>

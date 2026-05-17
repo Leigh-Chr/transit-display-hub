@@ -1,0 +1,251 @@
+    <ng-container *transloco="let t">
+    <a class="skip-link" href="#main-content">{{ t('admin.navigation.skipToMain') }}</a>
+    <mat-sidenav-container class="admin-container">
+      <mat-sidenav
+        #sidenav
+        [mode]="breakpointService.isSmallScreen() ? 'over' : 'side'"
+        [opened]="sidenavOpen()"
+        class="admin-sidenav"
+        role="navigation"
+        [attr.aria-label]="t('admin.navigation.dashboard')"
+      >
+        <div class="sidenav-header">
+          <img ngSrc="assets/logo.png" width="36" height="36" alt="" class="sidenav-logo">
+          <span class="brand-name">Transit Display Hub</span>
+        </div>
+
+        <mat-nav-list>
+          <a
+            mat-list-item
+            routerLink="/admin/dashboard"
+            routerLinkActive="active-link"
+            (click)="closeSidenavOnMobile()"
+          >
+            <mat-icon matListItemIcon>dashboard</mat-icon>
+            <span matListItemTitle>{{ t('admin.navigation.dashboard') }}</span>
+          </a>
+
+          @if (authService.isAdmin()) {
+            <mat-divider></mat-divider>
+            <div class="nav-section-title">{{ t('admin.navigation.sectionNetwork') }}</div>
+
+            <a
+              mat-list-item
+              routerLink="/admin/lines"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>subway</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.lines') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/stops"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>place</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.stops') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/itineraries"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>route</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.itineraries') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/schedules"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>schedule</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.schedules') }}</span>
+            </a>
+          }
+
+          <a
+            mat-list-item
+            routerLink="/map"
+            routerLinkActive="active-link"
+            (click)="closeSidenavOnMobile()"
+          >
+            <mat-icon matListItemIcon>map</mat-icon>
+            <span matListItemTitle>{{ t('admin.navigation.networkMap') }}</span>
+          </a>
+
+          @if (authService.isAdmin()) {
+            <a
+              mat-list-item
+              (click)="openHubDisplay(); closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>hub</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.hubDisplay') }}</span>
+            </a>
+          }
+
+          <mat-divider></mat-divider>
+          <div class="nav-section-title">{{ t('admin.navigation.sectionCommunication') }}</div>
+
+          <a
+            mat-list-item
+            routerLink="/admin/messages"
+            routerLinkActive="active-link"
+            (click)="closeSidenavOnMobile()"
+          >
+            <mat-icon matListItemIcon>campaign</mat-icon>
+            <span matListItemTitle>{{ t('admin.navigation.messages') }}</span>
+          </a>
+
+          @if (authService.isAdmin()) {
+            <a
+              mat-list-item
+              routerLink="/admin/devices"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>tv</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.devices') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/realtime"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>sensors</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.realtime') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/gtfs-data"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>dataset</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.gtfsData') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/import-audit"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>history</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.importAudit') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/pathways"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>alt_route</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.pathways') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/shapes"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>polyline</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.shapes') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/tad-zones"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>layers</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.tadZones') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/flex-stop-times"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>phone_callback</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.flexStopTimes') }}</span>
+            </a>
+
+            <a
+              mat-list-item
+              routerLink="/admin/fare-calculator"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>calculate</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.fareCalculator') }}</span>
+            </a>
+
+            <mat-divider></mat-divider>
+            <div class="nav-section-title">{{ t('admin.navigation.sectionAdministration') }}</div>
+
+            <a
+              mat-list-item
+              routerLink="/admin/users"
+              routerLinkActive="active-link"
+              (click)="closeSidenavOnMobile()"
+            >
+              <mat-icon matListItemIcon>people</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.users') }}</span>
+            </a>
+          }
+        </mat-nav-list>
+      </mat-sidenav>
+
+      <mat-sidenav-content>
+        <mat-toolbar color="primary">
+          <button
+            mat-icon-button
+            type="button"
+            (click)="toggleSidenav()"
+            [attr.aria-label]="t('admin.navigation.toggleMenu')"
+            [matTooltip]="t('admin.navigation.toggleSidebar')"
+          >
+            <mat-icon aria-hidden="true">{{ sidenavOpen() ? 'menu_open' : 'menu' }}</mat-icon>
+          </button>
+          <span class="toolbar-spacer"></span>
+          <button
+            mat-icon-button
+            type="button"
+            (click)="themeService.toggleTheme()"
+            [matTooltip]="themeService.isDarkMode() ? t('admin.navigation.switchLight') : t('admin.navigation.switchDark')"
+            [attr.aria-label]="themeService.isDarkMode() ? t('admin.navigation.switchLight') : t('admin.navigation.switchDark')"
+            [attr.aria-pressed]="themeService.isDarkMode()"
+          >
+            <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
+          @if (!breakpointService.isMobile()) {
+            <span class="username">{{ authService.currentUser()?.username }}</span>
+          }
+          <button mat-button type="button" (click)="logout()" [attr.aria-label]="t('admin.navigation.logout')">
+            <mat-icon aria-hidden="true">logout</mat-icon>
+            @if (!breakpointService.isMobile()) {
+              {{ t('admin.navigation.logout') }}
+            }
+          </button>
+        </mat-toolbar>
+
+        <main id="main-content" class="main-content" animate.enter="route-enter">
+          <router-outlet></router-outlet>
+        </main>
+      </mat-sidenav-content>
+    </mat-sidenav-container>
+    </ng-container>

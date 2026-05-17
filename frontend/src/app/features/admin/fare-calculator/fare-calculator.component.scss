@@ -1,0 +1,29 @@
+    .fare-page { max-width: 1200px; }
+    .page-header { margin-bottom: 16px; }
+    .page-title {
+      font-size: var(--m3-type-headline-large);
+      font-weight: 700;
+      color: var(--app-on-surface);
+      margin: 0 0 6px;
+    }
+    .page-subtitle { color: var(--app-on-surface-muted); margin: 0; }
+    .picker-card { margin-bottom: 16px; }
+    .picker-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+    .stop-picker { width: 100%; }
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 800px) {
+      .picker-row, .results-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .muted { color: var(--mat-sys-on-surface-variant); font-style: italic; }
+    .full-width { width: 100%; }
