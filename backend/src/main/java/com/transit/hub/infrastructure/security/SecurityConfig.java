@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -35,9 +34,17 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Authorisation is enforced by URL pattern in {@link #securityFilterChain(HttpSecurity)}
+ * — no method-level annotations ({@code @PreAuthorize}, {@code @Secured}, …) are used
+ * anywhere in the codebase. {@code @EnableMethodSecurity} was carried for a while as
+ * a defence-in-depth seatbelt but never wired to anything; it was removed so the
+ * security model has a single source of truth. If a future controller needs finer
+ * grain than its URL prefix allows, restore the annotation here and add the matching
+ * {@code @PreAuthorize} on the service method.
+ */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
