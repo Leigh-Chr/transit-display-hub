@@ -84,7 +84,7 @@ function ringsFromPolygon(coords: unknown, featureIndex: number): FlatRing[] {
  *  location with an 8 % margin. Same equirectangular projection trick
  *  as the shapes preview — accurate enough at city scale and free of
  *  any external geographic library. */
-export function buildViewport(locations: FlexLocation[]): FlexLocationsViewport {
+export function buildViewport(locations: readonly FlexLocation[]): FlexLocationsViewport {
   let minLat = Infinity, maxLat = -Infinity;
   let minLon = Infinity, maxLon = -Infinity;
 

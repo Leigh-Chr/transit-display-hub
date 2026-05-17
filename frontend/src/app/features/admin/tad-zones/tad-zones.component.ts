@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -8,6 +8,7 @@ import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { FlexLocation } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { createSimpleListResource } from '@shared/admin/simple-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import {
   FlatRing,
@@ -54,13 +55,19 @@ interface RenderedRing {
   templateUrl: './tad-zones.component.html',
   styleUrl: './tad-zones.component.scss',
 })
-export class TadZonesComponent implements OnInit {
+export class TadZonesComponent {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly transloco = inject(TranslocoService);
 
-  readonly locations = signal<FlexLocation[]>([]);
-  readonly loading = signal(true);
-  readonly loadError = signal<string | null>(null);
+  private readonly locationsResource = createSimpleListResource<FlexLocation>(() =>
+    this.gtfsData.getFlexLocations(),
+  );
+  readonly locations = this.locationsResource.items;
+  readonly loading = this.locationsResource.loading;
+  readonly loadError = computed(() => {
+    const err = this.locationsResource.error();
+    return err ? httpErrorMessage(err, this.transloco.translate('admin.tadZones.loadFailed')) : null;
+  });
   readonly selectedIndex = signal<number | null>(null);
   readonly hoveredIndex = signal<number | null>(null);
 
@@ -91,24 +98,8 @@ export class TadZonesComponent implements OnInit {
     }));
   });
 
-  ngOnInit(): void {
-    this.loadZones();
-  }
-
   loadZones(): void {
-    this.loading.set(true);
-    this.loadError.set(null);
-    this.gtfsData.getFlexLocations().subscribe({
-      next: (data) => {
-        this.locations.set(data);
-        this.loading.set(false);
-      },
-      error: (err: unknown) => {
-        this.locations.set([]);
-        this.loading.set(false);
-        this.loadError.set(httpErrorMessage(err, this.transloco.translate('admin.tadZones.loadFailed')));
-      },
-    });
+    this.locationsResource.reload();
   }
 
   onPolygonClick(featureIndex: number): void {

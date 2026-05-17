@@ -1,11 +1,19 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TadZonesComponent } from './tad-zones.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { FlexLocation } from '@shared/models';
 import { testTranslocoModule } from '../../../../test-translations';
+
+/** Match the helper's flush — rxResource settles a value across two
+ *  microtask boundaries plus a TestBed tick. */
+async function flushResource(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  TestBed.tick();
+}
 
 const POLYGON_NORTH: FlexLocation = {
   id: '1',
@@ -64,8 +72,9 @@ describe('TadZonesComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('loads locations on init and renders one path per ring', () => {
+  it('loads locations on init and renders one path per ring', async () => {
     fixture.detectChanges();
+    await flushResource();
 
     expect(mockGtfsData.getFlexLocations).toHaveBeenCalledOnce();
     expect(component.locations()).toHaveLength(2);
@@ -73,8 +82,9 @@ describe('TadZonesComponent', () => {
     expect(component.renderedRings()[0]?.path.startsWith('M ')).toBe(true);
   });
 
-  it('clicking a polygon selects it; clicking the same one again clears the selection', () => {
+  it('clicking a polygon selects it; clicking the same one again clears the selection', async () => {
     fixture.detectChanges();
+    await flushResource();
     expect(component.selectedIndex()).toBeNull();
 
     component.onPolygonClick(0);
@@ -87,44 +97,47 @@ describe('TadZonesComponent', () => {
     expect(component.selectedIndex()).toBe(1);
   });
 
-  it('opacity boosts the selected polygon and dims the others', () => {
+  it('opacity boosts the selected polygon and dims the others', async () => {
     fixture.detectChanges();
+    await flushResource();
     component.onPolygonClick(0);
 
     expect(component.opacityFor(0)).toBeGreaterThan(component.opacityFor(1));
   });
 
-  it('without a selection, hovering dims the rest of the canvas', () => {
+  it('without a selection, hovering dims the rest of the canvas', async () => {
     fixture.detectChanges();
+    await flushResource();
     component.hoveredIndex.set(0);
 
     expect(component.opacityFor(0)).toBeGreaterThanOrEqual(component.opacityFor(1));
   });
 
-  it('shows the empty state when the API returns no locations', () => {
+  it('shows the empty state when the API returns no locations', async () => {
     mockGtfsData.getFlexLocations.mockReturnValue(of([]));
+    fixture = TestBed.createComponent(TadZonesComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
+    await flushResource();
 
     expect(component.locations()).toEqual([]);
     expect(component.renderedRings()).toEqual([]);
   });
 
-  it('falls back to an empty list when the API errors', () => {
-    const noop = (): void => undefined;
-    mockGtfsData.getFlexLocations.mockReturnValue({
-      subscribe: ({ error }: { error: () => void }) => {
-        error();
-        return { unsubscribe: noop };
-      },
-    });
+  it('falls back to an empty list when the API errors', async () => {
+    mockGtfsData.getFlexLocations.mockReturnValue(throwError(() => new Error('Boom')));
+    fixture = TestBed.createComponent(TadZonesComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
+    await flushResource();
 
     expect(component.locations()).toEqual([]);
     expect(component.loading()).toBe(false);
   });
 
-  it('viewBox covers all loaded locations after the union', () => {
+  it('viewBox covers all loaded locations after the union', async () => {
     fixture.detectChanges();
+    await flushResource();
     expect(component.viewBox()).toBe('0 0 800 480');
   });
 
