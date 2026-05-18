@@ -132,6 +132,11 @@
               @if (stop.parentStopName) {
                 <span class="parent-hint" [matTooltip]="t('admin.stops.tooltipParentLink')">— {{ stop.parentStopName }}</span>
               }
+              @if (stop.disabled) {
+                <span class="tombstoned-badge" [matTooltip]="t('admin.stops.tooltipTombstoned')">
+                  <mat-icon>delete_sweep</mat-icon> {{ t('admin.stops.badgeTombstoned') }}
+                </span>
+              }
             </span>
           </td>
         </ng-container>

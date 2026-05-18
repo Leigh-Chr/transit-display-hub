@@ -119,6 +119,28 @@ mat-card {
   font-style: italic;
 }
 
+/* Tombstoning marker for stops the last GTFS re-import did not find.
+   Shares the access-restricted shape so the eye groups status badges
+   together, but the error-container colour keeps it distinct enough
+   to scan in a dense list. */
+.tombstoned-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: var(--m3-type-label-small);
+  font-weight: 500;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.tombstoned-badge mat-icon {
+  font-size: var(--m3-type-body-small);
+  width: 13px;
+  height: 13px;
+}
+
 /* Deep-link from the schedules count cell to /admin/schedules with
    line + stop pre-selected. Underlined on hover only — the underline
    would otherwise add visual noise in dense tables. */

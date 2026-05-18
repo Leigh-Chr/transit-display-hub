@@ -483,6 +483,8 @@
       "tooltipParentLink": "Rattaché à",
       "badgeZone": "Zone",
       "badgeStaff": "Personnel",
+      "badgeTombstoned": "Orphelin",
+      "tooltipTombstoned": "Absent du dernier ré-import GTFS — masqué côté kiosques. Réaffectez les devices liés ou supprimez définitivement cet arrêt.",
       "emptyNoLines": "Créez d'abord une ligne",
       "emptyNoLinesDesc": "Vous devez créer au moins une ligne avant d'ajouter des arrêts.",
       "emptyTitle": "Aucun arrêt trouvé",

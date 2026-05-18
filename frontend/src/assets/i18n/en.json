@@ -483,6 +483,8 @@
       "tooltipParentLink": "Attached to",
       "badgeZone": "Zone",
       "badgeStaff": "Staff",
+      "badgeTombstoned": "Tombstoned",
+      "tooltipTombstoned": "Missing from the last GTFS re-import — hidden from kiosks. Re-anchor bound devices or hard-delete this stop.",
       "emptyNoLines": "Create a line first",
       "emptyNoLinesDesc": "You need to create at least one line before adding stops.",
       "emptyTitle": "No stops found",

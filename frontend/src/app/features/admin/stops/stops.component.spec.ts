@@ -251,6 +251,25 @@ describe('StopsComponent', () => {
       const errorState = fixture.nativeElement.querySelector('app-empty-state[icon="error_outline"]');
       expect(errorState).not.toBeNull();
     });
+
+    it('should render a tombstoned badge when stop.disabled is true', async () => {
+      const tombstoned: Stop = { ...mockStop, id: 's-tomb', name: 'Vanished', disabled: true };
+      mockStopService.getAllPaginated.mockReturnValue(
+        of({ ...mockPageResponse, content: [tombstoned], totalElements: 1 }),
+      );
+      await detectAndFlush(fixture);
+
+      const badge = fixture.nativeElement.querySelector('.tombstoned-badge');
+      expect(badge).not.toBeNull();
+      expect(badge!.textContent).toContain('admin.stops.badgeTombstoned');
+    });
+
+    it('should not render the tombstoned badge for an active stop', async () => {
+      await detectAndFlush(fixture);
+
+      const badge = fixture.nativeElement.querySelector('.tombstoned-badge');
+      expect(badge).toBeNull();
+    });
   });
 
   describe('onLineChange', () => {
