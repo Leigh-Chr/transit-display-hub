@@ -4,7 +4,7 @@
 [![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![ADRs](https://img.shields.io/badge/ADRs-41-informational)](docs/adr/README.md)
-[![Version](https://img.shields.io/badge/version-1.27.0-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.27.1-success)](CHANGELOG.md)
 
 > **The only open-source transit back-office that combines GTFS
 > Schedule, Fares v2, GTFS-flex and GTFS-Realtime in a single
@@ -174,7 +174,7 @@ transit-display-hub/
 │   ├── prometheus/          # Canonical alerts (alerts.yml)
 │   └── kiosk/               # docker-compose + install.sh
 ├── docs/
-│   ├── adr/                 # Architecture Decision Records (40)
+│   ├── adr/                 # Architecture Decision Records (41)
 │   ├── installation.md
 │   ├── developer-guide.md
 │   ├── deployment.md
@@ -195,7 +195,7 @@ transit-display-hub/
 - [Deployment guide](docs/deployment.md) — production hosting
 - [Kiosk on a Raspberry Pi](docs/kiosk-raspberry-pi.md)
 - [Internationalisation guide](docs/i18n.md) — for translators
-- [Architecture Decision Records](docs/adr/README.md) — 40 ADRs
+- [Architecture Decision Records](docs/adr/README.md) — 41 ADRs
 - [Changelog](CHANGELOG.md) — version history
 - [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Security](SECURITY.md)
 

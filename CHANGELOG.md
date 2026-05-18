@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.27.1] — 2026-05-18
+
+Cleanup patch absorbing the remaining P2 / P3 items from the
+2026-05-18 codebase audit (`.planning/codebase/CONCERNS.md`) that did
+not land in the v1.25.2 → v1.27.0 sweep. Seven independent commits,
+no behavioural change for end users.
+
+### Security
+
+- **`LoginRateLimitFilter` warns on loose dev profile at startup.**
+  When the active Spring profile is `dev` *and* `max-attempts` exceeds
+  10 (the dev override is 100 so Playwright runs do not exhaust the
+  bucket), a `@PostConstruct` hook now emits a WARN reminding the
+  operator that this build has no business facing the public internet.
+  Catches the foot-gun of an accidental `SPRING_PROFILES_ACTIVE=dev`
+  on a publicly reachable host.
+
+### Refactored
+
+- **`useReducedMotion()` + `usePageSwap()` composables.** Pulls the
+  `MediaQueryList` listener + nullable `mqlChangeHandler` ref and the
+  `setInterval` / `startPageSwap` / `stopPageSwap` pair out of
+  `KioskComponent` into two self-cleaning composables under
+  `features/display/_shared/`. The kiosk shell loses 4 mutable
+  nullables, 2 effects and 2 private methods; both composables ship
+  with dedicated specs covering the toggle, wrap, reset and
+  unavailable-`window.matchMedia` paths.
+- **`useSchematicViewport()` + `useRouteOverlay()` composables.**
+  ViewBox computation, ResizeObserver setup, `baseScale` / `invZoom`
+  math, the two rotated-label transforms and the six route-overlay
+  computeds (`hasRoute`, `routeTransferIds`, `routeActiveEdges`,
+  `routeStopsByLine`, `routeOverlayPaths`, `routeDirectionArrows`) all
+  move into dedicated composables next to the schematic component.
+  Shell drops from 762 LoC to 677 LoC; the host component now reads
+  as filters + event handlers rather than viewport + route math.
+
+### Tests
+
+- **Frontend `toBeTruthy()` sweep.** The remaining 56 `expect(x).toBeTruthy()`
+  assertions in 28 specs split three ways: redundant ones (whose next
+  line already accesses the same object, where a null reference would
+  have crashed anyway) are deleted, standalone DOM queries become
+  `not.toBeNull()` so the intent is explicit, and three tautological
+  "after-assignment" form-field tests (`line-dialog`, `itinerary-dialog`,
+  `stop-dialog`) — they assigned a string and then checked the same
+  string was truthy — are removed entirely. Zero occurrence left in
+  `frontend/src/**/*.spec.ts`.
+- **a11y baseline migrated to a per-rule allowlist.** The
+  `Record<string, number>` count budget in `frontend/e2e/a11y.spec.ts`
+  becomes `Record<string, string[]>` listing the axe rules tolerated
+  on each page (currently `['color-contrast']` on the four pages still
+  at 1 violation: `network-map`, `network-list`, `admin-lines`,
+  `admin-stops`). A NEW rule firing on those pages — or any violation
+  at all on the eight zero-baseline pages — surfaces as an unexpected
+  entry in the soft-assert output, even when the total count stays
+  flat.
+
+### Documentation
+
+- **README ADR count corrected.** Two stale "(40)" / "40 ADRs"
+  occurrences in the project tree and the documentation list now
+  read 41 (matching the existing badge and the actual file count).
+- **ADR 0011 footnoted with the Spring Boot 4.0.6 drift.** Adds a
+  dated footnote calling out that the build moved off the 4.0.2
+  baseline the decision originally targeted, without mutating the
+  decision body so the ADR audit trail stays intact.
+
 ## [1.27.0] — 2026-05-18
 
 Decomposition of the schematic-map god component (the only P2 item
