@@ -1,31 +1,20 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { User, CreateUserRequest, UpdateUserRequest, PageRequest, PageResponse } from '@shared/models';
-import { pageRequestToHttpParams } from '@shared/utils/page-request.utils';
+import { User, CreateUserRequest, UpdateUserRequest } from '@shared/models';
+import { CrudResource } from './crud-resource';
 
+/**
+ * UserService — pilot migration to the CrudResource pattern. The five
+ * other CRUD services (stop, line, itinerary, message, schedule) still
+ * ship their own copies because each one has feature-specific filters
+ * (lineId, active, etc.) layered on top of the CRUD surface. A
+ * subsequent commit can fold them in by introducing a {@code paramsFor}
+ * hook on the base.
+ */
 @Injectable({
   providedIn: 'root'
 })
-export class UserService {
-  private readonly baseUrl = '/api/users';
-  private readonly http = inject(HttpClient);
-
-  getAllPaginated(request: PageRequest = {}): Observable<PageResponse<User>> {
-    const params = pageRequestToHttpParams({ ...request, page: request.page ?? 0 });
-    return this.http.get<PageResponse<User>>(this.baseUrl, { params });
-  }
-
-  create(request: CreateUserRequest): Observable<User> {
-    return this.http.post<User>(this.baseUrl, request);
-  }
-
-  update(id: string, request: UpdateUserRequest): Observable<User> {
-    return this.http.put<User>(`${this.baseUrl}/${id}`, request);
-  }
-
-  delete(id: string): Observable<void> {
-    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
-  }
+export class UserService extends CrudResource<User, CreateUserRequest, UpdateUserRequest> {
+  protected readonly baseUrl = '/api/users';
+  protected readonly http = inject(HttpClient);
 }
