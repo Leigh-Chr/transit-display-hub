@@ -203,7 +203,11 @@ tasks.withType<Test> {
  * when the upstream is down — see RealGtfsFeedIntegrationTest.
  */
 tasks.register<Test>("testRealFeed") {
+    // Same conflict as `testPostgres`: the global tasks.withType<Test>
+    // block excludes the "real-feed" tag, and re-including it here without
+    // clearing first leaves JUnit resolving the conflict by exclusion.
     useJUnitPlatform {
+        excludeTags.clear()
         includeTags("real-feed")
     }
     description = "Runs the GTFS importer against real public feeds. " +
@@ -212,6 +216,12 @@ tasks.register<Test>("testRealFeed") {
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     shouldRunAfter("test")
+    // Real feeds (CTS Strasbourg, TBM Bordeaux) load tens of thousands
+    // of trips through a full Spring context; the JVM default heap of
+    // ~512 MB OOMs on the second iteration. Fork a fresh JVM per test
+    // class so memory from a previous feed is reclaimed before the next.
+    maxHeapSize = "4g"
+    forkEvery = 1
 }
 
 /**
