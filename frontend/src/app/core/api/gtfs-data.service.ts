@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BookingRule, FareAttribute, FaresV2, ImportAudit, Pathway, Shape, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, FaresV2, ImportAudit, Shape, Translation } from '@shared/models';
 
 /**
  * Read-only access to the GTFS extension tables that the importer
@@ -52,13 +52,6 @@ export class GtfsDataService {
   triggerReimport(): Observable<void> {
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
     return this.http.post<void>('/api/admin/gtfs/reimport', null);
-  }
-
-  /** Indoor topology around a stop — escalators, lifts, exits, etc.
-   *  Empty list when the feed has no pathways.txt or the stop has no
-   *  inbound/outbound segments. */
-  getPathwaysForStop(stopId: string): Observable<Pathway[]> {
-    return this.http.get<Pathway[]>(`/api/stops/${stopId}/pathways`);
   }
 
   /** Geographic polyline of an itinerary's shape, ordered along the

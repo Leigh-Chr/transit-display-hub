@@ -311,7 +311,6 @@
       "realtime": "Temps réel",
       "gtfsData": "Données GTFS",
       "importAudit": "Historique imports",
-      "pathways": "Pathways",
       "shapes": "Shapes",
       "users": "Utilisateurs",
       "skipToMain": "Aller au contenu principal",
@@ -977,30 +976,6 @@
         "failed": "Échec",
         "running": "En cours"
       }
-    },
-    "pathways": {
-      "title": "Topologie indoor",
-      "subtitle": "Connexions piétonnes intra-station — escaliers, ascenseurs, sorties — depuis pathways.txt. Sélectionne un arrêt pour voir ses segments entrants et sortants.",
-      "stopPickerLabel": "Arrêt",
-      "stopPickerPlaceholder": "Tape le nom de l'arrêt…",
-      "levelsTooltip": "Niveaux déclarés pour la station — GTFS levels.txt",
-      "stationDefault": "Station",
-      "levelDefault": "niveau {{ index }}",
-      "levelIndexTooltip": "level_index = {{ index }}",
-      "loadFailed": "Impossible de charger les pathways",
-      "emptyPathwayTitle": "Pas de pathway pour cet arrêt",
-      "emptyPathwayDesc": "Soit la station n'a pas de topologie indoor déclarée, soit l'arrêt est un poteau bus.",
-      "graphTitle": "Schéma topologique",
-      "graphAria": "Graphe des pathways autour de l'arrêt sélectionné",
-      "colMode": "Mode",
-      "colFrom": "Depuis",
-      "colTo": "Vers",
-      "colSignpost": "Signalétique",
-      "colLength": "Distance",
-      "colTime": "Durée",
-      "colDetails": "Détails",
-      "emptySelectTitle": "Sélectionne un arrêt",
-      "emptySelectDesc": "Tape un nom dans le champ ci-dessus pour voir les pathways autour d'une station."
     },
     "shapes": {
       "title": "Shapes GTFS",

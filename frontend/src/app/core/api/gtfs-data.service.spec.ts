@@ -8,7 +8,6 @@ import {
   FareLegJoinRule,
   FaresV2,
   ImportAudit,
-  Pathway,
   Shape,
   Translation,
 } from '@shared/models';
@@ -94,23 +93,6 @@ describe('GtfsDataService', () => {
     validationNoticeWarnings: 2,
   };
 
-  const mockPathway: Pathway = {
-    id: 'pw-1',
-    externalId: 'pw-ext-1',
-    fromStopId: 's1',
-    fromStopName: 'A',
-    toStopId: 's2',
-    toStopName: 'B',
-    pathwayMode: 'WALKWAY',
-    bidirectional: true,
-    lengthMetres: 25,
-    traversalTimeSeconds: 30,
-    stairCount: null,
-    maxSlope: null,
-    minWidthMetres: null,
-    signpostedAs: null,
-    reversedSignpostedAs: null,
-  };
 
   const mockShape: Shape = {
     id: 'sh-1',
@@ -220,18 +202,6 @@ describe('GtfsDataService', () => {
 
       const req = httpMock.expectOne(r => r.url === '/api/admin/import-audit' && r.params.get('limit') === '10');
       req.flush([]);
-    });
-  });
-
-  describe('getPathwaysForStop', () => {
-    it('should hit the per-stop pathways endpoint', () => {
-      service.getPathwaysForStop('stop-1').subscribe(rows => {
-        expect(rows).toEqual([mockPathway]);
-      });
-
-      const req = httpMock.expectOne('/api/stops/stop-1/pathways');
-      expect(req.request.method).toBe('GET');
-      req.flush([mockPathway]);
     });
   });
 

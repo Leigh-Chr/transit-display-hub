@@ -311,7 +311,6 @@
       "realtime": "Real-time",
       "gtfsData": "GTFS Data",
       "importAudit": "Import History",
-      "pathways": "Pathways",
       "shapes": "Shapes",
       "users": "Users",
       "skipToMain": "Skip to main content",
@@ -977,30 +976,6 @@
         "failed": "Failed",
         "running": "Running"
       }
-    },
-    "pathways": {
-      "title": "Indoor Topology",
-      "subtitle": "Intra-station pedestrian connections — stairs, elevators, exits — from pathways.txt. Select a stop to see its inbound and outbound segments.",
-      "stopPickerLabel": "Stop",
-      "stopPickerPlaceholder": "Type the stop name…",
-      "levelsTooltip": "Declared station levels — GTFS levels.txt",
-      "stationDefault": "Station",
-      "levelDefault": "level {{ index }}",
-      "levelIndexTooltip": "level_index = {{ index }}",
-      "loadFailed": "Failed to load pathways",
-      "emptyPathwayTitle": "No pathways for this stop",
-      "emptyPathwayDesc": "Either the station has no declared indoor topology, or the stop is a simple pole.",
-      "graphTitle": "Topological diagram",
-      "graphAria": "Pathway graph around the selected stop",
-      "colMode": "Mode",
-      "colFrom": "From",
-      "colTo": "To",
-      "colSignpost": "Signpost",
-      "colLength": "Distance",
-      "colTime": "Duration",
-      "colDetails": "Details",
-      "emptySelectTitle": "Select a stop",
-      "emptySelectDesc": "Type a name in the field above to see the pathways around a station."
     },
     "shapes": {
       "title": "GTFS Shapes",

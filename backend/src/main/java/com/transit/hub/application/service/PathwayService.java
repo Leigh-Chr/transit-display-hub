@@ -27,24 +27,6 @@ public class PathwayService {
     private final StopRepository stopRepository;
 
     /**
-     * Returns every pathway with at least one endpoint at the given
-     * stop, ordered first by {@code from→to direction} (out-of-the-stop
-     * first), then by {@code pathway_mode} so escalators / stairs cluster
-     * predictably in the admin view.
-     */
-    @Transactional(readOnly = true)
-    public List<PathwayResponse> findPathwaysForStop(UUID stopId) {
-        return pathwayRepository.findTouchingStop(stopId).stream()
-                .sorted(Comparator
-                        .comparing((Pathway p) ->
-                                stopId.equals(p.getFromStop().getId()) ? 0 : 1)
-                        .thenComparing(p -> p.getPathwayMode().ordinal())
-                        .thenComparing(p -> p.getSignpostedAs() == null ? "" : p.getSignpostedAs()))
-                .map(PathwayResponse::from)
-                .toList();
-    }
-
-    /**
      * Returns the indoor pathway graph rooted at a station — pathways
      * touching either the given stop OR any of its sibling platforms
      * under the same parent station, plus the level rows of the

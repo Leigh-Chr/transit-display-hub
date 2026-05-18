@@ -1,6 +1,5 @@
 package com.transit.hub.application.service;
 
-import com.transit.hub.application.dto.response.PathwayResponse;
 import com.transit.hub.application.dto.response.StationPathwayGraphResponse;
 import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.StationLevel;
@@ -39,44 +38,6 @@ class PathwayServiceTest {
 
     @InjectMocks
     private PathwayService pathwayService;
-
-    @Test
-    @DisplayName("findPathwaysForStop sorts outgoing pathways before incoming, then by mode")
-    void sortsOutgoingFirstThenByMode() {
-        UUID stopAId = UUID.randomUUID();
-        UUID stopBId = UUID.randomUUID();
-        Stop stopA = stop(stopAId, "Quay A");
-        Stop stopB = stop(stopBId, "Quay B");
-
-        // Incoming elevator (B → A)
-        Pathway incomingElevator = pathway("p1", stopB, stopA, PathwayMode.ELEVATOR, "Lift to A");
-        // Outgoing stairs (A → B)
-        Pathway outgoingStairs = pathway("p2", stopA, stopB, PathwayMode.STAIRS, "Stairs to B");
-        // Outgoing escalator (A → B)
-        Pathway outgoingEscalator = pathway("p3", stopA, stopB, PathwayMode.ESCALATOR, "Escalator to B");
-
-        when(pathwayRepository.findTouchingStop(stopAId))
-                .thenReturn(List.of(incomingElevator, outgoingStairs, outgoingEscalator));
-
-        List<PathwayResponse> responses = pathwayService.findPathwaysForStop(stopAId);
-
-        assertThat(responses).hasSize(3);
-        // Outgoing first (STAIRS=ordinal 1, ESCALATOR=ordinal 3)
-        assertThat(responses.get(0).externalId()).isEqualTo("p2"); // STAIRS, outgoing
-        assertThat(responses.get(1).externalId()).isEqualTo("p3"); // ESCALATOR, outgoing
-        assertThat(responses.get(2).externalId()).isEqualTo("p1"); // ELEVATOR, incoming
-    }
-
-    @Test
-    @DisplayName("returns an empty list when no pathways touch the stop")
-    void emptyWhenNoPathways() {
-        UUID stopId = UUID.randomUUID();
-        when(pathwayRepository.findTouchingStop(stopId)).thenReturn(List.of());
-
-        List<PathwayResponse> responses = pathwayService.findPathwaysForStop(stopId);
-
-        assertThat(responses).isEmpty();
-    }
 
     @Test
     @DisplayName("findStationGraphForStop returns empty when the stop does not exist")
