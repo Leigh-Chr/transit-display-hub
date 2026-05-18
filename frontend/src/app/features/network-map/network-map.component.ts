@@ -26,6 +26,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
+import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import { useNetworkMapSubtitle } from './_shared/use-network-map-subtitle';
@@ -43,6 +44,7 @@ import { useNetworkMapSubtitle } from './_shared/use-network-map-subtitle';
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
+    A11yToolbarComponent,
     SchematicMapComponent,
     RouteSearchBarComponent,
     LineIndexComponent,

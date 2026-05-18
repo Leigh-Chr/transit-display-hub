@@ -19,6 +19,7 @@ import { SchematicLayoutService, LayoutStop } from './services/schematic-layout.
 import { RouteFinderService, RouteResult } from './services/route-finder.service';
 import { ThemeService } from '@core/services/theme.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { NetworkMap, NetworkMapAlerts, NetworkLine } from '@shared/models';
 
 // Stub child components to avoid their complex dependencies
@@ -60,7 +61,14 @@ describe('NetworkMapComponent', () => {
   let mockLayoutService: { calculateLayout: ReturnType<typeof vi.fn> };
   let mockRouteFinder: { findRoute: ReturnType<typeof vi.fn> };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
-  let mockThemeService: { isDarkMode: ReturnType<typeof signal<boolean>>; toggleTheme: ReturnType<typeof vi.fn> };
+  let mockThemeService: {
+    isDarkMode: ReturnType<typeof signal<boolean>>;
+    toggleTheme: ReturnType<typeof vi.fn>;
+    isHighContrast: ReturnType<typeof signal<boolean>>;
+    isLargeText: ReturnType<typeof signal<boolean>>;
+    toggleHighContrast: ReturnType<typeof vi.fn>;
+    toggleLargeText: ReturnType<typeof vi.fn>;
+  };
 
   const mockStops: LayoutStop[] = [
     { id: 's1', name: 'Alpha', latitude: null, longitude: null, schematicX: null, schematicY: null, lineCodes: ['L1'], x: 100, y: 200 },
@@ -123,6 +131,10 @@ describe('NetworkMapComponent', () => {
     mockThemeService = {
       isDarkMode: signal(false),
       toggleTheme: vi.fn(),
+      isHighContrast: signal(false),
+      isLargeText: signal(false),
+      toggleHighContrast: vi.fn(),
+      toggleLargeText: vi.fn(),
     };
 
     const mockLocaleService = {
@@ -180,6 +192,7 @@ describe('NetworkMapComponent', () => {
           MatIconModule,
           MatInputModule,
           MatProgressSpinnerModule,
+          A11yToolbarComponent,
           MockSchematicMapComponent,
           MockRouteSearchBarComponent,
           MockFeedCreditsComponent,

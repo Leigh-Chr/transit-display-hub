@@ -21,6 +21,7 @@
 .clock-container { @include base.display-clock-container; }
 .date { @include base.display-date; }
 .clock { @include base.display-clock; }
+.a11y-controls { @include base.display-a11y-controls; }
 
 /* --- Departures Board (4 columns) --- */
 .departures { @include base.display-board; }

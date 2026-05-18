@@ -16,8 +16,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
-import { ThemeService } from '@core/services/theme.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
+import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
@@ -54,6 +54,7 @@ const MAX_VISIBLE_ARRIVALS = 5;
     MatProgressSpinnerModule,
     MatTooltipModule,
     TranslocoPipe,
+    A11yToolbarComponent,
     DisplayAlertBannerComponent,
     DisplayInfoTickerComponent,
     DisplayDeparturesRowComponent,
@@ -68,9 +69,6 @@ export class KioskComponent implements OnInit {
   private readonly wsService = inject(WebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
-  /** Exposed to the template so the a11y toolbar can bind to its
-   *  three signals (dark / contrast / large text) directly. */
-  readonly themeService = inject(ThemeService);
 
   /** Shared 1Hz wall clock — pauses while the tab is hidden, exposes
    *  pre-formatted date/time strings and the isStale helpers. */

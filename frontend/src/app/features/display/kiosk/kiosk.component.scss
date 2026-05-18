@@ -34,32 +34,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Accessibility toolbar (kiosk only) --- */
-.a11y-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5vh;
-  margin-left: 1.5vh;
-  padding: 0.4vh 0.6vh;
-  background: var(--app-kiosk-surface-variant, rgba(255, 255, 255, 0.06));
-  border-radius: 0.6vh;
-}
-.a11y-controls button {
-  width: 5vh;
-  height: 5vh;
-  min-width: 44px;
-  min-height: 44px;
-  color: var(--app-kiosk-on-surface);
-}
-.a11y-controls button[aria-pressed='true'] {
-  background: var(--app-kiosk-on-surface);
-  color: var(--app-kiosk-surface);
-}
-.a11y-controls mat-icon {
-  font-size: 3vh;
-  width: 3vh;
-  height: 3vh;
-}
+/* --- Accessibility toolbar wrapper --- */
+.a11y-controls { @include base.display-a11y-controls; }
 
 /* --- Departures Board --- */
 .departures { @include base.display-board; }

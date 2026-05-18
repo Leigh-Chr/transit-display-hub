@@ -16,6 +16,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
+import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import {
@@ -44,6 +45,7 @@ const STALE_STOP_THRESHOLD_MS = 30 * 60 * 1000;
     MatIconModule,
     MatProgressSpinnerModule,
     TranslocoPipe,
+    A11yToolbarComponent,
     DisplayAlertBannerComponent,
     DisplayInfoTickerComponent,
     DisplayDeparturesRowComponent,

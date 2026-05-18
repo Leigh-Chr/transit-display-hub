@@ -262,3 +262,37 @@
     .clock { font-size: 6vh; }
   }
 }
+
+/// Wrapper around <app-a11y-toolbar> used in both the kiosk and hub
+/// headers. Reaches into the emulated view of the toolbar so the
+/// touch targets scale with the kiosk's vh-based typography (44px
+/// hard floor for WCAG 2.5.5).
+@mixin display-a11y-controls {
+  margin-left: 1.5vh;
+  padding: 0.4vh 0.6vh;
+  background: var(--app-kiosk-surface-variant, rgba(255, 255, 255, 0.06));
+  border-radius: 0.6vh;
+
+  ::ng-deep .a11y-toolbar {
+    gap: 0.5vh;
+  }
+
+  ::ng-deep .a11y-toolbar button {
+    width: 5vh;
+    height: 5vh;
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--app-kiosk-on-surface);
+  }
+
+  ::ng-deep .a11y-toolbar button[aria-pressed='true'] {
+    background: var(--app-kiosk-on-surface);
+    color: var(--app-kiosk-surface);
+  }
+
+  ::ng-deep .a11y-toolbar mat-icon {
+    font-size: 3vh;
+    width: 3vh;
+    height: 3vh;
+  }
+}

@@ -1,4 +1,10 @@
 {
+  "a11yToolbar": {
+    "groupLabel": "Accessibilité",
+    "highContrast": "Mode contrasté",
+    "largeText": "Texte agrandi",
+    "speak": "Écouter le prochain passage"
+  },
   "common": {
     "appName": "Transit Display Hub",
     "cancel": "Annuler",
@@ -69,9 +75,6 @@
       "stopNotFound": "Arrêt introuvable."
     },
     "noScheduledDepartures": "Aucun passage à annoncer",
-    "speakNext": "Écouter le prochain passage",
-    "highContrast": "Mode contrasté",
-    "largeText": "Texte agrandi",
     "headerLine": "Ligne",
     "headerPlatform": "Quai",
     "headerDestination": "Destination",

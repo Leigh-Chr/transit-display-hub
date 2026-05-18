@@ -29,6 +29,7 @@
     >
       <mat-icon aria-hidden="true">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
+    <app-a11y-toolbar class="header-a11y" [showSpeech]="false" />
   </header>
 
   @if (categories().length > 1) {

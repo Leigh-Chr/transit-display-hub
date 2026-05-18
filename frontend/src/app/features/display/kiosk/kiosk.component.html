@@ -24,41 +24,11 @@
         <div class="date">{{ currentDate() }}</div>
         <div class="clock">{{ currentTime() }}</div>
       </div>
-      <!-- Accessibility controls: high-contrast palette, large
-           text, vocal announcement of the next departure. The
-           buttons stay in the top-right corner so a passenger
-           can reach them whatever the layout. aria-pressed is
-           the canonical WAI-ARIA way to expose toggle state to
-           assistive tech. -->
-      <div class="a11y-controls" role="group" [attr.aria-label]="'kiosk.highContrast' | transloco">
-        <button
-          mat-icon-button
-          type="button"
-          [attr.aria-pressed]="themeService.isHighContrast()"
-          [attr.aria-label]="'kiosk.highContrast' | transloco"
-          [matTooltip]="'kiosk.highContrast' | transloco"
-          (click)="themeService.toggleHighContrast()">
-          <mat-icon>contrast</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          type="button"
-          [attr.aria-pressed]="themeService.isLargeText()"
-          [attr.aria-label]="'kiosk.largeText' | transloco"
-          [matTooltip]="'kiosk.largeText' | transloco"
-          (click)="themeService.toggleLargeText()">
-          <mat-icon>format_size</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          type="button"
-          [attr.aria-label]="'kiosk.speakNext' | transloco"
-          [matTooltip]="'kiosk.speakNext' | transloco"
-          [disabled]="!speechAvailable"
-          (click)="speakNextDeparture()">
-          <mat-icon>volume_up</mat-icon>
-        </button>
-      </div>
+      <app-a11y-toolbar
+        class="a11y-controls"
+        [showSpeech]="true"
+        [speechEnabled]="speechAvailable"
+        (speak)="speakNextDeparture()" />
     </header>
 
     <!-- Critical alert (scrolling banner) — extracted to the shared
