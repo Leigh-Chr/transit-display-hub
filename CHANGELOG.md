@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.24.2] — 2026-05-18
+
+Test-coverage maintenance release. The audit reports flagged a long
+tail of services sitting between 0 % and 70 % line coverage — none
+of them changed behaviour, they were just untested. This release
+closes the gaps that mattered without inflating the unit-test surface
+for paths better exercised by integration tests.
+
+### Tests
+
+- **RealtimeAlertMatcher** 5.5 % → ~100 % (15 tests on the two
+  static helpers + buildRealtimeMessages branches).
+- **GtfsImportOrchestrator** 0.9 % → ~71 % (5 tests on the three
+  terminal outcomes, lock contention, and the async-variant
+  ImportAlreadyRunningException path).
+- **GtfsDownloader** 4 % → ~50 % (5 tests on the classpath fixture
+  path, fresh-cache short-circuit, stale-cache redownload). The
+  live-HTTP branch stays integration-test only.
+- **RealtimeAdminService** 23.8 % → ~95 % (7 tests on the snapshot
+  → DTO mapping plus the feed-enabled / disabled branches).
+- **ArrivalEnricher static helpers** 58.3 % → ~71 % (15 tests on
+  resolveBookingInfo, resolveWheelchair, resolveBikes,
+  resolveStopHeadsign, translatedLineInfo).
+- **AbstractRealtimeFeedCache** 31.6 % → ~90 % (7 tests with an
+  in-process HttpServer covering enabled/disabled, 200, 500,
+  empty-init, header-info storage).
+- **GtfsImportMetrics** 61.3 % → ~95 % (6 tests on a
+  SimpleMeterRegistry assert every counter slice + the histogram
+  totals).
+- **PathwayService** 30.8 % → ~95 % (4 tests on the previously
+  untouched findStationGraphForStop method).
+- **RealtimeAlertScheduler** 60.9 % → ~95 % (8 tests on the boot
+  priming branch + the three cron-driven refresh methods).
+- **DisplayStateService** 69.8 % → ~90 % (2 tests on the
+  previously untested onStopDeleted listener).
+
+Cumulative gains: INSTRUCTION 81.6 % → 86.9 %, BRANCH 63.6 % → 68.6 %,
+LINE 81.5 % → 87.0 %.
+
+The remaining sub-80 % classes (GtfsDownloader, GtfsValidatorService,
+WebSocketConfig, RouteImporter, ArrivalEnricher, GtfsDataLoader,
+ServiceCalendarLoader, NetworkMapPublisher, AgencyImporter,
+GtfsImportOrchestrator) are intentional: either covered through
+integration tests, or sitting on infrastructure-heavy paths whose
+unit coverage would cost more than it gains.
+
 ## [1.24.1] — 2026-05-18
 
 Maintenance release wrapping the post-v1.24.0 hygiene pass: closing the
