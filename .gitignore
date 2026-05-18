@@ -28,7 +28,6 @@ frontend/.angular/
 frontend/dist/
 frontend/.env
 frontend/*.log
-frontend/screenshots/
 frontend/test-results/
 
 # Playwright MCP browser artifacts (screenshots, snapshots, console logs)
