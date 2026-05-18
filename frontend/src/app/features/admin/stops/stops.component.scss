@@ -119,6 +119,19 @@ mat-card {
   font-style: italic;
 }
 
+/* Deep-link from the schedules count cell to /admin/schedules with
+   line + stop pre-selected. Underlined on hover only — the underline
+   would otherwise add visual noise in dense tables. */
+.schedule-link {
+  color: var(--app-primary);
+  text-decoration: none;
+}
+
+.schedule-link:hover,
+.schedule-link:focus-visible {
+  text-decoration: underline;
+}
+
 /* Enter animations defined globally — see styles.scss section 13a */
 
 @media (max-width: 600px) {

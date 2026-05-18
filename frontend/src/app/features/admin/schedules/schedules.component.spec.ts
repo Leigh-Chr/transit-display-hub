@@ -1,5 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
+import { provideRouter } from '@angular/router';
 import { NotifyService } from '@core/services/notify.service';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -105,6 +106,7 @@ describe('SchedulesComponent', () => {
         testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
+        provideRouter([]),
         { provide: LineService, useValue: mockLineService },
         { provide: StopService, useValue: mockStopService },
         { provide: ScheduleService, useValue: mockScheduleService },

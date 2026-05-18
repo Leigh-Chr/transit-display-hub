@@ -470,6 +470,7 @@
       "noDisplay": "Aucun affichage",
       "previewTooltip": "Aperçu de l'affichage kiosque",
       "viewOnMapTooltip": "Voir cet arrêt sur la carte",
+      "viewSchedulesTooltip": "Voir les horaires de cet arrêt",
       "editTooltip": "Modifier l'arrêt",
       "deleteTooltip": "Supprimer l'arrêt",
       "tooltipParentStation": "Station (parent)",
@@ -697,6 +698,7 @@
       "deleteFailed": "Impossible de supprimer l'entrée",
       "editTooltip": "Modifier l'entrée",
       "deleteTooltip": "Supprimer l'entrée",
+      "viewItineraryTooltip": "Voir l'itinéraire complet",
       "dialog": {
         "titleCreate": "Nouvelle entrée d'horaire",
         "titleEdit": "Modifier l'entrée",
@@ -733,6 +735,7 @@
       "editTooltip": "Modifier l'itinéraire",
       "editStopsTooltip": "Gérer les arrêts",
       "deleteTooltip": "Supprimer l'itinéraire",
+      "viewStopsTooltip": "Voir les arrêts de cette ligne",
       "emptyTitle": "Aucun itinéraire configuré",
       "emptyDescription": "Créez des itinéraires pour définir les parcours et directions de vos lignes.",
       "emptyAction": "Créer un itinéraire",

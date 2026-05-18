@@ -12,6 +12,7 @@ import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { AuthService } from '@core/auth/auth.service';
 import { Itinerary, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
@@ -43,6 +44,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatPaginatorModule,
     MatChipsModule,
     MatTooltipModule,
+    RouterLink,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,

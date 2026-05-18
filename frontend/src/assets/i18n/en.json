@@ -470,6 +470,7 @@
       "noDisplay": "No display",
       "previewTooltip": "Preview kiosk display",
       "viewOnMapTooltip": "Show this stop on the map",
+      "viewSchedulesTooltip": "View schedules for this stop",
       "editTooltip": "Edit stop",
       "deleteTooltip": "Delete stop",
       "tooltipParentStation": "Station (parent)",
@@ -697,6 +698,7 @@
       "deleteFailed": "Failed to delete schedule entry",
       "editTooltip": "Edit schedule entry",
       "deleteTooltip": "Delete schedule entry",
+      "viewItineraryTooltip": "View the full itinerary",
       "dialog": {
         "titleCreate": "New Schedule Entry",
         "titleEdit": "Edit Schedule Entry",
@@ -733,6 +735,7 @@
       "editTooltip": "Edit itinerary",
       "editStopsTooltip": "Manage stops",
       "deleteTooltip": "Delete itinerary",
+      "viewStopsTooltip": "View stops served by this line",
       "emptyTitle": "No itineraries configured",
       "emptyDescription": "Create itineraries to define routes and directions for your lines.",
       "emptyAction": "Create Itinerary",

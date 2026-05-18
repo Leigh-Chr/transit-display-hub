@@ -11,6 +11,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
 import { Stop, Schedule, CreateScheduleRequest } from '@shared/models';
@@ -35,6 +36,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatFormFieldModule,
     MatSortModule,
     MatTooltipModule,
+    RouterLink,
     TableSkeletonComponent,
     EmptyStateComponent,
     TranslocoDirective,
@@ -50,6 +52,7 @@ export class SchedulesComponent implements AfterViewInit {
   private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly transloco = inject(TranslocoService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly sort = viewChild(MatSort);
   loading = signal(false);
@@ -63,6 +66,31 @@ export class SchedulesComponent implements AfterViewInit {
   selectedStopId = '';
   displayedColumns = ['line', 'destination', 'time', 'actions'];
 
+  constructor() {
+    // Deep-link from /admin/stops "View schedules" or any other caller:
+    // `?lineId=L&stopId=S` pre-selects the line, loads its stops, then
+    // pre-selects the target stop and triggers the schedule fetch. Reads
+    // queryParams only at boot — switching the selectors after that
+    // doesn't push back to the URL, mirroring the existing one-way flow.
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const lineId = (params['lineId'] as string | undefined) ?? '';
+        const stopId = (params['stopId'] as string | undefined) ?? '';
+        if (!lineId || lineId === this.selectedLineId) {
+          return;
+        }
+        this.selectedLineId = lineId;
+        this.fetchStopsForLine(lineId, (loadedStops) => {
+          if (!stopId) { return; }
+          if (loadedStops.some((s) => s.id === stopId)) {
+            this.selectedStopId = stopId;
+            this.loadSchedules();
+          }
+        });
+      });
+  }
+
   ngAfterViewInit(): void {
     const sortRef = this.sort();
     if (sortRef) {
@@ -75,16 +103,27 @@ export class SchedulesComponent implements AfterViewInit {
     this.selectedStop.set(null);
     this.dataSource.data = [];
     if (this.selectedLineId) {
-      this.stopService
-        .getAll(this.selectedLineId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (stops) => this.stops.set(stops),
-          error: () => this.notify.error(this.transloco.translate('admin.schedules.loadStopsFailed')),
-        });
+      this.fetchStopsForLine(this.selectedLineId);
     } else {
       this.stops.set([]);
     }
+  }
+
+  /** Shared fetch used by both the manual selector (onLineChange) and
+   *  the boot-time deep-link path (constructor). `onLoaded` fires only
+   *  on success and receives the freshly loaded list so the caller can
+   *  immediately pick a stop from it without re-reading the signal. */
+  private fetchStopsForLine(lineId: string, onLoaded?: (stops: Stop[]) => void): void {
+    this.stopService
+      .getAll(lineId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (stops) => {
+          this.stops.set(stops);
+          onLoaded?.(stops);
+        },
+        error: () => this.notify.error(this.transloco.translate('admin.schedules.loadStopsFailed')),
+      });
   }
 
   loadSchedules(): void {

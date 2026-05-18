@@ -140,7 +140,18 @@
           <th mat-header-cell *matHeaderCellDef mat-sort-header="scheduleCount" class="hide-mobile">
             {{ t('admin.stops.colSchedules') }}
           </th>
-          <td mat-cell *matCellDef="let stop" class="hide-mobile">{{ t('admin.stops.colSchedulesEntries', { count: stop.scheduleCount }) }}</td>
+          <td mat-cell *matCellDef="let stop" class="hide-mobile">
+            @if (stop.scheduleCount > 0 && stop.lines.length > 0) {
+              <a
+                class="schedule-link"
+                [routerLink]="['/admin/schedules']"
+                [queryParams]="{ lineId: stop.lines[0].id, stopId: stop.id }"
+                [matTooltip]="t('admin.stops.viewSchedulesTooltip')"
+              >{{ t('admin.stops.colSchedulesEntries', { count: stop.scheduleCount }) }}</a>
+            } @else {
+              {{ t('admin.stops.colSchedulesEntries', { count: stop.scheduleCount }) }}
+            }
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="device">
