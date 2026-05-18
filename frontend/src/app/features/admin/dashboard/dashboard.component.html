@@ -2,6 +2,24 @@
 <div class="dashboard">
   <h1 class="page-title">{{ t('admin.dashboard.title') }}</h1>
 
+  @if (isFreshInstall()) {
+    <mat-card class="onboarding-card" animate.enter="fade-in">
+      <mat-card-content class="onboarding-content">
+        <mat-icon class="onboarding-icon" aria-hidden="true">rocket_launch</mat-icon>
+        <div class="onboarding-body">
+          <h2 class="onboarding-title">{{ t('admin.dashboard.onboardingTitle') }}</h2>
+          <p class="onboarding-description">{{ t('admin.dashboard.onboardingDescription') }}</p>
+          <div class="onboarding-actions">
+            <a mat-flat-button color="primary" routerLink="/admin/operations/import-history">
+              <mat-icon aria-hidden="true">cloud_download</mat-icon>
+              {{ t('admin.dashboard.onboardingCta') }}
+            </a>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
   @if (isAdmin()) {
     <app-feed-info-card />
     <app-data-overview-card />

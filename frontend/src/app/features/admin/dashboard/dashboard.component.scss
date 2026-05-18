@@ -6,6 +6,58 @@
   letter-spacing: -0.5px;
 }
 
+/* Onboarding banner — only rendered for fresh installs */
+.onboarding-card {
+  margin-bottom: 24px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-primary) 10%, var(--app-surface-container)),
+    var(--app-surface-container)
+  );
+}
+
+.onboarding-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 8px 4px;
+}
+
+.onboarding-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--app-primary);
+  flex-shrink: 0;
+}
+
+.onboarding-title {
+  margin: 0 0 8px;
+  font-size: var(--m3-type-headline-small);
+  font-weight: 600;
+  color: var(--app-on-surface);
+}
+
+.onboarding-description {
+  margin: 0 0 16px;
+  color: var(--app-on-surface-variant);
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .onboarding-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;

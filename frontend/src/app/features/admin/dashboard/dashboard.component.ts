@@ -147,6 +147,19 @@ export class DashboardComponent {
     return Math.round((this.onlineDevicesCount() / total) * 100);
   });
 
+  /** True for an admin dashboard where no GTFS data has ever been imported.
+   *  Used to swap the regular stat grid for a guided onboarding banner that
+   *  tells the user to start with an import rather than poking the empty
+   *  "create a line" CTAs. */
+  readonly isFreshInstall = computed(() =>
+    this.isAdmin() &&
+    !this.loading() &&
+    !this.loadError() &&
+    this.lineCount() === 0 &&
+    this.stopCount() === 0 &&
+    this.totalDevicesCount() === 0,
+  );
+
   readonly displayedLines = computed(() => this.topLines());
 
   readonly hasMoreLines = computed(() => this.hasMoreLinesValue());

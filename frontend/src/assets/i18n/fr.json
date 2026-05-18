@@ -343,6 +343,10 @@
     },
     "dashboard": {
       "title": "Tableau de bord",
+      "onboardingTitle": "Bienvenue sur Transit Display Hub",
+      "onboardingDescription": "Aucun feed GTFS n'a encore été importé. Commencez par charger un feed depuis Exploitation → Historique des imports : lignes, arrêts, itinéraires et horaires seront alors disponibles.",
+      "onboardingCta": "Importer un feed GTFS",
+      "onboardingDocs": "Lire le guide d'installation",
       "statLines": "Lignes",
       "statStops": "Arrêts",
       "statItineraries": "Itinéraires",
