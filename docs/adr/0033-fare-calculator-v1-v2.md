@@ -1,6 +1,11 @@
 ## ADR 0033 — FareCalculator combining V1 and V2
 
-**Status:** Accepted
+**Status:** Accepted. **Amended 2026-05-18**: the dedicated admin
+page `/admin/fare-calculator` mentioned below was dropped — the
+network-map stop-popup is the primary consumer of
+`/api/fares/calculate` and offers a more contextual UX (origin +
+destination picked spatially). The public endpoint and the underlying
+service are unchanged.
 
 ## Context
 
@@ -32,9 +37,8 @@ shouldn't have to log in to see a fare.
   fields but not filtered server-side. Callers can post-filter; a
   future iteration can lift this into the service when feeds with
   rich V2 data show up.
-- The admin page `/admin/fare-calculator` is a manual test surface
-  — operators can drop in two stops and see what the calculator
-  computes. Removes "is the V1 zone wired?" from the questions a
-  passenger surface needs to ask.
+- The original admin page `/admin/fare-calculator` was kept as a
+  manual test surface but was removed 2026-05-18 once the stop-popup
+  proved to be a more contextual consumer of the same endpoint.
 - No new persistence — only reads. The pipelines are
   `@Transactional(readOnly = true)`.

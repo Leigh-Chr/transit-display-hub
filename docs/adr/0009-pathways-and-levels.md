@@ -1,6 +1,12 @@
 # ADR 0009 — Persisting station levels and pathways
 
-**Status:** Accepted
+**Status:** Accepted. **Amended 2026-05-18**: the dedicated admin
+viewer at `/admin/pathways` and its `GET /api/stops/{stopId}/pathways`
+endpoint (section 4) were dropped — the network-map stop-popup already
+surfaces the station's indoor topology through `<app-pathway-list>`
+backed by `PathwayService.findStationGraphForStop()`. The storage
+layer (entities, repository, importer) and the level/pathway data
+flow into the popup are unchanged.
 
 ## Context
 
@@ -71,21 +77,14 @@ non-step-free stations, and the row count remains a faithful image
 of the feed. Phase 1.3 complete will rewire these FKs to per-platform
 stops without schema changes.
 
-### 4. Endpoint shape
+### 4. Endpoint shape (superseded 2026-05-18)
 
-Single endpoint: `GET /api/stops/{stopId}/pathways`. Returns every
-pathway with at least one endpoint at `stopId`, with both stops
-embedded inline (id + name) so the admin UI doesn't need a second
-lookup. Sort order:
-
-1. Outgoing pathways before incoming (most user-relevant for
-   on-platform display).
-2. By `pathway_mode` ordinal (stairs / lift / escalator cluster
-   together).
-3. By `signposted_as` for stable ordering of multiple lifts.
-
-Auth: same as the rest of `/api/stops/**` GETs — admins and agents,
-no kiosk access (the data isn't passenger-facing yet).
+Originally exposed `GET /api/stops/{stopId}/pathways`. The endpoint
+was dropped along with the dedicated admin viewer — the popup uses
+`PathwayService.findStationGraphForStop()` directly through
+`/api/network-map/stops/{id}/pathway-graph`, which returns the full
+station graph (parent station + every child platform) rather than the
+single-stop slice this endpoint used to ship.
 
 ## Why no UI surfacing yet
 

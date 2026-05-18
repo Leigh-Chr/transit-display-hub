@@ -96,9 +96,11 @@ graph in one round-trip. The v2 graph is small on real feeds (a
 few hundred rules tops) and the relations are useless when split,
 so paging the response would just push joining onto the client.
 
-The frontend renders four sub-tables (Products, Areas, Leg rules,
-Transfer rules) in the existing `/admin/gtfs-data` tab group, next
-to v1.
+The frontend used to render four sub-tables (Products, Areas,
+Leg rules, Transfer rules) in the `/admin/gtfs-data` tab group,
+next to v1. That admin viewer was dropped 2026-05-18 — the data is
+still imported and persisted, surfaced to passengers via the
+fare popup, and reachable through Swagger for ad-hoc inspection.
 
 ## Trade-offs accepted
 

@@ -1,6 +1,19 @@
 # ADR 0014 — Persisting GTFS shapes for future map views
 
-**Status:** Accepted
+**Status:** Superseded by V53 (2026-05-18). The "future shapes-aware
+map view" referenced below never materialised: the schematic map is
+topological by design (Leaflet / octolinear renderers were considered
+and rejected — see project doctrine), and no other consumer ever read
+the persisted rows. The admin viewer at `/admin/shapes` was the sole
+client of the data and the dedicated `GET /api/itineraries/{id}/shape`
+endpoint. V53__drop_shapes.sql removes the `shapes` / `shape_points`
+tables and the `itineraries.shape_id` column; the importer no longer
+parses `shapes.txt`. The body below is preserved for historical
+context only.
+
+---
+
+**Original status:** Accepted
 
 ## Context
 

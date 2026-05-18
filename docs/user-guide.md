@@ -409,42 +409,6 @@ their account:
 
 ---
 
-## TAD Zones (GTFS-flex)
-
-The `Zones TAD` admin page (under
-`/admin/tad-zones`) renders every polygon imported from
-the feed's `locations.geojson` — the pickup / dropoff
-zones of demand-responsive trips.
-
-### Access
-
-Sidebar → "Zones TAD". Admin role required.
-
-### Features
-
-- **Map canvas**: every zone painted on a single SVG with
-  an equirectangular projection and a deterministic hue
-  per feature. Holes (interior rings of a `Polygon`) are
-  rendered with the `evenodd` fill rule so they show
-  through.
-- **Side list**: scrollable zone list with the colour
-  swatch, the GTFS `external_id`, the optional bound
-  `stop_id` and the geometry type. Click a row or a
-  polygon to highlight that zone — the others fade.
-- **Empty state**: shown when the imported feed doesn't
-  ship a `locations.geojson` (most published feeds today).
-
-### Spatial query
-
-Admins can ask "which zones cover this point?" via
-`GET /api/admin/locations/contains?lat=…&lon=…`. Two-step
-internally: a SQL bounding-box pre-filter on the
-indexed min/max columns, then a Java ray-casting pass on
-the raw GeoJSON. No PostGIS dependency. See ADR 0026 +
-0029 for the design rationale.
-
----
-
 ## Network Map
 
 The network map offers an interactive visualization of

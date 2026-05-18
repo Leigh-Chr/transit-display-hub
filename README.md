@@ -19,10 +19,15 @@ schedules on the kiosk and consult the schematic map, and
 on-call SREs watch Grafana dashboards backed by Prometheus
 metrics.
 
-It ships with **100 % GTFS spec coverage**, validated on every
+It imports every GTFS extension that feeds a user-facing surface
+(Fares v1+v2 → fare popup, GTFS-flex → on-demand booking CTA,
+pathways/levels → indoor topology in the stop popup,
+GTFS-Realtime → live delays and alerts), validated on every
 import by the canonical
-[MobilityData gtfs-validator][validator]. The 1.x line is tagged
-and shipping (current: see the version badge above).
+[MobilityData gtfs-validator][validator]. `shapes.txt` is
+intentionally skipped — the schematic map is topological by
+design (ADR 0014, superseded). The 1.x line is tagged and
+shipping (current: see the version badge above).
 
 [validator]: https://github.com/MobilityData/gtfs-validator
 
@@ -90,7 +95,8 @@ compile from source instead.
 
 ## Highlights
 
-- **GTFS Schedule v1 (20 files)** + **Fares v1+v2** + **GTFS-flex
+- **GTFS Schedule (19 files; `shapes.txt` skipped — topological map
+  by design, see ADR 0014)** + **Fares v1+v2** + **GTFS-flex
   (canonical 2024)** + **GTFS-Realtime (Alerts + TripUpdates +
   VehiclePositions, including FeedHeader, vehicle descriptors,
   occupancy)**. Validated by [MobilityData gtfs-validator][validator]
