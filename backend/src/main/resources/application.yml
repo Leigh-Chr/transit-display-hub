@@ -170,6 +170,12 @@ app:
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
     refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
   security:
+    # Dev/test default to empty — AdminPasswordBootstrap is a no-op and
+    # the V2 seed (admin/admin123) stays in place. Prod / kiosk override
+    # this with `${INITIAL_ADMIN_PASSWORD}` (no default) so the app
+    # fails fast if the operator did not provide one, closing the
+    # deploy-window risk of the shipped default.
+    initial-admin-password: ${INITIAL_ADMIN_PASSWORD:}
     login-rate-limit:
       # Dev profile is generous so Playwright runs do not exhaust the
       # bucket between specs. Prod / kiosk profiles inherit the 5 / 5min
@@ -223,6 +229,12 @@ app:
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
     refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
+  security:
+    # Fail-closed: no default in prod (aligns with JWT_SECRET).
+    # AdminPasswordBootstrap replaces the V2 admin/admin123 seed before
+    # the app accepts traffic; passwordMustChange stays TRUE so the
+    # first prod login still rotates through /auth/change-password.
+    initial-admin-password: ${INITIAL_ADMIN_PASSWORD}
 
 ---
 # Kiosk profile — same posture as prod (PostgreSQL, validate-only DDL,
@@ -270,3 +282,6 @@ app:
     issuer: ${JWT_ISSUER:transit-display-hub}
     audience: ${JWT_AUDIENCE:transit-display-hub-admin}
     refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:14}
+  security:
+    # Fail-closed: no default in kiosk (aligns with JWT_SECRET).
+    initial-admin-password: ${INITIAL_ADMIN_PASSWORD}

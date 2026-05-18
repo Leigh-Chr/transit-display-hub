@@ -53,3 +53,25 @@ minor releases receive fixes only for vulnerabilities flagged as
 - Self-built kiosks running customised code.
 - Vulnerabilities requiring the attacker to already hold
   administrative credentials.
+
+## Default admin credentials & rotation
+
+The dev profile seeds `admin / admin123` for local quickstart and the
+e2e suite. The flag `passwordMustChange = TRUE` (Flyway `V52`) forces
+a rotation through `/auth/change-password` on first login.
+
+The prod and kiosk profiles require an `INITIAL_ADMIN_PASSWORD`
+environment variable at boot time (the same fail-closed pattern used
+by `JWT_SECRET` and `DATABASE_PASSWORD`):
+
+```bash
+INITIAL_ADMIN_PASSWORD="$(openssl rand -base64 24)" \
+JWT_SECRET="$(openssl rand -base64 48)" \
+DATABASE_PASSWORD="..." \
+java -jar transit-display-hub.jar --spring.profiles.active=prod
+```
+
+On first boot, `AdminPasswordBootstrap` replaces the seeded bcrypt
+hash with the env-provided password and keeps `passwordMustChange = TRUE`,
+so even an operator who picked a placeholder is still routed through
+the rotation screen on first login.
