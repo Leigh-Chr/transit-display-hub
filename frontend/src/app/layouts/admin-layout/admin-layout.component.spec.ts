@@ -13,6 +13,12 @@ const en = {
     switchToEnglish: 'Switch to English',
     switchToFrench: 'Switch to French',
   },
+  a11yToolbar: {
+    groupLabel: 'Accessibility',
+    highContrast: 'High-contrast mode',
+    largeText: 'Larger text',
+    speak: 'Read aloud',
+  },
   admin: {
     navigation: {
       dashboard: 'Dashboard',
@@ -46,6 +52,12 @@ const fr = {
   common: {
     switchToEnglish: 'Switch to English',
     switchToFrench: 'Passer en français',
+  },
+  a11yToolbar: {
+    groupLabel: 'Accessibilité',
+    highContrast: 'Mode contrasté',
+    largeText: 'Texte agrandi',
+    speak: 'Lire à voix haute',
   },
   admin: {
     navigation: {
@@ -86,7 +98,11 @@ describe('AdminLayoutComponent', () => {
   };
   let mockThemeService: {
     isDarkMode: ReturnType<typeof signal<boolean>>;
+    isHighContrast: ReturnType<typeof signal<boolean>>;
+    isLargeText: ReturnType<typeof signal<boolean>>;
     toggleTheme: ReturnType<typeof vi.fn>;
+    toggleHighContrast: ReturnType<typeof vi.fn>;
+    toggleLargeText: ReturnType<typeof vi.fn>;
   };
   let mockBreakpointService: {
     isSmallScreen: ReturnType<typeof signal<boolean>>;
@@ -104,7 +120,11 @@ describe('AdminLayoutComponent', () => {
 
     mockThemeService = {
       isDarkMode: signal(false),
+      isHighContrast: signal(false),
+      isLargeText: signal(false),
       toggleTheme: vi.fn(),
+      toggleHighContrast: vi.fn(),
+      toggleLargeText: vi.fn(),
     };
 
     mockBreakpointService = {
@@ -339,6 +359,17 @@ describe('AdminLayoutComponent', () => {
       expect(localeBtn).not.toBeNull();
       // Default lang is 'en' in the testing module, so the toggle invites a switch to FR.
       expect(localeBtn.textContent).toContain('FR');
+    });
+
+    it('exposes the a11y-toolbar so admins can flip high-contrast and large-text without leaving /admin', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const toolbar = fixture.nativeElement.querySelector('app-a11y-toolbar');
+      expect(toolbar).not.toBeNull();
+      // Default inputs expose high-contrast and large-text but not speech.
+      const buttons = toolbar.querySelectorAll('button');
+      expect(buttons.length).toBe(2);
     });
   });
 });

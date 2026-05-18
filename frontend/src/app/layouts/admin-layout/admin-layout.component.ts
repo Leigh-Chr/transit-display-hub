@@ -13,6 +13,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 
 @Component({
   selector: 'app-admin-layout',
@@ -30,6 +31,7 @@ import { LocaleService } from '@core/i18n/locale.service';
     MatDividerModule,
     MatTooltipModule,
     TranslocoDirective,
+    A11yToolbarComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-layout.component.html',
