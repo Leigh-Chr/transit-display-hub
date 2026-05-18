@@ -151,11 +151,6 @@ describe('GtfsDataService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('getFares', () => {
     it('should fetch the fares list', () => {
       service.getFares().subscribe(fares => {

@@ -49,11 +49,6 @@ describe('FareCalculatorService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('calculate', () => {
     it('should query the backend with the from/to stop ids', () => {
       service.calculate('A', 'B').subscribe(result => {

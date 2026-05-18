@@ -27,11 +27,6 @@ describe('LocaleService', () => {
   afterEach(() => {
     localStorage.removeItem('lang');
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('setLang', () => {
     it('should update the active transloco lang', () => {
       service.setLang('en');

@@ -55,11 +55,6 @@ describe('DataOverviewService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('getOverview', () => {
     it('should fetch the admin data-overview snapshot', () => {
       service.getOverview().subscribe(overview => {

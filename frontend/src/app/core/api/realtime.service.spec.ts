@@ -57,11 +57,6 @@ describe('RealtimeService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('getAlerts', () => {
     it('should fetch the realtime alerts snapshot', () => {
       service.getAlerts().subscribe(alerts => {

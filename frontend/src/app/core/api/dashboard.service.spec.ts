@@ -39,11 +39,6 @@ describe('DashboardService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('getSummary', () => {
     it('should fetch the admin dashboard summary', () => {
       service.getSummary().subscribe(summary => {

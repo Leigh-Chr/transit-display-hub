@@ -40,11 +40,6 @@ describe('NetworkMapWebSocketService', () => {
   afterEach(() => {
     service.disconnect();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('isConnected', () => {
     it('should start as false', () => {
       expect(service.isConnected()).toBe(false);

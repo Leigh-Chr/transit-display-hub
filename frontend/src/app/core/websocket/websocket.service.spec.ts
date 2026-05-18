@@ -42,11 +42,6 @@ describe('WebSocketService', () => {
   afterEach(() => {
     service.disconnect();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('connectionState', () => {
     it('should start as DISCONNECTED', () => {
       expect(service.connectionState()).toBe('DISCONNECTED');

@@ -40,11 +40,6 @@ describe('FeedInfoService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('getFeedInfo', () => {
     it('should return the imported feed info on 200', () => {
       service.getFeedInfo().subscribe(info => {

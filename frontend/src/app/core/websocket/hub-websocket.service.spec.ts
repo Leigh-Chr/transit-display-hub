@@ -48,11 +48,6 @@ describe('HubWebSocketService', () => {
   afterEach(() => {
     service.disconnect();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('connect', () => {
     it('should return an observable without throwing', () => {
       const obs = service.connect(['stop-1', 'stop-2']);

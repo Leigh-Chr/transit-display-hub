@@ -25,11 +25,6 @@ describe('BreakpointService', () => {
 
     service = TestBed.inject(BreakpointService);
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('signals', () => {
     it('should have isMobile signal with initial value', () => {
       expect(service.isMobile()).toBeDefined();

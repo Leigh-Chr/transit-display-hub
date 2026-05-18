@@ -46,11 +46,6 @@ describe('AttributionService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('getAllAttributions', () => {
     it('should fetch the public attribution list', () => {
       service.getAllAttributions().subscribe(list => {

@@ -51,11 +51,6 @@ describe('FlexStopTimeService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
   describe('browse', () => {
     it('should fetch the admin flex stop_times list', () => {
       service.browse().subscribe(rows => {
