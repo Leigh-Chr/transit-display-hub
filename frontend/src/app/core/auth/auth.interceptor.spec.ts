@@ -45,6 +45,7 @@ describe('authInterceptor', () => {
     const translations: Record<string, string> = {
       'common.errors.network': 'Network error: please check your connection',
       'common.errors.accessDenied': 'Access denied: insufficient permissions',
+      'common.errors.sessionExpired': 'Session expired. Please sign in again.',
     };
     const translocoSpy = { translate: (key: string) => translations[key] ?? key };
 
@@ -110,6 +111,7 @@ describe('authInterceptor', () => {
       expect(authServiceSpy.refresh).toHaveBeenCalled();
       expect(authServiceSpy.setRedirectUrl).toHaveBeenCalledWith('/admin/lines');
       expect(authServiceSpy.logout).toHaveBeenCalled();
+      expect(notifySpy.error).toHaveBeenCalledWith('Session expired. Please sign in again.');
       expect(errored).toHaveBeenCalled();
     });
 
@@ -125,6 +127,7 @@ describe('authInterceptor', () => {
 
       expect(authServiceSpy.setRedirectUrl).not.toHaveBeenCalled();
       expect(authServiceSpy.logout).toHaveBeenCalled();
+      expect(notifySpy.error).toHaveBeenCalledWith('Session expired. Please sign in again.');
     });
   });
 

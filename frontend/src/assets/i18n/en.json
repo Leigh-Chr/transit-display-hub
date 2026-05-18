@@ -18,7 +18,8 @@
     "retry": "Retry",
     "errors": {
       "network": "Network error: please check your connection",
-      "accessDenied": "Access denied: insufficient permissions"
+      "accessDenied": "Access denied: insufficient permissions",
+      "sessionExpired": "Session expired. Please sign in again."
     },
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",

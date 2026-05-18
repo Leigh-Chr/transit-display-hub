@@ -18,7 +18,8 @@
     "retry": "Réessayer",
     "errors": {
       "network": "Erreur réseau : vérifiez votre connexion",
-      "accessDenied": "Accès refusé : permissions insuffisantes"
+      "accessDenied": "Accès refusé : permissions insuffisantes",
+      "sessionExpired": "Session expirée. Veuillez vous reconnecter."
     },
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",

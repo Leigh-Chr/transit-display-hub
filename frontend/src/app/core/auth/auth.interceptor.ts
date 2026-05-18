@@ -38,7 +38,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       const isAuthEndpoint = reqWithCreds.url.includes(AUTH_PATH_PREFIX);
 
       if (error.status === 401 && !isAuthEndpoint) {
-        return runWithRefresh(reqWithCreds, next, authService, router);
+        return runWithRefresh(reqWithCreds, next, authService, router, notify, transloco);
       }
 
       if (error.status === 403) {
@@ -54,7 +54,9 @@ function runWithRefresh(
   req: HttpRequest<unknown>,
   next: Parameters<HttpInterceptorFn>[1],
   authService: AuthService,
-  router: Router
+  router: Router,
+  notify: NotifyService,
+  transloco: TranslocoService
 ): Observable<HttpEvent<unknown>> {
   pendingRefresh ??= authService.refresh();
 
@@ -78,6 +80,9 @@ function runWithRefresh(
         ) {
           authService.setRedirectUrl(currentUrl);
         }
+        // Surface the silent logout so the user understands why they're
+        // bounced to /login mid-action instead of seeing a blank form.
+        notify.error(transloco.translate('common.errors.sessionExpired'));
         authService.logout();
         // Re-arm after the current microtask so a subsequent fresh login can
         // again be invalidated normally without leaving the flag stuck.
