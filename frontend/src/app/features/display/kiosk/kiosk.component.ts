@@ -15,6 +15,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { ThemeService } from '@core/services/theme.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { DisplayService } from '@core/api/display.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
 import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
@@ -69,6 +71,8 @@ export class KioskComponent implements OnInit {
   private readonly wsService = inject(WebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly themeService = inject(ThemeService);
+  private readonly localeService = inject(LocaleService);
 
   /** Shared 1Hz wall clock — pauses while the tab is hidden, exposes
    *  pre-formatted date/time strings and the isStale helpers. */
@@ -181,6 +185,19 @@ export class KioskComponent implements OnInit {
     });
 
     this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      // Honour appearance overrides shipped in the kiosk URL so a Pi
+      // operator can hard-code "/display/STOP?contrast=high&largeText=on&lang=fr"
+      // once and have the settings stick across reboots.
+      this.themeService.applyFromQueryParams({
+        contrast: paramAsString(params, 'contrast'),
+        largeText: paramAsString(params, 'largeText'),
+        dark: paramAsString(params, 'dark'),
+      });
+      const lang = paramAsString(params, 'lang');
+      if (lang === 'fr' || lang === 'en') {
+        this.localeService.setLang(lang);
+      }
+
       this.token = String(params['token'] ?? '') || null;
       const queryStopId = String(params['stopId'] ?? '') || null;
 
@@ -416,4 +433,9 @@ export class KioskComponent implements OnInit {
       });
     }
   }
+}
+
+function paramAsString(params: Record<string, unknown>, key: string): string | null {
+  const raw = params[key];
+  return typeof raw === 'string' ? raw : null;
 }

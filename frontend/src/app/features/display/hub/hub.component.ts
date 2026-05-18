@@ -16,6 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { ThemeService } from '@core/services/theme.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
 import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
@@ -62,6 +63,7 @@ export class HubComponent {
   private readonly hubWsService = inject(HubWebSocketService);
   private readonly transloco = inject(TranslocoService);
   private readonly locale = inject(LocaleService);
+  private readonly themeService = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly queryParamsSignal = toSignal<Params, Params>(this.route.queryParams, { initialValue: {} });
 
@@ -129,6 +131,17 @@ export class HubComponent {
       // resolves the actual sentence on first paint instead of leaving
       // the raw "hub.errors.missingStopIds" key on screen.
       this.locale.translationsLoaded();
+      // Honour appearance overrides shipped in the hub URL — same pattern
+      // as the kiosk so a single deployment URL can preset all settings.
+      this.themeService.applyFromQueryParams({
+        contrast: paramAsString(params, 'contrast'),
+        largeText: paramAsString(params, 'largeText'),
+        dark: paramAsString(params, 'dark'),
+      });
+      const lang = paramAsString(params, 'lang') ?? '';
+      if (lang === 'fr' || lang === 'en') {
+        this.locale.setLang(lang);
+      }
       const stopIdsParam = String(params['stopIds'] ?? '');
       this.hubName = String(params['name'] ?? '') || 'Hub';
 
@@ -274,4 +287,9 @@ export class HubComponent {
   reloadPage(): void {
     window.location.reload();
   }
+}
+
+function paramAsString(params: Record<string, unknown>, key: string): string | null {
+  const raw = params[key];
+  return typeof raw === 'string' ? raw : null;
 }

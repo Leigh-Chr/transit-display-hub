@@ -68,6 +68,7 @@ describe('NetworkMapComponent', () => {
     isLargeText: ReturnType<typeof signal<boolean>>;
     toggleHighContrast: ReturnType<typeof vi.fn>;
     toggleLargeText: ReturnType<typeof vi.fn>;
+    applyFromQueryParams: ReturnType<typeof vi.fn>;
   };
 
   const mockStops: LayoutStop[] = [
@@ -135,6 +136,7 @@ describe('NetworkMapComponent', () => {
       isLargeText: signal(false),
       toggleHighContrast: vi.fn(),
       toggleLargeText: vi.fn(),
+      applyFromQueryParams: vi.fn(),
     };
 
     const mockLocaleService = {

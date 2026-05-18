@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, signal, computed, effec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -231,6 +231,20 @@ export class NetworkMapComponent {
   private openedStopPopupId: string | null = null;
 
   constructor() {
+    // One-shot read of appearance overrides so a kiosk-style deep link
+    // like /map?contrast=high&largeText=on&lang=en presets the public
+    // network map the same way it presets kiosk and hub.
+    const initialQuery = inject(ActivatedRoute).snapshot.queryParamMap;
+    this.themeService.applyFromQueryParams({
+      contrast: initialQuery.get('contrast'),
+      largeText: initialQuery.get('largeText'),
+      dark: initialQuery.get('dark'),
+    });
+    const lang = initialQuery.get('lang');
+    if (lang === 'fr' || lang === 'en') {
+      this.localeService.setLang(lang);
+    }
+
     this.stopSearchCtrl.valueChanges.pipe(takeUntilDestroyed()).subscribe(val => {
       if (typeof val === 'string') {
         this.stopSearchFilter.set(val);
