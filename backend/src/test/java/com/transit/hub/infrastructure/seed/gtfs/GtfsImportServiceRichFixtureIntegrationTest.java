@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration coverage for the GTFS importer against the larger
  * {@code fixtures/gtfs-rich/} feed. The minimal fixture only carries
- * agency/routes/stops/trips/calendar so the Shape, Transfer, Pathway,
+ * agency/routes/stops/trips/calendar so the Transfer, Pathway,
  * Translation and Fare importers never ran end-to-end. This test
  * exercises them by exporting the rich fixture as a zip and asserting
  * each Importer's repository observed at least the rows declared in
@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@DisplayName("GtfsImportService Integration — rich fixture (shapes / transfers / pathways / translations / fares)")
+@DisplayName("GtfsImportService Integration — rich fixture (transfers / pathways / translations / fares)")
 class GtfsImportServiceRichFixtureIntegrationTest {
 
     private static final String FIXTURE_DIR = "fixtures/gtfs-rich/";
@@ -93,7 +93,7 @@ class GtfsImportServiceRichFixtureIntegrationTest {
     }
 
     @Test
-    @DisplayName("imports shapes, transfers, pathways, translations and the fare tables")
+    @DisplayName("imports transfers, pathways, translations and the fare tables")
     void importsRichFeed() throws IOException {
         Path zipPath = buildFixtureZip(tempDir.resolve("rich.zip"));
 
