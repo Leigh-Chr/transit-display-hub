@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAnimationsToSettle } from './fixtures/wait-for-stable';
 
 /**
  * Visual regression test for the network schematic.
@@ -35,8 +36,10 @@ test.describe('Visual regression — network schematic', () => {
       return;
     }
 
-    // Give animations / transitions a moment to settle
-    await page.waitForTimeout(500);
+    // Wait for fade-ins and SVG transitions to settle instead of a
+    // hand-tuned sleep; infinite animations (none on this view today)
+    // are ignored by the helper.
+    await waitForAnimationsToSettle(page);
 
     await expect(page).toHaveScreenshot('schematic-default-zoom.png', {
       fullPage: false,
