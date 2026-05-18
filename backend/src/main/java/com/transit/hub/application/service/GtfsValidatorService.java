@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.Optional;
 
 /**
  * Wraps the canonical MobilityData {@code gtfs-validator} so the
@@ -84,7 +83,7 @@ public class GtfsValidatorService {
 
         ValidationRunnerConfig config = ValidationRunnerConfig.builder()
                 .setGtfsSource(feedZip.toUri())
-                .setOutputDirectory(Optional.of(outputDirectory))
+                .setOutputDirectory(outputDirectory)
                 .setStorageDirectory(storageDir)
                 .setValidationReportFileName(REPORT_JSON)
                 .setHtmlReportFileName(REPORT_HTML)

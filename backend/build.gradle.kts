@@ -22,7 +22,7 @@ plugins {
     // the @Benchmark indexer, and a sensible default fork / warmup
     // configuration. Out-of-band of the standard test task so a JMH
     // run stays explicit (`./gradlew jmh`) and never blocks CI.
-    id("me.champeau.jmh") version "0.7.2"
+    id("me.champeau.jmh") version "0.7.3"
 }
 
 group = "com.transit"
@@ -103,13 +103,13 @@ dependencies {
     // Pulls Guava 31 + Gson 2.8 + Apache HttpClient 5 transitively;
     // we accept the runtime overlap with Spring Boot's Jackson stack
     // because the validator owns its own JSON output format.
-    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.0")
-    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.0")
+    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.1")
+    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.1")
 
     // Pin commons-compress ahead of the gtfs-validator transitive (1.20),
     // which carries four DoS CVEs reachable from POST /api/admin/gtfs/reimport
     // (CVE-2021-35515/-35516/-35517/-36090).
-    implementation("org.apache.commons:commons-compress:1.27.1")
+    implementation("org.apache.commons:commons-compress:1.28.0")
 
     // gtfs-validator also drags in commons-beanutils 1.9.2 (CVE-2025-48734
     // RCE via crafted properties) and commons-validator 1.6 (various
