@@ -89,7 +89,7 @@ dependencies {
     // gtfs-realtime.proto file in src/main/proto/. Used by the
     // ServiceAlerts cache to surface operator-pushed alerts on
     // kiosks and hubs.
-    implementation("com.google.protobuf:protobuf-java:3.25.6")
+    implementation("com.google.protobuf:protobuf-java:4.34.1")
 
     // Canonical MobilityData GTFS Schedule validator (Apache 2.0). The
     // import-audit page invokes it after each GTFS import so an
@@ -177,7 +177,7 @@ springBoot {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.25.6"
+        artifact = "com.google.protobuf:protoc:4.34.1"
     }
 }
 
