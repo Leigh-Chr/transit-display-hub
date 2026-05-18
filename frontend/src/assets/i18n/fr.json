@@ -24,9 +24,6 @@
       "loadingDisplay": "Chargement de l'affichage",
       "loadingHubDisplay": "Chargement du hub"
     },
-    "empty": {
-      "defaultTitle": "Aucun élément"
-    },
     "feedCredits": {
       "aria": "Crédits du flux GTFS",
       "roleProducer": "producteur",
@@ -946,8 +943,7 @@
       "sectionAreas": "Zones",
       "sectionLegRules": "Leg rules",
       "sectionLegJoinRules": "Leg join rules",
-      "sectionTransferRules": "Transfer rules",
-      "durationMin": "{{ min }} min"
+      "sectionTransferRules": "Transfer rules"
     },
     "importAudit": {
       "title": "Historique des imports",

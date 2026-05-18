@@ -24,9 +24,6 @@
       "loadingDisplay": "Loading display",
       "loadingHubDisplay": "Loading hub display"
     },
-    "empty": {
-      "defaultTitle": "No items found"
-    },
     "feedCredits": {
       "aria": "GTFS feed credits",
       "roleProducer": "producer",
@@ -946,8 +943,7 @@
       "sectionAreas": "Areas",
       "sectionLegRules": "Leg rules",
       "sectionLegJoinRules": "Leg join rules",
-      "sectionTransferRules": "Transfer rules",
-      "durationMin": "{{ min }} min"
+      "sectionTransferRules": "Transfer rules"
     },
     "importAudit": {
       "title": "Import History",
