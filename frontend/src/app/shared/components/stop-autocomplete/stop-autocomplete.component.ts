@@ -22,9 +22,9 @@ export interface StopAutocompleteOption {
 
 /**
  * Reusable stop picker with a debounce-free filter over an already-loaded
- * stop list. Four call sites (`pathways`, `fare-calculator` origin +
- * dest, `route-search-bar` departure + arrival) used to inline the same
- * `[(ngModel)]+filter→slice(0, 30)+mat-autocomplete` block.
+ * stop list. Replaces a repeated
+ * `[(ngModel)]+filter→slice(0, 30)+mat-autocomplete` block previously
+ * inlined in several callers (route-search-bar, pathways, …).
  *
  * The component does NOT fetch the stop list itself — callers feed it via
  * the `stops` input. This keeps the data ownership and error handling in

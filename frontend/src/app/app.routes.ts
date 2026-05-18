@@ -96,10 +96,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/admin/flex-stop-times/flex-stop-times.component').then(m => m.FlexStopTimesComponent)
           },
           {
-            path: 'fare-calculator',
-            loadComponent: () => import('./features/admin/fare-calculator/fare-calculator.component').then(m => m.FareCalculatorComponent)
-          },
-          {
             path: 'users',
             loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
           }
