@@ -24,7 +24,11 @@
           }
         </div>
 
-        @if (alertsLoadError()) {
+        @if (alertsLoading()) {
+          <app-card-skeleton />
+          <app-card-skeleton />
+          <app-card-skeleton />
+        } @else if (alertsLoadError()) {
           <app-empty-state
             icon="error_outline"
             [title]="t('admin.realtime.alertsLoadFailed')"
@@ -107,7 +111,9 @@
           }
         </div>
 
-        @if (vehiclesLoadError()) {
+        @if (vehiclesLoading()) {
+          <app-table-skeleton [rows]="5" />
+        } @else if (vehiclesLoadError()) {
           <app-empty-state
             icon="error_outline"
             [title]="t('admin.realtime.vehiclesLoadFailed')"

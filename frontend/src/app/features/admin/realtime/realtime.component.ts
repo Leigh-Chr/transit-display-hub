@@ -10,7 +10,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { NotifyService } from '@core/services/notify.service';
 import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
+import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { severityLabel as severityLabelUtil } from '@shared/utils/severity-label';
@@ -39,7 +41,9 @@ import { severityLabel as severityLabelUtil } from '@shared/utils/severity-label
     MatTableModule,
     MatChipsModule,
     MatTooltipModule,
+    CardSkeletonComponent,
     EmptyStateComponent,
+    TableSkeletonComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +72,13 @@ export class RealtimeComponent {
   readonly vehiclesLoadError = signal<string | null>(null);
   readonly refreshingAlerts = signal(false);
   readonly refreshingVehicles = signal(false);
+  /** True while the initial GET (or a manual reload) is in flight.
+   *  Distinct from {@link #refreshingAlerts} which gates only the
+   *  refresh button — without this, the empty state was flashing
+   *  "Aucune alerte" during every fetch because the signal seeds at
+   *  an empty array. */
+  readonly alertsLoading = signal(true);
+  readonly vehiclesLoading = signal(true);
 
   readonly vehicleColumns = ['vehicle', 'route', 'trip', 'position', 'speed', 'status', 'occupancy', 'bearing', 'congestion', 'timestamp'];
 
@@ -152,28 +163,34 @@ export class RealtimeComponent {
 
   loadAlerts(): void {
     this.alertsLoadError.set(null);
+    this.alertsLoading.set(true);
     this.realtime.getAlerts().subscribe({
       next: (data) => {
         this.alerts.set(data);
         this.alertsLoadedAt.set(new Date());
+        this.alertsLoading.set(false);
       },
       error: (err: unknown) => {
         this.alerts.set([]);
         this.alertsLoadError.set(httpErrorMessage(err, this.transloco.translate('admin.realtime.alertsLoadFailed')));
+        this.alertsLoading.set(false);
       },
     });
   }
 
   loadVehicles(): void {
     this.vehiclesLoadError.set(null);
+    this.vehiclesLoading.set(true);
     this.realtime.getVehicles().subscribe({
       next: (data) => {
         this.vehicles.set(data);
         this.vehiclesLoadedAt.set(new Date());
+        this.vehiclesLoading.set(false);
       },
       error: (err: unknown) => {
         this.vehicles.set([]);
         this.vehiclesLoadError.set(httpErrorMessage(err, this.transloco.translate('admin.realtime.vehiclesLoadFailed')));
+        this.vehiclesLoading.set(false);
       },
     });
   }
