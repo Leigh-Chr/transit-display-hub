@@ -1,9 +1,55 @@
-import { MessageSeverity } from '@shared/models';
+import { MessageSeverity, NetworkLine } from '@shared/models';
 
 // Re-exported from the shared utility so the schematic-map module keeps a
 // single import surface for its co-located helpers, while every other feature
 // (dashboard line-badges, etc.) reaches the same implementation directly.
 export { readableTextColor } from '@shared/utils/color.utils';
+
+/** Trunk modes (TRAM, METRO, TRAIN) get a heavier stroke than buses
+ *  so the structuring backbone of the network reads at a glance. */
+export function isTrunkLine(line: NetworkLine): boolean {
+  return line.type === 'TRAM' || line.type === 'METRO' || line.type === 'TRAIN';
+}
+
+/** Multiplier in [0.75, 1.3] driven by the line's scheduleCount
+ *  relative to the busiest line in the loaded network. Logarithmic
+ *  rather than linear so a 100× volume difference doesn't blow up
+ *  the high end into unreadable thicknesses. */
+export function frequencyScaleFor(line: NetworkLine, maxScheduleCount: number): number {
+  if (maxScheduleCount <= 0) {return 1;}
+  const own = Math.max(0, line.scheduleCount ?? 0);
+  if (own <= 0) {return 0.75;}
+  const ratio = Math.log10(own + 1) / Math.log10(maxScheduleCount + 1);
+  return 0.75 + ratio * 0.55;
+}
+
+/** Deterministic HSL hue from a zone name. The hue spreads zones
+ *  uniformly across the wheel; saturation 60 % + lightness 55 %
+ *  keeps the halo visible against the schematic's white background
+ *  without overpowering the line colours sitting on top. */
+export function zoneColorFor(zone: string): string {
+  let hash = 0;
+  for (let i = 0; i < zone.length; i++) {
+    hash = (hash * 31 + zone.charCodeAt(i)) | 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 60%, 55%)`;
+}
+
+/** In multi-line views the row gap is too tight (120 SVG units) for the
+ *  longest French stop names — rotated -45° they fan ~150 units along
+ *  the diagonal and the text glyphs end up inside the stop circles of
+ *  the row above. Drops the city prefix so the visible label fits in
+ *  the row gap; the full name stays in the SVG `<title>` tooltip and
+ *  in the stop popup. Single-line mode has plenty of vertical space
+ *  and gets the full name back. */
+export function displayLabel(name: string, singleLineMode: boolean): string {
+  if (singleLineMode) {return name;}
+  const commaIdx = name.indexOf(',');
+  if (commaIdx <= 0) {return name;}
+  const tail = name.substring(commaIdx + 1).trim();
+  return tail.length > 0 ? tail : name;
+}
 
 /** Numeric rank for ordering message severities (CRITICAL > WARNING > INFO). */
 export function severityRank(s: MessageSeverity): number {

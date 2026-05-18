@@ -22,10 +22,14 @@ import { LineFilterChipsComponent } from '../line-filter-chips/line-filter-chips
 import { MapLegendComponent } from '../map-legend/map-legend.component';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 import {
-  hiddenLineBadgeTransform,
-  lineBadgeWidth,
+  displayLabel,
+  frequencyScaleFor,
   getTransportIconPath,
+  hiddenLineBadgeTransform,
+  isTrunkLine,
+  lineBadgeWidth,
   readableTextColor,
+  zoneColorFor,
 } from './schematic-map.utils';
 import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import {
@@ -38,6 +42,7 @@ import {
   buildSeverityMap,
   buildHiddenLinesMap,
   buildTerminusIds,
+  selectVisibleLabels,
   type InterchangeConnector,
   type NetworkLineRow,
   type NetworkStopLabel,
@@ -385,40 +390,12 @@ export class SchematicMapComponent {
    *  it tracks pixel distance regardless of how zoomed-in the view is. */
   private readonly visibleLabelIds = computed(() => {
     const candidates = this.networkStopLabels().filter(l => this.isStopLabelVisible(l.stop));
-    if (this.isSingleLineMode()) {
-      return new Set(candidates.map(l => l.stop.id + ':' + l.lineId));
-    }
-
-    const ranked = [...candidates].sort((a, b) => this.labelPriority(b) - this.labelPriority(a));
-    const baseGap = 60; // SVG units, corresponds to ~60px at zoom = 1
-    const minDistSq = (baseGap / Math.max(0.5, this.zoomLevel())) ** 2;
-
-    const accepted: NetworkStopLabel[] = [];
-    const acceptedKeys = new Set<string>();
-
-    for (const label of ranked) {
-      const collides = accepted.some(other => {
-        const dx = label.x - other.x;
-        const dy = label.y - other.y;
-        return dx * dx + dy * dy < minDistSq;
-      });
-      if (!collides) {
-        accepted.push(label);
-        acceptedKeys.add(label.stop.id + ':' + label.lineId);
-      }
-    }
-
-    return acceptedKeys;
+    return selectVisibleLabels(candidates, this.isSingleLineMode(), this.zoomLevel(), {
+      hasAlert: (id) => this.alertSeverityMap().has(id),
+      isInterchange: (s) => this.isInterchange(s),
+      isNetworkTerminus: (s) => this.isNetworkTerminus(s),
+    });
   });
-
-  private labelPriority(label: NetworkStopLabel): number {
-    const stop = label.stop;
-    if (this.alertSeverityMap().has(stop.id)) {return 4;}
-    if (this.isInterchange(stop) && this.isNetworkTerminus(stop)) {return 3;}
-    if (this.isInterchange(stop)) {return 2;}
-    if (this.isNetworkTerminus(stop)) {return 2;}
-    return 1;
-  }
 
   /** Precomputed map: stopId -> hidden line codes (lines not currently visible) */
   hiddenLinesMap = computed(() => buildHiddenLinesMap(this.stops(), this.visibleCodeSet()));
@@ -525,33 +502,16 @@ export class SchematicMapComponent {
    *  line of similar volume read close in weight. */
   getLineStrokeWidth(line: NetworkLine): number {
     if (this.isSingleLineMode()) {return 8;}
-    const base = this.isTrunkLine(line) ? 10 : 7;
-    return Math.round(base * this.frequencyScaleFor(line));
+    const base = isTrunkLine(line) ? 10 : 7;
+    return Math.round(base * frequencyScaleFor(line, this.maxLineScheduleCount()));
   }
 
   getRouteStrokeWidth(lineId: string): number {
     if (this.isSingleLineMode()) {return 10;}
     const line = this.lineById().get(lineId);
     if (!line) {return 10;}
-    const base = this.isTrunkLine(line) ? 13 : 10;
-    return Math.round(base * this.frequencyScaleFor(line));
-  }
-
-  /** Multiplier in [0.75, 1.3] driven by the line's scheduleCount
-   *  relative to the busiest line in the loaded network. Logarithmic
-   *  rather than linear so a 100× volume difference doesn't blow up
-   *  the high end into unreadable thicknesses. */
-  private frequencyScaleFor(line: NetworkLine): number {
-    const max = this.maxLineScheduleCount();
-    if (max <= 0) {return 1;}
-    const own = Math.max(0, line.scheduleCount ?? 0);
-    if (own <= 0) {return 0.75;}
-    const ratio = Math.log10(own + 1) / Math.log10(max + 1);
-    return 0.75 + ratio * 0.55;
-  }
-
-  private isTrunkLine(line: NetworkLine): boolean {
-    return line.type === 'TRAM' || line.type === 'METRO' || line.type === 'TRAIN';
+    const base = isTrunkLine(line) ? 13 : 10;
+    return Math.round(base * frequencyScaleFor(line, this.maxLineScheduleCount()));
   }
 
   // --- Stop helpers ---
@@ -611,21 +571,14 @@ export class SchematicMapComponent {
     const sorted = [...zones].sort();
     const primary = sorted[0];
     if (primary === undefined) {return null;}
-    return this.zoneColorFor(primary);
+    return zoneColorFor(primary);
   }
 
-  /** Deterministic HSL hue from a zone name. The hue spreads zones
-   *  uniformly across the wheel; saturation 60 % + lightness 55 %
-   *  keeps the halo visible against the schematic's white background
-   *  without overpowering the line colours sitting on top.
-   *  Exported so tests can pin the mapping. */
+  /** Bridge for spec coverage — exposes the colour mapping under the
+   *  legacy method name. New call sites should import the function
+   *  directly from `schematic-map.utils`. */
   zoneColorFor(zone: string): string {
-    let hash = 0;
-    for (let i = 0; i < zone.length; i++) {
-      hash = (hash * 31 + zone.charCodeAt(i)) | 0;
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 60%, 55%)`;
+    return zoneColorFor(zone);
   }
 
   /** Level-of-detail filter (zoom-driven) for stop labels in multi-line mode.
@@ -654,19 +607,8 @@ export class SchematicMapComponent {
     return lineBadgeWidth(code);
   }
 
-  /** In multi-line views the row gap is too tight (120 SVG units) for the
-   *  longest French stop names ("Saint-Martin-d'Hères, Paul Mistral"): rotated
-   *  -45° they fan ~150 units along the diagonal and the text glyphs end up
-   *  inside the stop circles of the row above. We drop the city prefix so the
-   *  visible label fits in the row gap; the full name stays in the SVG
-   *  <title> tooltip and in the stop popup. Single-line mode has plenty of
-   *  vertical space, so it keeps the full name. */
   displayLabel(name: string): string {
-    if (this.isSingleLineMode()) {return name;}
-    const commaIdx = name.indexOf(',');
-    if (commaIdx <= 0) {return name;}
-    const tail = name.substring(commaIdx + 1).trim();
-    return tail.length > 0 ? tail : name;
+    return displayLabel(name, this.isSingleLineMode());
   }
 
   getLineColor(code: string): string {

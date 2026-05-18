@@ -255,3 +255,55 @@ export function buildTerminusIds(lines: NetworkLine[]): Set<string> {
   }
   return ids;
 }
+
+/** Per-label priority used by the greedy decluttering pass below.
+ *  Higher rank = label is more important and survives a collision. */
+export interface LabelPriorityContext {
+  hasAlert(stopId: string): boolean;
+  isInterchange(stop: LayoutStop): boolean;
+  isNetworkTerminus(stop: LayoutStop): boolean;
+}
+
+export function labelPriority(label: NetworkStopLabel, ctx: LabelPriorityContext): number {
+  const stop = label.stop;
+  if (ctx.hasAlert(stop.id)) { return 4; }
+  if (ctx.isInterchange(stop) && ctx.isNetworkTerminus(stop)) { return 3; }
+  if (ctx.isInterchange(stop)) { return 2; }
+  if (ctx.isNetworkTerminus(stop)) { return 2; }
+  return 1;
+}
+
+/** Greedy decluttering: drop labels that would overlap a
+ *  higher-priority label already placed. Distance threshold scales
+ *  inversely with {@code zoomLevel} so it tracks pixel distance
+ *  regardless of how zoomed-in the view is. Single-line mode accepts
+ *  every candidate without collision pruning since rows have plenty
+ *  of horizontal room. */
+export function selectVisibleLabels(
+  candidates: NetworkStopLabel[],
+  singleLineMode: boolean,
+  zoomLevel: number,
+  ctx: LabelPriorityContext,
+): Set<string> {
+  if (singleLineMode) {
+    return new Set(candidates.map(l => l.stop.id + ':' + l.lineId));
+  }
+  const ranked = [...candidates].sort((a, b) => labelPriority(b, ctx) - labelPriority(a, ctx));
+  const baseGap = 60; // SVG units, corresponds to ~60px at zoom = 1
+  const minDistSq = (baseGap / Math.max(0.5, zoomLevel)) ** 2;
+
+  const accepted: NetworkStopLabel[] = [];
+  const acceptedKeys = new Set<string>();
+  for (const label of ranked) {
+    const collides = accepted.some(other => {
+      const dx = label.x - other.x;
+      const dy = label.y - other.y;
+      return dx * dx + dy * dy < minDistSq;
+    });
+    if (!collides) {
+      accepted.push(label);
+      acceptedKeys.add(label.stop.id + ':' + label.lineId);
+    }
+  }
+  return acceptedKeys;
+}
