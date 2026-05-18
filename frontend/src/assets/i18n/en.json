@@ -49,6 +49,10 @@
       "loadingAriaLabel": "Logging in",
       "devHint": "Default credentials: admin / admin123",
       "success": "Logged in",
+      "forgotPassword": "Forgot your password?",
+      "forgotPasswordTitle": "Password recovery",
+      "forgotPasswordMessage": "This installation does not send recovery emails. Ask another administrator to open <strong>Users</strong> in the admin menu and click <strong>Edit</strong> next to your account to set a new password for you.",
+      "forgotPasswordClose": "Got it",
       "error": {
         "invalidCredentials": "Invalid credentials",
         "tooManyAttempts": "Too many login attempts. Please try again in a few minutes.",

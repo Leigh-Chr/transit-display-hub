@@ -49,6 +49,10 @@
       "loadingAriaLabel": "Connexion en cours",
       "devHint": "Identifiants par défaut : admin / admin123",
       "success": "Connecté",
+      "forgotPassword": "Mot de passe oublié ?",
+      "forgotPasswordTitle": "Mot de passe oublié",
+      "forgotPasswordMessage": "Cette installation n'envoie pas de mails de réinitialisation. Demandez à un autre administrateur d'aller dans <strong>Utilisateurs</strong> dans le menu admin, puis de cliquer sur <strong>Modifier</strong> à côté de votre compte pour vous attribuer un nouveau mot de passe.",
+      "forgotPasswordClose": "J'ai compris",
       "error": {
         "invalidCredentials": "Identifiants invalides",
         "tooManyAttempts": "Trop de tentatives. Réessayez dans quelques minutes.",

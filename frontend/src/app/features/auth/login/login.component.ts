@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { NgOptimizedImage } from '@angular/common';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { NotifyService } from '@core/services/notify.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -24,6 +25,7 @@ import { AuthService } from '@core/auth/auth.service';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    MatDialogModule,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +86,15 @@ import { AuthService } from '@core/auth/auth.service';
               } @else {
                 {{ t('auth.login.submit') }}
               }
+            </button>
+
+            <button
+              mat-button
+              type="button"
+              class="forgot-link"
+              (click)="openForgotPassword()"
+            >
+              {{ t('auth.login.forgotPassword') }}
             </button>
           </form>
         </mat-card-content>
@@ -187,6 +198,12 @@ import { AuthService } from '@core/auth/auth.service';
       font-size: var(--m3-type-body-small);
       margin: 20px 0 0;
     }
+
+    .forgot-link {
+      display: block;
+      margin: 12px auto 0;
+      font-size: var(--m3-type-label-medium);
+    }
   `,
 })
 export class LoginComponent {
@@ -194,6 +211,7 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
+  private readonly dialog = inject(MatDialog);
 
   protected devMode = isDevMode();
 
@@ -229,4 +247,34 @@ export class LoginComponent {
         },
       });
   }
+
+  openForgotPassword(): void {
+    this.dialog.open(ForgotPasswordDialogComponent, { autoFocus: 'dialog' });
+  }
 }
+
+@Component({
+  selector: 'app-forgot-password-dialog',
+  standalone: true,
+  imports: [MatDialogModule, MatButtonModule, TranslocoDirective],
+  template: `
+    <ng-container *transloco="let t">
+      <h2 mat-dialog-title>{{ t('auth.login.forgotPasswordTitle') }}</h2>
+      <mat-dialog-content>
+        <p [innerHTML]="t('auth.login.forgotPasswordMessage')"></p>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-flat-button color="primary" (click)="close()">
+          {{ t('auth.login.forgotPasswordClose') }}
+        </button>
+      </mat-dialog-actions>
+    </ng-container>
+  `,
+})
+export class ForgotPasswordDialogComponent {
+  private readonly dialogRef = inject(MatDialogRef<ForgotPasswordDialogComponent>);
+  close(): void {
+    this.dialogRef.close();
+  }
+}
+
