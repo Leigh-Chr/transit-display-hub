@@ -748,6 +748,7 @@
       "colAmenities": "Amenities",
       "colActions": "Actions",
       "carsAllowedTooltip": "Cars allowed on this trip (motorail / car-ferry)",
+      "carsAllowedLabel": "Cars",
       "editTooltip": "Edit itinerary",
       "editStopsTooltip": "Manage stops",
       "deleteTooltip": "Delete itinerary",

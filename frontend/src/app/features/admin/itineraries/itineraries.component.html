@@ -127,7 +127,8 @@
           <td mat-cell *matCellDef="let itinerary">
             @if (itinerary.carsAllowedDefault === 'ALLOWED') {
               <span class="dir-badge amenity-cars" [matTooltip]="t('admin.itineraries.carsAllowedTooltip')">
-                🚗 Voitures
+                <mat-icon aria-hidden="true">directions_car</mat-icon>
+                {{ t('admin.itineraries.carsAllowedLabel') }}
               </span>
             }
           </td>

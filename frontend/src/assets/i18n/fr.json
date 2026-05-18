@@ -748,6 +748,7 @@
       "colAmenities": "Services",
       "colActions": "Actions",
       "carsAllowedTooltip": "Voitures autorisées sur ce trajet (Motorail / car-ferry)",
+      "carsAllowedLabel": "Voitures",
       "editTooltip": "Modifier l'itinéraire",
       "editStopsTooltip": "Gérer les arrêts",
       "deleteTooltip": "Supprimer l'itinéraire",
