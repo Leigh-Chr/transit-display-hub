@@ -57,8 +57,12 @@ public class Stop {
 
     /** Soft-delete flag. A stop tombstoned by a re-import (its external_id
      *  vanished from the new feed) keeps its UUID so devices and messages
-     *  stay valid until an admin reconciles them, but is excluded from
-     *  every public-facing query. */
+     *  stay valid until an admin reconciles them. Excluded from the
+     *  kiosk-facing surfaces ({@code DisplayStateCalculator},
+     *  {@code NetworkMapService}, hub display) via the {@code *Active*}
+     *  repository variants; admin lookups still return the row with this
+     *  flag set so the operator can decide between re-binding the devices
+     *  or hard-deleting the stop. */
     @Column(nullable = false)
     @Builder.Default
     private boolean disabled = false;

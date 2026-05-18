@@ -44,7 +44,13 @@ public record StopResponse(
         Short stopAccess,
         List<LineInfo> lines,
         int scheduleCount,
-        boolean hasDevice
+        boolean hasDevice,
+        /** Tombstoning flag (see {@link Stop#isDisabled()}). True means the
+         *  last GTFS re-import did not find this stop in the feed. The row
+         *  is hidden from kiosks but kept in the admin list so devices and
+         *  broadcast messages bound to it can be re-anchored or
+         *  hard-deleted explicitly. */
+        boolean disabled
 ) {
     public static StopResponse from(Stop stop) {
         // Lazily reads stop.getSchedules() — incurs a per-row SELECT. Prefer
@@ -75,7 +81,8 @@ public record StopResponse(
                 stop.getStopAccess(),
                 lineInfos,
                 scheduleCount,
-                stop.getDevices() != null && !stop.getDevices().isEmpty()
+                stop.getDevices() != null && !stop.getDevices().isEmpty(),
+                stop.isDisabled()
         );
     }
 }

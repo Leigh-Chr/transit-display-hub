@@ -49,6 +49,22 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines l LEFT JOIN FETCH l.agency WHERE s.id = :id")
     Optional<Stop> findByIdWithLines(UUID id);
 
+    /** Kiosk-facing variant of {@link #findByIdWithLines}: returns empty
+     *  for stops the import flagged disabled (tombstoned). A kiosk bound
+     *  to a tombstoned stop should surface a 404 rather than keep
+     *  displaying the stale schedule until an admin reconciles it. */
+    @Query("SELECT s FROM Stop s LEFT JOIN FETCH s.lines l LEFT JOIN FETCH l.agency "
+            + "WHERE s.id = :id AND s.disabled = false")
+    Optional<Stop> findByIdActiveWithLines(UUID id);
+
+    /** Kiosk-facing variant of {@link #findAllWithLines}: excludes
+     *  tombstoned stops so the public network map never points at a
+     *  stop that no longer exists in the live feed. */
+    @Query("SELECT DISTINCT s FROM Stop s LEFT JOIN FETCH s.lines l "
+            + "LEFT JOIN FETCH l.agency LEFT JOIN FETCH s.parentStop "
+            + "WHERE s.disabled = false ORDER BY s.name")
+    List<Stop> findAllActiveWithLines();
+
     @Query("SELECT DISTINCT s FROM Stop s JOIN s.lines l WHERE l.id = :lineId")
     List<Stop> findByLineId(UUID lineId);
 
@@ -69,8 +85,10 @@ public interface StopRepository extends JpaRepository<Stop, UUID> {
     /** Returns the subset of {@code candidateIds} that match an existing
      *  Stop row. Used by {@code HubDisplayService} so a hub bound to N
      *  stop ids can filter unknown ones in a single query instead of
-     *  N {@code existsById} calls. */
-    @Query("SELECT s.id FROM Stop s WHERE s.id IN :ids")
+     *  N {@code existsById} calls. Excludes tombstoned stops — a hub
+     *  bound to one of them should treat it as missing, same as a typo
+     *  or deleted id. */
+    @Query("SELECT s.id FROM Stop s WHERE s.id IN :ids AND s.disabled = false")
     List<UUID> findExistingIdsIn(List<UUID> ids);
 
     /** Two-step pagination, step 1: page Stop ids without collection

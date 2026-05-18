@@ -83,7 +83,7 @@ public class DisplayStateCalculator {
 
     @Transactional(readOnly = true)
     public DisplayState calculateForStop(UUID stopId) {
-        Stop stop = stopRepository.findByIdWithLines(stopId)
+        Stop stop = stopRepository.findByIdActiveWithLines(stopId)
                 .orElseThrow(() -> new EntityNotFoundException("Stop", stopId));
 
         // Pull translations for the kiosk's preferred language once per

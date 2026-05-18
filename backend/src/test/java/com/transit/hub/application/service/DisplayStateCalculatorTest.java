@@ -146,7 +146,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("returns display state with stop and lines info")
         void returnsDisplayStateWithStopInfo() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -166,7 +166,7 @@ class DisplayStateCalculatorTest {
         @DisplayName("throws EntityNotFoundException when stop not found")
         void throwsWhenStopNotFound() {
             UUID unknownId = UUID.randomUUID();
-            when(stopRepository.findByIdWithLines(unknownId)).thenReturn(Optional.empty());
+            when(stopRepository.findByIdActiveWithLines(unknownId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> calculator.calculateForStop(unknownId))
                     .isInstanceOf(EntityNotFoundException.class)
@@ -176,7 +176,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("includes version number that increments")
         void includesIncrementingVersion() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -192,7 +192,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("includes timestamp")
         void includesTimestamp() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -218,7 +218,7 @@ class DisplayStateCalculatorTest {
             // Only future arrivals should be returned
             Schedule futureEntry = TestDataFactory.createSchedule(LocalTime.now().plusHours(1), testStop, testItinerary);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(futureEntry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -239,7 +239,7 @@ class DisplayStateCalculatorTest {
                     TestDataFactory.createSchedule(LocalTime.of(8, 30), testStop, testItinerary)
             );
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(multipleEntriesSameItinerary);
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -271,7 +271,7 @@ class DisplayStateCalculatorTest {
                     TestDataFactory.createSchedule(LocalTime.of(8, 5), testStop, westbound)
             );
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(bothDirections);
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -303,7 +303,7 @@ class DisplayStateCalculatorTest {
                     TestDataFactory.createSchedule(LocalTime.of(8, 20), testStop, itinerary2)     // Should be ignored (same itinerary as second)
             );
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(entriesFromDifferentLines);
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -322,7 +322,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("returns empty list when no upcoming arrivals")
         void returnsEmptyWhenNoArrivals() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -339,7 +339,7 @@ class DisplayStateCalculatorTest {
             LocalTime arrivalTime = LocalTime.of(14, 30);
             Schedule entry = TestDataFactory.createSchedule(arrivalTime, testStop, testItinerary);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -356,7 +356,7 @@ class DisplayStateCalculatorTest {
         void includesLineInfoInArrivals() {
             Schedule entry = TestDataFactory.createSchedule(LocalTime.of(14, 30), testStop, testItinerary);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -379,7 +379,7 @@ class DisplayStateCalculatorTest {
 
             Schedule entry = TestDataFactory.createSchedule(LocalTime.of(14, 30), testStop, testItinerary);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -410,7 +410,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage lineMsg = TestDataFactory.createLineMessage(testLineId);
             BroadcastMessage stopMsg = TestDataFactory.createStopMessage(testStopId);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -434,7 +434,7 @@ class DisplayStateCalculatorTest {
                     TestDataFactory.createNetworkMessage()
             );
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -448,7 +448,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("returns empty list when no active messages")
         void returnsEmptyWhenNoMessages() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -464,7 +464,7 @@ class DisplayStateCalculatorTest {
         void includesMessageSeverity() {
             BroadcastMessage criticalMessage = TestDataFactory.createCriticalMessage(MessageScope.NETWORK, null);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -483,7 +483,7 @@ class DisplayStateCalculatorTest {
             message.setTitle("Important Notice");
             message.setContent("Service disruption expected");
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -507,7 +507,7 @@ class DisplayStateCalculatorTest {
             Schedule entry = TestDataFactory.createSchedule(LocalTime.of(14, 30), testStop, testItinerary);
             BroadcastMessage message = TestDataFactory.createNetworkMessage();
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -527,7 +527,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("version increments across multiple calls for the same stop")
         void versionIncrementsAcrossMultipleCalls() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -550,13 +550,13 @@ class DisplayStateCalculatorTest {
             Line otherLine = TestDataFactory.createLineWithId(otherLineId, "L2", "Metro Line 2", "#33FF57");
             Stop otherStop = TestDataFactory.createStopWithId(otherStopId, "Other Station", otherLine);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
                     .thenReturn(List.of());
 
-            when(stopRepository.findByIdWithLines(otherStopId)).thenReturn(Optional.of(otherStop));
+            when(stopRepository.findByIdActiveWithLines(otherStopId)).thenReturn(Optional.of(otherStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(otherStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(otherLineId)), eq(otherStopId)))
@@ -589,7 +589,7 @@ class DisplayStateCalculatorTest {
             BroadcastMessage msg4 = TestDataFactory.createNetworkMessage();
             msg4.setTitle("Message 4");
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -613,7 +613,7 @@ class DisplayStateCalculatorTest {
             // testItinerary has no stops added, so getTerminusName() returns null
             Schedule entry = TestDataFactory.createSchedule(LocalTime.of(14, 30), testStop, testItinerary);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -636,7 +636,7 @@ class DisplayStateCalculatorTest {
             Schedule entry1 = TestDataFactory.createSchedule(LocalTime.of(10, 0), testStop, testItinerary);
             Schedule entry2 = TestDataFactory.createSchedule(LocalTime.of(10, 0), testStop, testItinerary);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(entry1, entry2));
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -656,7 +656,7 @@ class DisplayStateCalculatorTest {
         @Test
         @DisplayName("returns empty messages list when repository returns no active messages")
         void returnsEmptyMessagesWhenNoneActive() {
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId), any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class), eq(Set.of(testLineId)), eq(testStopId)))
@@ -681,7 +681,7 @@ class DisplayStateCalculatorTest {
             // location_type = 0 (platform): the calculator stays on the
             // single-id fast path and never touches findChildIds.
             testStop.setLocationType((short) 0);
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId),
                     any(LocalTime.class), any(LocalTime.class))).thenReturn(List.of());
             when(messageRepository.findActiveMessagesForStop(any(Instant.class),
@@ -700,7 +700,7 @@ class DisplayStateCalculatorTest {
             UUID childA = UUID.randomUUID();
             UUID childB = UUID.randomUUID();
             testStop.setLocationType((short) 1);
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(stopRepository.findChildIds(testStopId)).thenReturn(List.of(childA, childB));
             // The calculator now runs on a {parent, childA, childB} set,
             // so it picks the IN-based query rather than the single-id
@@ -745,7 +745,7 @@ class DisplayStateCalculatorTest {
             Schedule schedA = TestDataFactory.createSchedule(LocalTime.of(8, 30), platformA, itinNorth);
             Schedule schedB = TestDataFactory.createSchedule(LocalTime.of(8, 35), platformB, itinSouth);
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(stopRepository.findChildIds(testStopId)).thenReturn(List.of(platformA.getId(), platformB.getId()));
             when(scheduleRepository.findByStopIdsAndTimeWindowWithItinerary(any(),
                     any(LocalTime.class), any(LocalTime.class)))
@@ -787,7 +787,7 @@ class DisplayStateCalculatorTest {
                     .pickupBookingRule(rule)
                     .build();
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId),
                     any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(sched));
@@ -819,7 +819,7 @@ class DisplayStateCalculatorTest {
                     .pickupBookingRule(rule)
                     .build();
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId),
                     any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(sched));
@@ -848,7 +848,7 @@ class DisplayStateCalculatorTest {
                     .pickupBookingRule(null)
                     .build();
 
-            when(stopRepository.findByIdWithLines(testStopId)).thenReturn(Optional.of(testStop));
+            when(stopRepository.findByIdActiveWithLines(testStopId)).thenReturn(Optional.of(testStop));
             when(scheduleRepository.findByStopIdAndTimeWindowWithItinerary(eq(testStopId),
                     any(LocalTime.class), any(LocalTime.class)))
                     .thenReturn(List.of(sched));

@@ -47,7 +47,7 @@ public class NetworkMapService {
     @Transactional(readOnly = true)
     public NetworkMapResponse getNetworkMap() {
         List<Line> lines = lineRepository.findAllWithItineraryStops();
-        List<Stop> stops = stopRepository.findAllWithLines();
+        List<Stop> stops = stopRepository.findAllActiveWithLines();
         List<Transfer> transfers = transferRepository.findAllWithStops();
 
         Map<UUID, UUID> platformToParentId = stopHierarchyResolver.buildPlatformToParentMap(stops);

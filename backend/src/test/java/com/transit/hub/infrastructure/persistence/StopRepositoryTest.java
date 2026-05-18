@@ -206,6 +206,68 @@ class StopRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findByIdActiveWithLines (tombstoning)")
+    class FindByIdActiveWithLines {
+
+        @Test
+        @DisplayName("returns active stop")
+        void returnsActiveStop() {
+            Optional<Stop> result = repository.findByIdActiveWithLines(stopNorth.getId());
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getName()).isEqualTo("North Station");
+        }
+
+        @Test
+        @DisplayName("hides disabled stop from kiosk surface")
+        void hidesDisabledStop() {
+            stopNorth.setDisabled(true);
+            em.merge(stopNorth);
+            em.flush();
+
+            Optional<Stop> result = repository.findByIdActiveWithLines(stopNorth.getId());
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllActiveWithLines (tombstoning)")
+    class FindAllActiveWithLines {
+
+        @Test
+        @DisplayName("excludes disabled stops from network map")
+        void excludesDisabledStops() {
+            stopNorth.setDisabled(true);
+            em.merge(stopNorth);
+            em.flush();
+
+            List<Stop> result = repository.findAllActiveWithLines();
+
+            Set<String> names = result.stream().map(Stop::getName).collect(Collectors.toSet());
+            assertThat(names).doesNotContain("North Station");
+        }
+    }
+
+    @Nested
+    @DisplayName("findExistingIdsIn (tombstoning)")
+    class FindExistingIdsInTombstoning {
+
+        @Test
+        @DisplayName("skips disabled stops so hubs treat them as missing")
+        void skipsDisabledStops() {
+            stopNorth.setDisabled(true);
+            em.merge(stopNorth);
+            em.flush();
+
+            List<UUID> result = repository.findExistingIdsIn(
+                    List.of(stopCentral.getId(), stopNorth.getId()));
+
+            assertThat(result).containsExactly(stopCentral.getId());
+        }
+    }
+
+    @Nested
     @DisplayName("findByLineId")
     class FindByLineId {
 

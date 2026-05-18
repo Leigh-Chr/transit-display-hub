@@ -115,6 +115,13 @@ export interface Stop {
   lines: LineInfo[];
   scheduleCount: number;
   hasDevice: boolean;
+  /** Tombstoning flag — true when the last GTFS re-import did not find
+   *  this stop in the feed. Hidden from kiosks, surfaced in the admin
+   *  list so devices and broadcast messages bound to it can be
+   *  re-anchored or hard-deleted explicitly. Optional in the TS model so
+   *  existing fixtures need not opt in, but the backend always sets it
+   *  (default false on a freshly created stop). */
+  disabled?: boolean;
 }
 
 export interface CreateStopRequest {

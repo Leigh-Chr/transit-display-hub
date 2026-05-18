@@ -70,7 +70,7 @@ class NetworkMapServiceTest {
             line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(stopA, stopB));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(stopA, stopB));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -85,7 +85,7 @@ class NetworkMapServiceTest {
         @DisplayName("returns default bounds when no stops")
         void returnsDefaultBoundsWhenNoStops() {
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
-            when(stopRepository.findAllWithLines()).thenReturn(List.of());
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of());
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -108,7 +108,7 @@ class NetworkMapServiceTest {
             line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(stopA, stopB, stopC));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(stopA, stopB, stopC));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -130,7 +130,7 @@ class NetworkMapServiceTest {
             stop2.setSchematicY(80.0);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(stop1, stop2));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(stop1, stop2));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -149,7 +149,7 @@ class NetworkMapServiceTest {
         @DisplayName("returns empty lines and stops with default bounds for empty network")
         void returnsEmptyNetworkWithDefaultBounds() {
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of());
-            when(stopRepository.findAllWithLines()).thenReturn(List.of());
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of());
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -175,7 +175,7 @@ class NetworkMapServiceTest {
             Stop stop2 = TestDataFactory.createStop("Station B", line);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(stop1, stop2));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(stop1, stop2));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -197,7 +197,7 @@ class NetworkMapServiceTest {
             stop2.setSchematicY(75.0);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(stop1, stop2));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(stop1, stop2));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -234,7 +234,7 @@ class NetworkMapServiceTest {
             Stop platformB = platformOf(parent, "B", line);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platformA, platformB));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -253,7 +253,7 @@ class NetworkMapServiceTest {
             Stop platform2 = platformOf(parent, "2", m2);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(m1, m2));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platform1, platform2));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platform1, platform2));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -274,7 +274,7 @@ class NetworkMapServiceTest {
             line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines())
+            when(stopRepository.findAllActiveWithLines())
                     .thenReturn(List.of(terminusStart, centralParent, centralPlatform, terminusEnd));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
@@ -298,7 +298,7 @@ class NetworkMapServiceTest {
             line.addItinerary(itinerary);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines())
+            when(stopRepository.findAllActiveWithLines())
                     .thenReturn(List.of(start, centralParent, centralA, centralB, end));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
@@ -323,7 +323,7 @@ class NetworkMapServiceTest {
                     .build();
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platformA, platformB));
             when(transferRepository.findAllWithStops()).thenReturn(List.of(transfer));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
@@ -348,7 +348,7 @@ class NetworkMapServiceTest {
                     .build();
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines())
+            when(stopRepository.findAllActiveWithLines())
                     .thenReturn(List.of(parentA, platformA, parentB, platformB));
             when(transferRepository.findAllWithStops()).thenReturn(List.of(transfer));
 
@@ -385,7 +385,7 @@ class NetworkMapServiceTest {
                     .build();
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(lineA, lineB));
-            when(stopRepository.findAllWithLines())
+            when(stopRepository.findAllActiveWithLines())
                     .thenReturn(List.of(parentA, platformA, parentB, platformB));
             when(transferRepository.findAllWithStops()).thenReturn(List.of(generic, routeSpecific));
 
@@ -413,7 +413,7 @@ class NetworkMapServiceTest {
             Stop platformB = platformOf(parent, "B", line);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platformA, platformB));
             when(scheduleRepository.findStopIdsWithOnDemandPickup()).thenReturn(Set.of(platformB.getId()));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
@@ -432,7 +432,7 @@ class NetworkMapServiceTest {
             platform.setWheelchairBoarding(WheelchairAccess.NOT_ACCESSIBLE);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platform));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platform));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -450,7 +450,7 @@ class NetworkMapServiceTest {
             platform.setWheelchairBoarding(WheelchairAccess.ACCESSIBLE);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platform));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platform));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
@@ -477,7 +477,7 @@ class NetworkMapServiceTest {
                     .stops(new HashSet<>(Set.of(platformB))).build();
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(parent, platformA, platformB));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(parent, platformA, platformB));
             when(areaRepository.findAllWithStops()).thenReturn(List.of(zone1, zone2, zone3));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
@@ -494,7 +494,7 @@ class NetworkMapServiceTest {
             Stop bus = TestDataFactory.createStop("Free Bus Pole", line);
 
             when(lineRepository.findAllWithItineraryStops()).thenReturn(List.of(line));
-            when(stopRepository.findAllWithLines()).thenReturn(List.of(bus));
+            when(stopRepository.findAllActiveWithLines()).thenReturn(List.of(bus));
 
             NetworkMapResponse result = networkMapService.getNetworkMap();
 
