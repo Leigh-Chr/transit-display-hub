@@ -7,9 +7,11 @@ import com.transit.hub.infrastructure.metrics.GtfsImportMetrics;
 import com.transit.hub.infrastructure.persistence.ImportAuditRepository;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsDownloader;
 import com.transit.hub.infrastructure.seed.gtfs.GtfsImportService;
+import com.transit.hub.infrastructure.seed.gtfs.GtfsImportService.ImportResult;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
@@ -75,8 +77,8 @@ public class GtfsImportOrchestrator {
 
     public record ImportOutcome(
             ImportStatus status,
-            GtfsImportService.ImportResult result,
-            String message
+            @Nullable ImportResult result,
+            @Nullable String message
     ) {}
 
     /**
@@ -207,7 +209,8 @@ public class GtfsImportOrchestrator {
     }
 
     private void finalizeAudit(ImportAudit audit, ImportStatus status,
-                               GtfsImportService.ImportResult result, String errorMessage) {
+                               @Nullable ImportResult result,
+                               @Nullable String errorMessage) {
         Instant now = Instant.now(clock);
         audit.setCompletedAt(now);
         audit.setDurationMs(Duration.between(audit.getStartedAt(), now).toMillis());
@@ -266,6 +269,7 @@ public class GtfsImportOrchestrator {
      * never sits in heap. Returns null on IO failure — callers degrade
      * gracefully (the import still runs without hash deduplication).
      */
+    @Nullable
     private static String sha256(Path file) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -283,7 +287,8 @@ public class GtfsImportOrchestrator {
         }
     }
 
-    private static String truncate(String s, int max) {
+    @Nullable
+    private static String truncate(@Nullable String s, int max) {
         if (s == null) { return null; }
         return s.length() <= max ? s : s.substring(0, max);
     }

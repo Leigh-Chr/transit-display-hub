@@ -14,6 +14,7 @@ import com.transit.hub.infrastructure.persistence.DeviceRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,6 +29,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -88,7 +90,15 @@ public class DeviceService {
         // Generate a secure token
         String plainToken = generateSecureToken();
         String tokenLookup = plainToken.substring(0, TOKEN_LOOKUP_LENGTH);
-        String tokenHash = passwordEncoder.encode(plainToken);
+        // PasswordEncoder#encode declares @Nullable on the return for
+        // pluggability with custom encoders that might surface "skip"
+        // sentinels; BCryptPasswordEncoder always returns a hash, so a
+        // null here would mean the encoder bean was swapped out for a
+        // misbehaving implementation — fail fast rather than persist a
+        // device with a null token hash that would never authenticate.
+        String tokenHash = Objects.requireNonNull(
+                passwordEncoder.encode(plainToken),
+                "PasswordEncoder returned null hash");
 
         Device device = Device.builder()
                 .tokenLookup(tokenLookup)
@@ -129,7 +139,7 @@ public class DeviceService {
     }
 
     @Transactional
-    public DeviceAuthResponse authenticateDevice(String token) {
+    public DeviceAuthResponse authenticateDevice(@Nullable String token) {
         if (token == null || token.length() < TOKEN_LOOKUP_LENGTH) {
             return new DeviceAuthResponse(false, null, null, null, null);
         }
