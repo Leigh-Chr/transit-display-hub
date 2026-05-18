@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -69,6 +70,6 @@ public class ItineraryStop {
      *  the trip-level headsign. */
     @jakarta.validation.constraints.Size(max = 100)
     @Column(name = "stop_headsign", length = 100)
-    private String stopHeadsign;
+    private @Nullable String stopHeadsign;
 
 }

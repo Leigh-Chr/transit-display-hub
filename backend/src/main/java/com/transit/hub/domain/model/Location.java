@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -63,13 +64,13 @@ public class Location {
      *  or a location, so this field is nullable. */
     @Size(max = 100)
     @Column(name = "stop_external_id", length = 100)
-    private String stopExternalId;
+    private @Nullable String stopExternalId;
 
     /** Human-readable name pulled from {@code feature.properties.stop_name}
      *  when the feed publishes one. */
     @Size(max = 200)
     @Column(length = 200)
-    private String name;
+    private @Nullable String name;
 
     /** GeoJSON geometry type ({@code "Polygon"} or {@code "MultiPolygon"})
      *  cached so admin queries can group / filter without parsing JSON. */
@@ -89,14 +90,14 @@ public class Location {
     private String geometryJson;
 
     @Column(name = "min_latitude")
-    private Double minLatitude;
+    private @Nullable Double minLatitude;
 
     @Column(name = "min_longitude")
-    private Double minLongitude;
+    private @Nullable Double minLongitude;
 
     @Column(name = "max_latitude")
-    private Double maxLatitude;
+    private @Nullable Double maxLatitude;
 
     @Column(name = "max_longitude")
-    private Double maxLongitude;
+    private @Nullable Double maxLongitude;
 }

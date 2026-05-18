@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -43,7 +44,7 @@ public class BroadcastMessage {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     @NotBlank(message = "Title is required")
     @Size(max = 100, message = "Title must be at most 100 characters")
@@ -74,7 +75,7 @@ public class BroadcastMessage {
     private MessageScope scopeType;
 
     @Column(name = "scope_id")
-    private UUID scopeId;
+    private @Nullable UUID scopeId;
 
     @AssertTrue(message = "End time must be after start time")
     public boolean isValidTimeRange() {

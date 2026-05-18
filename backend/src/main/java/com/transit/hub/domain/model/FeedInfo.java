@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -39,55 +40,55 @@ public class FeedInfo {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     @Size(max = 200)
     @Column(name = "publisher_name", length = 200)
-    private String publisherName;
+    private @Nullable String publisherName;
 
     @Size(max = 500)
     @Column(name = "publisher_url", length = 500)
-    private String publisherUrl;
+    private @Nullable String publisherUrl;
 
     @Size(max = 20)
     @Column(name = "lang", length = 20)
-    private String lang;
+    private @Nullable String lang;
 
     @Size(max = 20)
     @Column(name = "default_lang", length = 20)
-    private String defaultLang;
+    private @Nullable String defaultLang;
 
     @Size(max = 50)
     @Column(name = "feed_version", length = 50)
-    private String feedVersion;
+    private @Nullable String feedVersion;
 
     @Size(max = 50)
     @Column(name = "contact_email", length = 50)
-    private String contactEmail;
+    private @Nullable String contactEmail;
 
     @Size(max = 500)
     @Column(name = "contact_url", length = 500)
-    private String contactUrl;
+    private @Nullable String contactUrl;
 
     /** Inclusive lower bound of the validity window declared by the feed. */
     @Column(name = "start_date")
-    private LocalDate startDate;
+    private @Nullable LocalDate startDate;
 
     /** Inclusive upper bound of the validity window declared by the feed. */
     @Column(name = "end_date")
-    private LocalDate endDate;
+    private @Nullable LocalDate endDate;
 
     /** URL the feed was downloaded from on the last successful import. */
     @Size(max = 500)
     @Column(name = "source_url", length = 500)
-    private String sourceUrl;
+    private @Nullable String sourceUrl;
 
     /** SHA-256 of the source archive — used to detect unchanged re-downloads. */
     @Size(max = 64)
     @Column(name = "source_hash", length = 64)
-    private String sourceHash;
+    private @Nullable String sourceHash;
 
     /** Wall-clock instant of the last successful import. */
     @Column(name = "imported_at")
-    private Instant importedAt;
+    private @Nullable Instant importedAt;
 }

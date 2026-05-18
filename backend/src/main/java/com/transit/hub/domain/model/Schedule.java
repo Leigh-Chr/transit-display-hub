@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public class Schedule {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     /** Arrival time at the stop, sourced from GTFS
      *  {@code stop_times.arrival_time}. The column is named simply
@@ -61,7 +62,7 @@ public class Schedule {
      *  and long-dwell intermediates are the typical cases. Null
      *  otherwise; readers should fall back to {@link #time}. */
     @Column(name = "departure_time")
-    private LocalTime departureTime;
+    private @Nullable LocalTime departureTime;
 
     @NotNull(message = "Stop is required")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -93,12 +94,12 @@ public class Schedule {
      *  yes / accessible no — UNKNOWN at this granularity collapses into
      *  inheriting the itinerary value. */
     @Column(name = "wheelchair_override")
-    private Boolean wheelchairOverride;
+    private @Nullable Boolean wheelchairOverride;
 
     /** Per-schedule override of the itinerary's bikes-allowed default.
      *  Same null-means-inherit semantics as {@link #wheelchairOverride}. */
     @Column(name = "bikes_allowed_override")
-    private Boolean bikesAllowedOverride;
+    private @Nullable Boolean bikesAllowedOverride;
 
     /** GTFS {@code timepoint}: 1 (default) means the time is exact,
      *  0 means it's an approximation. The kiosk prefixes approximate
@@ -112,13 +113,13 @@ public class Schedule {
      *  or instead of the next-departure clock for high-frequency lines.
      *  Null when the trip is not in frequency mode. */
     @Column(name = "frequency_headway_seconds")
-    private Integer frequencyHeadwaySeconds;
+    private @Nullable Integer frequencyHeadwaySeconds;
 
     /** GTFS frequencies.exact_times. True means start_time is exact,
      *  false (default) means it's approximate. Null when frequencies
      *  doesn't apply. */
     @Column(name = "frequency_exact_times")
-    private Boolean frequencyExactTimes;
+    private @Nullable Boolean frequencyExactTimes;
 
     /** GTFS trips.block_id — chains the consecutive trips a single
      *  physical vehicle runs throughout the day. Useful for analytics
@@ -126,7 +127,7 @@ public class Schedule {
      *  surface yet. */
     @jakarta.validation.constraints.Size(max = 40)
     @Column(name = "block_id", length = 40)
-    private String blockId;
+    private @Nullable String blockId;
 
     /** Service calendar this row belongs to. Null = "always active",
      *  used for legacy / admin-created schedules that predate
@@ -135,35 +136,35 @@ public class Schedule {
      *  identically. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_calendar_id")
-    private ServiceCalendar serviceCalendar;
+    private @Nullable ServiceCalendar serviceCalendar;
 
     /** TAD pickup flow when this schedule's pickup_type is on-request.
      *  Carries the {@link BookingRule} the passenger should follow —
      *  phone, URL, prior notice. Null on regular fixed-route arrivals. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pickup_booking_rule_id")
-    private BookingRule pickupBookingRule;
+    private @Nullable BookingRule pickupBookingRule;
 
     /** TAD drop-off flow, symmetric to {@link #pickupBookingRule}.
      *  Used when alighting requires advance notice (rare but legal). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "drop_off_booking_rule_id")
-    private BookingRule dropOffBookingRule;
+    private @Nullable BookingRule dropOffBookingRule;
 
     /** GTFS {@code stop_times.continuous_pickup} — overrides the route-
      *  level setting on {@link Line#getContinuousPickup()} for this
      *  specific stop_time. Null = inherit from the route. */
     @Column(name = "continuous_pickup")
-    private Short continuousPickup;
+    private @Nullable Short continuousPickup;
 
     /** GTFS {@code stop_times.continuous_drop_off}. Same override
      *  semantics as {@link #continuousPickup}. */
     @Column(name = "continuous_drop_off")
-    private Short continuousDropOff;
+    private @Nullable Short continuousDropOff;
 
     /** GTFS {@code stop_times.shape_dist_traveled}: distance in the
      *  shape's units from the trip start. Lets the kiosk compute a
      *  "vehicle is X% of the way to your stop" indicator. */
     @Column(name = "shape_dist_traveled")
-    private Double shapeDistTraveled;
+    private @Nullable Double shapeDistTraveled;
 }

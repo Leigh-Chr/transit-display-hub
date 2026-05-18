@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -42,13 +43,13 @@ public class Agency {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     /** GTFS {@code agency_id}. Null only when the feed declares a single
      *  unnamed agency (which the spec allows). */
     @Size(max = 100)
     @Column(name = "external_id", length = 100)
-    private String externalId;
+    private @Nullable String externalId;
 
     @NotBlank
     @Size(max = 200)
@@ -57,7 +58,7 @@ public class Agency {
 
     @Size(max = 500)
     @Column(length = 500)
-    private String url;
+    private @Nullable String url;
 
     /**
      * IANA timezone identifier as published by the agency (e.g.
@@ -67,27 +68,27 @@ public class Agency {
      */
     @Size(max = 60)
     @Column(length = 60)
-    private String timezone;
+    private @Nullable String timezone;
 
     @Size(max = 10)
     @Column(length = 10)
-    private String lang;
+    private @Nullable String lang;
 
     @Size(max = 30)
     @Column(length = 30)
-    private String phone;
+    private @Nullable String phone;
 
     @Size(max = 500)
     @Column(name = "fare_url", length = 500)
-    private String fareUrl;
+    private @Nullable String fareUrl;
 
     @Size(max = 100)
     @Column(length = 100)
-    private String email;
+    private @Nullable String email;
 
     /** GTFS {@code agency.cemv_support}: contactless EMV (card-tap)
      *  acceptance — 0 not supported, 1 supported, 2 ask the operator.
      *  May be overridden per line via {@link Line#getCemvSupport()}. */
     @Column(name = "cemv_support")
-    private Short cemvSupport;
+    private @Nullable Short cemvSupport;
 }

@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -46,15 +47,15 @@ public class RiderCategory {
 
     @Size(max = 200)
     @Column(length = 200)
-    private String name;
+    private @Nullable String name;
 
     /** GTFS {@code is_default_fare_category}: 0 = not the default,
      *  1 = the default category for the rider's fare media when no
      *  other category matches. */
     @Column(name = "is_default_fare_category")
-    private Short isDefaultFareCategory;
+    private @Nullable Short isDefaultFareCategory;
 
     @Size(max = 500)
     @Column(name = "eligibility_url", length = 500)
-    private String eligibilityUrl;
+    private @Nullable String eligibilityUrl;
 }

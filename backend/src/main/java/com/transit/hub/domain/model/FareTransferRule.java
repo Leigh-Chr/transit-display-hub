@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -43,37 +44,37 @@ public class FareTransferRule {
     private UUID id;
 
     @Column(name = "from_leg_group_id", length = 100)
-    private String fromLegGroupId;
+    private @Nullable String fromLegGroupId;
 
     @Column(name = "to_leg_group_id", length = 100)
-    private String toLegGroupId;
+    private @Nullable String toLegGroupId;
 
     @Column(name = "transfer_count")
-    private Integer transferCount;
+    private @Nullable Integer transferCount;
 
     @Column(name = "duration_limit")
-    private Integer durationLimit;
+    private @Nullable Integer durationLimit;
 
     @Column(name = "duration_limit_type")
-    private Short durationLimitType;
+    private @Nullable Short durationLimitType;
 
     @Column(name = "fare_transfer_type", nullable = false)
     private Short fareTransferType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fare_product_id")
-    private FareProduct fareProduct;
+    private @Nullable FareProduct fareProduct;
 
     /** GTFS {@code minutes_before_to_start_boarding_time}: minimum
      *  minutes the next leg must start before the previous leg's
      *  boarding time for the transfer rule to apply. Null = no
      *  pre-boarding constraint. */
     @Column(name = "minutes_before_to_start_boarding_time")
-    private Integer minutesBeforeToStartBoardingTime;
+    private @Nullable Integer minutesBeforeToStartBoardingTime;
 
     /** GTFS {@code minutes_after_to_start_boarding_time}: maximum
      *  minutes after the previous leg's boarding time within which the
      *  next leg must start. Null = no post-boarding constraint. */
     @Column(name = "minutes_after_to_start_boarding_time")
-    private Integer minutesAfterToStartBoardingTime;
+    private @Nullable Integer minutesAfterToStartBoardingTime;
 }

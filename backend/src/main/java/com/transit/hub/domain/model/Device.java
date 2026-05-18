@@ -20,6 +20,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -66,7 +67,7 @@ public class Device {
     private DeviceStatus status = DeviceStatus.OFFLINE;
 
     @Column(name = "last_heartbeat")
-    private Instant lastHeartbeat;
+    private @Nullable Instant lastHeartbeat;
 
     /**
      * Stamp the heartbeat with the caller's clock. The domain refuses to

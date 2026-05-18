@@ -22,6 +22,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -80,18 +81,18 @@ public class FareAttribute {
      *  same fare. {@code null} means unlimited (the spec encodes that
      *  by leaving the cell empty); 0/1/2 mean no, one or two. */
     @Column
-    private Integer transfers;
+    private @Nullable Integer transfers;
 
     /** GTFS {@code transfer_duration} — seconds during which the fare
      *  is valid. Null when unbounded. */
     @Column(name = "transfer_duration")
-    private Integer transferDuration;
+    private @Nullable Integer transferDuration;
 
     /** Optional agency the fare belongs to. Required by the spec when
      *  the feed declares more than one agency. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agency_id")
-    private Agency agency;
+    private @Nullable Agency agency;
 
     @OneToMany(mappedBy = "fareAttribute", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

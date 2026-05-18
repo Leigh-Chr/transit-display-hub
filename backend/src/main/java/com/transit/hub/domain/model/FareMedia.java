@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -42,12 +43,12 @@ public class FareMedia {
     private String externalId;
 
     @Column(name = "name", length = 200)
-    private String name;
+    private @Nullable String name;
 
     /** GTFS {@code fare_media_type}: 0=none, 1=paper, 2=transit_card,
      *  3=contactless_emv, 4=mobile_app. Stored as the raw int because
      *  values 5+ may appear in future spec revisions and we don't want
      *  the import to choke on unknown enum values. */
     @Column(name = "media_type")
-    private Short mediaType;
+    private @Nullable Short mediaType;
 }

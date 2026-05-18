@@ -17,6 +17,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -62,15 +63,15 @@ public class FlexStopTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stop_id")
-    private Stop stop;
+    private @Nullable Stop stop;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
-    private Location location;
+    private @Nullable Location location;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_group_id")
-    private LocationGroup locationGroup;
+    private @Nullable LocationGroup locationGroup;
 
     @NotNull
     @Column(name = "start_pickup_drop_off_window", nullable = false)
@@ -81,24 +82,24 @@ public class FlexStopTime {
     private LocalTime endPickupDropOffWindow;
 
     @Column(name = "pickup_type")
-    private Short pickupType;
+    private @Nullable Short pickupType;
 
     @Column(name = "drop_off_type")
-    private Short dropOffType;
+    private @Nullable Short dropOffType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pickup_booking_rule_id")
-    private BookingRule pickupBookingRule;
+    private @Nullable BookingRule pickupBookingRule;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "drop_off_booking_rule_id")
-    private BookingRule dropOffBookingRule;
+    private @Nullable BookingRule dropOffBookingRule;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_calendar_id")
-    private ServiceCalendar serviceCalendar;
+    private @Nullable ServiceCalendar serviceCalendar;
 
     @Size(max = 100)
     @Column(name = "stop_headsign", length = 100)
-    private String stopHeadsign;
+    private @Nullable String stopHeadsign;
 }

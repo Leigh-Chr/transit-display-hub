@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -42,29 +43,29 @@ public class FareLegRule {
     private UUID id;
 
     @Column(name = "leg_group_id", length = 100)
-    private String legGroupId;
+    private @Nullable String legGroupId;
 
     @Column(name = "network_id", length = 100)
-    private String networkId;
+    private @Nullable String networkId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_area_id")
-    private Area fromArea;
+    private @Nullable Area fromArea;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_area_id")
-    private Area toArea;
+    private @Nullable Area toArea;
 
     @Column(name = "from_timeframe_group_id", length = 100)
-    private String fromTimeframeGroupId;
+    private @Nullable String fromTimeframeGroupId;
 
     @Column(name = "to_timeframe_group_id", length = 100)
-    private String toTimeframeGroupId;
+    private @Nullable String toTimeframeGroupId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fare_product_id")
-    private FareProduct fareProduct;
+    private @Nullable FareProduct fareProduct;
 
     @Column(name = "rule_priority")
-    private Integer rulePriority;
+    private @Nullable Integer rulePriority;
 }

@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -45,7 +46,7 @@ public class Attribution {
      *  fine; the spec doesn't require it. */
     @Size(max = 100)
     @Column(name = "external_id", length = 100)
-    private String externalId;
+    private @Nullable String externalId;
 
     @NotBlank
     @Size(max = 200)
@@ -67,27 +68,27 @@ public class Attribution {
     /** GTFS {@code agency_id} the row applies to (null = whole feed). */
     @Size(max = 100)
     @Column(name = "agency_external_id", length = 100)
-    private String agencyExternalId;
+    private @Nullable String agencyExternalId;
 
     /** GTFS {@code route_id} the row applies to (null = whole feed). */
     @Size(max = 100)
     @Column(name = "route_external_id", length = 100)
-    private String routeExternalId;
+    private @Nullable String routeExternalId;
 
     /** GTFS {@code trip_id} the row applies to (null = whole feed). */
     @Size(max = 100)
     @Column(name = "trip_external_id", length = 100)
-    private String tripExternalId;
+    private @Nullable String tripExternalId;
 
     @Size(max = 500)
     @Column(length = 500)
-    private String url;
+    private @Nullable String url;
 
     @Size(max = 100)
     @Column(length = 100)
-    private String email;
+    private @Nullable String email;
 
     @Size(max = 30)
     @Column(length = 30)
-    private String phone;
+    private @Nullable String phone;
 }

@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -40,38 +41,38 @@ public class ImportAudit {
     private UUID id;
 
     @Column(name = "source_url", length = 500)
-    private String sourceUrl;
+    private @Nullable String sourceUrl;
 
     @Column(name = "source_hash", length = 64)
-    private String sourceHash;
+    private @Nullable String sourceHash;
 
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 
     @Column(name = "completed_at")
-    private Instant completedAt;
+    private @Nullable Instant completedAt;
 
     @Column(name = "duration_ms")
-    private Long durationMs;
+    private @Nullable Long durationMs;
 
     @Column(name = "lines_count")
-    private Integer linesCount;
+    private @Nullable Integer linesCount;
 
     @Column(name = "stops_count")
-    private Integer stopsCount;
+    private @Nullable Integer stopsCount;
 
     @Column(name = "itineraries_count")
-    private Integer itinerariesCount;
+    private @Nullable Integer itinerariesCount;
 
     @Column(name = "schedules_count")
-    private Integer schedulesCount;
+    private @Nullable Integer schedulesCount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ImportStatus status;
 
     @Column(name = "error_message", length = 1000)
-    private String errorMessage;
+    private @Nullable String errorMessage;
 
     /**
      * Identifier of who/what triggered the import: {@code "boot"} for the
@@ -79,7 +80,7 @@ public class ImportAudit {
      * for a manual API trigger.
      */
     @Column(name = "triggered_by", length = 50)
-    private String triggeredBy;
+    private @Nullable String triggeredBy;
 
     /**
      * Filesystem directory where {@code GtfsValidatorService} wrote the
@@ -88,7 +89,7 @@ public class ImportAudit {
      * disabled, skipped or failed before any output landed on disk.
      */
     @Column(name = "validation_report_dir", length = 500)
-    private String validationReportDir;
+    private @Nullable String validationReportDir;
 
     /**
      * Outcome of the {@code gtfs-validator} run, orthogonal to the
@@ -98,15 +99,15 @@ public class ImportAudit {
      * validation was disabled or no zip was retained.
      */
     @Column(name = "validation_status", length = 20)
-    private String validationStatus;
+    private @Nullable String validationStatus;
 
     /** Number of ERROR-level notices in the validation report — pulled
      *  out of the JSON so the admin timeline can render a badge without
      *  re-parsing the document. */
     @Column(name = "validation_notice_errors")
-    private Integer validationNoticeErrors;
+    private @Nullable Integer validationNoticeErrors;
 
     /** Number of WARNING-level notices in the validation report. */
     @Column(name = "validation_notice_warnings")
-    private Integer validationNoticeWarnings;
+    private @Nullable Integer validationNoticeWarnings;
 }

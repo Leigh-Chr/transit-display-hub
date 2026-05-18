@@ -16,6 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -59,10 +60,10 @@ public class ServiceCalendar {
     private String externalId;
 
     @Column(name = "start_date")
-    private LocalDate startDate;
+    private @Nullable LocalDate startDate;
 
     @Column(name = "end_date")
-    private LocalDate endDate;
+    private @Nullable LocalDate endDate;
 
     @Column(nullable = false)
     @Builder.Default

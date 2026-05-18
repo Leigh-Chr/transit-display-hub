@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -63,7 +64,7 @@ public class Translation {
      *  field-value matching mode (see {@link #fieldValue}). */
     @Size(max = 100)
     @Column(name = "record_id", length = 100)
-    private String recordId;
+    private @Nullable String recordId;
 
     /** Alternative matching key allowed by the spec: when {@code recordId}
      *  is absent, the translation applies to every row whose
@@ -71,7 +72,7 @@ public class Translation {
      *  the same string appears on hundreds of stops. */
     @Size(max = 200)
     @Column(name = "field_value", length = 200)
-    private String fieldValue;
+    private @Nullable String fieldValue;
 
     /** GTFS {@code record_sub_id}. Required when translating
      *  {@code stop_times} rows, where the primary key is
@@ -80,7 +81,7 @@ public class Translation {
      *  supplied here. Null for every other table. */
     @Size(max = 100)
     @Column(name = "record_sub_id", length = 100)
-    private String recordSubId;
+    private @Nullable String recordSubId;
 
     /** GTFS {@code language_context}. Disambiguates two translations of
      *  the same record/field/language for distinct display contexts
@@ -88,7 +89,7 @@ public class Translation {
      *  the default rendering. */
     @Size(max = 100)
     @Column(name = "language_context", length = 100)
-    private String languageContext;
+    private @Nullable String languageContext;
 
     @NotBlank
     @Size(max = 60)

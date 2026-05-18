@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class RefreshToken {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -65,7 +66,7 @@ public class RefreshToken {
     private Instant expiresAt;
 
     @Column(name = "revoked_at")
-    private Instant revokedAt;
+    private @Nullable Instant revokedAt;
 
     /**
      * Walks the rotation chain. When /refresh accepts this token we
@@ -74,13 +75,13 @@ public class RefreshToken {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "replaced_by_id")
-    private RefreshToken replacedBy;
+    private @Nullable RefreshToken replacedBy;
 
     @Column(name = "user_agent", length = 255)
-    private String userAgent;
+    private @Nullable String userAgent;
 
     @Column(name = "ip_address", length = 45)
-    private String ipAddress;
+    private @Nullable String ipAddress;
 
     /**
      * Active = not revoked yet and not past its expiry. Callers pass the

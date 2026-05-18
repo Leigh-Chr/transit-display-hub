@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -60,7 +61,7 @@ public class StationLevel {
     /** Station this level belongs to. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_stop_id")
-    private Stop parentStop;
+    private @Nullable Stop parentStop;
 
     /** GTFS {@code level_index}. Negative for underground levels. */
     @Column(name = "level_index", nullable = false)
@@ -69,5 +70,5 @@ public class StationLevel {
     /** GTFS {@code level_name}. Passenger-facing label, e.g. "Platform 1". */
     @Size(max = 100)
     @Column(name = "level_name", length = 100)
-    private String levelName;
+    private @Nullable String levelName;
 }

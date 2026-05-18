@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -42,16 +43,16 @@ public class FareProduct {
     private String externalId;
 
     @Column(name = "name", length = 200)
-    private String name;
+    private @Nullable String name;
 
     @Column(name = "fare_media_id", length = 100)
-    private String fareMediaId;
+    private @Nullable String fareMediaId;
 
     /** GTFS {@code rider_category_id} — the rider category this product
      *  is priced for. Stored as the raw external_id; resolve against the
      *  {@code rider_categories} table when a typed reference is needed. */
     @Column(name = "rider_category_id", length = 100)
-    private String riderCategoryId;
+    private @Nullable String riderCategoryId;
 
     @Column(name = "amount", nullable = false, precision = 12, scale = 4)
     private BigDecimal amount;

@@ -17,6 +17,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -57,7 +58,7 @@ public class LocationGroup {
     /** Optional human-readable name (e.g. "All villages, North route"). */
     @Size(max = 200)
     @Column(name = "group_name", length = 200)
-    private String groupName;
+    private @Nullable String groupName;
 
     @ManyToMany
     @JoinTable(name = "location_group_stops",

@@ -16,6 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -55,20 +56,20 @@ public class FareRule {
     /** Optional route the rule restricts the fare to. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id")
-    private Line route;
+    private @Nullable Line route;
 
     /** GTFS {@code origin_id} — raw zone id. */
     @Size(max = 100)
     @Column(name = "origin_id", length = 100)
-    private String originId;
+    private @Nullable String originId;
 
     /** GTFS {@code destination_id} — raw zone id. */
     @Size(max = 100)
     @Column(name = "destination_id", length = 100)
-    private String destinationId;
+    private @Nullable String destinationId;
 
     /** GTFS {@code contains_id} — zone the trip must traverse. */
     @Size(max = 100)
     @Column(name = "contains_id", length = 100)
-    private String containsId;
+    private @Nullable String containsId;
 }

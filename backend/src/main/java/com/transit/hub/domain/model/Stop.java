@@ -16,12 +16,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import com.transit.hub.domain.model.enums.WheelchairAccess;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,7 +47,7 @@ public class Stop {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     /** GTFS {@code stop_id} from the source feed. Lets a re-import match
      *  this row to its replacement instead of recreating it (which would
@@ -53,7 +55,7 @@ public class Stop {
      *  Null for stops created manually via the admin form. */
     @Size(max = 100)
     @Column(name = "external_id", length = 100)
-    private String externalId;
+    private @Nullable String externalId;
 
     /** Soft-delete flag. A stop tombstoned by a re-import (its external_id
      *  vanished from the new feed) keeps its UUID so devices and messages
@@ -73,48 +75,48 @@ public class Stop {
     private String name;
 
     @Column
-    private Double latitude;
+    private @Nullable Double latitude;
 
     @Column
-    private Double longitude;
+    private @Nullable Double longitude;
 
     @Column
-    private Double schematicX;
+    private @Nullable Double schematicX;
 
     @Column
-    private Double schematicY;
+    private @Nullable Double schematicY;
 
     /** GTFS {@code stop_code}: short identifier shown to passengers on
      *  the physical signpost (e.g. "BSP1234"). Useful to confirm "you
      *  are at the right stop" on the kiosk screen. */
     @Size(max = 50)
     @Column(name = "short_code", length = 50)
-    private String shortCode;
+    private @Nullable String shortCode;
 
     /** GTFS {@code tts_stop_name}: pronounceable form for screen readers
      *  and TTS-based accessibility tools. Falls back to {@link #name}. */
     @Size(max = 150)
     @Column(name = "tts_name", length = 150)
-    private String ttsName;
+    private @Nullable String ttsName;
 
     /** Per-stop IANA timezone, taking precedence over the agency's
      *  timezone for transit networks that cross zones (rare, but allowed
      *  by the GTFS spec). */
     @Size(max = 60)
     @Column(name = "stop_timezone", length = 60)
-    private String stopTimezone;
+    private @Nullable String stopTimezone;
 
     /** GTFS {@code stop_desc}. Free-form description shown in the network
      *  map's stop popup. */
     @Size(max = 500)
     @Column(length = 500)
-    private String description;
+    private @Nullable String description;
 
     /** GTFS {@code stop_url}. Public-facing link, often the operator's
      *  page describing the stop. */
     @Size(max = 255)
     @Column(length = 255)
-    private String url;
+    private @Nullable String url;
 
     /** GTFS {@code zone_id}. Opaque label that fare rules
      *  ({@code origin_id}, {@code destination_id}, {@code contains_id})
@@ -122,14 +124,14 @@ public class Stop {
      *  feeds that don't ship V1 fare data. */
     @Size(max = 100)
     @Column(name = "zone_id", length = 100)
-    private String zoneId;
+    private @Nullable String zoneId;
 
     /** GTFS {@code wheelchair_boarding} (0/1/2). Drives the PMR pictogram
      *  on the stop popup and shapes the route-finder when a passenger
      *  opts into the "accessible-only" filter. */
     @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
     @Column(name = "wheelchair_boarding", length = 20)
-    private com.transit.hub.domain.model.enums.WheelchairAccess wheelchairBoarding;
+    private @Nullable WheelchairAccess wheelchairBoarding;
 
     /** GTFS {@code platform_code}. Short identifier for the platform
      *  ("A", "12bis"). Each platform persists as its own Stop row with
@@ -138,7 +140,7 @@ public class Stop {
      *  stations themselves and free-standing bus poles). */
     @Size(max = 10)
     @Column(name = "platform_code", length = 10)
-    private String platformCode;
+    private @Nullable String platformCode;
 
     /** GTFS {@code stop_access}: 0 = generally accessible, 1 = staff
      *  / employees only. Spec forbids the field on station /
@@ -146,7 +148,7 @@ public class Stop {
      *  if the feed ships a value, since some operators use it to
      *  flag a closed-to-public station. */
     @Column(name = "stop_access")
-    private Short stopAccess;
+    private @Nullable Short stopAccess;
 
     /** GTFS {@code location_type}: 0 platform / regular stop (default),
      *  1 station / parent. Other values (entrance, generic node,
@@ -163,7 +165,7 @@ public class Stop {
      *  free-standing stops without a parent. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_stop_id")
-    private Stop parentStop;
+    private @Nullable Stop parentStop;
 
     // Collections are exposed via explicit hand-written getters (below)
     // that return unmodifiable views, so callers must use the dedicated

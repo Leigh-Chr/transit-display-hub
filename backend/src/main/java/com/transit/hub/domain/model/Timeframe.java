@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -38,11 +39,11 @@ public class Timeframe {
     private String timeframeGroupId;
 
     @Column(name = "start_time")
-    private LocalTime startTime;
+    private @Nullable LocalTime startTime;
 
     @Column(name = "end_time")
-    private LocalTime endTime;
+    private @Nullable LocalTime endTime;
 
     @Column(name = "service_id", length = 100)
-    private String serviceId;
+    private @Nullable String serviceId;
 }

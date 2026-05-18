@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -40,34 +41,34 @@ public class FareLegJoinRule {
 
     /** Canonical spec key: references {@code fare_leg_rules.leg_group_id}. */
     @Column(name = "leg_group_id", length = 100)
-    private String legGroupId;
+    private @Nullable String legGroupId;
 
     /** Canonical spec key: 1-based incremental position of this leg
      *  within its leg-group. */
     @Column(name = "leg_sequence")
-    private Integer legSequence;
+    private @Nullable Integer legSequence;
 
     /** Canonical spec field: max minutes since the preceding trip's
      *  alighting after which the join no longer applies. Required by
      *  the spec when {@code legSequence > 1}. */
     @Column(name = "preceding_trip_transfer_limit")
-    private Integer precedingTripTransferLimit;
+    private @Nullable Integer precedingTripTransferLimit;
 
     /** Legacy column (pre-2024 layout). */
     @Column(name = "from_network_id", length = 100)
-    private String fromNetworkId;
+    private @Nullable String fromNetworkId;
 
     /** Legacy column (pre-2024 layout). */
     @Column(name = "to_network_id", length = 100)
-    private String toNetworkId;
+    private @Nullable String toNetworkId;
 
     /** Legacy column (pre-2024 layout). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_stop_id")
-    private Stop fromStop;
+    private @Nullable Stop fromStop;
 
     /** Legacy column (pre-2024 layout). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_stop_id")
-    private Stop toStop;
+    private @Nullable Stop toStop;
 }

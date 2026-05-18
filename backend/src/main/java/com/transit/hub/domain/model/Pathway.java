@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -82,35 +83,35 @@ public class Pathway {
 
     /** Optional length in metres. */
     @Column(name = "length_metres")
-    private Double lengthMetres;
+    private @Nullable Double lengthMetres;
 
     /** Optional traversal time in seconds. The kiosk can show
      *  "≈ 90 s" when routing through a hub; null when not provided. */
     @Column(name = "traversal_time_seconds")
-    private Integer traversalTimeSeconds;
+    private @Nullable Integer traversalTimeSeconds;
 
     /** Optional stair count for {@link PathwayMode#STAIRS} pathways. */
     @Column(name = "stair_count")
-    private Integer stairCount;
+    private @Nullable Integer stairCount;
 
     /** Optional maximum slope along the pathway. */
     @Column(name = "max_slope")
-    private Double maxSlope;
+    private @Nullable Double maxSlope;
 
     /** Minimum width in metres. Useful for accessibility filtering. */
     @Column(name = "min_width_metres")
-    private Double minWidthMetres;
+    private @Nullable Double minWidthMetres;
 
     /** GTFS {@code signposted_as}: text shown on the physical signpost
      *  when entering the pathway from {@code fromStop}. */
     @Size(max = 200)
     @Column(name = "signposted_as", length = 200)
-    private String signpostedAs;
+    private @Nullable String signpostedAs;
 
     /** GTFS {@code reversed_signposted_as}: same as {@link #signpostedAs}
      *  but for the reverse direction (only meaningful when
      *  {@link #bidirectional} is true). */
     @Size(max = 200)
     @Column(name = "reversed_signposted_as", length = 200)
-    private String reversedSignpostedAs;
+    private @Nullable String reversedSignpostedAs;
 }

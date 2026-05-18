@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -46,7 +47,7 @@ public class Area {
     private String externalId;
 
     @Column(name = "name", length = 200)
-    private String name;
+    private @Nullable String name;
 
     @ManyToMany
     @JoinTable(

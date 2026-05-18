@@ -25,6 +25,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -46,14 +47,14 @@ public class Line {
     private UUID id;
 
     @Version
-    private Long version;
+    private @Nullable Long version;
 
     /** GTFS {@code route_id}. Persisted so a re-import can match rows
      *  rather than recreate them (which would break the broadcast
      *  messages and itineraries anchored to the old UUID). */
     @Size(max = 100)
     @Column(name = "external_id", length = 100)
-    private String externalId;
+    private @Nullable String externalId;
 
     @NotBlank(message = "Code is required")
     @Size(max = 30, message = "Code must be at most 30 characters")
@@ -79,15 +80,15 @@ public class Line {
      */
     @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Text color must be a valid hex color (e.g., #FFFFFF)")
     @Column(name = "text_color", length = 7)
-    private String textColor;
+    private @Nullable String textColor;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 15)
-    private LineType type;
+    private @Nullable LineType type;
 
     @Size(max = 50, message = "Category must be at most 50 characters")
     @Column(length = 50)
-    private String category;
+    private @Nullable String category;
 
     /** GTFS {@code continuous_pickup} (route-level). 0 = continuous (any
      *  point), 1 = no continuous service (default), 2 = phone agency,
@@ -107,25 +108,25 @@ public class Line {
      *  the network map and admin lists. Lines without a value sort after
      *  those with one, then by code. */
     @Column(name = "sort_order")
-    private Integer sortOrder;
+    private @Nullable Integer sortOrder;
 
     /** GTFS {@code route_desc}. Free-form description shown in the stop
      *  popup and admin detail view. */
     @Size(max = 500)
     @Column(length = 500)
-    private String description;
+    private @Nullable String description;
 
     /** GTFS {@code route_url}. Public link to the operator's page about
      *  this line. */
     @Size(max = 255)
     @Column(length = 255)
-    private String url;
+    private @Nullable String url;
 
     /** GTFS {@code routes.cemv_support}: line-level contactless EMV
      *  acceptance — 0 not supported, 1 supported, 2 ask the operator.
      *  Takes precedence over the agency value. */
     @Column(name = "cemv_support")
-    private Short cemvSupport;
+    private @Nullable Short cemvSupport;
 
     /** Operating agency. Nullable because lines created via the legacy
      *  admin form (or imported from feeds without {@code agency.txt})
@@ -133,7 +134,7 @@ public class Line {
      *  to {@code app.timezone} when this is null. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agency_id")
-    private Agency agency;
+    private @Nullable Agency agency;
 
     // Inverse side of Stop.lines — see Stop for the encapsulation
     // rationale. Mutate via addStop/removeStop so the owning side
