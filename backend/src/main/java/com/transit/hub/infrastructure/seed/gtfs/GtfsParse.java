@@ -2,6 +2,8 @@ package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.enums.LineType;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,6 +17,8 @@ import java.util.Map;
  */
 public final class GtfsParse {
 
+    private static final Logger log = LoggerFactory.getLogger(GtfsParse.class);
+
     private static final DateTimeFormatter GTFS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private GtfsParse() {}
@@ -23,14 +27,23 @@ public final class GtfsParse {
      * Parses a GTFS HH:MM:SS time. The format allows hours past midnight (e.g.
      * {@code "25:30:00"} for 1:30 the next day) which {@link LocalTime} cannot
      * represent natively, so the hour component is folded back into the
-     * {@code 0..23} range. Acceptable loss of date information for kiosk display.
+     * {@code 0..23} range and a {@code WARN} log is emitted so the operator
+     * sees the truncation in the import audit trail. See ADR 0042 for the
+     * rationale and the future migration path to a {@code BIGINT seconds}
+     * representation that would honour the >24h window natively.
      */
     public static @Nullable LocalTime parseGtfsTime(@Nullable String s) {
         if (s == null || s.isBlank()) {return null;}
         String[] parts = s.trim().split(":");
         if (parts.length < 2) {return null;}
         try {
-            int h = Integer.parseInt(parts[0]) % 24;
+            int rawHour = Integer.parseInt(parts[0]);
+            int h = rawHour % 24;
+            if (rawHour >= 24) {
+                log.warn("GTFS time '{}' exceeds 24h — folded to {}h. "
+                        + "LocalTime cannot represent service-day overflow (ADR 0042).",
+                        s, h);
+            }
             int m = Integer.parseInt(parts[1]);
             int sec = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
             return LocalTime.of(h, m, sec);
