@@ -1019,3 +1019,18 @@ app-hub .mat-mdc-icon-button {
     animation: none;
   }
 }
+
+/* Admin tables fallback for narrow viewports.
+ *
+ * mat-table does not ship a horizontal scroll container of its own;
+ * on a 360px viewport every multi-column admin table (stops, users,
+ * itineraries, schedules) overflows the surrounding mat-card and gets
+ * clipped. The realtime / import-audit pages already wrap their tables
+ * in a dedicated .*-table-wrapper for the same reason. Apply the same
+ * scroll-on-overflow fallback globally to every mat-card that hosts a
+ * mat-table so the rest of the admin tables stay usable on a phone. */
+@media (max-width: 600px) {
+  mat-card:has(table.mat-mdc-table) {
+    overflow-x: auto;
+  }
+}
