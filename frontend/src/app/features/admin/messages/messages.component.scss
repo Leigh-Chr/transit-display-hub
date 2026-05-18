@@ -21,6 +21,33 @@
   gap: var(--app-gap-grid);
 }
 
+.bulk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: var(--app-radius-sm);
+  background: var(--app-surface-container);
+  flex-wrap: wrap;
+}
+
+.bulk-count {
+  font-weight: 600;
+  color: var(--app-primary);
+  margin-right: auto;
+}
+
+.message-card-selected {
+  outline: 2px solid var(--app-primary);
+  outline-offset: -2px;
+}
+
+.message-select {
+  margin-right: 8px;
+  align-self: flex-start;
+}
+
 .message-card {
   padding: 20px;
   border-radius: var(--app-radius-md);

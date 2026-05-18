@@ -72,10 +72,35 @@
       />
     </mat-card>
   } @else {
+    <div class="bulk-toolbar">
+      <mat-checkbox
+        [checked]="allCurrentSelected()"
+        [indeterminate]="someCurrentSelected()"
+        (change)="toggleSelectAllOnPage($event.checked)"
+      >
+        {{ t('admin.messages.selectAllOnPage') }}
+      </mat-checkbox>
+      @if (selectionCount() > 0) {
+        <span class="bulk-count">{{ t('admin.messages.selectedCount', { count: selectionCount() }) }}</span>
+        <button mat-button type="button" (click)="clearSelection()">
+          {{ t('common.cancel') }}
+        </button>
+        <button mat-flat-button color="warn" type="button" (click)="bulkDeleteSelected()">
+          <mat-icon aria-hidden="true">delete</mat-icon>
+          {{ t('admin.messages.bulkDelete', { count: selectionCount() }) }}
+        </button>
+      }
+    </div>
     <div class="messages-list" animate.enter="list-stagger">
       @for (message of messages(); track message.id) {
-        <mat-card class="message-card">
+        <mat-card class="message-card" [class.message-card-selected]="selectedIds().has(message.id)">
           <div class="message-content">
+            <mat-checkbox
+              class="message-select"
+              [checked]="selectedIds().has(message.id)"
+              (change)="toggleSelection(message.id, $event.checked)"
+              [attr.aria-label]="t('admin.messages.selectAria', { title: message.title })"
+            />
             <div
               class="severity-icon"
               [class.critical]="message.severity === 'CRITICAL'"

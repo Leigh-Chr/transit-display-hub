@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { type Params } from '@angular/router';
@@ -101,8 +103,81 @@ export class MessagesComponent {
   readonly messages = this.list.items;
   readonly totalElements = this.list.totalElements;
 
+  /** Multi-select for bulk delete — mirrors the pattern used on the
+   *  lines page; see {@link LinesComponent} for the rationale. */
+  readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+  readonly selectionCount = computed(() => this.selectedIds().size);
+  readonly allCurrentSelected = computed(() => {
+    const rows = this.messages();
+    if (rows.length === 0) {return false;}
+    const set = this.selectedIds();
+    return rows.every((m) => set.has(m.id));
+  });
+  readonly someCurrentSelected = computed(() => {
+    const set = this.selectedIds();
+    return this.messages().some((m) => set.has(m.id)) && !this.allCurrentSelected();
+  });
+
   loadMessages(): void {
     this.list.reload();
+  }
+
+  toggleSelection(id: string, checked: boolean): void {
+    const next = new Set(this.selectedIds());
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    this.selectedIds.set(next);
+  }
+
+  toggleSelectAllOnPage(checked: boolean): void {
+    const next = new Set(this.selectedIds());
+    for (const message of this.messages()) {
+      if (checked) {
+        next.add(message.id);
+      } else {
+        next.delete(message.id);
+      }
+    }
+    this.selectedIds.set(next);
+  }
+
+  clearSelection(): void {
+    this.selectedIds.set(new Set());
+  }
+
+  bulkDeleteSelected(): void {
+    const ids = [...this.selectedIds()];
+    if (ids.length === 0) {return;}
+
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: this.transloco.translate('admin.messages.confirm.bulkDeleteTitle'),
+        message: this.transloco.translate('admin.messages.confirm.bulkDeleteMessage', { count: ids.length }),
+        confirmText: this.transloco.translate('admin.messages.confirm.bulkDeleteConfirm'),
+        cancelText: this.transloco.translate('common.cancel'),
+        confirmColor: 'warn',
+      },
+      ariaLabel: this.transloco.translate('admin.messages.confirm.bulkDeleteTitle'),
+    });
+
+    ref.afterClosed().subscribe((confirmed: boolean | undefined) => {
+      if (!confirmed) {return;}
+      forkJoin(ids.map((id) => this.messageService.delete(id))).subscribe({
+        next: () => {
+          this.notify.success(this.transloco.translate('admin.messages.bulkDeleteSuccess', { count: ids.length }));
+          this.clearSelection();
+          this.loadMessages();
+        },
+        error: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.bulkDeleteFailed')));
+          this.clearSelection();
+          this.loadMessages();
+        },
+      });
+    });
   }
 
   onSeverityChange(severity: MessageSeverity | ''): void {

@@ -639,9 +639,18 @@
         "actionCreate": "Créer le message",
         "actionSave": "Enregistrer"
       },
+      "selectAllOnPage": "Tout sélectionner sur cette page",
+      "selectAria": "Sélectionner le message « {{ title }} »",
+      "selectedCount": "{{ count }} sélectionné(s)",
+      "bulkDelete": "Supprimer la sélection ({{ count }})",
+      "bulkDeleteSuccess": "{{ count }} messages supprimés",
+      "bulkDeleteFailed": "Échec de la suppression en masse",
       "confirm": {
         "deleteTitle": "Supprimer le message",
-        "deleteMessage": "Supprimer le message « {{ title }} » ?"
+        "deleteMessage": "Supprimer le message « {{ title }} » ?",
+        "bulkDeleteTitle": "Supprimer les messages sélectionnés",
+        "bulkDeleteMessage": "Supprimer {{ count }} messages ? Cette action est irréversible.",
+        "bulkDeleteConfirm": "Supprimer définitivement"
       }
     },
     "users": {

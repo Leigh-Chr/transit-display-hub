@@ -639,9 +639,18 @@
         "actionCreate": "Create Message",
         "actionSave": "Save Changes"
       },
+      "selectAllOnPage": "Select all on this page",
+      "selectAria": "Select message \"{{ title }}\"",
+      "selectedCount": "{{ count }} selected",
+      "bulkDelete": "Delete selected ({{ count }})",
+      "bulkDeleteSuccess": "{{ count }} messages deleted",
+      "bulkDeleteFailed": "Bulk delete failed",
       "confirm": {
         "deleteTitle": "Delete Message",
-        "deleteMessage": "Delete message \"{{ title }}\"?"
+        "deleteMessage": "Delete message \"{{ title }}\"?",
+        "bulkDeleteTitle": "Delete selected messages",
+        "bulkDeleteMessage": "Delete {{ count }} messages? This cannot be undone.",
+        "bulkDeleteConfirm": "Delete permanently"
       }
     },
     "users": {
