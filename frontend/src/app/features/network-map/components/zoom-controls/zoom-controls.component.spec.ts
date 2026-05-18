@@ -3,7 +3,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { testTranslocoModule } from '../../../../../test-translations';
 import { ZoomControlsComponent } from './zoom-controls.component';
 
-const zoomDict = { map: { zoom: { in: 'Zoom in', out: 'Zoom out', reset: 'Reset view' } } };
+const zoomDict = {
+  map: {
+    zoom: {
+      in: 'Zoom in',
+      out: 'Zoom out',
+      reset: 'Reset view',
+      helpAria: 'Show keyboard shortcuts',
+    },
+  },
+};
 
 describe('ZoomControlsComponent', () => {
   let fixture: ComponentFixture<ZoomControlsComponent>;
@@ -27,9 +36,9 @@ describe('ZoomControlsComponent', () => {
     btn.click();
   }
 
-  it('renders three control buttons', () => {
+  it('renders four control buttons (zoom-in, reset, zoom-out, keyboard help)', () => {
     const buttons = fixture.nativeElement.querySelectorAll('button.zoom-btn');
-    expect(buttons.length).toBe(3);
+    expect(buttons.length).toBe(4);
   });
 
   it('emits zoomIn when the + button is clicked', () => {

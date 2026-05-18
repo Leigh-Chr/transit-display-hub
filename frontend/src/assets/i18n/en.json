@@ -191,7 +191,17 @@
     "zoom": {
       "in": "Zoom in",
       "out": "Zoom out",
-      "reset": "Reset view"
+      "reset": "Reset view",
+      "helpAria": "Show keyboard shortcuts",
+      "helpTitle": "Map keyboard shortcuts",
+      "helpIntro": "Click the map or a stop to give the keyboard focus, then use:",
+      "helpZoomIn": "Zoom in",
+      "helpZoomOut": "Zoom out",
+      "helpReset": "Fit the network on screen",
+      "helpPan": "Pan the map",
+      "helpTab": "Step through stops one by one",
+      "helpEnter": "Open the focused stop's panel",
+      "helpClose": "Close"
     },
     "legend": {
       "title": "Legend",

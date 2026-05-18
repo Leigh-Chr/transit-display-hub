@@ -191,7 +191,17 @@
     "zoom": {
       "in": "Zoomer",
       "out": "Dézoomer",
-      "reset": "Réinitialiser la vue"
+      "reset": "Réinitialiser la vue",
+      "helpAria": "Afficher les raccourcis clavier",
+      "helpTitle": "Raccourcis clavier de la carte",
+      "helpIntro": "Cliquez sur la carte ou un arrêt pour le focus clavier, puis utilisez les touches suivantes :",
+      "helpZoomIn": "Zoomer",
+      "helpZoomOut": "Dézoomer",
+      "helpReset": "Vue d'ensemble",
+      "helpPan": "Déplacer la carte",
+      "helpTab": "Parcourir les arrêts un par un",
+      "helpEnter": "Ouvrir le panneau de l'arrêt focalisé",
+      "helpClose": "Fermer"
     },
     "legend": {
       "title": "Légende",
