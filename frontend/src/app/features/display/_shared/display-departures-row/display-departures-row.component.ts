@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
+import { LocaleService } from '@core/i18n/locale.service';
 import { LineInfo } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
 import {
@@ -38,6 +39,7 @@ export interface DepartureBooking {
 })
 export class DisplayDeparturesRowComponent {
   private readonly transloco = inject(TranslocoService);
+  private readonly locale = inject(LocaleService);
 
   /** Line metadata — drives the colored badge in the first column. */
   readonly line = input.required<LineInfo>();
@@ -57,6 +59,10 @@ export class DisplayDeparturesRowComponent {
   protected readonly minutesUntil = computed(() => getMinutesUntil(this.time(), this.now()));
   protected readonly isImminent = computed(() => isImminent(this.time(), this.now()));
   protected readonly relativeTime = computed(() => {
+    // Re-fire once Transloco's JSON is loaded so the first paint after
+    // a kiosk boot resolves "kiosk.imminent" / "kiosk.minutesShort" to
+    // the translated sentence instead of the raw key.
+    this.locale.translationsLoaded();
     const minutes = this.minutesUntil();
     if (minutes === 0) {
       return this.transloco.translate('kiosk.imminent');

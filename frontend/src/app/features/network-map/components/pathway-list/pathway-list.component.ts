@@ -156,13 +156,15 @@ export class PathwayListComponent {
   readonly graph = input<StationPathwayGraph | null>(null);
 
   private readonly transloco = inject(TranslocoService);
-  // Track the active language so the row labels recompute when the
-  // user toggles FR/EN — TranslocoService.translate() reads the dict
-  // at call time and the `rows` computed re-runs on each lang switch.
+  // Read both `locale.current()` and `locale.translationsLoaded()` inside
+  // each computed below: the first re-fires on FR/EN toggle, the second
+  // re-fires once the Transloco JSON is in memory so the very first
+  // evaluation doesn't capture the raw i18n key on cold paint.
   private readonly locale = inject(LocaleService);
 
   readonly rows = computed<PathwayRow[]>(() => {
     this.locale.current();
+    this.locale.translationsLoaded();
     const g = this.graph();
     if (!g) {return [];}
     return g.pathways.map(p => ({
@@ -176,6 +178,7 @@ export class PathwayListComponent {
 
   readonly titleLabel = computed(() => {
     this.locale.current();
+    this.locale.translationsLoaded();
     return this.transloco.translate('map.pathways.title', {
       station: this.graph()?.stationName ?? '',
     });
@@ -183,11 +186,13 @@ export class PathwayListComponent {
 
   readonly ariaLabel = computed(() => {
     this.locale.current();
+    this.locale.translationsLoaded();
     return this.transloco.translate('map.pathways.ariaLabel');
   });
 
   readonly levelLine = computed<string | null>(() => {
     this.locale.current();
+    this.locale.translationsLoaded();
     const g = this.graph();
     if (!g || g.levels.length === 0) {return null;}
     const labels = g.levels.map(l =>
