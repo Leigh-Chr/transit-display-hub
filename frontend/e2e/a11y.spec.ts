@@ -67,6 +67,11 @@ const BASELINE: Record<string, number> = {
 };
 
 function assertNoNewViolations(name: string, criticalCount: number, sample: unknown): void {
+  // Surface the live count on every run so a sustained drop motivates a
+  // baseline tighten. The soft expect below only logs the count when it
+  // fails, so without this line a page that quietly improved from 5 → 1
+  // violations would never tell anyone — and the budget would stay loose.
+  console.info(`[a11y] ${name}: ${criticalCount} critical/serious (baseline ${BASELINE[name] ?? 0})`);
   expect.soft(
     criticalCount,
     `${name}: ${criticalCount} critical/serious violation(s) found:\n` +
