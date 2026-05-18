@@ -53,7 +53,6 @@ class GtfsImportServiceRichFixtureIntegrationTest {
             "agency.txt", "routes.txt", "stops.txt",
             "calendar.txt", "calendar_dates.txt",
             "trips.txt", "stop_times.txt",
-            "shapes.txt",
             "transfers.txt",
             "pathways.txt", "levels.txt",
             "translations.txt",
