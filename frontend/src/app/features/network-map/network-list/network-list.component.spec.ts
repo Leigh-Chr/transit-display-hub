@@ -40,6 +40,6 @@ describe('NetworkListComponent', () => {
   it('renders without errors', () => {
     const fixture = TestBed.createComponent(NetworkListComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('h1, header, .page')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('h1, header, .page')).not.toBeNull();
   });
 });

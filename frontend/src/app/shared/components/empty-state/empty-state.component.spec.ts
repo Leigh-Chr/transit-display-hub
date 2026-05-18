@@ -56,7 +56,6 @@ describe('EmptyStateComponent', () => {
     await fixture.whenStable();
 
     const descEl = fixture.nativeElement.querySelector('.empty-description');
-    expect(descEl).toBeTruthy();
     expect(descEl.textContent.trim()).toBe('Try adjusting your filters');
   });
 
@@ -74,7 +73,6 @@ describe('EmptyStateComponent', () => {
     await fixture.whenStable();
 
     const button = fixture.nativeElement.querySelector('button[mat-flat-button]');
-    expect(button).toBeTruthy();
     expect(button.textContent).toContain('Add Item');
   });
 
@@ -102,7 +100,6 @@ describe('EmptyStateComponent', () => {
 
     const button = fixture.nativeElement.querySelector('button[mat-flat-button]');
     const icon = button.querySelector('mat-icon');
-    expect(icon).toBeTruthy();
     expect(icon.textContent.trim()).toBe('add');
   });
 

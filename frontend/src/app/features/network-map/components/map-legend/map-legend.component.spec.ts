@@ -52,7 +52,7 @@ describe('MapLegendComponent', () => {
 
     expect(component.open()).toBe(false);
     expect(legendItems().length).toBe(0);
-    expect(fixture.nativeElement.querySelector('.legend.collapsed')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.legend.collapsed')).not.toBeNull();
   });
 
   function legendLabels(): string[] {

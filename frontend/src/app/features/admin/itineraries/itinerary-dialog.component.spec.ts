@@ -125,14 +125,6 @@ describe('ItineraryDialogComponent', () => {
       expect(component.form.name).toBe('');
     });
 
-    it('should have all required fields populated after user fills the form', () => {
-      component.form.lineId = 'line1';
-      component.form.name = 'Direction East';
-
-      expect(component.form.lineId).toBeTruthy();
-      expect(component.form.name).toBeTruthy();
-    });
-
     it('should call submit with the form payload and close with the server response', () => {
       component.form.lineId = 'line1';
       component.form.name = 'Direction East';
@@ -187,7 +179,6 @@ describe('ItineraryDialogComponent', () => {
 
     it('should show info text about adding stops after creation', () => {
       const infoText = fixture.nativeElement.querySelector('.info-text');
-      expect(infoText).toBeTruthy();
       expect(infoText.textContent).toContain('After creating the itinerary');
     });
   });
@@ -222,7 +213,6 @@ describe('ItineraryDialogComponent', () => {
 
     it('should show terminus info when itinerary has a terminus', () => {
       const terminusInfo = fixture.nativeElement.querySelector('.terminus-info');
-      expect(terminusInfo).toBeTruthy();
       expect(terminusInfo.textContent).toContain('East Terminal');
     });
 

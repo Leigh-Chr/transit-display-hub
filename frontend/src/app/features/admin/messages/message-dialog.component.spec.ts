@@ -150,8 +150,8 @@ describe('MessageDialogComponent', () => {
       expect(component.form.scopeType).toBe('NETWORK');
       expect(component.form.lineId).toBe('');
       expect(component.form.stopId).toBe('');
-      expect(component.form.startTime).toBeTruthy();
-      expect(component.form.endTime).toBeTruthy();
+      expect(component.form.startTime).not.toBe('');
+      expect(component.form.endTime).not.toBe('');
     });
 
     it('should show "Create Message" on submit button', () => {

@@ -82,9 +82,9 @@ describe('ChangePasswordComponent', () => {
   describe('form rendering', () => {
     it('renders the three password inputs', () => {
       const compiled = fixture.nativeElement;
-      expect(compiled.querySelector('input[name="currentPassword"]')).toBeTruthy();
-      expect(compiled.querySelector('input[name="newPassword"]')).toBeTruthy();
-      expect(compiled.querySelector('input[name="confirmPassword"]')).toBeTruthy();
+      expect(compiled.querySelector('input[name="currentPassword"]')).not.toBeNull();
+      expect(compiled.querySelector('input[name="newPassword"]')).not.toBeNull();
+      expect(compiled.querySelector('input[name="confirmPassword"]')).not.toBeNull();
     });
 
     it('renders the rotation notice', () => {
@@ -94,7 +94,6 @@ describe('ChangePasswordComponent', () => {
 
     it('renders the submit button labelled Update password', () => {
       const button = fixture.nativeElement.querySelector('button[type="submit"]');
-      expect(button).toBeTruthy();
       expect(button.textContent).toContain('Update password');
     });
   });

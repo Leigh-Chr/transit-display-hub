@@ -33,6 +33,6 @@ describe('FlexStopTimesComponent', () => {
   it('renders without errors', () => {
     const fixture = TestBed.createComponent(FlexStopTimesComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('h1, .flex-page')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('h1, .flex-page')).not.toBeNull();
   });
 });

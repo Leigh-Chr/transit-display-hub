@@ -23,7 +23,7 @@ describe('ZoomControlsComponent', () => {
 
   function clickButton(title: string): void {
     const btn = fixture.nativeElement.querySelector(`button[title="${title}"]`) as HTMLButtonElement;
-    expect(btn).toBeTruthy();
+    expect(btn).not.toBeNull();
     btn.click();
   }
 

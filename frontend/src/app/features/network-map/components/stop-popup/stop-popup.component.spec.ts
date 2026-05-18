@@ -261,7 +261,6 @@ describe('StopPopupComponent', () => {
     expect(component.timetableGroups().length).toBe(0);
 
     const emptyEl = fixture.nativeElement.querySelector('.empty');
-    expect(emptyEl).toBeTruthy();
     expect(emptyEl.textContent).toContain('No scheduled departures');
   });
 
@@ -322,7 +321,6 @@ describe('StopPopupComponent', () => {
       await fixture.whenStable();
 
       const section = fixture.nativeElement.querySelector('.tad-zone-section');
-      expect(section).toBeTruthy();
       expect(section.textContent).toContain('Zone Nord');
     });
   });
@@ -386,7 +384,6 @@ describe('StopPopupComponent', () => {
       expect(component.fareLabel()).toContain('1,70');
       expect(component.fareDetail()).toBe('Tarif standard');
       const section = fixture.nativeElement.querySelector('.fare-section');
-      expect(section).toBeTruthy();
       expect(section.textContent).toContain('Origin Stop');
     });
 

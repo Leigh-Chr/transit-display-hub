@@ -93,7 +93,7 @@ describe('ConfirmDialogComponent', () => {
       createComponent();
       // The component exposes data which drives the dialog close behavior
       expect(component.data.title).toBe('Confirm Delete');
-      expect(component.dialogRef).toBeTruthy();
+      expect(component.dialogRef).toBeDefined();
     });
 
     it('should close dialog with true when confirm button is clicked', () => {

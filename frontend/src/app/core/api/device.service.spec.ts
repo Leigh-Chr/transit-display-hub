@@ -107,7 +107,6 @@ describe('DeviceService', () => {
 
       service.register(request).subscribe(result => {
         expect(result).toEqual(registration);
-        expect(result.token).toBeTruthy();
         expect(result.stopId).toBe('stop-789');
       });
 

@@ -458,7 +458,6 @@ describe('NetworkMapComponent', () => {
 
   describe('theme toggle', () => {
     it('should expose themeService for template binding', () => {
-      expect(component.themeService).toBeTruthy();
       expect(component.themeService.isDarkMode()).toBe(false);
     });
   });
@@ -483,7 +482,7 @@ describe('NetworkMapComponent', () => {
       fixture = TestBed.createComponent(NetworkMapComponent);
       component = fixture.componentInstance;
       fixture.detectChanges();
-      expect(component.error()).toBeTruthy();
+      expect(component.error()).not.toBeNull();
 
       mockNetworkMapService.getNetworkMap = vi.fn().mockReturnValue(of(mockNetworkMap));
       mockNetworkMapService.getAlerts = vi.fn().mockReturnValue(of(emptyAlerts));

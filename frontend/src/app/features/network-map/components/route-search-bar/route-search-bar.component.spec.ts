@@ -67,7 +67,7 @@ describe('RouteSearchBarComponent', () => {
     await fixture.whenStable();
 
     const panel = fixture.nativeElement.querySelector('.route-search-panel');
-    expect(panel).toBeTruthy();
+    expect(panel).not.toBeNull();
 
     const autocompletes = fixture.nativeElement.querySelectorAll('app-stop-autocomplete');
     expect(autocompletes.length).toBe(2);
@@ -149,7 +149,6 @@ describe('RouteSearchBarComponent', () => {
       await fixture.whenStable();
 
       const hint = fixture.nativeElement.querySelector('.error-hint-warning');
-      expect(hint).toBeTruthy();
       expect(hint.textContent).toContain('No route found');
     });
   });
@@ -272,7 +271,7 @@ describe('RouteSearchBarComponent', () => {
       await fixture.whenStable();
 
       const breakdown = fixture.nativeElement.querySelector('.route-breakdown');
-      expect(breakdown).toBeTruthy();
+      expect(breakdown).not.toBeNull();
 
       const badge = fixture.nativeElement.querySelector('.segment-badge');
       expect(badge.textContent.trim()).toBe('L1');
@@ -294,7 +293,7 @@ describe('RouteSearchBarComponent', () => {
       await fixture.whenStable();
 
       const clearBtn = fixture.nativeElement.querySelector('.panel-header .clear-btn');
-      expect(clearBtn).toBeTruthy();
+      expect(clearBtn).not.toBeNull();
     });
   });
 });

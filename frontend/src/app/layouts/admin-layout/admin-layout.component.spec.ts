@@ -273,7 +273,6 @@ describe('AdminLayoutComponent', () => {
 
       const usernameEl = fixture.nativeElement.querySelector('.username');
 
-      expect(usernameEl).toBeTruthy();
       expect(usernameEl.textContent).toContain('admin');
     });
 
@@ -297,7 +296,7 @@ describe('AdminLayoutComponent', () => {
         (btn) => btn.getAttribute('aria-label')?.startsWith('Switch to ')
       );
 
-      expect(themeButton).toBeTruthy();
+      expect(themeButton).toBeDefined();
       themeButton!.click();
 
       expect(mockThemeService.toggleTheme).toHaveBeenCalledOnce();
@@ -309,7 +308,7 @@ describe('AdminLayoutComponent', () => {
       await fixture.whenStable();
 
       const logoutBtn = fixture.nativeElement.querySelector('button[mat-button]');
-      expect(logoutBtn).toBeTruthy();
+      expect(logoutBtn).not.toBeNull();
     });
 
     it('should show "Logout" text on desktop but not on mobile', async () => {

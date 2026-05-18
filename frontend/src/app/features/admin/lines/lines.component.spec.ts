@@ -191,7 +191,7 @@ describe('LinesComponent', () => {
       await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBeTruthy();
+      expect(component.loadError()).not.toBeNull();
       // The old behavior swallowed errors into a snackbar and rendered an
       // empty state — proving the regression: the snackbar must NOT fire
       // for load errors, and the empty-state branch must NOT win the @else
@@ -204,7 +204,7 @@ describe('LinesComponent', () => {
       await detectAndFlush(fixture);
 
       const errorState = fixture.nativeElement.querySelector('app-empty-state[icon="error_outline"]');
-      expect(errorState).toBeTruthy();
+      expect(errorState).not.toBeNull();
     });
   });
 

@@ -257,7 +257,6 @@ describe('ItineraryStopsDialogComponent', () => {
       createComponent({ itinerary: emptyItinerary });
 
       const emptyMsg = fixture.nativeElement.querySelector('.empty-message');
-      expect(emptyMsg).toBeTruthy();
       expect(emptyMsg.textContent).toContain('No stops added yet');
     });
   });

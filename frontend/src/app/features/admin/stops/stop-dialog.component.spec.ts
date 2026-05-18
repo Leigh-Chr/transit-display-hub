@@ -120,15 +120,6 @@ describe('StopDialogComponent', () => {
       expect(component.form.lineIds).toEqual([]);
     });
 
-    it('should have all required fields populated after user fills the form', () => {
-      component.form.name = 'Central Station';
-      component.form.lineIds = ['1'];
-
-      // All required fields are now populated
-      expect(component.form.name).toBeTruthy();
-      expect(component.form.lineIds.length).toBeGreaterThan(0);
-    });
-
     it('should call submit with the form payload and close with the server response', () => {
       component.form.name = 'Central Station';
       component.form.lineIds = ['1', '2'];

@@ -99,21 +99,18 @@ describe('LoginComponent', () => {
     it('should render username input', () => {
       const compiled = fixture.nativeElement;
       const usernameInput = compiled.querySelector('input[name="username"]');
-      expect(usernameInput).toBeTruthy();
       expect(usernameInput.type).toBe('text');
     });
 
     it('should render password input', () => {
       const compiled = fixture.nativeElement;
       const passwordInput = compiled.querySelector('input[name="password"]');
-      expect(passwordInput).toBeTruthy();
       expect(passwordInput.type).toBe('password');
     });
 
     it('should render login button', () => {
       const compiled = fixture.nativeElement;
       const button = compiled.querySelector('button[type="submit"]');
-      expect(button).toBeTruthy();
       expect(button.textContent).toContain('Login');
     });
 
@@ -334,7 +331,7 @@ describe('LoginComponent', () => {
       fixture.detectChanges();
 
       const spinner = fixture.nativeElement.querySelector('mat-spinner');
-      expect(spinner).toBeTruthy();
+      expect(spinner).not.toBeNull();
     });
 
     it('should disable button when loading', () => {
@@ -360,7 +357,6 @@ describe('LoginComponent', () => {
       fixture.detectChanges();
 
       const errorElement = fixture.nativeElement.querySelector('.error-message');
-      expect(errorElement).toBeTruthy();
       expect(errorElement.textContent).toContain('Invalid credentials');
     });
 

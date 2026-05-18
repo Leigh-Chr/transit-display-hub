@@ -44,7 +44,7 @@ describe('TableSkeletonComponent', () => {
     await fixture.whenStable();
 
     const header = fixture.nativeElement.querySelector('.skeleton-header');
-    expect(header).toBeTruthy();
+    expect(header).not.toBeNull();
   });
 
   it('should accept custom columns config', async () => {

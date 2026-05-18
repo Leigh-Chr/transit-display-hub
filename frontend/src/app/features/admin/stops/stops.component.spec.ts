@@ -240,7 +240,7 @@ describe('StopsComponent', () => {
       await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBeTruthy();
+      expect(component.loadError()).not.toBeNull();
       expect(mockNotify.error).not.toHaveBeenCalled();
     });
 
@@ -249,7 +249,7 @@ describe('StopsComponent', () => {
       await detectAndFlush(fixture);
 
       const errorState = fixture.nativeElement.querySelector('app-empty-state[icon="error_outline"]');
-      expect(errorState).toBeTruthy();
+      expect(errorState).not.toBeNull();
     });
   });
 

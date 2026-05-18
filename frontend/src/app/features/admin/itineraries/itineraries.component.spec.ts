@@ -222,7 +222,7 @@ describe('ItinerariesComponent', () => {
       await detectAndFlush(fixture);
 
       expect(component.loading()).toBe(false);
-      expect(component.loadError()).toBeTruthy();
+      expect(component.loadError()).not.toBeNull();
       expect(mockNotify.error).not.toHaveBeenCalled();
     });
   });

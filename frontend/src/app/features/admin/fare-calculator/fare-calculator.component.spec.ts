@@ -40,6 +40,6 @@ describe('FareCalculatorComponent', () => {
   it('renders without errors', () => {
     const fixture = TestBed.createComponent(FareCalculatorComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('h1, .fare-page')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('h1, .fare-page')).not.toBeNull();
   });
 });

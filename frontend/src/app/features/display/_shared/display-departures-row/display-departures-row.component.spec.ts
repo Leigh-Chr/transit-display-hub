@@ -90,7 +90,6 @@ describe('DisplayDeparturesRowComponent', () => {
     fixture.detectChanges();
 
     const badge = (fixture.nativeElement as HTMLElement).querySelector('.booking-badge');
-    expect(badge).toBeTruthy();
     expect(badge?.getAttribute('aria-label')).toContain('Reservation required');
     expect(badge?.getAttribute('aria-label')).toContain('0123456789');
   });

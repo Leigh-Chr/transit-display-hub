@@ -38,7 +38,6 @@ describe('SchematicMapComponent — layout & rendering', () => {
       await fixture.whenStable();
 
       const emptyEl = fixture.nativeElement.querySelector('.empty-selection-text');
-      expect(emptyEl).toBeTruthy();
       expect(emptyEl.textContent).toContain('Select a line');
     });
   });
@@ -262,11 +261,9 @@ describe('SchematicMapComponent — layout & rendering', () => {
       const allRowStops = rows.flatMap(r => r.stops);
 
       const departureEntry = allRowStops.find(s => s.stop.id === 's1');
-      expect(departureEntry).toBeTruthy();
       expect(departureEntry!.x).toBeDefined();
 
       const arrivalEntry = allRowStops.find(s => s.stop.id === 's3');
-      expect(arrivalEntry).toBeTruthy();
       expect(arrivalEntry!.x).toBeDefined();
     });
 

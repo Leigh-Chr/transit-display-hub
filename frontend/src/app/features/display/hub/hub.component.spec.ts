@@ -116,7 +116,7 @@ describe('HubComponent', () => {
     const fixture = TestBed.createComponent(HubComponent);
     fixture.detectChanges();
     // Before query params arrive the component shows the loading state.
-    expect(fixture.nativeElement.querySelector('.kiosk, .loading-state')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.kiosk, .loading-state')).not.toBeNull();
   });
 
   it('shows hub state once stop IDs are provided', () => {

@@ -118,16 +118,6 @@ describe('LineDialogComponent', () => {
       expect(component.form.name).toBe('');
     });
 
-    it('should have all required fields populated after user fills the form', () => {
-      component.form.code = 'L1';
-      component.form.name = 'Line 1';
-      component.form.color = '#FF0000';
-
-      expect(component.form.code).toBeTruthy();
-      expect(component.form.name).toBeTruthy();
-      expect(component.form.color).toBeTruthy();
-    });
-
     it('should call submit with the form payload and close with the server response', () => {
       component.form.code = 'L1';
       component.form.name = 'Line 1';
