@@ -12,6 +12,8 @@ import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/tr
 import { NetworkMapDataService } from '@features/network-map/services/network-map-data.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { NetworkLine, NetworkMap, NetworkStop } from '@shared/models';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { bcp47 } from '@shared/utils/locale-date.utils';
 
 /**
@@ -39,6 +41,8 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     MatIconModule,
     MatInputModule,
     MatTableModule,
+    EmptyStateComponent,
+    TableSkeletonComponent,
     TranslocoDirective,
     TranslocoPipe,
   ],
@@ -74,7 +78,14 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
       </section>
 
       @if (loading()) {
-        <p class="muted" role="status" aria-live="polite">{{ t('map.loadingNetwork') }}</p>
+        <app-table-skeleton [rows]="8" />
+      } @else if (loadError()) {
+        <app-empty-state
+          icon="error_outline"
+          [title]="t('map.loadFailed')"
+          [actionLabel]="t('common.retry')"
+          actionIcon="refresh"
+          (action)="reload()" />
       } @else if (data(); as map) {
         <section class="lines-section" aria-labelledby="lines-heading">
           <h2 id="lines-heading">{{ t('map.linesCount') }} ({{ map.lines.length }})</h2>
@@ -145,7 +156,9 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
           }
         </section>
       } @else {
-        <p class="error" role="alert">{{ t('map.loadFailed') }}</p>
+        <app-empty-state
+          icon="cloud_off"
+          [title]="t('map.noStopsConfigured')" />
       }
     </div>
     </ng-container>
@@ -229,6 +242,11 @@ export class NetworkListComponent {
 
   readonly data = signal<NetworkMap | null>(null);
   readonly loading = signal<boolean>(true);
+  /** Distinct from {@link #data} = null. Lets the template render
+   *  an explicit error empty-state with a retry CTA instead of
+   *  collapsing both the absent-data and load-failed paths into the
+   *  generic "Aucun arrêt configuré" fallback. */
+  readonly loadError = signal<boolean>(false);
   readonly search = signal<string>('');
   readonly accessibleOnly = signal<boolean>(false);
   readonly onDemandOnly = signal<boolean>(false);
@@ -250,6 +268,12 @@ export class NetworkListComponent {
   });
 
   constructor() {
+    this.reload();
+  }
+
+  reload(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
     this.dataService.getNetworkMap().subscribe({
       next: (data) => {
         this.data.set(data);
@@ -257,6 +281,7 @@ export class NetworkListComponent {
       },
       error: () => {
         this.data.set(null);
+        this.loadError.set(true);
         this.loading.set(false);
       },
     });

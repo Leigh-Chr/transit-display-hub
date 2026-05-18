@@ -154,6 +154,7 @@
     "loadingNetwork": "Chargement du réseau…",
     "loadFailed": "Impossible de charger le réseau. Réessayez plus tard.",
     "loadFailedSnackbar": "Impossible de charger la carte du réseau. Réessayez plus tard.",
+    "noStopsConfigured": "Aucun arrêt n'est encore configuré pour ce réseau.",
     "subtitle": {
       "directRoute": "Trajet direct — {{ stops }} arrêts",
       "transferOne": "1 correspondance",
