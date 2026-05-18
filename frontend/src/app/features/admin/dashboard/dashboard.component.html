@@ -106,10 +106,12 @@
         </mat-card-header>
         <mat-card-content>
           @if (lineCount() === 0) {
-            <div class="empty-state">
-              <mat-icon>subway</mat-icon>
-              <span>{{ t('admin.dashboard.noLinesConfigured') }}</span>
-            </div>
+            <app-empty-state
+              icon="subway"
+              [title]="t('admin.dashboard.noLinesConfigured')"
+              [actionLabel]="t('admin.dashboard.createFirstLine')"
+              actionIcon="add"
+              [actionRouterLink]="['/admin/lines']" />
           } @else {
             <div class="lines-overview">
               @for (line of displayedLines(); track line.id) {
@@ -143,10 +145,12 @@
         </mat-card-header>
         <mat-card-content>
           @if (totalDevicesCount() === 0) {
-            <div class="empty-state">
-              <mat-icon>tv</mat-icon>
-              <span>{{ t('admin.dashboard.noDevicesRegistered') }}</span>
-            </div>
+            <app-empty-state
+              icon="tv"
+              [title]="t('admin.dashboard.noDevicesRegistered')"
+              [actionLabel]="t('admin.dashboard.registerFirstDevice')"
+              actionIcon="add"
+              [actionRouterLink]="['/admin/devices']" />
           } @else {
             <div class="health-container">
               <div class="health-summary">

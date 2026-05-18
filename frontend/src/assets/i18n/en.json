@@ -344,6 +344,8 @@
       "deviceHealth": "Device Health",
       "noLinesConfigured": "No lines configured",
       "noDevicesRegistered": "No devices registered",
+      "createFirstLine": "Create the first line",
+      "registerFirstDevice": "Register the first device",
       "criticalMessages": "Critical Messages",
       "recentMessages": "Recent Messages",
       "allClear": "No critical messages — all clear.",

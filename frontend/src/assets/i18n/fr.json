@@ -344,6 +344,8 @@
       "deviceHealth": "État des équipements",
       "noLinesConfigured": "Aucune ligne configurée",
       "noDevicesRegistered": "Aucun équipement enregistré",
+      "createFirstLine": "Créer la première ligne",
+      "registerFirstDevice": "Enregistrer le premier équipement",
       "criticalMessages": "Messages critiques",
       "recentMessages": "Messages récents",
       "allClear": "Aucun message critique — tout est opérationnel.",

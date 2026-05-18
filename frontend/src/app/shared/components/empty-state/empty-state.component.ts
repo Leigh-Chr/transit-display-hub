@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-empty-state',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="empty-state">
@@ -17,12 +18,21 @@ import { MatIconModule } from '@angular/material/icon';
         <p class="empty-description">{{ description() }}</p>
       }
       @if (actionLabel()) {
-        <button mat-flat-button color="primary" (click)="action.emit()">
-          @if (actionIcon()) {
-            <mat-icon>{{ actionIcon() }}</mat-icon>
-          }
-          {{ actionLabel() }}
-        </button>
+        @if (actionRouterLink(); as link) {
+          <a mat-flat-button color="primary" [routerLink]="link">
+            @if (actionIcon()) {
+              <mat-icon>{{ actionIcon() }}</mat-icon>
+            }
+            {{ actionLabel() }}
+          </a>
+        } @else {
+          <button mat-flat-button color="primary" (click)="action.emit()">
+            @if (actionIcon()) {
+              <mat-icon>{{ actionIcon() }}</mat-icon>
+            }
+            {{ actionLabel() }}
+          </button>
+        }
       }
     </div>
   `,
@@ -87,5 +97,10 @@ export class EmptyStateComponent {
   readonly description = input<string | undefined>(undefined);
   readonly actionLabel = input<string | undefined>(undefined);
   readonly actionIcon = input<string | undefined>(undefined);
+  /** When provided, renders an {@code <a routerLink>} instead of a
+   *  button — keeps the navigation handling out of the parent and
+   *  preserves middle-click / "open in new tab" semantics that an
+   *  imperative {@code (action)} handler can't offer. */
+  readonly actionRouterLink = input<unknown[] | string | undefined>(undefined);
   readonly action = output();
 }
