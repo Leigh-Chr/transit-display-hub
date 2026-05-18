@@ -239,6 +239,22 @@
     max-width: 60vw;
   }
 
+  .error-state .recovery-hint {
+    font-size: 2.2vh;
+    margin-top: 2vh;
+    line-height: 1.5;
+  }
+
+  .error-state .url-example {
+    display: inline-block;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 2vh;
+    padding: 0.3vh 0.8vh;
+    border-radius: var(--app-radius-sm);
+    background-color: var(--app-kiosk-surface-variant, rgba(255, 255, 255, 0.08));
+    margin: 0 0.4vh;
+  }
+
   .loading-state mat-spinner {
     margin-bottom: 3vh;
   }

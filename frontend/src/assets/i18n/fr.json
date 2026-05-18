@@ -15,6 +15,7 @@
     "no": "Non",
     "refresh": "Rafraîchir",
     "ok": "OK",
+    "or": "ou",
     "retry": "Réessayer",
     "errors": {
       "network": "Erreur réseau : vérifiez votre connexion",
@@ -110,7 +111,10 @@
       "stale": "Dernière mise à jour il y a {{ minutes }} min"
     },
     "error": {
-      "title": "Erreur d'affichage"
+      "title": "Erreur d'affichage",
+      "recoveryHint": "Si le problème persiste, vérifiez la configuration de l'URL de l'appareil. Format attendu :",
+      "urlExampleStop": "/display/<id-arrêt>",
+      "urlExampleToken": "/display?token=<jeton-appareil>"
     },
     "loading": "Chargement…",
     "speak": {

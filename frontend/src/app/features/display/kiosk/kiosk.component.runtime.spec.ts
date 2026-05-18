@@ -89,6 +89,25 @@ describe('KioskComponent — runtime behaviour', () => {
       expect(component.error()).toBe('Stop not found.');
       expect(component.displayState()).toBeNull();
     });
+
+    it('renders a recovery hint with URL examples in the error state so installers can fix the device URL', () => {
+      mockDisplayService.getState.mockReturnValue(throwError(() => new Error('fail')));
+
+      fixture.detectChanges();
+      paramsSubject.next({ stopId: 'stop-999' });
+      queryParamsSubject.next({});
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const hint = root.querySelector('.error-state .recovery-hint');
+      expect(hint).not.toBeNull();
+      expect(hint!.textContent).toContain('check the device URL configuration');
+
+      const examples = Array.from(root.querySelectorAll('.error-state .url-example'));
+      expect(examples.length).toBe(2);
+      expect(examples[0]?.textContent).toContain('/display/');
+      expect(examples[1]?.textContent).toContain('?token=');
+    });
   });
 
   describe('error handling - getStateByToken failure', () => {

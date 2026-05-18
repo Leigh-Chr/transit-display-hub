@@ -19,6 +19,10 @@ import { testTranslocoModule } from '../../../../test-translations';
  */
 const KIOSK_TRANSLATIONS = {
   en: {
+    common: {
+      retry: 'Retry',
+      or: 'or',
+    },
     kiosk: {
       errors: {
         missingDeviceOrStop: 'Missing device token or stop ID. Configure the display URL with /display/:stopId, ?token=<device-token>, or ?stopId=<stop-id>',
@@ -46,7 +50,12 @@ const KIOSK_TRANSLATIONS = {
         liveData: 'Live data',
       },
       connection: { reconnecting: 'Reconnecting…', stale: 'Last update {{ minutes }} min ago' },
-      error: { title: 'Display Error' },
+      error: {
+        title: 'Display Error',
+        recoveryHint: 'If the issue persists, check the device URL configuration. Expected format:',
+        urlExampleStop: '/display/<stop-id>',
+        urlExampleToken: '/display?token=<device-token>',
+      },
       loading: 'Loading…',
       highContrast: 'High-contrast mode',
       largeText: 'Larger text',
@@ -64,6 +73,10 @@ const KIOSK_TRANSLATIONS = {
     },
   },
   fr: {
+    common: {
+      retry: 'Réessayer',
+      or: 'ou',
+    },
     kiosk: {
       errors: {
         missingDeviceOrStop: "Jeton de borne ou identifiant d'arrêt manquant. Configurez l'URL d'affichage avec /display/:stopId, ?token=<jeton>, ou ?stopId=<id-arrêt>",
@@ -91,7 +104,12 @@ const KIOSK_TRANSLATIONS = {
         liveData: 'Données temps réel',
       },
       connection: { reconnecting: 'Reconnexion…', stale: 'Dernière mise à jour il y a {{ minutes }} min' },
-      error: { title: "Erreur d'affichage" },
+      error: {
+        title: "Erreur d'affichage",
+        recoveryHint: "Si le problème persiste, vérifiez la configuration de l'URL de l'appareil. Format attendu :",
+        urlExampleStop: '/display/<id-arrêt>',
+        urlExampleToken: '/display?token=<jeton-appareil>',
+      },
       loading: 'Chargement…',
       highContrast: 'Mode contraste élevé',
       largeText: 'Texte plus grand',

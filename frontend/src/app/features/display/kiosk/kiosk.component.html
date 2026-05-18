@@ -141,6 +141,12 @@
       <mat-icon>error_outline</mat-icon>
       <h1>{{ 'kiosk.error.title' | transloco }}</h1>
       <p>{{ error() }}</p>
+      <p class="recovery-hint">
+        {{ 'kiosk.error.recoveryHint' | transloco }}
+        <code class="url-example">{{ 'kiosk.error.urlExampleStop' | transloco }}</code>
+        {{ 'common.or' | transloco }}
+        <code class="url-example">{{ 'kiosk.error.urlExampleToken' | transloco }}</code>
+      </p>
       <button mat-flat-button color="primary" (click)="reloadPage()">
         <mat-icon>refresh</mat-icon>
         {{ 'common.retry' | transloco }}

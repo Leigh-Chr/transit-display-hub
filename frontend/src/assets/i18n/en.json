@@ -15,6 +15,7 @@
     "no": "No",
     "refresh": "Refresh",
     "ok": "OK",
+    "or": "or",
     "retry": "Retry",
     "errors": {
       "network": "Network error: please check your connection",
@@ -110,7 +111,10 @@
       "stale": "Last update {{ minutes }} min ago"
     },
     "error": {
-      "title": "Display Error"
+      "title": "Display Error",
+      "recoveryHint": "If the issue persists, check the device URL configuration. Expected format:",
+      "urlExampleStop": "/display/<stop-id>",
+      "urlExampleToken": "/display?token=<device-token>"
     },
     "loading": "Loading…",
     "speak": {
