@@ -17,8 +17,6 @@
  *                  / `.severityInfo`.
  * @param t the Transloco translate fn provided by `*transloco="let t"`.
  */
-export type Severity = 'CRITICAL' | 'WARNING' | 'INFO';
-
 export function severityLabel(
   severity: string | null | undefined,
   namespace: string,

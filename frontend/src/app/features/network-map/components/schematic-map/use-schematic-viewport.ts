@@ -3,7 +3,7 @@ import { DestroyRef, ElementRef, Signal, afterNextRender, computed, inject, sign
 import { NetworkLineRow } from './schematic-geometry';
 
 /** SVG viewBox tuple shared by the host component and its template. */
-export interface ViewBox {
+interface ViewBox {
   x: number;
   y: number;
   w: number;

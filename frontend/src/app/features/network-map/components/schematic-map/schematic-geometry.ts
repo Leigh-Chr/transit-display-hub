@@ -258,13 +258,13 @@ export function buildTerminusIds(lines: NetworkLine[]): Set<string> {
 
 /** Per-label priority used by the greedy decluttering pass below.
  *  Higher rank = label is more important and survives a collision. */
-export interface LabelPriorityContext {
+interface LabelPriorityContext {
   hasAlert(stopId: string): boolean;
   isInterchange(stop: LayoutStop): boolean;
   isNetworkTerminus(stop: LayoutStop): boolean;
 }
 
-export function labelPriority(label: NetworkStopLabel, ctx: LabelPriorityContext): number {
+function labelPriority(label: NetworkStopLabel, ctx: LabelPriorityContext): number {
   const stop = label.stop;
   if (ctx.hasAlert(stop.id)) { return 4; }
   if (ctx.isInterchange(stop) && ctx.isNetworkTerminus(stop)) { return 3; }

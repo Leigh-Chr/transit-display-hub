@@ -12,7 +12,7 @@ import { Pathway, PathwayMode } from '@shared/models';
  * trailing columns so their incident pathways still render.
  */
 
-export interface PathwayGraphNode {
+interface PathwayGraphNode {
   id: string;
   name: string;
   shortName: string;
@@ -21,7 +21,7 @@ export interface PathwayGraphNode {
   isCurrent: boolean;
 }
 
-export interface PathwayGraphEdge {
+interface PathwayGraphEdge {
   key: string;
   x1: number; y1: number;
   x2: number; y2: number;
@@ -35,7 +35,7 @@ export interface PathwayGraphEdge {
   tooltip: string;
 }
 
-export interface PathwayGraphLegendEntry {
+interface PathwayGraphLegendEntry {
   mode: PathwayMode;
   label: string;
   /** CSS class such as `pathway-mode-stairs` whose background is resolved
