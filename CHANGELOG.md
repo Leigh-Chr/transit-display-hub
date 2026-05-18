@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.24.1] — 2026-05-18
+
+Maintenance release wrapping the post-v1.24.0 hygiene pass: closing the
+last drift items the previous audit had logged.
+
+### Changed
+
+- **`CrudResource` enriched with `extraListParams` + `getAllListed`
+  hooks**, and `LineService` / `StopService` / `MessageService` /
+  `ItineraryService` migrated to the base class. The four migrations
+  drop ~54 lines of duplicated `getAllPaginated` + `getAll` plumbing.
+  `ScheduleService` (stop-scoped) and `DeviceService` (`register !=
+  create`) stay out of the pattern intentionally.
+- **`OnInit` dropped on ten components**, init code moved into the
+  constructor. Seven admin views (pathways, shapes, data-overview-
+  card, feed-info-card, message-dialog, schedule-dialog,
+  itinerary-stops-dialog) plus three more on the navigation side
+  (network-map, network-list, feed-credits, hub-display-dialog).
+  Each composant gains a `constructor()` running the same fetch the
+  old `ngOnInit()` did. `network-map.component.spec.ts` had two
+  tests that swapped a mock *after* `createComponent` and relied on
+  `detectChanges` to fire `ngOnInit`; they now recreate the fixture
+  after the swap. `search-input` stays on OnInit — it reads an
+  `input()` signal whose value only resolves after the constructor.
+- **`npm run lint`** now also covers `e2e/**/*.ts`. Five ESLint
+  errors had drifted into the e2e specs unnoticed (unused imports,
+  dot-notation, `ReadonlyArray<T>` vs `readonly T[]`, boolean
+  comparison, `fs.mkdirSync` unsafe-call); four auto-fixed, the
+  `fs` call carries an inline disable because Node's `fs` module
+  isn't typed under the strict tsconfig used to lint e2e.
+
+### Dependencies
+
+- `commons-compress` 1.27.1 → 1.28.0 (patch on the pin that closes
+  the four DoS CVEs reachable through `/api/admin/gtfs/reimport`).
+- `gtfs-validator` 8.0.0 → 8.0.1 — `ValidationRunnerConfig
+  .setOutputDirectory` now takes a raw `Path` instead of
+  `Optional<Path>`, so `GtfsValidatorService` drops the needless
+  `Optional.of` wrap.
+- `me.champeau.jmh` plugin 0.7.2 → 0.7.3 (drags JMH 1.36 → 1.37
+  transitively).
+
+Spring Boot 4.1 / micrometer 1.17 / Flyway 12 stay on hold while
+their latest releases are still RC1.
+
 ## [1.24.0] — 2026-05-18
 
 Post-v1.23.0 cross-axis re-audit (six parallel agents — backend
