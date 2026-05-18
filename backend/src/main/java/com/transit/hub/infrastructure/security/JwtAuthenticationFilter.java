@@ -126,18 +126,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Cookie fallback for the v1.4.0 cookie-based session. The cookie
         // value is the access JWT itself — the filter does not care whether
         // it arrived via header or cookie.
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (authProperties.accessCookieName().equals(cookie.getName())) {
-                    String value = cookie.getValue();
-                    if (value != null && !value.isBlank()) {
-                        return new TokenSource(value, false);
-                    }
-                }
-            }
-        }
-        return new TokenSource(null, false);
+        String cookieToken = AccessCookieReader.readAccessToken(
+                request.getCookies(), authProperties.accessCookieName());
+        return new TokenSource(cookieToken, false);
     }
 
     private record TokenSource(String token, boolean fromBearer) {}

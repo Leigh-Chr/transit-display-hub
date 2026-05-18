@@ -3,8 +3,8 @@ package com.transit.hub.infrastructure.websocket;
 import com.transit.hub.application.dto.response.DeviceAuthResponse;
 import com.transit.hub.application.service.DeviceService;
 import com.transit.hub.infrastructure.config.AuthProperties;
+import com.transit.hub.infrastructure.security.AccessCookieReader;
 import com.transit.hub.infrastructure.security.JwtService;
-import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
@@ -101,18 +101,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             if (!(request instanceof ServletServerHttpRequest servlet)) {
                 return true;
             }
-            Cookie[] cookies = servlet.getServletRequest().getCookies();
-            if (cookies == null) {
-                return true;
-            }
-            for (Cookie cookie : cookies) {
-                if (authProperties.accessCookieName().equals(cookie.getName())) {
-                    String value = cookie.getValue();
-                    if (value != null && !value.isBlank()) {
-                        attributes.put(ACCESS_TOKEN_SESSION_KEY, value);
-                    }
-                    return true;
-                }
+            String token = AccessCookieReader.readAccessToken(
+                    servlet.getServletRequest().getCookies(),
+                    authProperties.accessCookieName());
+            if (token != null) {
+                attributes.put(ACCESS_TOKEN_SESSION_KEY, token);
             }
             return true;
         }
