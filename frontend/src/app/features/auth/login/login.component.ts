@@ -45,6 +45,7 @@ import { AuthService } from '@core/auth/auth.service';
                 matInput
                 type="text"
                 name="username"
+                autocomplete="username"
                 [(ngModel)]="username"
                 required
               />
@@ -57,6 +58,7 @@ import { AuthService } from '@core/auth/auth.service';
                 matInput
                 type="password"
                 name="password"
+                autocomplete="current-password"
                 [(ngModel)]="password"
                 required
               />
