@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.26.0] — 2026-05-18
+
+Refactor pass driven by the 2026-05-18 codebase audit. Nine independent
+items, all green against the existing 1180-spec front and ~1220-spec
+backend suites.
+
+### Security
+
+- **`INITIAL_ADMIN_PASSWORD` fail-closed in prod and kiosk.** The new
+  `AdminPasswordBootstrap` runs at app start and replaces the V2
+  `admin/admin123` seed with the env-provided password when the operator
+  supplies one. Dev and test default the property to empty, so V52's
+  `passwordMustChange = TRUE` continues to drive local DX. Prod / kiosk
+  profiles have no default → Spring fails to boot if the var is missing,
+  matching the JWT_SECRET / DATABASE_PASSWORD pattern. The override
+  guards on the seeded bcrypt hash so a rotated credential is never
+  silently reset by a redeploy. Documented in `SECURITY.md`.
+
+### Refactored
+
+- **`AuthCookieFactory` moved to `api/security`.** Cookies are HTTP
+  transport — they belong next to the controller that emits them,
+  not in infrastructure. Removes the cleanest of the api → infrastructure
+  reach-ins.
+- **`AccessCookieReader` shared by HTTP filter and WS handshake.**
+  Cookie-name lookup + blank-value guard live in one place instead of
+  being open-coded in both `JwtAuthenticationFilter#extractToken` and
+  `WebSocketConfig#AccessCookieHandshakeInterceptor`.
+- **`GtfsImportSupport.externalIdIndex` helper.** Five importers
+  (`Stop`, `Route`, `Agency`, `Itinerary`, `Schedule × 2`) shared 7
+  lines of `Collectors.toMap` boilerplate to build their `externalId →
+  entity` lookup — collapses to a one-liner against the new helper.
+- **`ScheduleImporter.commonScheduleFields()`.** The fixed-schedule
+  and frequency-expansion call paths shared 12 lines of identical
+  `Schedule.builder()` chains — only `time`, optional `departureTime`
+  and the frequency fields actually differ, so they stay at the call
+  site.
+- **`RouteGraphBuilder` extracted from `RouteFinderService`.** The
+  search service now owns only Dijkstra + reconstruction (291 LOC);
+  graph build, transfer indexing and cost selection live in a sibling
+  injectable (274 LOC). Public API preserved via re-exported
+  `RouteFinderOptions` alias.
+- **`useNetworkMapSubtitle` composable.** Pulls 30 lines of subtitle
+  computation out of `NetworkMapComponent` (625 → 597 LOC, back under
+  the file-size warn ceiling).
+
+### Tests
+
+- **`GtfsImportOrchestratorTest` switched to `CountDownLatch`.** Replaces
+  4 `Thread.sleep` calls with deterministic latch synchronisation —
+  the contention specs no longer pay 240 ms of wall clock per run nor
+  carry the implicit flake risk on a loaded CI runner.
+- **e2e `waitForAnimationsToSettle` helper.** Replaces 8 hand-tuned
+  `waitForTimeout(N)` calls in `screenshots.spec.ts` and
+  `visual-schematic.spec.ts` with explicit waits on the Web Animations
+  API; the helper ignores infinite animations (kiosk ticker scroll)
+  so the screenshot path never deadlocks.
+- **Dropped 14 'should be created' canary tests.** Each of the 14
+  `it('should be created', () => expect(service).toBeTruthy())` was
+  redundant with the surrounding spec — DI is verified by every other
+  test in the same file. Net: −70 lines, no coverage lost.
+
 ## [1.25.2] — 2026-05-18
 
 Maintainability patch absorbing the seven quick wins surfaced by the
