@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
@@ -10,7 +11,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { LineService } from '@core/api/line.service';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { Line, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -30,6 +33,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
     FormsModule,
     MatCardModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatIconModule,
     MatPaginatorModule,
     MatTooltipModule,
@@ -67,6 +71,23 @@ export class LinesComponent {
   readonly lines = this.list.items;
   readonly totalElements = this.list.totalElements;
 
+  /** Multi-select state — Set of line ids currently checked in the
+   *  grid. Stays in memory only (intentionally drops on page change /
+   *  refresh) so the user doesn't accidentally delete rows they no
+   *  longer see. */
+  readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+  readonly selectionCount = computed(() => this.selectedIds().size);
+  readonly allCurrentSelected = computed(() => {
+    const rows = this.lines();
+    if (rows.length === 0) {return false;}
+    const set = this.selectedIds();
+    return rows.every((l) => set.has(l.id));
+  });
+  readonly someCurrentSelected = computed(() => {
+    const set = this.selectedIds();
+    return this.lines().some((l) => set.has(l.id)) && !this.allCurrentSelected();
+  });
+
   loadLines(): void {
     this.list.reload();
   }
@@ -74,6 +95,70 @@ export class LinesComponent {
   onSortChange(): void {
     this.tableState.page = 0;
     this.tableState.updateUrl();
+  }
+
+  toggleSelection(id: string, checked: boolean): void {
+    const next = new Set(this.selectedIds());
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    this.selectedIds.set(next);
+  }
+
+  toggleSelectAllOnPage(checked: boolean): void {
+    const next = new Set(this.selectedIds());
+    for (const line of this.lines()) {
+      if (checked) {
+        next.add(line.id);
+      } else {
+        next.delete(line.id);
+      }
+    }
+    this.selectedIds.set(next);
+  }
+
+  clearSelection(): void {
+    this.selectedIds.set(new Set());
+  }
+
+  /** Bulk delete via parallel forkJoin — no backend endpoint exists
+   *  for this (each line still goes through the per-id DELETE), but
+   *  the UI gives the operator a single confirm step instead of N. */
+  bulkDeleteSelected(): void {
+    const ids = [...this.selectedIds()];
+    if (ids.length === 0) {return;}
+
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: this.transloco.translate('admin.lines.confirm.bulkDeleteTitle'),
+        message: this.transloco.translate('admin.lines.confirm.bulkDeleteMessage', { count: ids.length }),
+        confirmText: this.transloco.translate('admin.lines.confirm.bulkDeleteConfirm'),
+        cancelText: this.transloco.translate('common.cancel'),
+        confirmColor: 'warn',
+      },
+      ariaLabel: this.transloco.translate('admin.lines.confirm.bulkDeleteTitle'),
+    });
+
+    ref.afterClosed().subscribe((confirmed: boolean | undefined) => {
+      if (!confirmed) {return;}
+      forkJoin(ids.map((id) => this.lineService.delete(id))).subscribe({
+        next: () => {
+          this.notify.success(this.transloco.translate('admin.lines.bulkDeleteSuccess', { count: ids.length }));
+          this.clearSelection();
+          this.loadLines();
+        },
+        error: (err: unknown) => {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.bulkDeleteFailed')));
+          // Partial failure can happen because forkJoin aborts on the
+          // first error; reload to surface whatever did go through and
+          // drop stale ids from the selection.
+          this.clearSelection();
+          this.loadLines();
+        },
+      });
+    });
   }
 
   /**

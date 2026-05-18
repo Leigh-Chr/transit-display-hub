@@ -456,6 +456,12 @@
       "exportTooltip": "Download every line as a CSV file",
       "exportSuccess": "{{ count }} lines exported",
       "exportFailed": "CSV export failed",
+      "selectAllOnPage": "Select all on this page",
+      "selectAria": "Select line {{ code }}",
+      "selectedCount": "{{ count }} selected",
+      "bulkDelete": "Delete selected ({{ count }})",
+      "bulkDeleteSuccess": "{{ count }} lines deleted",
+      "bulkDeleteFailed": "Bulk delete failed",
       "searchPlaceholder": "Search lines…",
       "sortCodeAsc": "Code (A-Z)",
       "sortCodeDesc": "Code (Z-A)",
@@ -504,7 +510,10 @@
       },
       "confirm": {
         "deleteTitle": "Delete Line",
-        "deleteMessage": "Delete line \"{{ name }}\"? Itineraries, schedules and line-scoped messages will be removed; stops served by this line are kept."
+        "deleteMessage": "Delete line \"{{ name }}\"? Itineraries, schedules and line-scoped messages will be removed; stops served by this line are kept.",
+        "bulkDeleteTitle": "Delete selected lines",
+        "bulkDeleteMessage": "Delete {{ count }} lines and everything that depends on them (itineraries, schedules, messages)? This cannot be undone.",
+        "bulkDeleteConfirm": "Delete permanently"
       }
     },
     "stops": {

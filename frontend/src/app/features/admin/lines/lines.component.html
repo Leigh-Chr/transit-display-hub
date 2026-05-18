@@ -78,11 +78,36 @@
           />
         </mat-card>
       } @else {
+        <div class="bulk-toolbar">
+          <mat-checkbox
+            [checked]="allCurrentSelected()"
+            [indeterminate]="someCurrentSelected()"
+            (change)="toggleSelectAllOnPage($event.checked)"
+          >
+            {{ t('admin.lines.selectAllOnPage') }}
+          </mat-checkbox>
+          @if (selectionCount() > 0) {
+            <span class="bulk-count">{{ t('admin.lines.selectedCount', { count: selectionCount() }) }}</span>
+            <button mat-button type="button" (click)="clearSelection()">
+              {{ t('common.cancel') }}
+            </button>
+            <button mat-flat-button color="warn" type="button" (click)="bulkDeleteSelected()">
+              <mat-icon aria-hidden="true">delete</mat-icon>
+              {{ t('admin.lines.bulkDelete', { count: selectionCount() }) }}
+            </button>
+          }
+        </div>
         <div class="lines-grid" animate.enter="grid-stagger">
           @for (line of lines(); track line.id) {
-            <mat-card class="line-card">
+            <mat-card class="line-card" [class.line-card-selected]="selectedIds().has(line.id)">
               <mat-card-content>
                 <div class="line-header">
+                  <mat-checkbox
+                    class="line-select"
+                    [checked]="selectedIds().has(line.id)"
+                    (change)="toggleSelection(line.id, $event.checked)"
+                    [attr.aria-label]="t('admin.lines.selectAria', { code: line.code })"
+                  />
                   <span class="line-code" [style.backgroundColor]="line.color">
                     {{ line.code }}
                   </span>

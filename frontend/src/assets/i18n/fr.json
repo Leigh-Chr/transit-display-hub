@@ -456,6 +456,12 @@
       "exportTooltip": "Télécharger toutes les lignes au format CSV",
       "exportSuccess": "{{ count }} lignes exportées",
       "exportFailed": "Échec de l'export CSV",
+      "selectAllOnPage": "Tout sélectionner sur cette page",
+      "selectAria": "Sélectionner la ligne {{ code }}",
+      "selectedCount": "{{ count }} sélectionnée(s)",
+      "bulkDelete": "Supprimer la sélection ({{ count }})",
+      "bulkDeleteSuccess": "{{ count }} lignes supprimées",
+      "bulkDeleteFailed": "Échec de la suppression en masse",
       "searchPlaceholder": "Rechercher des lignes…",
       "sortCodeAsc": "Code (A-Z)",
       "sortCodeDesc": "Code (Z-A)",
@@ -504,7 +510,10 @@
       },
       "confirm": {
         "deleteTitle": "Supprimer la ligne",
-        "deleteMessage": "Supprimer la ligne « {{ name }} » ? Les itinéraires, horaires et messages liés à cette ligne seront supprimés ; les arrêts desservis sont conservés."
+        "deleteMessage": "Supprimer la ligne « {{ name }} » ? Les itinéraires, horaires et messages liés à cette ligne seront supprimés ; les arrêts desservis sont conservés.",
+        "bulkDeleteTitle": "Supprimer les lignes sélectionnées",
+        "bulkDeleteMessage": "Supprimer {{ count }} lignes et tout ce qui en dépend (itinéraires, horaires, messages) ? Cette action est irréversible.",
+        "bulkDeleteConfirm": "Supprimer définitivement"
       }
     },
     "stops": {
