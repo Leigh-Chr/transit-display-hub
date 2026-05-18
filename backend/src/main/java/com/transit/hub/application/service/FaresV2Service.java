@@ -9,6 +9,7 @@ import com.transit.hub.infrastructure.persistence.FareMediaRepository;
 import com.transit.hub.infrastructure.persistence.FareProductRepository;
 import com.transit.hub.infrastructure.persistence.FareTransferRuleRepository;
 import com.transit.hub.infrastructure.persistence.NetworkRepository;
+import com.transit.hub.infrastructure.persistence.RiderCategoryRepository;
 import com.transit.hub.infrastructure.persistence.TimeframeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class FaresV2Service {
     private final NetworkRepository networkRepository;
     private final FareMediaRepository fareMediaRepository;
     private final FareLegJoinRuleRepository fareLegJoinRuleRepository;
+    private final RiderCategoryRepository riderCategoryRepository;
 
     @Transactional(readOnly = true)
     public FaresV2Response browse() {
@@ -65,6 +67,10 @@ public class FaresV2Service {
                         .toList(),
                 fareLegJoinRuleRepository.findAllWithStops().stream()
                         .map(FaresV2Response.LegJoinRuleSummary::from)
+                        .toList(),
+                UnpaginatedCap.findAllCapped(riderCategoryRepository, log, "FaresV2Service.browse#riderCategories")
+                        .stream()
+                        .map(FaresV2Response.RiderCategorySummary::from)
                         .toList()
         );
     }

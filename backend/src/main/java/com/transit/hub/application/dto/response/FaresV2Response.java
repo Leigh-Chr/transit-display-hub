@@ -7,6 +7,7 @@ import com.transit.hub.domain.model.FareMedia;
 import com.transit.hub.domain.model.FareProduct;
 import com.transit.hub.domain.model.FareTransferRule;
 import com.transit.hub.domain.model.Network;
+import com.transit.hub.domain.model.RiderCategory;
 import com.transit.hub.domain.model.Timeframe;
 
 import java.math.BigDecimal;
@@ -28,8 +29,20 @@ public record FaresV2Response(
         List<TransferRuleSummary> transferRules,
         List<NetworkSummary> networks,
         List<FareMediaSummary> fareMedia,
-        List<LegJoinRuleSummary> legJoinRules
+        List<LegJoinRuleSummary> legJoinRules,
+        List<RiderCategorySummary> riderCategories
 ) {
+    public record RiderCategorySummary(UUID id, String externalId, String name,
+                                       Short isDefaultFareCategory, String eligibilityUrl) {
+        public static RiderCategorySummary from(RiderCategory r) {
+            return new RiderCategorySummary(
+                    r.getId(),
+                    r.getExternalId(),
+                    r.getName(),
+                    r.getIsDefaultFareCategory(),
+                    r.getEligibilityUrl());
+        }
+    }
     public record LegJoinRuleSummary(UUID id, String fromNetworkId, String toNetworkId,
                                       String fromStopName, String toStopName) {
         public static LegJoinRuleSummary from(FareLegJoinRule r) {
@@ -104,7 +117,9 @@ public record FaresV2Response(
                                       Integer transferCount, Integer durationLimit,
                                       Short durationLimitType, Short fareTransferType,
                                       String productExternalId, BigDecimal productAmount,
-                                      String productCurrency) {
+                                      String productCurrency,
+                                      Integer minutesBeforeBoarding,
+                                      Integer minutesAfterBoarding) {
         public static TransferRuleSummary from(FareTransferRule r) {
             FareProduct p = r.getFareProduct();
             return new TransferRuleSummary(
@@ -117,7 +132,9 @@ public record FaresV2Response(
                     r.getFareTransferType(),
                     p != null ? p.getExternalId() : null,
                     p != null ? p.getAmount() : null,
-                    p != null ? p.getCurrency() : null);
+                    p != null ? p.getCurrency() : null,
+                    r.getMinutesBeforeToStartBoardingTime(),
+                    r.getMinutesAfterToStartBoardingTime());
         }
     }
 }

@@ -10,7 +10,10 @@ public record ScheduleResponse(
         UUID id,
         LocalTime time,
         UUID stopId,
-        ItineraryInfo itinerary
+        ItineraryInfo itinerary,
+        Short continuousPickup,
+        Short continuousDropOff,
+        Double shapeDistTraveled
 ) {
     public record ItineraryInfo(UUID id, String name, String terminusName,
                                 Short directionId, LineInfo line) {}
@@ -29,7 +32,10 @@ public record ScheduleResponse(
                 schedule.getId(),
                 schedule.getTime(),
                 schedule.getStop().getId(),
-                itineraryInfo
+                itineraryInfo,
+                schedule.getContinuousPickup(),
+                schedule.getContinuousDropOff(),
+                schedule.getShapeDistTraveled()
         );
     }
 }
