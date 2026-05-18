@@ -30,6 +30,13 @@
       [messages]="criticalMessages()"
       [durationSeconds]="alertDuration()" />
 
+    @if (offlineStopNames().length > 0) {
+      <div class="hub-offline-banner" role="status" aria-live="polite">
+        <mat-icon aria-hidden="true">wifi_off</mat-icon>
+        <span>{{ 'hub.offlineStops' | transloco:{ names: offlineStopNames().join(', ') } }}</span>
+      </div>
+    }
+
     <!-- Main departures board (4 columns) -->
     <main class="departures">
       <div class="departures-header">

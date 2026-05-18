@@ -14,6 +14,9 @@ const translocoLangs = {
     common: {
       ariaLabel: { lineBadge: 'Line {{ code }} — {{ name }}' },
     },
+    hub: {
+      offlineStops: 'Stops temporarily offline: {{ names }}',
+    },
     kiosk: {
       noArrivals: 'No upcoming departure',
       noScheduledDepartures: 'No scheduled departures',
@@ -33,6 +36,9 @@ const translocoLangs = {
   fr: {
     common: {
       ariaLabel: { lineBadge: 'Ligne {{ code }} — {{ name }}' },
+    },
+    hub: {
+      offlineStops: 'Arrêts temporairement hors ligne : {{ names }}',
     },
     kiosk: {
       noArrivals: 'Aucun prochain départ',

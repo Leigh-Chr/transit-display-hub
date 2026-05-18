@@ -302,7 +302,8 @@
       "missingStopIds": "Missing stop IDs. Use /hub?stopIds=id1,id2,id3&name=Hub+Name",
       "noValidStopIds": "No valid stop IDs provided.",
       "loadFailed": "Failed to load hub display state. Check stop IDs."
-    }
+    },
+    "offlineStops": "Stops temporarily offline: {{ names }}"
   },
   "notFound": {
     "title": "Page not found",

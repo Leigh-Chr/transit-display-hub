@@ -69,6 +69,15 @@ export class HubComponent {
 
   hubState = signal<HubDisplayState | null>(null);
   error = signal<string | null>(null);
+  /** Stop names that the hub URL asked for but the rebuild could not
+   *  surface (no push yet or stale beyond the threshold). Used to render
+   *  a non-intrusive banner so passengers and operators understand why
+   *  the board has fewer rows than expected. */
+  readonly offlineStopNames = signal<string[]>([]);
+  /** Tiny longer-living index of {stopId → last known stop name}. We
+   *  cannot rely on stopStates for this because a stale entry can be
+   *  dropped from the rebuild while still belonging here. */
+  private readonly lastKnownStopNames = new Map<string, string>();
 
   /** Shared 1Hz wall clock — pauses while the tab is hidden, exposes
    *  pre-formatted date/time strings and the isStale helpers. */
@@ -220,19 +229,34 @@ export class HubComponent {
     const validIds = new Set(this.stopIds);
     const now = Date.now();
     const states: DisplayState[] = [];
+    const presentIds = new Set<string>();
     for (const [id, entry] of this.stopStates) {
       if (!validIds.has(id)) {
-        // Stop was removed from the hub URL — drop its cached state.
+        // Stop was removed from the hub URL — drop its cached state and
+        // forget the last-known name (only used for the offline banner).
         this.stopStates.delete(id);
+        this.lastKnownStopNames.delete(id);
         continue;
       }
+      // Remember the latest name so the offline banner can show
+      // something more useful than the raw id when the stop disappears.
+      this.lastKnownStopNames.set(id, entry.state.stopName);
       if (now - entry.receivedAt > STALE_STOP_THRESHOLD_MS) {
         // No update from this stop for too long — likely deleted upstream.
         // Skip it in the rebuild but keep the entry: a fresh push will revive it.
         continue;
       }
       states.push(entry.state);
+      presentIds.add(id);
     }
+    // Surface every expected stop that didn't make it into the rebuild so
+    // a passenger doesn't silently see a shorter board. Falls back to the
+    // raw id when no name is known yet (first boot before any push).
+    this.offlineStopNames.set(
+      this.stopIds
+        .filter(id => !presentIds.has(id))
+        .map(id => this.lastKnownStopNames.get(id) ?? id)
+    );
     if (states.length === 0) { return; }
 
     // Merge lines, deduplicate by id

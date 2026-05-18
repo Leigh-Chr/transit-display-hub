@@ -302,7 +302,8 @@
       "missingStopIds": "Identifiants d'arrêts manquants. Utilisez /hub?stopIds=id1,id2,id3&name=Nom+du+hub",
       "noValidStopIds": "Aucun identifiant d'arrêt valide fourni.",
       "loadFailed": "Échec du chargement de l'affichage hub. Vérifiez les identifiants d'arrêts."
-    }
+    },
+    "offlineStops": "Arrêts temporairement hors ligne : {{ names }}"
   },
   "notFound": {
     "title": "Page introuvable",
