@@ -6,18 +6,23 @@ import { test } from './fixtures/auth.fixture';
  * Accessibility smoke tests (axe-core).
  *
  * Baseline established 2026-05-11, étendue 2026-05-16 aux pages
- * d'affichage public (kiosk / hub) et au dashboard admin. Les
- * violations pré-existantes sont épinglées en soft assertion :
- * toute violation critique/sérieuse NOUVELLE au-dessus de la baseline
- * cassera la CI, mais les anciennes ne bloquent pas le merge.
+ * d'affichage public (kiosk / hub) et au dashboard admin, resserrée
+ * 2026-05-18 après une mesure live des comptes effectifs (cf. le log
+ * `[a11y] <name>: <count>` plus bas). Les violations pré-existantes
+ * sont épinglées en soft assertion : toute violation critique/sérieuse
+ * NOUVELLE au-dessus de la baseline cassera la CI, mais les anciennes
+ * ne bloquent pas le merge.
  *
- * Baselines initiales :
- *   /login              → 0 violation critique/sérieuse
- *   /map                → 2 (chips de légende — contraste secondaire)
- *   /map/list           → 2 (chips de ligne sur la liste — contraste)
- *   /display/<stopId>   → 3 (état "loading/error", à resserrer après CI)
- *   /hub                → 3 (idem hub sans token)
- *   /admin/dashboard    → 5 (cards stats + nav — à resserrer après CI)
+ * Baselines (après resserrement 2026-05-18) :
+ *   /login              → 0 (déjà 0 depuis l'origine)
+ *   /map                → 1 (résiduel : contraste d'une chip de légende)
+ *   /map/list           → 1 (idem sur la liste)
+ *   /display/<stopId>   → 0 (le loading/error chrome est propre)
+ *   /hub                → 0 (idem hub sans token)
+ *   /admin/dashboard    → 0 (post-v1.25.0 design tokens : 0 violation)
+ *   /admin/lines        → 1 (résiduel chip ligne)
+ *   /admin/stops        → 1 (résiduel chip ligne sur les arrêts)
+ *   /admin/{users,messages,schedules} → 0
  */
 
 const publicPages = [
@@ -42,28 +47,26 @@ const adminPages = [
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
 // Per-page baseline: update when a pre-existing violation is fixed.
-// The pre-existing color-contrast findings on the network pages come
-// from secondary text/background pairs (line legend chips on the list
-// view, zoom-control badges on the map) that do not affect readability
-// of stop or line names. Different browsers render the same CSS with
-// slightly different anti-aliasing, so the count varies by 1 — pin the
-// upper bound at 2 and let a real regression (a new violation on top
-// of these) still trip CI.
+// The residual contrast findings on the network pages come from
+// secondary line-chip / legend pairs that do not affect readability
+// of stop or line names. Three CI runs in a row converged on the
+// numbers below (the `[a11y] …` log captures each); a real regression
+// (a new violation on top of these) still trips CI.
 const BASELINE: Record<string, number> = {
   login:             0,
-  'network-map':     2,
-  'network-list':    2,
-  'kiosk-stop':      3,
-  'hub':             3,
-  'admin-dashboard': 5,
+  'network-map':     1,
+  'network-list':    1,
+  'kiosk-stop':      0,
+  'hub':             0,
+  'admin-dashboard': 0,
   // Admin pages share the dashboard's chip / card system; the
-  // post-v1.24 tighten-pass aligned them on the dashboard's
-  // budget after the first CI run came in below 5 on every page.
-  'admin-lines':     5,
-  'admin-stops':     5,
-  'admin-users':     5,
-  'admin-messages':  5,
-  'admin-schedules': 5,
+  // post-v1.25.0 design-token migration dropped most violations to 0.
+  // The two pages still at 1 carry a line-chip on the row template.
+  'admin-lines':     1,
+  'admin-stops':     1,
+  'admin-users':     0,
+  'admin-messages':  0,
+  'admin-schedules': 0,
 };
 
 function assertNoNewViolations(name: string, criticalCount: number, sample: unknown): void {
