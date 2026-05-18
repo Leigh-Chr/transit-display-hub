@@ -814,6 +814,10 @@
       "hubName": "Hub name",
       "openHub": "Open Hub Display"
     },
+    "operations": {
+      "title": "Operations",
+      "subtitle": "Live GTFS-Realtime feed monitoring and import history."
+    },
     "realtime": {
       "title": "Real-time",
       "subtitle": "GTFS-Realtime caches fed by the scheduler. The Refresh button forces an immediate poll of the configured URL.",

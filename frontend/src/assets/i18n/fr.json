@@ -814,6 +814,10 @@
       "hubName": "Nom du hub",
       "openHub": "Ouvrir l'affichage hub"
     },
+    "operations": {
+      "title": "Exploitation",
+      "subtitle": "Surveillance des flux GTFS-Realtime et historique des imports."
+    },
     "realtime": {
       "title": "Temps réel",
       "subtitle": "Caches GTFS-Realtime alimentés par le scheduler. Le bouton « Rafraîchir » force un poll immédiat de l'URL configurée.",

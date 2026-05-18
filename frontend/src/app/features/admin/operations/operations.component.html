@@ -1,4 +1,8 @@
 <ng-container *transloco="let t">
+  <header class="page-header">
+    <h1 class="page-title">{{ t('admin.operations.title') }}</h1>
+    <p class="page-subtitle">{{ t('admin.operations.subtitle') }}</p>
+  </header>
   <nav
     mat-tab-nav-bar
     [tabPanel]="tabPanel"
