@@ -121,9 +121,6 @@ public class SecurityConfig {
                                                                 .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())))
                                 ))
 
-                        // Read-only public access to itineraries (for schedule dialog)
-                        .requestMatchers(HttpMethod.GET, "/api/itineraries/**").permitAll()
-
                         // Read-only public access to stop schedules (for network map timetable)
                         .requestMatchers(HttpMethod.GET, "/api/stops/*/schedules").permitAll()
 
