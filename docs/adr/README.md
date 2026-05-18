@@ -46,6 +46,7 @@ should think twice before reverting.
 | [0038](0038-recognition-strategy.md) | Recognition strategy: README-only entry point, channel-specific drafts |
 | [0039](0039-cookie-based-auth-with-refresh-tokens.md) | Cookie-based auth with refresh token rotation + CSRF, Bearer kept for Swagger / STOMP |
 | [0040](0040-maintainability-guardrails.md) | Maintainability guardrails as a CI gate (ArchUnit, PMD cyclo, file size, jscpd, knip) with a frozen allowlist |
+| [0041](0041-design-system-tokens-enforcement.md) | Design system tokens enforcement (M3 typography, motion, palette) with documented exemptions |
 
 ADRs are written in present tense; they describe the state of the code
 **at the moment they were merged**. When a decision is reversed, mark
