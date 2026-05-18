@@ -193,7 +193,7 @@
 
   &.stale-warning {
     background: var(--app-kiosk-warning-accent);
-    color: #1a1a1a;
+    color: var(--app-on-kiosk-warning);
     animation: none;
   }
 }

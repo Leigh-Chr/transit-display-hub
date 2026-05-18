@@ -79,7 +79,7 @@
 }
 
 .booking-notice {
-  font-size: 0.85em;
+  font-size: var(--app-type-meta);
   font-weight: 500;
   opacity: 0.8;
   margin-left: 0.4vw;

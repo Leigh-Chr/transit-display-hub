@@ -374,15 +374,27 @@
 }
 
 .route-marker-departure circle {
+  fill: var(--app-map-route-departure);
   filter: drop-shadow(0 0 6px rgba(76, 175, 80, 0.6));
 }
 
 .route-marker-arrival circle {
+  fill: var(--app-map-route-arrival);
   filter: drop-shadow(0 0 6px rgba(244, 67, 54, 0.6));
 }
 
 .route-marker-transfer circle {
+  fill: var(--app-map-surface);
+  stroke: var(--app-map-interchange-stroke);
   filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+}
+
+.route-marker-transfer text {
+  fill: var(--app-map-interchange-stroke);
+}
+
+.interchange-dot {
+  fill: var(--app-map-interchange-stroke);
 }
 
 .alert-badge-critical circle { fill: var(--app-critical); }

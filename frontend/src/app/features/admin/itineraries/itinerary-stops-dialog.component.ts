@@ -155,7 +155,7 @@ interface StopItem {
       background: var(--app-surface-variant);
       border-radius: var(--app-radius-sm);
       cursor: move;
-      transition: box-shadow 0.2s, background-color 0.2s;
+      transition: box-shadow var(--m3-duration-short4) var(--m3-easing-standard), background-color var(--m3-duration-short4) var(--m3-easing-standard);
     }
 
     .itinerary-stops-dialog-content .stop-item:hover {
@@ -192,7 +192,7 @@ interface StopItem {
 
     .itinerary-stops-dialog-content .delete-btn {
       opacity: 0.6;
-      transition: opacity 0.2s;
+      transition: opacity var(--m3-duration-short4) var(--m3-easing-standard);
     }
 
     .itinerary-stops-dialog-content .stop-item:hover .delete-btn {

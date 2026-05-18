@@ -240,27 +240,27 @@
             @if (isInterchange(s.stop) && !isRowTerminus(s.stop.id, row)) {
               <circle
                 [attr.r]="isSingleLineMode() ? 5 : 6"
-                fill="#333"
+                class="interchange-dot"
               />
             }
 
             <!-- Route markers: departure / arrival / transfer (only on relevant line row) -->
             @if (departureStopId() === s.stop.id && isStopActiveOnLine(s.stop.id, row.line.id)) {
               <g class="route-marker route-marker-departure">
-                <circle [attr.r]="isSingleLineMode() ? 16 : 10" fill="#4caf50" opacity="0.9" />
+                <circle [attr.r]="isSingleLineMode() ? 16 : 10" opacity="0.9" />
                 <text text-anchor="middle" dominant-baseline="central" fill="white"
                       [attr.font-size]="isSingleLineMode() ? 12 : 8" font-weight="bold">D</text>
               </g>
             } @else if (arrivalStopId() === s.stop.id && isStopActiveOnLine(s.stop.id, row.line.id)) {
               <g class="route-marker route-marker-arrival">
-                <circle [attr.r]="isSingleLineMode() ? 16 : 10" fill="#f44336" opacity="0.9" />
+                <circle [attr.r]="isSingleLineMode() ? 16 : 10" opacity="0.9" />
                 <text text-anchor="middle" dominant-baseline="central" fill="white"
                       [attr.font-size]="isSingleLineMode() ? 12 : 8" font-weight="bold">A</text>
               </g>
             } @else if (routeTransferIds().has(s.stop.id) && isStopActiveOnLine(s.stop.id, row.line.id)) {
               <g class="route-marker route-marker-transfer">
-                <circle [attr.r]="isSingleLineMode() ? 12 : 8" fill="white" stroke="#333" stroke-width="1.5" />
-                <text text-anchor="middle" dominant-baseline="central" fill="#333"
+                <circle [attr.r]="isSingleLineMode() ? 12 : 8" stroke-width="1.5" />
+                <text text-anchor="middle" dominant-baseline="central"
                       [attr.font-size]="isSingleLineMode() ? 9 : 6" font-weight="bold">T</text>
               </g>
             }

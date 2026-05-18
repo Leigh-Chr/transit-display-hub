@@ -177,7 +177,7 @@ export interface HubDisplayDialogResult {
       border-radius: var(--app-radius-sm);
       background-color: var(--app-surface-variant);
       cursor: pointer;
-      transition: background-color 0.15s;
+      transition: background-color var(--m3-duration-short3) var(--m3-easing-standard);
       /* Reset native button look so the row reads like a list item;
          <button> chosen over <div> for keyboard accessibility
          (Enter + Space activate it natively). */

@@ -122,7 +122,7 @@ import { NetworkLine } from '@shared/models';
       background: var(--app-map-input-bg, var(--app-map-overlay-bg));
       border: 1px solid var(--app-map-outline);
       border-radius: var(--app-radius-md);
-      transition: border-color 120ms ease;
+      transition: border-color var(--m3-duration-short3) var(--m3-easing-standard);
     }
 
     .search-field:focus-within {
@@ -222,7 +222,7 @@ import { NetworkLine } from '@shared/models';
       color: inherit;
       text-align: left;
       cursor: pointer;
-      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+      transition: transform var(--m3-duration-short3) var(--m3-easing-standard), box-shadow var(--m3-duration-short3) var(--m3-easing-standard), border-color var(--m3-duration-short3) var(--m3-easing-standard);
       min-width: 0;
     }
 

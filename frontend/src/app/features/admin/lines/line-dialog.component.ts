@@ -149,7 +149,7 @@ interface LineForm {
       cursor: pointer;
       padding: 4px;
       background: var(--app-surface-container);
-      transition: border-color 0.2s ease;
+      transition: border-color var(--m3-duration-short4) var(--m3-easing-standard);
     }
 
     .color-picker:hover {

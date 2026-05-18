@@ -131,7 +131,7 @@ mat-card {
 
 .parent-hint {
   color: var(--mat-sys-on-surface-variant);
-  font-size: 0.85em;
+  font-size: var(--app-type-meta);
   font-style: italic;
 }
 

@@ -27,7 +27,7 @@
 }
 .data-table code {
   font-family: monospace;
-  font-size: 0.85em;
+  font-size: var(--app-type-meta);
   padding: 1px 6px;
   background: var(--mat-sys-surface-container-high);
   border-radius: 4px;
@@ -57,7 +57,7 @@
   letter-spacing: 0.04em;
 }
 .section-title:first-of-type { margin-top: 0; }
-.muted { color: var(--mat-sys-on-surface-variant); margin-left: 4px; font-size: 0.85em; }
+.muted { color: var(--mat-sys-on-surface-variant); margin-left: 4px; font-size: var(--app-type-meta); }
 .table-field { width: 200px; }
 
 .inline-icon {

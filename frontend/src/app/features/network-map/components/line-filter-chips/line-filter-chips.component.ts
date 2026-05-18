@@ -52,7 +52,7 @@ import { lineTextColor } from '@shared/utils/color.utils';
       font-size: var(--m3-type-body-small);
       border-radius: var(--app-radius-pill);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all var(--m3-duration-short3) var(--m3-easing-standard);
       user-select: none;
     }
 

@@ -110,6 +110,11 @@ html {
   --m3-type-label-medium: 12px;
   --m3-type-label-small: 11px;
 
+  // Relative meta token — secondary text in cells / suffixes, sized
+  // relative to the parent so it stays in scale when large-text-theme
+  // boosts the M3 typescale.
+  --app-type-meta: 0.85em;
+
   // === Status Colors (semantic) ===
   --app-success: #2E7D32;
   --app-success-container: #E8F5E9;
@@ -214,6 +219,9 @@ html {
   --app-map-shadow: rgba(0, 0, 0, 0.12);
   --app-map-chip-inactive: #555555;
   --app-map-stop-stroke: white;
+  --app-map-route-departure: #4caf50;
+  --app-map-route-arrival: #f44336;
+  --app-map-interchange-stroke: #333333;
 
   // === Kiosk Display (always dark, dedicated screens) ===
   --app-kiosk-surface: #000000;
@@ -232,6 +240,10 @@ html {
   --app-kiosk-error-icon: #F44336;
   --app-kiosk-text-shadow: rgba(0, 0, 0, 0.3);
   --app-kiosk-text-shadow-strong: rgba(0, 0, 0, 0.4);
+  // Stale-warning banner overrides the kiosk red with the warning amber;
+  // the white kiosk text loses contrast on it, so the .stale-warning state
+  // pins the foreground to a near-black via this dedicated token.
+  --app-on-kiosk-warning: #1a1a1a;
 
   // === Dashboard Stat Icons ===
   --app-stat-lines: linear-gradient(135deg, #6366f1, #4f46e5);

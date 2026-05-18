@@ -30,7 +30,7 @@
 
     .zone-path {
       cursor: pointer;
-      transition: fill-opacity 120ms ease, stroke-width 120ms ease;
+      transition: fill-opacity var(--m3-duration-short3) var(--m3-easing-standard), stroke-width var(--m3-duration-short3) var(--m3-easing-standard);
     }
     .zone-path:hover { fill-opacity: 0.6; }
     .zone-selected {

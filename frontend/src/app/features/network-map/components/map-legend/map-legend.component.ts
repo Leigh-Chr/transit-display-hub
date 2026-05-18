@@ -78,7 +78,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
       box-shadow: 0 1px 4px var(--app-map-shadow);
       z-index: var(--app-z-overlay);
       pointer-events: auto;
-      transition: padding 120ms ease;
+      transition: padding var(--m3-duration-short3) var(--m3-easing-standard);
     }
 
     .legend.collapsed {
@@ -100,7 +100,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
       text-transform: uppercase;
       letter-spacing: 0.05em;
       cursor: pointer;
-      transition: background 120ms ease;
+      transition: background var(--m3-duration-short3) var(--m3-easing-standard);
     }
 
     .legend-toggle:hover {
