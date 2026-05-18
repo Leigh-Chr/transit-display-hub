@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
@@ -6,25 +6,18 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDialog } from '@angular/material/dialog';
-import { NotifyService } from '@core/services/notify.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import {
-  HubDisplayDialogComponent,
-  HubDisplayDialogResult,
-} from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { AuthService } from '@core/auth/auth.service';
-import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
 import { DashboardService, DashboardSummary } from '@core/api/dashboard.service';
-import { Line, BroadcastMessage } from '@shared/models';
+import { BroadcastMessage } from '@shared/models';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { lineTextColor } from '@shared/utils/color.utils';
 import { DataOverviewCardComponent } from './data-overview-card.component';
 import { FeedInfoCardComponent } from './feed-info-card.component';
-import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { map } from 'rxjs';
 
 /** Shape returned by the resource when the user is an AGENT (non-admin).
@@ -66,18 +59,10 @@ type DashboardData = DashboardSummary | AgentView;
 })
 export class DashboardComponent {
   private readonly authService = inject(AuthService);
-  private readonly lineService = inject(LineService);
   private readonly messageService = inject(MessageService);
   private readonly dashboardService = inject(DashboardService);
-  private readonly notify = inject(NotifyService);
-  private readonly dialog = inject(MatDialog);
-  private readonly transloco = inject(TranslocoService);
 
   readonly isAdmin = this.authService.isAdmin;
-
-  /** Lines for the hub-display dialog selector. Populated lazily the first
-   *  time the user opens the dialog so the initial dashboard load stays small. */
-  hubDialogLines = signal<Line[] | null>(null);
 
   // Single resource that switches between the admin summary endpoint and the
   // agent message-only endpoint based on the authenticated role.
@@ -179,42 +164,6 @@ export class DashboardComponent {
 
   reload(): void {
     this.dashboardResource.reload();
-  }
-
-  openHubDisplay(): void {
-    // The hub-display selector needs the full line list (with stops); the
-    // dashboard endpoint only ships the top 6, so lazy-load on first open.
-    const cached = this.hubDialogLines();
-    if (cached !== null) {
-      this.openHubDialogWith(cached);
-      return;
-    }
-    this.lineService.getAll().subscribe({
-      next: (lines) => {
-        this.hubDialogLines.set(lines);
-        this.openHubDialogWith(lines);
-      },
-      error: () => {
-        this.notify.error(this.transloco.translate('admin.dashboard.loadLinesFailed'));
-      },
-    });
-  }
-
-  private openHubDialogWith(lines: Line[]): void {
-    this.dialog
-      .open(HubDisplayDialogComponent, {
-        data: { lines },
-        width: '550px',
-      })
-      .afterClosed()
-      .subscribe((result: HubDisplayDialogResult | undefined) => {
-        if (result) {
-          const params = new URLSearchParams();
-          params.set('stopIds', result.stopIds.join(','));
-          params.set('name', result.hubName);
-          window.open(`/hub?${params.toString()}`, '_blank');
-        }
-      });
   }
 
   lineTextColor = lineTextColor;

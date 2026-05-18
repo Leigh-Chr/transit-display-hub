@@ -507,40 +507,6 @@
   color: var(--app-on-surface-muted);
 }
 
-/* Quick Actions */
-.quick-actions-card {
-  border-radius: var(--app-radius-md);
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  padding-top: 8px;
-}
-
-.action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 20px 16px;
-  height: auto;
-  border-radius: var(--app-radius-md);
-}
-
-.action-btn mat-icon {
-  font-size: var(--m3-type-headline-large);
-  width: 28px;
-  height: 28px;
-  color: var(--app-primary);
-}
-
-.action-btn span {
-  font-size: var(--m3-type-body-small);
-  font-weight: 500;
-}
-
 /* Enter animations defined globally — see styles.scss section 13a */
 
 /* Responsive */
@@ -551,10 +517,6 @@
 
   .overview-grid {
     grid-template-columns: 1fr;
-  }
-
-  .actions-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .alert-content {

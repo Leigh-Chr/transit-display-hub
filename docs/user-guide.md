@@ -54,13 +54,13 @@ The dashboard displays a summary tailored to your role.
 - **Active Messages**: Currently broadcasting messages
 - **Online Devices**: Number of connected screens / total
 - **Overview**: Network lines overview and device health
-- **Quick Actions**: Direct access to line, stop, schedule,
-  device, user management, and hub display
+- **Critical messages preview** and **Recent messages**
 
 ### Agent View
 
 - **Active Messages**: Currently broadcasting messages
-- **Quick Actions**: Create a message, access network map
+  (the rest of the dashboard is admin-only — navigation
+  happens via the sidebar)
 
 ### Alerts
 
@@ -459,12 +459,11 @@ single screen, ideal for interchange stations or transport hubs.
 
 ### Opening the Hub Display
 
-The hub display can be opened from three places in the admin
+The hub display can be opened from two places in the admin
 interface (administrator only):
 
 1. **Sidebar**: Click "Hub Display" in the navigation
-2. **Dashboard**: Use the "Hub Display" quick action button
-3. **Stops page**: Click the "Hub Display" button in the toolbar
+2. **Stops page**: Click the "Hub Display" button in the toolbar
 
 Each opens a configuration dialog where you can:
 

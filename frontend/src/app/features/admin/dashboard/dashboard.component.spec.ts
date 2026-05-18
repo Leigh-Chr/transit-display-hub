@@ -2,7 +2,6 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '@core/auth/auth.service';
-import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
 import { DashboardService, DashboardSummary } from '@core/api/dashboard.service';
 import { provideRouter } from '@angular/router';
@@ -28,14 +27,6 @@ const translocoLang = {
       statStops: 'Stops',
       statItineraries: 'Itineraries',
       statDevicesOnline: 'Devices Online',
-      actionNewMessage: 'New Message',
-      actionNetworkMap: 'Network Map',
-      actionManageLines: 'Manage Lines',
-      actionManageStops: 'Manage Stops',
-      actionEditSchedules: 'Edit Schedules',
-      actionRegisterDevice: 'Register Device',
-      actionManageUsers: 'Manage Users',
-      actionHubDisplay: 'Hub Display',
     },
     common: {},
     navigation: {},
@@ -53,14 +44,6 @@ const translocoLangFr = {
       statStops: 'Arrêts',
       statItineraries: 'Itinéraires',
       statDevicesOnline: 'Bornes en ligne',
-      actionNewMessage: 'Nouveau message',
-      actionNetworkMap: 'Carte du réseau',
-      actionManageLines: 'Gérer les lignes',
-      actionManageStops: 'Gérer les arrêts',
-      actionEditSchedules: 'Éditer les horaires',
-      actionRegisterDevice: 'Enregistrer une borne',
-      actionManageUsers: 'Gérer les utilisateurs',
-      actionHubDisplay: 'Affichage pôle',
     },
     common: {},
     navigation: {},
@@ -72,7 +55,6 @@ describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
   let mockAuthService: { isAdmin: ReturnType<typeof signal<boolean>> };
-  let mockLineService: { getAll: ReturnType<typeof vi.fn> };
   let mockMessageService: { getAll: ReturnType<typeof vi.fn> };
   let mockDashboardService: { getSummary: ReturnType<typeof vi.fn> };
 
@@ -128,7 +110,6 @@ describe('DashboardComponent', () => {
 
   beforeEach(() => {
     mockAuthService = { isAdmin: signal(true) };
-    mockLineService = { getAll: vi.fn().mockReturnValue(of(mockLines)) };
     mockMessageService = { getAll: vi.fn().mockReturnValue(of(mockAllMessages)) };
     mockDashboardService = { getSummary: vi.fn().mockReturnValue(of(mockSummary)) };
 
@@ -140,7 +121,6 @@ describe('DashboardComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: mockAuthService },
-        { provide: LineService, useValue: mockLineService },
         { provide: MessageService, useValue: mockMessageService },
         { provide: DashboardService, useValue: mockDashboardService }
       ]
@@ -155,7 +135,6 @@ describe('DashboardComponent', () => {
       await detectAndFlush(fixture);
 
       expect(mockDashboardService.getSummary).toHaveBeenCalledTimes(1);
-      expect(mockLineService.getAll).not.toHaveBeenCalled();
       expect(mockMessageService.getAll).not.toHaveBeenCalled();
     });
 
@@ -355,7 +334,6 @@ describe('DashboardComponent', () => {
 
       expect(mockMessageService.getAll).toHaveBeenCalled();
       expect(mockDashboardService.getSummary).not.toHaveBeenCalled();
-      expect(mockLineService.getAll).not.toHaveBeenCalled();
     });
 
     it('should set loading to false after AGENT data loads', async () => {
@@ -377,22 +355,6 @@ describe('DashboardComponent', () => {
       expect(labelTexts).not.toContain('Stops');
       expect(labelTexts).not.toContain('Itineraries');
       expect(labelTexts).not.toContain('Devices Online');
-    });
-
-    it('should not display admin-only quick actions for AGENT', async () => {
-      await detectAndFlush(fixture);
-      fixture.detectChanges();
-
-      const actionButtons = fixture.nativeElement.querySelectorAll('.action-btn span');
-      const actionTexts = Array.from(actionButtons as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
-
-      expect(actionTexts).toContain('New Message');
-      expect(actionTexts).toContain('Network Map');
-      expect(actionTexts).not.toContain('Manage Lines');
-      expect(actionTexts).not.toContain('Manage Stops');
-      expect(actionTexts).not.toContain('Edit Schedules');
-      expect(actionTexts).not.toContain('Register Device');
-      expect(actionTexts).not.toContain('Manage Users');
     });
 
     it('should not display the overview grid for AGENT', async () => {

@@ -281,52 +281,6 @@
       </mat-card>
     }
 
-    <!-- Quick Actions -->
-    <mat-card class="quick-actions-card" animate.enter="fade-in">
-      <mat-card-header>
-        <mat-card-title>{{ t('admin.dashboard.quickActions') }}</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="actions-grid">
-          <a mat-stroked-button routerLink="/admin/messages" class="action-btn">
-            <mat-icon>campaign</mat-icon>
-            <span>{{ t('admin.dashboard.actionNewMessage') }}</span>
-          </a>
-          @if (isAdmin()) {
-            <a mat-stroked-button routerLink="/admin/lines" class="action-btn">
-              <mat-icon>subway</mat-icon>
-              <span>{{ t('admin.dashboard.actionManageLines') }}</span>
-            </a>
-            <a mat-stroked-button routerLink="/admin/stops" class="action-btn">
-              <mat-icon>place</mat-icon>
-              <span>{{ t('admin.dashboard.actionManageStops') }}</span>
-            </a>
-            <a mat-stroked-button routerLink="/admin/schedules" class="action-btn">
-              <mat-icon>schedule</mat-icon>
-              <span>{{ t('admin.dashboard.actionEditSchedules') }}</span>
-            </a>
-            <a mat-stroked-button routerLink="/admin/devices" class="action-btn">
-              <mat-icon>tv</mat-icon>
-              <span>{{ t('admin.dashboard.actionRegisterDevice') }}</span>
-            </a>
-          }
-          <a mat-stroked-button routerLink="/map" class="action-btn">
-            <mat-icon>map</mat-icon>
-            <span>{{ t('admin.dashboard.actionNetworkMap') }}</span>
-          </a>
-          @if (isAdmin()) {
-            <button mat-stroked-button class="action-btn" (click)="openHubDisplay()">
-              <mat-icon>hub</mat-icon>
-              <span>{{ t('admin.dashboard.actionHubDisplay') }}</span>
-            </button>
-            <a mat-stroked-button routerLink="/admin/users" class="action-btn">
-              <mat-icon>people</mat-icon>
-              <span>{{ t('admin.dashboard.actionManageUsers') }}</span>
-            </a>
-          }
-        </div>
-      </mat-card-content>
-    </mat-card>
   }
 
   <app-feed-credits />
