@@ -112,7 +112,15 @@ export class FeedCreditsComponent {
   constructor() {
     this.attributionService.getAllAttributions().subscribe({
       next: (data) => this.attributions.set(data),
-      error: () => this.attributions.set([]),
+      error: (err: unknown) => {
+        // The credits strip is purely informational and must never crash
+        // the host (kiosk, network map, dashboard). Hide it on failure,
+        // but log a warning so a broken /attributions endpoint is visible
+        // in the browser console / Sentry instead of silently dropping
+        // the legally-required source attributions.
+        console.warn('Failed to load GTFS feed attributions — credits hidden:', err);
+        this.attributions.set([]);
+      },
     });
   }
 }
