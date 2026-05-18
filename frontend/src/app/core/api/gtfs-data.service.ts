@@ -49,9 +49,8 @@ export class GtfsDataService {
   /** Manually trigger a GTFS reimport. Returns 202 Accepted with a
    *  Location header pointing at the audit row, 409 if an import is
    *  already running, 400 if no feed URL is configured. */
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
   triggerReimport(): Observable<void> {
-    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- ditto
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
     return this.http.post<void>('/api/admin/gtfs/reimport', null);
   }
 
