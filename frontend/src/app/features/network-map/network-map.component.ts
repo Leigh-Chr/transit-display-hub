@@ -526,15 +526,27 @@ export class NetworkMapComponent {
     this.schematicMap()?.centerOnStop(stop.id);
     this.highlightedStopId.set(stop.id);
 
-    // Clear highlight after a few seconds
-    if (this.highlightTimer) {clearTimeout(this.highlightTimer);}
-    this.highlightTimer = setTimeout(() => {
-      this.highlightedStopId.set(null);
-      this.highlightTimer = null;
-    }, 3000);
-
     // Open the popup
     this.openStopPopup(stop);
+
+    // Keep the highlight ON for the lifetime of the popup so a mobile
+    // user who picked the stop from autocomplete still sees where it is
+    // on the schematic when they dismiss the dialog. We still arm a long
+    // safety timer (30s) in case afterClosed never fires for any reason.
+    if (this.highlightTimer) {clearTimeout(this.highlightTimer);}
+    const clearHighlight = (): void => {
+      if (this.highlightedStopId() === stop.id) {
+        this.highlightedStopId.set(null);
+      }
+      this.highlightTimer = null;
+    };
+    this.highlightTimer = setTimeout(clearHighlight, 30000);
+    this.stopDialogRef?.afterClosed().subscribe(() => {
+      if (this.highlightTimer) {
+        clearTimeout(this.highlightTimer);
+      }
+      clearHighlight();
+    });
 
     // Reset the search field after a tick so the popup gets focus
     if (this.searchResetTimer) {clearTimeout(this.searchResetTimer);}
