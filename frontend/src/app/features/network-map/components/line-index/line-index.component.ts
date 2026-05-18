@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { NetworkLine } from '@shared/models';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 
 /**
  * Grid of line cards used as a fallback when too many lines would be empty
@@ -12,7 +13,7 @@ import { NetworkLine } from '@shared/models';
 @Component({
   selector: 'app-line-index',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, TranslocoDirective],
+  imports: [ReactiveFormsModule, MatIconModule, EmptyStateComponent, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="index-wrapper" *transloco="let t; read: 'map.lineIndex'">
@@ -70,10 +71,9 @@ import { NetworkLine } from '@shared/models';
           </button>
         }
         @if (filteredLines().length === 0) {
-          <div class="empty-state">
-            <mat-icon>search_off</mat-icon>
-            <span>{{ t('emptyState', { query: searchCtrl.value }) }}</span>
-          </div>
+          <app-empty-state
+            icon="search_off"
+            [title]="t('emptyState', { query: searchCtrl.value })" />
         }
       </div>
     </div>

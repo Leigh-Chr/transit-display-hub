@@ -66,9 +66,9 @@
   }
 
   @if (visibleLineCodes().length === 0) {
-    <div class="empty-selection">
-      <span class="empty-selection-text">{{ 'map.schematic.emptySelection' | transloco }}</span>
-    </div>
+    <app-empty-state
+      icon="filter_alt_off"
+      [title]="'map.schematic.emptySelection' | transloco" />
   } @else {
   <!-- Diagram with zoom/pan.
        The wrapper is a plain interactive surface (no ARIA role) that owns

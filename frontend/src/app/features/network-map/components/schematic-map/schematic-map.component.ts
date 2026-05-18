@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { NetworkLine, NetworkMapAlerts } from '@shared/models';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
 import { RouteResult } from '../../services/route-finder.service';
@@ -53,6 +54,7 @@ import { useWheelHint } from './use-wheel-hint';
   standalone: true,
   imports: [
     AlertOverlayComponent,
+    EmptyStateComponent,
     LineFilterChipsComponent,
     MapLegendComponent,
     ZoomControlsComponent,
