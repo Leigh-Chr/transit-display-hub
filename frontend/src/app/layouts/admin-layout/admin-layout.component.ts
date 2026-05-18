@@ -16,6 +16,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { SidenavBadgesService } from '@core/services/sidenav-badges.service';
 import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { CommandPaletteComponent } from './command-palette.component';
 
@@ -48,6 +49,7 @@ export class AdminLayoutComponent {
   readonly themeService = inject(ThemeService);
   readonly breakpointService = inject(BreakpointService);
   readonly localeService = inject(LocaleService);
+  readonly sidenavBadges = inject(SidenavBadgesService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
 

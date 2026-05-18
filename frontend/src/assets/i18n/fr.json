@@ -350,7 +350,9 @@
       "switchLight": "Passer en mode clair",
       "switchDark": "Passer en mode sombre",
       "openUserGuide": "Ouvrir le guide utilisateur (nouvel onglet)",
-      "logout": "Déconnexion"
+      "logout": "Déconnexion",
+      "badgeActiveMessages": "{{ count }} messages diffusés actifs",
+      "badgeOfflineDevices": "{{ count }} équipements hors-ligne"
     },
     "commandPalette": {
       "placeholder": "Aller à… (Ctrl/Cmd + K)",

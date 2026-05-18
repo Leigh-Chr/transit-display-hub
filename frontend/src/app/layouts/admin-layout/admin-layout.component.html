@@ -94,6 +94,11 @@
           >
             <mat-icon matListItemIcon>campaign</mat-icon>
             <span matListItemTitle>{{ t('admin.navigation.messages') }}</span>
+            @if (sidenavBadges.hasData() && sidenavBadges.activeMessagesCount() > 0) {
+              <span matListItemMeta class="nav-badge nav-badge-info" [attr.aria-label]="t('admin.navigation.badgeActiveMessages', { count: sidenavBadges.activeMessagesCount() })">
+                {{ sidenavBadges.activeMessagesCount() }}
+              </span>
+            }
           </a>
 
           @if (authService.isAdmin()) {
@@ -105,6 +110,11 @@
             >
               <mat-icon matListItemIcon>tv</mat-icon>
               <span matListItemTitle>{{ t('admin.navigation.devices') }}</span>
+              @if (sidenavBadges.hasData() && sidenavBadges.offlineDevicesCount() > 0) {
+                <span matListItemMeta class="nav-badge nav-badge-warn" [attr.aria-label]="t('admin.navigation.badgeOfflineDevices', { count: sidenavBadges.offlineDevicesCount() })">
+                  {{ sidenavBadges.offlineDevicesCount() }}
+                </span>
+              }
             </a>
 
             <mat-divider></mat-divider>

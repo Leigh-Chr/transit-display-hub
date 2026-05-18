@@ -7,6 +7,7 @@ import { AdminLayoutComponent } from './admin-layout.component';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
+import { SidenavBadgesService } from '@core/services/sidenav-badges.service';
 
 const en = {
   common: {
@@ -132,6 +133,13 @@ describe('AdminLayoutComponent', () => {
       isMobile: signal(false),
     };
 
+    const mockSidenavBadges = {
+      activeMessagesCount: signal(0),
+      offlineDevicesCount: signal(0),
+      hasData: signal(false),
+      refresh: vi.fn(),
+    };
+
     TestBed.configureTestingModule({
       imports: [
         AdminLayoutComponent,
@@ -142,6 +150,7 @@ describe('AdminLayoutComponent', () => {
         { provide: AuthService, useValue: mockAuthService },
         { provide: ThemeService, useValue: mockThemeService },
         { provide: BreakpointService, useValue: mockBreakpointService },
+        { provide: SidenavBadgesService, useValue: mockSidenavBadges },
       ],
     });
 

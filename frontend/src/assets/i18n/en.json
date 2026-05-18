@@ -350,7 +350,9 @@
       "switchLight": "Switch to light mode",
       "switchDark": "Switch to dark mode",
       "openUserGuide": "Open user guide (new tab)",
-      "logout": "Logout"
+      "logout": "Logout",
+      "badgeActiveMessages": "{{ count }} active broadcast messages",
+      "badgeOfflineDevices": "{{ count }} devices offline"
     },
     "commandPalette": {
       "placeholder": "Jump to… (Ctrl/Cmd + K)",

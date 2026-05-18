@@ -140,6 +140,32 @@
       opacity: 0.6;
     }
 
+    /* Sidenav meta badges (active-messages / offline-devices counts).
+       Use the same pill shape as the line badges on the dashboard so
+       the visual vocabulary stays consistent across surfaces. */
+    .nav-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-size: var(--m3-type-label-small);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .nav-badge-info {
+      background: var(--app-primary-container);
+      color: var(--app-on-primary-container);
+    }
+
+    .nav-badge-warn {
+      background: color-mix(in srgb, var(--app-warning, #c97a17) 22%, transparent);
+      color: var(--app-warning, #c97a17);
+    }
+
     /* Tighter horizontal padding on phones — the 32px desktop padding
        eats too much screen real estate on a 360px viewport, and the
        breadcrumb trail already wraps naturally thanks to flex-wrap. */
