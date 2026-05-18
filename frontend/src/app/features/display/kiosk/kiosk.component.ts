@@ -4,7 +4,6 @@ import {
   DestroyRef,
   OnInit,
   computed,
-  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -33,6 +32,8 @@ import { DisplayDeparturesRowComponent } from '../_shared/display-departures-row
 import { useArrivalsView } from '../_shared/use-arrivals-view';
 import { useDisplayClock } from '../_shared/use-display-clock';
 import { useMessagesView } from '../_shared/use-messages-view';
+import { usePageSwap, type PageSwap } from '../_shared/use-page-swap';
+import { useReducedMotion } from '../_shared/use-reduced-motion';
 
 import { effectiveTime } from './kiosk-arrival';
 import { speak, speakNextDepartureText } from './kiosk-speech';
@@ -163,50 +164,7 @@ export class KioskComponent implements OnInit {
   }
 
   constructor() {
-    // Initialise the reducedMotion signal from the media query. A change
-    // listener keeps the signal in sync if the user toggles the OS setting
-    // while the kiosk is running (e.g. on a shared-use accessibility kiosk).
-    this.mql = typeof window !== 'undefined'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)')
-      : null;
-    this.reducedMotion = signal(this.mql?.matches ?? false);
-    if (this.mql) {
-      this.mqlChangeHandler = (e: MediaQueryListEvent) => {
-        this.reducedMotion.set(e.matches);
-      };
-      this.mql.addEventListener('change', this.mqlChangeHandler);
-    }
-
-    // When reduced-motion is active, advance the page index at a fixed interval
-    // so arrivals that scroll off in normal mode are still reachable.
-    effect(() => {
-      if (this.reducedMotion()) {
-        this.startPageSwap();
-      } else {
-        this.stopPageSwap();
-        this.pageIndex.set(0);
-      }
-    });
-
-    // Reset page index when the arrival list changes (stop switch, WS update)
-    // so we don't land on an empty page.
-    effect(() => {
-      const total = this.allArrivals().length;
-      const maxPage = Math.max(0, Math.ceil(total / MAX_VISIBLE_ARRIVALS) - 1);
-      if (this.pageIndex() > maxPage) {
-        this.pageIndex.set(0);
-      }
-    });
-
-    this.destroyRef.onDestroy(() => {
-      this.stopPageSwap();
-      if (this.mql && this.mqlChangeHandler) {
-        this.mql.removeEventListener('change', this.mqlChangeHandler);
-        this.mql = null;
-        this.mqlChangeHandler = null;
-      }
-      this.wsService.disconnect();
-    });
+    this.destroyRef.onDestroy(() => this.wsService.disconnect());
   }
 
   // ngOnInit kept on purpose: the route param + query param subscribes
@@ -242,8 +200,6 @@ export class KioskComponent implements OnInit {
   private token: string | null = null;
   private stopId: string | null = null;
   private deviceId: string | null = null;
-  private mql: MediaQueryList | null = null;
-  private mqlChangeHandler: ((e: MediaQueryListEvent) => void) | null = null;
   /** Wall-clock timestamp of the most recent state update (initial fetch or
    *  WebSocket push). Used to surface "data is stale" when the WS link is
    *  technically open but the backend has gone quiet (deleted stop, etc.). */
@@ -252,15 +208,9 @@ export class KioskComponent implements OnInit {
   staleMinutes = computed(() => this.clock.staleMinutes(this.lastUpdate()));
 
   /** True when the OS/browser signals that animations should be minimised.
-   *  Reactive: updated via a MediaQueryList change event so the signal stays
-   *  in sync even if the user toggles the system preference mid-session. */
-  reducedMotion: ReturnType<typeof signal<boolean>>;
-
-  /** Current page index for the paginated view used under reduced-motion. */
-  private readonly pageIndex = signal(0);
-
-  /** Page-swap interval reference — held so we can clear it on destroy. */
-  private pageInterval: ReturnType<typeof setInterval> | null = null;
+   *  Reactive: the underlying MediaQueryList listener updates the signal
+   *  if the user toggles the system preference mid-session. */
+  readonly reducedMotion = useReducedMotion();
 
   /** Split of messages into critical / info plus the two scroll-cycle
    *  durations the banner + ticker bind to. */
@@ -286,6 +236,15 @@ export class KioskComponent implements OnInit {
   protected readonly arrivalsView = useArrivalsView(this.arrivalsSignal, this.clock.now, this.arrivalsConfigSignal);
   allArrivals = computed(() => this.arrivalsView().allArrivals);
 
+  /** Pagination helper used only under reduced motion: the composable
+   *  starts / stops the rotating timer based on {@link reducedMotion}
+   *  and snaps the page back to 0 when the arrival list shrinks. */
+  private readonly pageSwap: PageSwap = usePageSwap(
+    this.reducedMotion,
+    computed(() => Math.max(1, Math.ceil(this.allArrivals().length / MAX_VISIBLE_ARRIVALS))),
+    REDUCED_MOTION_PAGE_DWELL_MS,
+  );
+
   /** Arrivals shown in the template. Under normal motion shows all arrivals
    *  (the CSS scroll animation handles overflow). Under reduced-motion, shows
    *  a page-sized slice that rotates every REDUCED_MOTION_PAGE_DWELL_MS so
@@ -293,7 +252,7 @@ export class KioskComponent implements OnInit {
   visibleArrivals = computed(() => {
     const all = this.allArrivals();
     if (!this.reducedMotion()) { return all; }
-    const start = this.pageIndex() * MAX_VISIBLE_ARRIVALS;
+    const start = this.pageSwap.pageIndex() * MAX_VISIBLE_ARRIVALS;
     return all.slice(start, start + MAX_VISIBLE_ARRIVALS);
   });
 
@@ -358,22 +317,6 @@ export class KioskComponent implements OnInit {
       parts.push(this.transloco.translate('kiosk.booking.minMinutes', { minutes: b.priorNoticeMinutes }));
     }
     return parts.join(', ');
-  }
-
-  private startPageSwap(): void {
-    if (this.pageInterval !== null) { return; }
-    this.pageInterval = setInterval(() => {
-      const total = this.allArrivals().length;
-      const maxPage = Math.max(0, Math.ceil(total / MAX_VISIBLE_ARRIVALS) - 1);
-      this.pageIndex.set(this.pageIndex() < maxPage ? this.pageIndex() + 1 : 0);
-    }, REDUCED_MOTION_PAGE_DWELL_MS);
-  }
-
-  private stopPageSwap(): void {
-    if (this.pageInterval !== null) {
-      clearInterval(this.pageInterval);
-      this.pageInterval = null;
-    }
   }
 
   private initializeWithToken(): void {
