@@ -88,18 +88,27 @@ class ItineraryControllerIntegrationTest {
     class GetAllItineraries {
 
         @Test
-        @DisplayName("returns 200 without authentication (public, paginated)")
-        void withoutAuth_Returns200() throws Exception {
-            mockMvc.perform(get("/api/itineraries"))
+        @DisplayName("returns 200 for ADMIN (paginated)")
+        void withAdminAuth_Returns200() throws Exception {
+            mockMvc.perform(get("/api/itineraries")
+                            .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content", hasSize(1)))
                     .andExpect(jsonPath("$.content[0].name", is("Direction North")));
         }
 
         @Test
-        @DisplayName("/all (unpaginated) returns the full list")
+        @DisplayName("returns 401 without authentication")
+        void withoutAuth_Returns401() throws Exception {
+            mockMvc.perform(get("/api/itineraries"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("/all (unpaginated) returns the full list for ADMIN")
         void allEndpoint_ReturnsArray() throws Exception {
-            mockMvc.perform(get("/api/itineraries/all"))
+            mockMvc.perform(get("/api/itineraries/all")
+                            .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(1)))
                     .andExpect(jsonPath("$[0].name", is("Direction North")));
@@ -109,6 +118,7 @@ class ItineraryControllerIntegrationTest {
         @DisplayName("/all filters by lineId")
         void allEndpoint_WithLineIdFilter_Returns200() throws Exception {
             mockMvc.perform(get("/api/itineraries/all")
+                            .header("Authorization", "Bearer " + adminToken)
                             .param("lineId", testLine.getId().toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(1)));
@@ -118,6 +128,7 @@ class ItineraryControllerIntegrationTest {
         @DisplayName("/all returns 404 for unknown lineId filter")
         void allEndpoint_WithUnknownLineId_Returns404() throws Exception {
             mockMvc.perform(get("/api/itineraries/all")
+                            .header("Authorization", "Bearer " + adminToken)
                             .param("lineId", UUID.randomUUID().toString()))
                     .andExpect(status().isNotFound());
         }
@@ -128,9 +139,10 @@ class ItineraryControllerIntegrationTest {
     class GetItinerary {
 
         @Test
-        @DisplayName("returns 200 with itinerary for valid ID (public)")
+        @DisplayName("returns 200 with itinerary for valid ID (ADMIN)")
         void withValidId_Returns200() throws Exception {
-            mockMvc.perform(get("/api/itineraries/" + testItinerary.getId()))
+            mockMvc.perform(get("/api/itineraries/" + testItinerary.getId())
+                            .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name", is("Direction North")))
                     .andExpect(jsonPath("$.line.code", is("L1")));
@@ -139,7 +151,8 @@ class ItineraryControllerIntegrationTest {
         @Test
         @DisplayName("returns 404 for non-existent ID")
         void withNonExistentId_Returns404() throws Exception {
-            mockMvc.perform(get("/api/itineraries/" + UUID.randomUUID()))
+            mockMvc.perform(get("/api/itineraries/" + UUID.randomUUID())
+                            .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isNotFound());
         }
     }
