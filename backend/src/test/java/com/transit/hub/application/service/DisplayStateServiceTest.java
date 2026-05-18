@@ -303,4 +303,43 @@ class DisplayStateServiceTest {
             verify(messagingTemplate).convertAndSend(eq(expectedTopic), eq(mockState));
         }
     }
+
+    @Nested
+    @DisplayName("onStopDeleted()")
+    class OnStopDeleted {
+
+        @Test
+        @DisplayName("pushes a CRITICAL farewell payload without invoking the calculator")
+        void pushesFarewellWithoutCalculator() {
+            displayStateService.onStopDeleted(
+                    new com.transit.hub.domain.event.StopDeletedEvent(this, stopId, "Gare Disparue"));
+
+            // The calculator is bypassed — the stop row is gone, querying
+            // it would throw.
+            verify(displayStateCalculator, never()).calculateForStop(any());
+
+            org.mockito.ArgumentCaptor<DisplayState> payload =
+                    org.mockito.ArgumentCaptor.forClass(DisplayState.class);
+            verify(messagingTemplate).convertAndSend(
+                    eq("/topic/display/" + stopId), payload.capture());
+            DisplayState farewell = payload.getValue();
+            assertThat(farewell.stopId()).isEqualTo(stopId);
+            assertThat(farewell.stopName()).isEqualTo("Gare Disparue");
+            assertThat(farewell.messages()).hasSize(1);
+            assertThat(farewell.messages().get(0).severity())
+                    .isEqualTo(com.transit.hub.domain.model.enums.MessageSeverity.CRITICAL);
+        }
+
+        @Test
+        @DisplayName("swallows messaging exceptions to keep the event loop alive")
+        void swallowsMessagingException() {
+            doThrow(new RuntimeException("broker offline"))
+                    .when(messagingTemplate).convertAndSend(anyString(), any(DisplayState.class));
+
+            // Must not bubble — @TransactionalEventListener would otherwise
+            // abort the calling transaction.
+            displayStateService.onStopDeleted(
+                    new com.transit.hub.domain.event.StopDeletedEvent(this, stopId, "Gare"));
+        }
+    }
 }
