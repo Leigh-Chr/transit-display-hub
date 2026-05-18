@@ -1,11 +1,13 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { NEVER, of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ImportAuditComponent } from './import-audit.component';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { NotifyService } from '@core/services/notify.service';
 import { ImportAudit } from '@shared/models';
 import { testTranslocoModule } from '../../../../test-translations';
 
@@ -23,7 +25,16 @@ const translocoLangFr = { admin: { importAudit: { status: {} }, common: {}, navi
 describe('ImportAuditComponent', () => {
   let component: ImportAuditComponent;
   let fixture: ComponentFixture<ImportAuditComponent>;
-  let mockService: { getImportAudit: ReturnType<typeof vi.fn> };
+  let mockService: {
+    getImportAudit: ReturnType<typeof vi.fn>;
+    triggerReimport: ReturnType<typeof vi.fn>;
+  };
+  let mockNotify: {
+    success: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+  };
 
   const mockAudit: ImportAudit = {
     id: 'a1',
@@ -47,6 +58,13 @@ describe('ImportAuditComponent', () => {
   beforeEach(() => {
     mockService = {
       getImportAudit: vi.fn().mockReturnValue(of([mockAudit])),
+      triggerReimport: vi.fn().mockReturnValue(of(undefined)),
+    };
+    mockNotify = {
+      success: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -58,6 +76,7 @@ describe('ImportAuditComponent', () => {
         provideRouter([]),
         { provide: GtfsDataService, useValue: mockService },
         { provide: LocaleService, useValue: { current: signal('fr') } },
+        { provide: NotifyService, useValue: mockNotify },
       ],
     });
 
@@ -111,5 +130,70 @@ describe('ImportAuditComponent', () => {
 
     expect(component.audits()).toEqual([]);
     expect(component.loading()).toBe(false);
+  });
+
+  describe('triggerReimport', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+    });
+
+    it('calls the service, notifies success and clears the triggering flag', () => {
+      component.triggerReimport();
+      expect(mockService.triggerReimport).toHaveBeenCalledOnce();
+      expect(mockNotify.success).toHaveBeenCalledOnce();
+      expect(component.triggering()).toBe(false);
+    });
+
+    it('ignores re-entry while a trigger is in flight', () => {
+      // NEVER holds the observable open so the triggering signal stays
+      // true and the second call hits the early return.
+      mockService.triggerReimport = vi.fn().mockReturnValue(NEVER);
+      fixture = TestBed.createComponent(ImportAuditComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.triggerReimport();
+      component.triggerReimport();
+      expect(mockService.triggerReimport).toHaveBeenCalledOnce();
+    });
+
+    it('maps 409 to a warn notification', () => {
+      mockService.triggerReimport = vi.fn().mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'busy' } })),
+      );
+      fixture = TestBed.createComponent(ImportAuditComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.triggerReimport();
+      expect(mockNotify.warn).toHaveBeenCalledWith('busy');
+      expect(component.triggering()).toBe(false);
+    });
+
+    it('maps 400 to the no-feed error', () => {
+      mockService.triggerReimport = vi.fn().mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 400 })),
+      );
+      fixture = TestBed.createComponent(ImportAuditComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.triggerReimport();
+      expect(mockNotify.error).toHaveBeenCalledOnce();
+      expect(component.triggering()).toBe(false);
+    });
+
+    it('falls back to a generic error on 5xx', () => {
+      mockService.triggerReimport = vi.fn().mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 500 })),
+      );
+      fixture = TestBed.createComponent(ImportAuditComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.triggerReimport();
+      expect(mockNotify.error).toHaveBeenCalledOnce();
+      expect(component.triggering()).toBe(false);
+    });
   });
 });

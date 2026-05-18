@@ -6,6 +6,17 @@
       </div>
 
       <div class="toolbar">
+        <button mat-flat-button color="primary"
+                (click)="triggerReimport()"
+                [disabled]="triggering() || loading()"
+                [attr.aria-label]="t('admin.importAudit.triggerReimport')">
+          @if (triggering()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          } @else {
+            <mat-icon>cloud_download</mat-icon>
+          }
+          {{ t('admin.importAudit.triggerReimport') }}
+        </button>
         <button mat-stroked-button (click)="reload()" [disabled]="loading()">
           <mat-icon>refresh</mat-icon>
           {{ t('admin.importAudit.refresh') }}

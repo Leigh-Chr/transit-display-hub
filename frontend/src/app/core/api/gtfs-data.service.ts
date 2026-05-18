@@ -46,6 +46,15 @@ export class GtfsDataService {
     return this.http.get<ImportAudit[]>('/api/admin/import-audit', { params });
   }
 
+  /** Manually trigger a GTFS reimport. Returns 202 Accepted with a
+   *  Location header pointing at the audit row, 409 if an import is
+   *  already running, 400 if no feed URL is configured. */
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
+  triggerReimport(): Observable<void> {
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- ditto
+    return this.http.post<void>('/api/admin/gtfs/reimport', null);
+  }
+
   /** Indoor topology around a stop — escalators, lifts, exits, etc.
    *  Empty list when the feed has no pathways.txt or the stop has no
    *  inbound/outbound segments. */

@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,8 +8,10 @@ import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { NotifyService } from '@core/services/notify.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -35,6 +38,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     MatChipsModule,
     MatTooltipModule,
     MatExpansionModule,
+    MatProgressSpinnerModule,
     EmptyStateComponent,
     TranslocoDirective,
   ],
@@ -46,12 +50,14 @@ export class ImportAuditComponent {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly locale = inject(LocaleService);
   private readonly transloco = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   private readonly auditsResource = createSimpleListResource<ImportAudit>(() =>
     this.gtfsData.getImportAudit(50),
   );
   readonly audits = this.auditsResource.items;
   readonly loading = this.auditsResource.loading;
+  readonly triggering = signal(false);
   readonly loadError = computed(() => {
     const err = this.auditsResource.error();
     return err ? httpErrorMessage(err, this.transloco.translate('admin.importAudit.loadFailed')) : null;
@@ -61,6 +67,38 @@ export class ImportAuditComponent {
 
   reload(): void {
     this.auditsResource.reload();
+  }
+
+  /**
+   * Fires POST /api/admin/gtfs/reimport. Backend returns 202 on success
+   * (import runs on a background thread), 409 if another import already
+   * holds the lock, 400 if no feed URL is configured. The list reloads
+   * after a short delay so the new RUNNING row appears without the
+   * admin having to click refresh.
+   */
+  triggerReimport(): void {
+    if (this.triggering()) {return;}
+    this.triggering.set(true);
+    this.gtfsData.triggerReimport().subscribe({
+      next: () => {
+        this.triggering.set(false);
+        this.notify.success(this.transloco.translate('admin.importAudit.reimportTriggered'));
+        // Give the orchestrator a beat to persist the RUNNING audit row
+        // before refetching — otherwise the new entry can be missed.
+        setTimeout(() => this.reload(), 500);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.triggering.set(false);
+        if (err.status === 409) {
+          this.notify.warn(httpErrorMessage(err, this.transloco.translate('admin.importAudit.reimportConflict')));
+          this.reload();
+        } else if (err.status === 400) {
+          this.notify.error(this.transloco.translate('admin.importAudit.reimportNoFeed'));
+        } else {
+          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.importAudit.reimportFailed')));
+        }
+      },
+    });
   }
 
   statusIcon(status: ImportStatus): string {
