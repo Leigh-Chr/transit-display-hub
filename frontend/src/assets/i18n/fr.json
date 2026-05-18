@@ -349,6 +349,7 @@
       "toggleMenu": "Menu",
       "switchLight": "Passer en mode clair",
       "switchDark": "Passer en mode sombre",
+      "openUserGuide": "Ouvrir le guide utilisateur (nouvel onglet)",
       "logout": "Déconnexion"
     },
     "common": {
