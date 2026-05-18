@@ -112,7 +112,8 @@
       "wheelchairNo": "Not wheelchair accessible",
       "bikesAllowed": "Bicycles allowed",
       "platform": "Platform {{ code }}",
-      "liveData": "Live data"
+      "liveData": "Live data",
+      "liveDataWith": "Live data: {{ label }}"
     },
     "connection": {
       "reconnecting": "Reconnecting…",

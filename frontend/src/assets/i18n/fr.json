@@ -112,7 +112,8 @@
       "wheelchairNo": "Non accessible PMR",
       "bikesAllowed": "Vélos autorisés",
       "platform": "Quai {{ code }}",
-      "liveData": "Temps réel"
+      "liveData": "Temps réel",
+      "liveDataWith": "Temps réel : {{ label }}"
     },
     "connection": {
       "reconnecting": "Reconnexion…",

@@ -83,8 +83,8 @@
                   <span class="live-badge"
                         [class.delay-late]="(arrival.realtimeDelaySeconds ?? 0) > 60"
                         [class.delay-early]="(arrival.realtimeDelaySeconds ?? 0) < -60"
-                        [attr.aria-label]="'kiosk.accessibility.liveData' | transloco">
-                    ● {{ liveLabel(arrival.realtimeDelaySeconds) }}
+                        [attr.aria-label]="'kiosk.accessibility.liveDataWith' | transloco:{ label: liveLabel(arrival.realtimeDelaySeconds) }">
+                    <span aria-hidden="true">● {{ liveLabel(arrival.realtimeDelaySeconds) }}</span>
                   </span>
                 }
               </app-display-departures-row>
