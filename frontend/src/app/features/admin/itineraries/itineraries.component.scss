@@ -1,24 +1,8 @@
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 28px;
-}
+@use '../../../layouts/admin-layout/admin-page' as admin;
 
-.page-title {
-  font-size: var(--m3-type-headline-large);
-  font-weight: 700;
-  color: var(--app-on-surface);
-  margin: 0;
-  letter-spacing: -0.5px;
-}
-
-.toolbar {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
+.page-header { @include admin.crud-page-header; }
+.page-title { @include admin.crud-page-title; }
+.toolbar { @include admin.crud-toolbar; }
 
 .line-filter {
   width: 300px;

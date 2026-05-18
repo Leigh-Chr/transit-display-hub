@@ -1,0 +1,61 @@
+// Shared SCSS base for admin pages — both the CRUD shells (lines,
+// stops, users, messages, schedules, devices, itineraries) and the
+// data-overview shells (gtfs-data, import-audit, realtime, pathways,
+// shapes, tad-zones). Each component @use's this partial and includes
+// the mixins it needs. CSS is still emitted per-component so view
+// encapsulation stays intact; the source duplication that jscpd kept
+// flagging across 15 admin scss files lives in one place from now on.
+//
+// Usage:
+//   @use '../../../layouts/admin-layout/admin-page' as admin;
+//
+//   .page-header { @include admin.crud-page-header; }
+//   .page-title  { @include admin.crud-page-title; }
+//   .toolbar     { @include admin.crud-toolbar; }
+//
+// or, for the data-overview variant:
+//
+//   .page-header   { @include admin.overview-page-header; }
+//   .page-title    { @include admin.overview-page-title; }
+//   .page-subtitle { @include admin.overview-page-subtitle; }
+
+/* ---------- CRUD pages ---------- */
+
+@mixin crud-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+@mixin crud-page-title {
+  font-size: var(--m3-type-headline-large);
+  font-weight: 700;
+  color: var(--app-on-surface);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+@mixin crud-toolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Data-overview pages ---------- */
+
+@mixin overview-page-header {
+  margin-bottom: 24px;
+}
+
+@mixin overview-page-title {
+  margin: 0 0 4px 0;
+  font-size: var(--m3-type-headline-medium);
+  font-weight: 600;
+}
+
+@mixin overview-page-subtitle {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+}

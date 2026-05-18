@@ -1,7 +1,9 @@
-    .pathways-page { max-width: 1300px; }
-    .page-header { margin-bottom: 24px; }
-    .page-title { margin: 0 0 4px 0; font-size: var(--m3-type-headline-medium); font-weight: 600; }
-    .page-subtitle { margin: 0; color: var(--mat-sys-on-surface-variant); }
+@use '../../../layouts/admin-layout/admin-page' as admin;
+
+.pathways-page { max-width: 1300px; }
+.page-header { @include admin.overview-page-header; }
+.page-title { @include admin.overview-page-title; }
+.page-subtitle { @include admin.overview-page-subtitle; }
 
     .stop-picker { width: 100%; max-width: 480px; margin-bottom: 24px; }
     .platform { color: var(--mat-sys-on-surface-variant); font-size: var(--app-type-meta); margin-left: 4px; }
