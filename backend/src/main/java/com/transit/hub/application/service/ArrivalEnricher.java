@@ -69,9 +69,10 @@ public class ArrivalEnricher {
             // destination as null so the kiosk renders no headsign at
             // all rather than inventing a label that didn't come from
             // the feed (covered by EmptyItineraryHandling tests).
-            destination = terminus == null
-                    ? null
-                    : translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign", terminus);
+            if (terminus != null) {
+                destination = translations.resolveOr(
+                        "trips", itinerary.getExternalId(), "trip_headsign", terminus);
+            }
         }
         // Realtime delay: positive = late, negative = early. The
         // scheduled time stays as-published; the kiosk applies the

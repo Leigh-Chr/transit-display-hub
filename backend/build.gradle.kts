@@ -278,12 +278,14 @@ tasks.withType<JavaCompile> {
 
     // Error Prone hosts NullAway. We disable every built-in Error Prone
     // check (they overlap with PMD / SpotBugs and would mostly add noise)
-    // and keep only NullAway speaking. NullAway itself runs in WARN mode
-    // on main code while the @NullMarked annotation surface lands package
-    // by package; promote to ERROR once every package is marked.
+    // and keep only NullAway speaking. Every package in com.transit.hub
+    // is @NullMarked and the warning count sits at zero — running in
+    // ERROR mode now means a regression that reintroduces a null leak
+    // fails ./gradlew compileJava and the pre-push hook before the
+    // commit can even land.
     options.errorprone {
         disableAllChecks.set(true)
-        check("NullAway", CheckSeverity.WARN)
+        check("NullAway", CheckSeverity.ERROR)
         option("NullAway:AnnotatedPackages", "com.transit.hub")
         // Trust JUnit / Mockito-style assertion methods to imply non-null
         // after `assertNotNull(x)`, so the test body downstream can use x
