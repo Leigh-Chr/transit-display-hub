@@ -148,18 +148,20 @@
             <mat-icon aria-hidden="true">{{ sidenavOpen() ? 'menu_open' : 'menu' }}</mat-icon>
           </button>
           <span class="toolbar-spacer"></span>
-          <a
-            mat-icon-button
-            type="button"
-            href="https://github.com/Leigh-Chr/transit-display-hub/blob/main/docs/user-guide.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            [matTooltip]="t('admin.navigation.openUserGuide')"
-            [attr.aria-label]="t('admin.navigation.openUserGuide')"
-          >
-            <mat-icon aria-hidden="true">help_outline</mat-icon>
-          </a>
-          <app-a11y-toolbar class="admin-a11y" />
+          @if (!breakpointService.isMobile()) {
+            <a
+              mat-icon-button
+              type="button"
+              href="https://github.com/Leigh-Chr/transit-display-hub/blob/main/docs/user-guide.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              [matTooltip]="t('admin.navigation.openUserGuide')"
+              [attr.aria-label]="t('admin.navigation.openUserGuide')"
+            >
+              <mat-icon aria-hidden="true">help_outline</mat-icon>
+            </a>
+            <app-a11y-toolbar class="admin-a11y" />
+          }
           <button
             mat-button
             type="button"
@@ -169,7 +171,9 @@
             [attr.aria-label]="localeService.current() === 'fr' ? t('common.switchToEnglish') : t('common.switchToFrench')"
           >
             <mat-icon aria-hidden="true">translate</mat-icon>
-            <span class="locale-label">{{ localeService.current() === 'fr' ? 'EN' : 'FR' }}</span>
+            @if (!breakpointService.isMobile()) {
+              <span class="locale-label">{{ localeService.current() === 'fr' ? 'EN' : 'FR' }}</span>
+            }
           </button>
           <button
             mat-icon-button

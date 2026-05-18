@@ -140,6 +140,18 @@
       opacity: 0.6;
     }
 
+    /* Tighter horizontal padding on phones — the 32px desktop padding
+       eats too much screen real estate on a 360px viewport, and the
+       breadcrumb trail already wraps naturally thanks to flex-wrap. */
+    @media (max-width: 600px) {
+      .main-content {
+        padding: 16px;
+      }
+      .breadcrumbs {
+        padding: 8px 16px 0;
+      }
+    }
+
     /* Enter animations */
     @keyframes routeEnter {
       from { opacity: 0; transform: translateY(10px); }
