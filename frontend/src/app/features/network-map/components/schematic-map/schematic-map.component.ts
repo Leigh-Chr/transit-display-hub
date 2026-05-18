@@ -5,7 +5,6 @@ import {
   ElementRef,
   afterNextRender,
   computed,
-  effect,
   inject,
   input,
   output,
@@ -13,7 +12,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { linkedQueryParam } from 'ngxtension/linked-query-param';
 import { NetworkLine, NetworkMapAlerts } from '@shared/models';
 import { LayoutStop } from '../../services/schematic-layout.service';
 import { NetworkRowLayoutService } from '../../services/network-row-layout.service';
@@ -44,6 +42,7 @@ import {
   type NetworkLineRow,
   type NetworkStopLabel,
 } from './schematic-geometry';
+import { usePanZoomUrl } from './use-pan-zoom-url';
 import { useWheelHint } from './use-wheel-hint';
 
 @Component({
@@ -123,32 +122,6 @@ export class SchematicMapComponent {
    *  badge clusters never bleed into the neighbouring row. */
   private readonly ROW_SPACING = 120;
   private readonly rowLayout = inject(NetworkRowLayoutService);
-
-  /** ?z=2.5 — current zoom factor. Cleared from the URL once the user
-   *  is back at the default (zoom 1) so a clean view leaves a clean URL. */
-  private readonly zoomParam = linkedQueryParam('z', {
-    parse: (v: string | null): number | null => {
-      if (v === null) {return null;}
-      const n = parseFloat(v);
-      return isFinite(n) && n > 0 ? n : null;
-    },
-    stringify: (v: number | null) => v === null ? null : v.toFixed(3).replace(/\.?0+$/, ''),
-  });
-
-  /** ?p=panX,panY — current pan offset in SVG units. Same clean-URL
-   *  contract as zoomParam — omitted when at the diagram's natural origin. */
-  private readonly panParam = linkedQueryParam('p', {
-    parse: (v: string | null): { x: number; y: number } | null => {
-      if (v === null) {return null;}
-      const parts = v.split(',');
-      if (parts.length !== 2) {return null;}
-      const x = parseFloat(parts[0] ?? '');
-      const y = parseFloat(parts[1] ?? '');
-      return isFinite(x) && isFinite(y) ? { x, y } : null;
-    },
-    stringify: (v: { x: number; y: number } | null) =>
-      v === null ? null : `${Math.round(v.x)},${Math.round(v.y)}`,
-  });
 
   sortedLines = computed(() => {
     return [...this.lines()].sort((a, b) => {
@@ -281,20 +254,6 @@ export class SchematicMapComponent {
     const h = Math.max((maxY - minY) + topMargin + bottomMargin, 200);
 
     return { x, y, w, h };
-  });
-
-  currentViewBox = signal('0 0 800 220');
-
-  /** Effective zoom level: 1 = base view, 2 = zoomed-in 2x. Drives
-   *  level-of-detail decisions (which labels are worth showing) so the
-   *  full-network view stays readable at low zoom and reveals more as
-   *  the user zooms in. */
-  zoomLevel = computed(() => {
-    const parts = this.currentViewBox().split(' ').map(parseFloat);
-    const curW = parts[2];
-    const baseW = this.baseViewBox().w;
-    if (!curW || curW <= 0 || !baseW) {return 1;}
-    return baseW / curW;
   });
 
   /** Live size of the SVG element on screen, refreshed by a ResizeObserver
@@ -481,37 +440,21 @@ export class SchematicMapComponent {
     return 'multi';
   });
 
+  /** Pan/zoom URL state — mirrors ?z and ?p into / out of the
+   *  underlying {@link SvgPanZoom} via the {@link usePanZoomUrl}
+   *  composable. Declared after `baseViewBox` and `layoutSignature`
+   *  so its field initializer can read both. */
+  private readonly panZoomUrl = usePanZoomUrl({
+    panZoom: this.panZoom,
+    baseViewBox: this.baseViewBox,
+    layoutSignature: this.layoutSignature,
+  });
+
+  currentViewBox = this.panZoomUrl.currentViewBox;
+  zoomLevel = this.panZoomUrl.zoomLevel;
+
   constructor() {
-    // 1. URL → state. Re-applies whenever the user navigates with new ?z/?p
-    //    values (back/forward, deep link, programmatic). The diff check
-    //    breaks the loop with the URL-write side below.
-    effect(() => {
-      const z = this.zoomParam();
-      const p = this.panParam();
-      const targetZoom = z ?? 1;
-      const targetPanX = p?.x ?? 0;
-      const targetPanY = p?.y ?? 0;
-      if (
-        Math.abs(this.panZoom.zoom - targetZoom) > 1e-3 ||
-        Math.abs(this.panZoom.panX - targetPanX) > 0.5 ||
-        Math.abs(this.panZoom.panY - targetPanY) > 0.5
-      ) {
-        this.panZoom.setState(targetZoom, targetPanX, targetPanY);
-        this.currentViewBox.set(this.panZoom.computeViewBox(this.baseViewBox()));
-      }
-    });
-
-    // 2. Layout change → reset view, but only when the URL hasn't pinned
-    //    an explicit zoom/pan (e.g. a shared deep-link must survive a
-    //    filter-driven layout signature change).
-    effect(() => {
-      this.layoutSignature();
-      if (this.zoomParam() === null && this.panParam() === null) {
-        this.resetView();
-      }
-    });
-
-    // 3. Track the SVG element's screen size so the icon-scaling formula
+    // Track the SVG element's screen size so the icon-scaling formula
     //    can compensate for the view-box-to-screen ratio (different in
     //    single-line vs dense multi-line). Set up once after first render.
     const destroyRef = inject(DestroyRef);
@@ -777,17 +720,16 @@ export class SchematicMapComponent {
 
   zoomIn(): void {
     this.panZoom.zoomIn(this.baseViewBox());
-    this.updateViewBox();
+    this.panZoomUrl.syncFromPanZoom();
   }
 
   zoomOut(): void {
     this.panZoom.zoomOut(this.baseViewBox());
-    this.updateViewBox();
+    this.panZoomUrl.syncFromPanZoom();
   }
 
   resetView(): void {
-    this.panZoom.reset();
-    this.updateViewBox();
+    this.panZoomUrl.reset();
   }
 
   centerOnStop(stopId: string): void {
@@ -806,14 +748,14 @@ export class SchematicMapComponent {
     if (sx === null || sy === null) {return;}
 
     this.panZoom.centerOn(sx, sy, this.baseViewBox());
-    this.updateViewBox();
+    this.panZoomUrl.syncFromPanZoom();
   }
 
   onWheel(event: WheelEvent): void {
     const svg = this.svgElement()?.nativeElement;
     if (!svg) {return;}
     const result = this.panZoom.onWheel(event, svg.getBoundingClientRect(), this.baseViewBox());
-    this.updateViewBox();
+    this.panZoomUrl.syncFromPanZoom();
     if (!result.zoomed) {this.wheelHint.show();}
   }
 
@@ -840,7 +782,7 @@ export class SchematicMapComponent {
       default: return;
     }
     event.preventDefault();
-    this.updateViewBox();
+    this.panZoomUrl.syncFromPanZoom();
   }
 
   onPointerDown(event: MouseEvent): void {
@@ -854,7 +796,7 @@ export class SchematicMapComponent {
     const svg = this.svgElement()?.nativeElement;
     if (!svg) {return;}
     this.panZoom.onPointerMove(event, svg.getBoundingClientRect(), this.baseViewBox());
-    this.updateViewBox();
+    this.panZoomUrl.syncFromPanZoom();
   }
 
   onPointerUp(): void {
@@ -873,24 +815,6 @@ export class SchematicMapComponent {
     const svg = this.svgElement()?.nativeElement;
     if (!svg) {return;}
     this.panZoom.onTouchMove(event, svg.getBoundingClientRect(), this.baseViewBox());
-    this.updateViewBox();
-  }
-
-  private updateViewBox(): void {
-    this.currentViewBox.set(this.panZoom.computeViewBox(this.baseViewBox()));
-    this.syncStateToUrl();
-  }
-
-  /** Mirror the live pan/zoom into ?z and ?p, omitting them when the
-   *  state has effectively returned to the default view. The ngxtension
-   *  signal short-circuits when the value matches what's already there,
-   *  so writing during a URL-driven update does not retrigger effects. */
-  private syncStateToUrl(): void {
-    const z = this.panZoom.zoom;
-    const px = this.panZoom.panX;
-    const py = this.panZoom.panY;
-
-    this.zoomParam.set(Math.abs(z - 1) < 1e-3 ? null : z);
-    this.panParam.set(Math.abs(px) < 0.5 && Math.abs(py) < 0.5 ? null : { x: px, y: py });
+    this.panZoomUrl.syncFromPanZoom();
   }
 }
