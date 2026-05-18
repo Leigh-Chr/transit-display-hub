@@ -66,6 +66,18 @@
       flex: 1 1 auto;
     }
 
+    .locale-toggle {
+      min-width: 0;
+      padding: 0 8px;
+      gap: 4px;
+    }
+
+    .locale-label {
+      font-weight: 600;
+      font-size: var(--m3-type-label-small);
+      letter-spacing: 0.04em;
+    }
+
     .username {
       margin-right: 16px;
       font-weight: 500;

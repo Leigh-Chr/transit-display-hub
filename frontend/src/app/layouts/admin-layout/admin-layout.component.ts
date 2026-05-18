@@ -12,6 +12,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
+import { LocaleService } from '@core/i18n/locale.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -40,6 +41,7 @@ export class AdminLayoutComponent {
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
   readonly breakpointService = inject(BreakpointService);
+  readonly localeService = inject(LocaleService);
 
   readonly sidenavRef = viewChild<MatSidenav>('sidenav');
   readonly sidenavOpen = signal(this.loadSidenavState());

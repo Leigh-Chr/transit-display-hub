@@ -149,6 +149,17 @@
           </button>
           <span class="toolbar-spacer"></span>
           <button
+            mat-button
+            type="button"
+            class="locale-toggle"
+            (click)="localeService.toggle()"
+            [matTooltip]="localeService.current() === 'fr' ? t('common.switchToEnglish') : t('common.switchToFrench')"
+            [attr.aria-label]="localeService.current() === 'fr' ? t('common.switchToEnglish') : t('common.switchToFrench')"
+          >
+            <mat-icon aria-hidden="true">translate</mat-icon>
+            <span class="locale-label">{{ localeService.current() === 'fr' ? 'EN' : 'FR' }}</span>
+          </button>
+          <button
             mat-icon-button
             type="button"
             (click)="themeService.toggleTheme()"

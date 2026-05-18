@@ -9,6 +9,10 @@ import { ThemeService } from '@core/services/theme.service';
 import { BreakpointService } from '@core/services/breakpoint.service';
 
 const en = {
+  common: {
+    switchToEnglish: 'Switch to English',
+    switchToFrench: 'Switch to French',
+  },
   admin: {
     navigation: {
       dashboard: 'Dashboard',
@@ -39,6 +43,10 @@ const en = {
 };
 
 const fr = {
+  common: {
+    switchToEnglish: 'Switch to English',
+    switchToFrench: 'Passer en français',
+  },
   admin: {
     navigation: {
       dashboard: 'Tableau de bord',
@@ -300,7 +308,7 @@ describe('AdminLayoutComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      const logoutBtn = fixture.nativeElement.querySelector('button[mat-button]');
+      const logoutBtn = fixture.nativeElement.querySelector('button[mat-button]:not(.locale-toggle)');
       expect(logoutBtn).not.toBeNull();
     });
 
@@ -310,7 +318,7 @@ describe('AdminLayoutComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      const logoutBtn = fixture.nativeElement.querySelector('button[mat-button]');
+      const logoutBtn = fixture.nativeElement.querySelector('button[mat-button]:not(.locale-toggle)');
       expect(logoutBtn.textContent).toContain('Logout');
 
       // Mobile: text should be hidden
@@ -318,9 +326,19 @@ describe('AdminLayoutComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      const mobileLogoutBtn = fixture.nativeElement.querySelector('button[mat-button]');
+      const mobileLogoutBtn = fixture.nativeElement.querySelector('button[mat-button]:not(.locale-toggle)');
       // On mobile, only the icon is shown, no "Logout" text
       expect(mobileLogoutBtn.textContent.trim()).not.toContain('Logout');
+    });
+
+    it('exposes a locale-toggle in the toolbar so admins can switch FR/EN without leaving the admin', async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const localeBtn = fixture.nativeElement.querySelector('button.locale-toggle');
+      expect(localeBtn).not.toBeNull();
+      // Default lang is 'en' in the testing module, so the toggle invites a switch to FR.
+      expect(localeBtn.textContent).toContain('FR');
     });
   });
 });
