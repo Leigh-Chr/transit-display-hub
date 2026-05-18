@@ -37,7 +37,7 @@ describe('SchematicMapComponent — layout & rendering', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      const emptyEl = fixture.nativeElement.querySelector('.empty-selection-text');
+      const emptyEl = fixture.nativeElement.querySelector('app-empty-state .empty-title');
       expect(emptyEl.textContent).toContain('Select a line');
     });
   });
