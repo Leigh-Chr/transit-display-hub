@@ -1,3 +1,6 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+import net.ltgt.gradle.errorprone.errorprone
+
 plugins {
     java
     jacoco
@@ -23,6 +26,12 @@ plugins {
     // configuration. Out-of-band of the standard test task so a JMH
     // run stays explicit (`./gradlew jmh`) and never blocks CI.
     id("me.champeau.jmh") version "0.7.3"
+    // Error Prone runs as a javac plugin. We use it as the host for
+    // NullAway (JSpecify-driven null-safety) rather than for its own
+    // bug patterns — most of the latter overlap with PMD / SpotBugs
+    // and would just add noise. Configuration below disables the
+    // built-in checks one by one so only NullAway speaks.
+    id("net.ltgt.errorprone") version "4.1.0"
 }
 
 group = "com.transit"
@@ -131,6 +140,21 @@ dependencies {
     // bytecode-compat fixes for JDK 21+ records.
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
+
+    // JSpecify — vendor-neutral nullability annotations (@Nullable,
+    // @NonNull, @NullMarked). Spring 7 honours them in its own APIs;
+    // NullAway uses them as the source of truth for the null-safety
+    // analysis. Tiny annotation-only jar, kept on the runtime classpath
+    // so reflection-driven validators (Spring, Jackson) can read them.
+    implementation("org.jspecify:jspecify:1.0.0")
+
+    // NullAway — Error Prone plugin that turns @Nullable / @NullMarked
+    // into compile-time errors when a nullable value flows into a
+    // non-null position. Wires into errorprone via the dedicated
+    // annotation processor; configuration lives in the
+    // `tasks.withType<JavaCompile>` block below.
+    errorprone("com.uber.nullaway:nullaway:0.12.10")
+    errorprone("com.google.errorprone:error_prone_core:2.41.0")
 
     // DevTools
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -251,6 +275,51 @@ tasks.register<Test>("testPostgres") {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Xlint:deprecation")
+
+    // Error Prone hosts NullAway. We disable every built-in Error Prone
+    // check (they overlap with PMD / SpotBugs and would mostly add noise)
+    // and keep only NullAway speaking. NullAway itself runs in WARN mode
+    // on main code while the @NullMarked annotation surface lands package
+    // by package; promote to ERROR once every package is marked.
+    options.errorprone {
+        disableAllChecks.set(true)
+        check("NullAway", CheckSeverity.WARN)
+        option("NullAway:AnnotatedPackages", "com.transit.hub")
+        // Trust JUnit / Mockito-style assertion methods to imply non-null
+        // after `assertNotNull(x)`, so the test body downstream can use x
+        // without a redundant guard.
+        option("NullAway:HandleTestAssertionLibraries", "true")
+        // Spring / Lombok @RequiredArgsConstructor fields are populated by
+        // the framework after construction; suppressing the
+        // {@code @MonotonicNonNull} warning on those keeps the signal
+        // focused on developer-controlled paths.
+        option("NullAway:ExcludedFieldAnnotations",
+            "org.springframework.beans.factory.annotation.Autowired,"
+            + "org.springframework.beans.factory.annotation.Value,"
+            + "jakarta.persistence.PersistenceContext")
+    }
+}
+
+// NullAway adds no value on generated protobuf code or on the test
+// source set (mocks pretend everything is non-null) — disable it there
+// to keep the report focused.
+tasks.named<JavaCompile>("compileTestJava") {
+    options.errorprone.isEnabled.set(false)
+}
+tasks.named<JavaCompile>("compileJmhJava") {
+    options.errorprone.isEnabled.set(false)
+}
+
+// Generated protobuf (GtfsRealtime.java) lives under
+// build/generated/source/proto; skip Error Prone analysis on it by
+// excluding the generated package from NullAway scope.
+afterEvaluate {
+    tasks.named<JavaCompile>("compileJava").configure {
+        options.errorprone.option(
+            "NullAway:ExcludedClassRegex",
+            "com\\.google\\.transit\\.realtime\\..*"
+        )
+    }
 }
 
 // JaCoCo wires automatically into the `test` task; `jacocoTestReport`
