@@ -1,9 +1,15 @@
 package com.transit.hub.infrastructure.security;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -21,7 +27,7 @@ class LoginRateLimitFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new LoginRateLimitFilter();
+        filter = new LoginRateLimitFilter(new MockEnvironment());
         // The properties are normally bound from app.security.login-rate-limit.*
         // via @Value at Spring boot; in a pure-unit test we wire the defaults
         // ourselves so the bucket builds.
@@ -161,6 +167,65 @@ class LoginRateLimitFilterTest {
         MockHttpServletResponse res2 = new MockHttpServletResponse();
         filter.doFilter(req2, res2, chain);
         assertThat(res2.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+    }
+
+    @Test
+    void emitsWarningWhenDevProfileActiveAndLimitIsLoose() {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles("dev");
+        LoginRateLimitFilter looseDev = new LoginRateLimitFilter(env);
+        ReflectionTestUtils.setField(looseDev, "maxAttempts", 100);
+        ReflectionTestUtils.setField(looseDev, "windowMinutes", 5);
+
+        ListAppender<ILoggingEvent> appender = attachAppender();
+
+        looseDev.warnIfLooseLimitOnDevProfile();
+
+        assertThat(appender.list)
+                .anySatisfy(event -> {
+                    assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                    assertThat(event.getFormattedMessage())
+                            .contains("100", "dev")
+                            .contains("public internet");
+                });
+    }
+
+    @Test
+    void doesNotWarnWhenDevProfileActiveButLimitMatchesProdDefault() {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles("dev");
+        LoginRateLimitFilter tightDev = new LoginRateLimitFilter(env);
+        ReflectionTestUtils.setField(tightDev, "maxAttempts", 5);
+        ReflectionTestUtils.setField(tightDev, "windowMinutes", 5);
+
+        ListAppender<ILoggingEvent> appender = attachAppender();
+
+        tightDev.warnIfLooseLimitOnDevProfile();
+
+        assertThat(appender.list).noneMatch(e -> e.getLevel() == Level.WARN);
+    }
+
+    @Test
+    void doesNotWarnOnNonDevProfileEvenWithLooseLimit() {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles("prod");
+        LoginRateLimitFilter looseProd = new LoginRateLimitFilter(env);
+        ReflectionTestUtils.setField(looseProd, "maxAttempts", 100);
+        ReflectionTestUtils.setField(looseProd, "windowMinutes", 5);
+
+        ListAppender<ILoggingEvent> appender = attachAppender();
+
+        looseProd.warnIfLooseLimitOnDevProfile();
+
+        assertThat(appender.list).noneMatch(e -> e.getLevel() == Level.WARN);
+    }
+
+    private ListAppender<ILoggingEvent> attachAppender() {
+        Logger logger = (Logger) LoggerFactory.getLogger(LoginRateLimitFilter.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        return appender;
     }
 
     private MockHttpServletRequest loginRequest(String ip) {
