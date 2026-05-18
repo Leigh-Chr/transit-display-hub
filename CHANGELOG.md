@@ -7,6 +7,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.31.0] — 2026-05-19
+
+UX marathon — a single panoramic audit followed by a six-wave
+implementation rollout, 41 commits, frontend-only. The audit
+(`docs/audits/2026-05-19-ux-audit.md`) ran three parallel `Explore`
+agents over admin / public-display / auth-shared surfaces, then a
+cross-feature persona sweep; this release closes every finding it
+produced. No backend code is touched, no dependency added, the test
+suite grows from 1148 to 1153 specs (all green).
+
+### Added
+
+- **Onboarding banner on the dashboard** when no GTFS data has ever
+  been imported (zero lines, zero stops, zero devices), pointing
+  straight to Operations → Import history. Hidden as soon as any
+  data is present.
+- **A11y toolbar in the admin shell** (high-contrast + larger-text
+  toggles). The toolbar already existed on the public surfaces; an
+  admin can now flip the same toggles without leaving `/admin`. The
+  three signals already share `localStorage` so the preference
+  carries across surfaces.
+- **Locale toggle (FR/EN) in the admin toolbar.** The switcher was
+  only reachable from the network map.
+- **User-guide help button** in the admin toolbar — opens
+  `docs/user-guide.md` on GitHub in a new tab.
+- **Cmd/Ctrl+K command palette** — global shortcut opens a small
+  dialog listing every admin destination, filterable by label or
+  path. Admin-only routes are filtered out for agents.
+- **Path breadcrumbs** under the admin toolbar for nested pages
+  (e.g. `/admin/operations/realtime`). Hidden on flat pages so the
+  trail doesn't add noise.
+- **Sidenav badges** — info badge on Messages (active broadcast
+  count), warning badge on Devices (offline count). Polled every
+  60 s via the new `SidenavBadgesService`. Hidden until the first
+  fetch lands so a stale zero never flashes during boot.
+- **CSV export on the lines page** — one-shot download with code,
+  name, type, color, stop count and itinerary count columns.
+  Escapes per RFC 4180.
+- **Multi-select + bulk delete** on the lines and messages pages.
+  Per-card checkbox, select-all-on-page in the toolbar, sticky
+  action bar, single confirm dialog, parallel `forkJoin` of
+  per-id DELETE calls. Selection is in-memory only so changing
+  page clears it (no acting on rows you no longer see).
+- **Quick-action CTA on the all-clear dashboard card** — "New
+  broadcast" link that drops the agent straight into the messages
+  page (the active-messages stat card is also clickable end-to-end).
+- **Hub-display URL preset** — `?contrast=high&largeText=on&dark=on&lang=fr`
+  on `/display/:stopId`, `/hub` and `/map` lets a Pi deployment
+  hard-code appearance in the kiosk URL.
+- **Forgot-password dialog** on the login form — explains the
+  manual recovery path until an email-based reset ships.
+- **Hub offline-stops banner** — when a stop the URL asked for
+  doesn't make it into the rebuild (deleted upstream, disabled, or
+  the backend has gone quiet for >30 min for that stop), the hub
+  display now names the missing stop(s) instead of silently showing
+  a shorter board. Last-known names are cached so opaque ids never
+  surface.
+- **Keyboard shortcuts dialog on the network map** — fourth button
+  on the zoom-controls cluster, opens a help modal listing `+/-`,
+  `0`, arrow keys, `Tab` and `Enter`.
+- **Catch-all 5xx toast** in the auth interceptor so a page that
+  forgets to handle the error path on a write never leaves the user
+  staring at a stuck button.
+
+### Changed
+
+- **Session expiry no longer logs the user out silently.** When the
+  refresh-token call itself fails, the interceptor now emits a
+  red "Session expired. Please sign in again." toast before
+  bouncing to `/login`. The redirect URL is still stashed.
+- **Kiosk error state shows a recovery hint** with the two valid
+  URL formats (`/display/<stop-id>` and `/display?token=<device-token>`)
+  so an installer can fix the URL on the device without leaving the
+  screen. The Retry button is kept for transient network errors.
+- **Device token dialog v2** — the registration dialog now primarily
+  exposes the **full display URL** (origin + token) and only
+  secondarily the raw token. A warning hint stays on screen until
+  at least one copy succeeds; the close button reads "Close anyway"
+  until then so a misclick can't dismiss the only-shown-once token.
+- **Hub Display button** on `/admin/stops` is promoted to a flat
+  accent button labelled "New hub display" with a tooltip that
+  explains the use case (interchanges) and the next step (pick 2+
+  stops in the dialog). The toolbar's previous stroked button with
+  the bare "Hub Display" label was virtually undiscoverable.
+- **Devices status filter** is mirrored into `?status=ONLINE|OFFLINE`
+  so it survives reload and shares. Matches the bookmarkability
+  contract every other admin list page already met.
+- **Admin operations page** gets a real header ("Operations" +
+  one-line subtitle) — the wrapper used to render only two anonymous
+  tabs with no context.
+- **Stop-autocomplete highlight** now persists for the entire
+  lifetime of the stop popup (instead of fading after 3 s), so a
+  mobile user dismissing the dialog still sees where on the map the
+  stop sits.
+- **`realtime`** elevates "feed not configured" notifications from
+  `info` to `warn` — the URL must be set, the colour now reflects
+  that.
+- **`itineraries`**: the "cars allowed" amenity badge swaps its
+  hardcoded `🚗 Voitures` emoji for a Material `directions_car`
+  icon and a translated label.
+- **Login form** carries `autocomplete="username"` /
+  `autocomplete="current-password"` so password managers and
+  assistive tech can fill it.
+- **French `auth.changePassword.*` switches from informal `tu` to
+  formal `vous`** to match the rest of the admin UI.
+- **`hub-display-dialog`** uses the canonical `<app-empty-state>`
+  for its "no stops match" branch instead of an inline custom div.
+- **Schedules prompt** spells out the auto-load behaviour
+  ("Pick a line above, then a stop: schedules will load
+  automatically.") so the absence of a Load button no longer
+  confuses new admins.
+- **Route-search-bar errors** ("same stop selected" and "no route
+  found") share the same warning-styled, `role="alert"` markup with
+  an icon — the former used to be a plain inline hint and missed
+  the assistive announce.
+- **Kiosk live-badge `aria-label`** now includes the actual delay
+  value (`"Live data: +3 min"` rather than the static
+  `"Live data"`); the bullet is `aria-hidden`.
+- **Hub and kiosk line badges** carry a descriptive
+  `aria-label="Line {code} — {name}"` so screen readers no longer
+  announce a bare code.
+- **Auth flows emit success toasts** ("Logged in", "Password
+  updated") on completion.
+
+### Accessibility
+
+- **High-visibility focus ring** on the kiosk a11y-toolbar buttons,
+  sized in `vh` so it stays readable at 2–3 m viewing distance.
+- **`prefers-reduced-motion` now disables** the "imminent" pulse on
+  the kiosk live-badge — the rest of the kiosk already respected
+  the media query, this was the last animation slipping through.
+
+### Mobile
+
+- **Admin toolbar slims down on phones** — the help, a11y-toolbar
+  and locale-label render desktop-only; only the locale icon, theme
+  toggle and logout icon stay on mobile.
+- **`.main-content` + `.breadcrumbs` side padding** drops from 32 px
+  to 16 px on mobile, giving admin tables back ~32 px of usable
+  width.
+- **Mat-tables get a global `overflow-x: auto` fallback** scoped to
+  the surrounding `mat-card` on `<= 600 px` viewports — multi-
+  column admin tables (stops, users, itineraries, schedules) used
+  to clip; realtime / import-audit already had per-page wrappers.
+
 ## [1.30.0] — 2026-05-18
 
 Second cohesion pass — the 1.29 release reorganised navigation
