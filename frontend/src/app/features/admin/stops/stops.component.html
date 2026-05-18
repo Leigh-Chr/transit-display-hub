@@ -33,11 +33,15 @@
     />
 
     <button
-      mat-stroked-button
+      mat-flat-button
+      color="accent"
+      type="button"
+      class="hub-display-cta"
       (click)="openHubDisplay()"
       [matTooltip]="t('admin.stops.hubDisplayTooltip')"
+      matTooltipPosition="below"
     >
-      <mat-icon>hub</mat-icon>
+      <mat-icon aria-hidden="true">hub</mat-icon>
       {{ t('admin.stops.hubDisplay') }}
     </button>
   </div>
