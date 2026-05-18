@@ -92,8 +92,8 @@ export class LinesComponent {
           l.name,
           l.type ?? '',
           l.color,
-          String(l.stopCount ?? 0),
-          String(l.itineraryCount ?? 0),
+          String(l.stopCount),
+          String(l.itineraryCount),
         ]);
         const csv = [header, ...rows].map(toCsvRow).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
