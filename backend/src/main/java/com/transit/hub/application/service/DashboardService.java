@@ -88,7 +88,7 @@ public class DashboardService {
         long deviceTotal = deviceRepository.count();
         long deviceOnline = deviceRepository.countByStatus(DeviceStatus.ONLINE);
         long deviceOffline = deviceRepository.countByStatus(DeviceStatus.OFFLINE);
-        List<DeviceResponse> offlinePreview = deviceRepository.findByStatus(DeviceStatus.OFFLINE).stream()
+        List<DeviceResponse> offlinePreview = deviceRepository.findByStatusWithStopAndLines(DeviceStatus.OFFLINE).stream()
                 .sorted(Comparator.comparing(d -> d.getStop() == null ? "" : d.getStop().getName()))
                 .limit(OFFLINE_PREVIEW)
                 .map(DeviceResponse::from)

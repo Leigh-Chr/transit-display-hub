@@ -66,7 +66,7 @@ public class DeviceService {
 
     @Transactional(readOnly = true)
     public List<DeviceResponse> getDevicesByStatus(DeviceStatus status) {
-        return deviceRepository.findByStatus(status).stream()
+        return deviceRepository.findByStatusWithStopAndLines(status).stream()
                 .map(DeviceResponse::from)
                 .toList();
     }

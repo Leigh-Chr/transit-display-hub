@@ -387,7 +387,7 @@ class DeviceServiceTest {
         @DisplayName("returns only online devices when filtering by ONLINE")
         void returnsOnlineDevices() {
             Device onlineDevice = TestDataFactory.createOnlineDevice(testStop);
-            when(deviceRepository.findByStatus(DeviceStatus.ONLINE)).thenReturn(List.of(onlineDevice));
+            when(deviceRepository.findByStatusWithStopAndLines(DeviceStatus.ONLINE)).thenReturn(List.of(onlineDevice));
 
             List<DeviceResponse> result = deviceService.getDevicesByStatus(DeviceStatus.ONLINE);
 
@@ -398,7 +398,7 @@ class DeviceServiceTest {
         @DisplayName("returns only offline devices when filtering by OFFLINE")
         void returnsOfflineDevices() {
             Device offlineDevice = TestDataFactory.createDevice(testStop);
-            when(deviceRepository.findByStatus(DeviceStatus.OFFLINE)).thenReturn(List.of(offlineDevice));
+            when(deviceRepository.findByStatusWithStopAndLines(DeviceStatus.OFFLINE)).thenReturn(List.of(offlineDevice));
 
             List<DeviceResponse> result = deviceService.getDevicesByStatus(DeviceStatus.OFFLINE);
 

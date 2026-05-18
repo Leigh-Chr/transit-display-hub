@@ -17,7 +17,16 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
 
     List<Device> findByTokenLookup(String tokenLookup);
 
+    /** Plain status lookup without relations. Prefer
+     *  {@link #findByStatusWithStopAndLines} when the caller will turn the
+     *  result into a {@link com.transit.hub.application.dto.response.DeviceResponse}
+     *  or otherwise touch {@code device.stop.lines} — the bare method
+     *  triggers a per-row LAZY fetch of the stop and its lines (1 + N + N). */
     List<Device> findByStatus(DeviceStatus status);
+
+    @Query("SELECT DISTINCT d FROM Device d JOIN FETCH d.stop s LEFT JOIN FETCH s.lines l "
+            + "LEFT JOIN FETCH l.agency WHERE d.status = :status")
+    List<Device> findByStatusWithStopAndLines(DeviceStatus status);
 
     long countByStatus(DeviceStatus status);
 
