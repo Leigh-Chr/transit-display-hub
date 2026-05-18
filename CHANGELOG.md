@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.25.2] — 2026-05-18
+
+Maintainability patch absorbing the seven quick wins surfaced by the
+codebase map of 2026-05-18. Every item is small, isolated, and
+covered by the existing test suite.
+
+### Security
+
+- **CORS allow-list tightened.** `SecurityConfig#corsConfigurationSource`
+  no longer accepts every request header; it now declares the six
+  the SPA actually sends (`Authorization`, `Content-Type`, `Accept`,
+  `Accept-Language`, `X-XSRF-TOKEN`, `If-Match`). Functionally a
+  no-op for the bundled frontend, but follows least-privilege.
+
+### Refactored
+
+- **`auth.service` `hydrateFromResponse` helper.** The identical
+  three-signal `tap()` body in `login()` and `refresh()` collapses to
+  a single private method; the silent boot-time refresh keeps its
+  narrower behaviour (untouched `passwordMustChange`) and now
+  documents why.
+- **`_admin-page.scss` partial.** The `page-header` / `page-title` /
+  (optional) `toolbar` rules duplicated across 13 admin component
+  SCSS files (jscpd flag) move into a single set of mixins under
+  `layouts/admin-layout/_admin-page.scss`, mirroring the
+  `_display-base.scss` pattern from v1.22.0. Each consumer drops to
+  one `@include` per rule; the source dedup is 87 lines.
+
+### Dependencies
+
+- **Testcontainers PostgreSQL bumped 16 → 17.** Aligns the migration
+  smoke (`./gradlew testPostgres`) with the runtime image already
+  pinned in `docker-compose.yml` and `ops/kiosk/docker-compose.kiosk.yml`.
+  Verified green locally.
+- **`legacy-peer-deps=true` re-verified.** `@angular/build@21.2.11`
+  still pins `typescript@">=5.9 <6.0"`; the flag stays. Comment
+  refreshed with today's date.
+
+### Documentation
+
+- README badges bumped (`version-1.25.2`, `ADRs-41`).
+- `docs/installation.md` clone snippet now uses the canonical
+  `git@github.com:Leigh-Chr/transit-display-hub.git` URL instead of
+  the `<repository-url>` placeholder.
+- `docs/installation.md` and `docs/deployment.md` clarify that the
+  minimum supported PostgreSQL is 15 but the bundled compose ships
+  PG 17 (matches CI + Testcontainers).
+- 2 dead i18n keys dropped (`common.empty.defaultTitle`,
+  `admin.gtfsData.durationMin`). The other ~92 candidates flagged
+  by the orphan scan turned out to be consumed via transloco
+  directive prefixes (`*transloco="let t; read|prefix: 'X'"`) or
+  template-literal substitution (`` `${ns}.suffix` ``).
+
 ## [1.25.1] — 2026-05-18
 
 Bugfix release surfaced by the post-v1.25.0 smoke run on `/map` and `/hub`.
