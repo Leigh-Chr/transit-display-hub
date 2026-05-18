@@ -73,7 +73,6 @@ html {
   // === M3 Motion Tokens ===
   // Easing Curves (Material 3 spec)
   --m3-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
-  --m3-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
   --m3-easing-standard: cubic-bezier(0.2, 0, 0, 1);
 
   // M3 Expressive Spring (CSS linear() for physics-based bounce)
@@ -97,13 +96,10 @@ html {
   // power kiosk-style splashes, headlines title cards / dialogs,
   // body the prose, label the chips and captions.
   --m3-type-display-large: 36px;
-  --m3-type-display-medium: 32px;
   --m3-type-headline-large: 28px;
   --m3-type-headline-medium: 24px;
   --m3-type-headline-small: 20px;
   --m3-type-title-large: 18px;
-  --m3-type-title-medium: 16px;
-  --m3-type-title-small: 14px;
   --m3-type-body-large: 16px;
   --m3-type-body-medium: 14px;
   --m3-type-body-small: 13px;
