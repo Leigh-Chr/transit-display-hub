@@ -257,6 +257,7 @@ export class LoginComponent {
   selector: 'app-forgot-password-dialog',
   standalone: true,
   imports: [MatDialogModule, MatButtonModule, TranslocoDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
       <h2 mat-dialog-title>{{ t('auth.login.forgotPasswordTitle') }}</h2>
