@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -222,7 +222,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     }
   `,
 })
-export class NetworkListComponent implements OnInit {
+export class NetworkListComponent {
   private readonly dataService = inject(NetworkMapDataService);
   private readonly transloco = inject(TranslocoService);
   private readonly locale = inject(LocaleService);
@@ -249,7 +249,7 @@ export class NetworkListComponent implements OnInit {
     });
   });
 
-  ngOnInit(): void {
+  constructor() {
     this.dataService.getNetworkMap().subscribe({
       next: (data) => {
         this.data.set(data);

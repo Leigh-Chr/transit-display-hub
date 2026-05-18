@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, computed, effect, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, signal, computed, effect, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -52,7 +52,7 @@ import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
   templateUrl: './network-map.component.html',
   styleUrl: './network-map.component.scss'
 })
-export class NetworkMapComponent implements OnInit {
+export class NetworkMapComponent {
   private readonly networkMapService = inject(NetworkMapDataService);
   private readonly layoutService = inject(SchematicLayoutService);
   private readonly routeFinder = inject(RouteFinderService);
@@ -352,9 +352,7 @@ export class NetworkMapComponent implements OnInit {
         this.openStopPopup(stop);
       }
     });
-  }
 
-  ngOnInit(): void {
     this.loadNetwork();
     this.subscribeToUpdates();
   }

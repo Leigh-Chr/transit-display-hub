@@ -4,7 +4,6 @@ import {
   computed,
   effect,
   inject,
-  OnInit,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -262,7 +261,7 @@ export interface HubDisplayDialogResult {
     }
   `,
 })
-export class HubDisplayDialogComponent implements OnInit {
+export class HubDisplayDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<HubDisplayDialogComponent>);
   private readonly stopService = inject(StopService);
   readonly data = inject<HubDisplayDialogData>(MAT_DIALOG_DATA);
@@ -313,9 +312,7 @@ export class HubDisplayDialogComponent implements OnInit {
         this.hubName.set(autoName);
       }
     });
-  }
 
-  ngOnInit(): void {
     if (this.data.preselectedStopIds?.length) {
       this.selectedIds.set(new Set(this.data.preselectedStopIds));
     }

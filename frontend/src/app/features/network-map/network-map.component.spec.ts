@@ -233,7 +233,12 @@ describe('NetworkMapComponent', () => {
   });
 
   it('should show error state on network load failure', () => {
+    // Reset the mock to throw before recreating — the component now
+    // kicks loadNetwork() off in its constructor (no more OnInit) so
+    // the request fires at TestBed.createComponent time.
     mockNetworkMapService.getNetworkMap = vi.fn().mockReturnValue(throwError(() => new Error('Network error')));
+    fixture = TestBed.createComponent(NetworkMapComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
 
     expect(component.error()).toBe('Failed to load network map. Please try again.');
@@ -470,11 +475,15 @@ describe('NetworkMapComponent', () => {
     });
 
     it('should reset error and set loading when retrying', () => {
+      // Start with a failing mock so the constructor's loadNetwork()
+      // populates the error signal, then swap to a working mock and
+      // call loadNetwork() manually to exercise the retry path.
       mockNetworkMapService.getNetworkMap = vi.fn().mockReturnValue(throwError(() => new Error()));
+      fixture = TestBed.createComponent(NetworkMapComponent);
+      component = fixture.componentInstance;
       fixture.detectChanges();
       expect(component.error()).toBeTruthy();
 
-      // Now fix the mock and retry
       mockNetworkMapService.getNetworkMap = vi.fn().mockReturnValue(of(mockNetworkMap));
       mockNetworkMapService.getAlerts = vi.fn().mockReturnValue(of(emptyAlerts));
 

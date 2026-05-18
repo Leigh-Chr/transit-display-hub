@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
@@ -104,12 +104,12 @@ import { Attribution } from '@shared/models';
     }
   `,
 })
-export class FeedCreditsComponent implements OnInit {
+export class FeedCreditsComponent {
   private readonly attributionService = inject(AttributionService);
 
   protected readonly attributions = signal<Attribution[]>([]);
 
-  ngOnInit(): void {
+  constructor() {
     this.attributionService.getAllAttributions().subscribe({
       next: (data) => this.attributions.set(data),
       error: () => this.attributions.set([]),
