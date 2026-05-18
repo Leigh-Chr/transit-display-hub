@@ -76,3 +76,8 @@ Three reasons:
   Spring Boot 4.0.2 in our test suite. We accept the minor risk of a
   future Springdoc / Spring Boot regression and will pin a newer
   version if needed.
+
+> _Update (2026-05-18) — the build has since drifted to Spring Boot
+> 4.0.6 (`backend/build.gradle.kts`). Springdoc 2.8.6 still boots
+> cleanly there; this footnote keeps the ADR auditable without
+> mutating the original decision body._
