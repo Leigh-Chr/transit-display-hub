@@ -28,6 +28,7 @@ import { ThemeService } from '@core/services/theme.service';
 import { NetworkMapWebSocketService } from '@core/websocket/network-map-websocket.service';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
+import { useNetworkMapSubtitle } from './_shared/use-network-map-subtitle';
 
 @Component({
   selector: 'app-network-map',
@@ -62,10 +63,6 @@ export class NetworkMapComponent {
   private readonly transloco = inject(TranslocoService);
   readonly themeService = inject(ThemeService);
   readonly localeService = inject(LocaleService);
-  // The subtitle computed reads `locale.current()` to retrigger when
-  // the user toggles the language; expose the same instance under a
-  // shorter alias to keep the body readable.
-  private readonly locale = this.localeService;
   private readonly networkMapWs = inject(NetworkMapWebSocketService);
 
   private readonly schematicMap = viewChild(SchematicMapComponent);
@@ -95,35 +92,10 @@ export class NetworkMapComponent {
     return this.layoutStops().filter(s => s.name.toLowerCase().includes(lower));
   });
 
-  subtitle = computed(() => {
-    // Reading the active language signal makes the computed re-fire on
-    // language switch so the rendered subtitle picks up the new strings.
-    // Also depend on translationsLoaded so the first evaluation re-runs
-    // once Transloco has the JSON in memory (otherwise the computed
-    // captures the bare i18n key on initial render).
-    this.locale.current();
-    this.locale.translationsLoaded();
-    const result = this.routeResult();
-    if (result) {
-      const stops = result.allStopIds.length;
-      const stopsLabel = this.transloco.translate(
-        stops === 1 ? 'map.route.stopOne' : 'map.route.stopOther',
-        { count: stops },
-      );
-      if (result.transfers === 0) {
-        return this.transloco.translate('map.subtitle.directRoute', { stops });
-      }
-      const transfersKey = result.transfers === 1
-        ? 'map.subtitle.transferOne'
-        : 'map.subtitle.transferOther';
-      return this.transloco.translate(transfersKey, { count: result.transfers })
-        + ' — ' + stopsLabel;
-    }
-    const dep = this.departureStop();
-    if (dep && !this.arrivalStop()) {
-      return this.transloco.translate('map.subtitle.departure', { name: dep.name });
-    }
-    return this.transloco.translate('map.subtitle.clickStopHint');
+  subtitle = useNetworkMapSubtitle({
+    routeResult: this.routeResult,
+    departureStop: this.departureStop,
+    arrivalStop: this.arrivalStop,
   });
 
   /** Query param ?lines=M1,T2 — null means "show all" */
