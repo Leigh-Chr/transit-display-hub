@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.25.0] — 2026-05-18
+
+Design-system enforcement pass plus a CI tightening round on the
+admin a11y budget.
+
+### Refactored
+
+- **Design tokens enforcement.** The 21 styles that still bypassed
+  the M3 token system (7 `font-size: 0.85em` literals, 10 hardcoded
+  transitions, 3 SVG marker fills, 1 kiosk warning hex) now route
+  through `--app-type-meta`, `var(--m3-duration-short3/4)` +
+  `var(--m3-easing-standard)`, the new `--app-map-route-departure /
+  -arrival / -interchange-stroke` tokens, and `--app-on-kiosk-warning`.
+  Documented and pinned by ADR 0041. No visual change — the migration
+  reuses the values that were already hardcoded.
+
+### Tests / CI
+
+- **Admin a11y baseline halved.** The `admin-lines`, `admin-stops`,
+  `admin-users`, `admin-messages` and `admin-schedules` Playwright
+  budgets drop from 10 to 5 critical/serious axe violations,
+  matching the admin-dashboard envelope after the first CI run
+  showed every page below 5.
+
+### Documentation
+
+- ADR [0041](docs/adr/0041-design-system-tokens-enforcement.md):
+  records the migration, every exempted pattern (mat-icon dimensions,
+  cycle animations, CDK drag defaults, decorative legend grays,
+  PWA meta, GTFS-sourced colors) and why no CI guardrail was added.
+- README screenshots refreshed (`admin-dashboard`, `import-audit`,
+  `kiosk`, `network-list`, `network-map`) post-token-migration.
+  `stop-popup.png` left at its 2026-05-16 image: the screenshots
+  spec picks the first line in the chip strip and the live Grenoble
+  seed surfaces a sparse line first, leaving the SVG empty —
+  pre-existing flake, tracked separately.
+
 ## [1.24.2] — 2026-05-18
 
 Test-coverage maintenance release. The audit reports flagged a long
