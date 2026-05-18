@@ -37,6 +37,15 @@ administration interface.
   Network Map. Line and stop lists are accessible in
   read-only mode for message targeting (Line/Stop scope).
 
+### Forgot password
+
+Click **Forgot your password?** under the submit button on the login
+screen. The dialog explains the recovery flow: this installation does
+not send recovery emails — another administrator opens **Users** in
+the admin menu and clicks **Edit** next to your account to set a new
+password for you. For a single-admin install, see the bootstrap
+password reset section in [`docs/deployment.md`](deployment.md).
+
 ### Logging Out
 
 Click **Logout** in the upper right corner.
@@ -46,6 +55,28 @@ Click **Logout** in the upper right corner.
 ## Dashboard
 
 The dashboard displays a summary tailored to your role.
+
+### First-install onboarding
+
+A brand-new install (zero lines, zero stops, zero devices) renders a
+**"Welcome to Transit Display Hub"** banner instead of the regular
+stat grid. The CTA points to **Operations → Import history**, the
+actual first step — once a GTFS feed is imported, lines, stops,
+itineraries and schedules all flow from it. The banner disappears as
+soon as any data is present.
+
+### Sidebar badges
+
+The **Messages** and **Devices** items in the sidebar render a count
+badge when there is something to attend to:
+
+- Blue (info) on **Messages** — number of broadcast messages currently
+  active.
+- Amber (warning) on **Devices** — number of offline kiosks.
+
+The counts refresh in the background every minute (no need to reload
+the page). They are hidden until the first refresh completes so a
+zero badge never flashes during boot.
 
 ### Administrator View
 
@@ -105,6 +136,26 @@ administrators.
 
 > **Warning**: Deleting a line also deletes its associated
 > itineraries and schedules.
+
+### Bulk delete
+
+The lines page supports multi-select for batch deletion:
+
+1. Tick the checkbox in the top-left corner of each line card you
+   want to remove (or use **Select all on this page** in the toolbar).
+2. A sticky action bar appears at the top with the selection count.
+3. Click **Delete selected (N)** and confirm in the dialog.
+
+Selection is in-memory only — changing page, refreshing, or
+navigating away clears it so you cannot act on rows you no longer
+see.
+
+### Export to CSV
+
+The toolbar exposes an **Export CSV** button that downloads every
+line as a CSV file with `code`, `name`, `type`, `color`, `stopCount`
+and `itineraryCount` columns. Useful for offline auditing or
+hand-off to an external spreadsheet.
 
 ---
 
@@ -308,6 +359,14 @@ passengers.
 1. Click **Delete**
 2. Confirm
 
+### Bulk delete messages
+
+When an event ends and a batch of ad-hoc messages need to be retired
+at once, tick the checkbox on each message card (or **Select all on
+this page** in the toolbar), then click **Delete selected (N)** in
+the sticky action bar that appears. Same in-memory selection rules
+as on the lines page.
+
 ---
 
 ## Device Management
@@ -501,9 +560,10 @@ single screen, ideal for interchange stations or transport hubs.
 ### Opening the Hub Display
 
 Administrators open the hub display from the **Stops** page —
-click the "Hub Display" button in the toolbar. A hub is by
-definition an aggregate of stops, so the entry point lives
-where stops are managed.
+click the **"New hub display"** button in the toolbar. A hub is by
+definition an aggregate of stops, so the entry point lives where
+stops are managed; the tooltip on the button reminds you to pick at
+least two stops in the dialog that opens.
 
 It opens a configuration dialog where you can:
 
@@ -518,10 +578,15 @@ Click "Open Hub Display" to open the hub view in a new tab.
 ### Displayed Elements
 
 1. **Header**: Hub name and all served lines
-2. **Next departures**: Combined list from all selected stops
+2. **Offline-stops banner** (if any): a coloured strip naming any
+   stop that was selected in the URL but did not make it into the
+   current rebuild (deleted upstream, disabled, or the backend has
+   gone quiet for that stop for more than 30 minutes). Falls back to
+   the last known name so the indicator stays readable.
+3. **Next departures**: Combined list from all selected stops
    with line, direction, scheduled time, and platform (stop name)
-3. **Messages**: Alerts affecting the selected stops
-4. **Footer**: Current time and connection status
+4. **Messages**: Alerts affecting the selected stops
+5. **Footer**: Current time and connection status
 
 ---
 
@@ -589,10 +654,28 @@ The kiosk screen displays passenger information for a single stop.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action              |
-| -------- | ------------------- |
-| `Escape` | Close modal window  |
-| `Enter`  | Submit a form       |
+### Global (admin shell)
+
+| Shortcut | Action |
+| -------- | ------ |
+| `Ctrl + K` / `Cmd + K` | Open the command palette — type the name or path of any admin destination and press Enter to jump straight there. Admin-only routes are filtered out for agents. |
+| `Escape` | Close any modal dialog (command palette, confirmations, forms). |
+| `Enter` | Submit the focused form or activate the first match in the command palette. |
+
+### Network map
+
+The map exposes the same shortcut surface as a desktop GIS tool. A
+keyboard-icon button on the zoom-controls cluster opens an in-app
+help dialog listing them, but for reference:
+
+| Shortcut | Action |
+| -------- | ------ |
+| `+` / `=` | Zoom in |
+| `-` | Zoom out |
+| `0` | Reset to the full network view |
+| `↑` `↓` `←` `→` | Pan the map |
+| `Tab` | Step through every stop one by one |
+| `Enter` | Open the focused stop's panel |
 
 ---
 
@@ -629,3 +712,26 @@ The kiosk screen displays passenger information for a single stop.
 
 When creating or editing a stop, select multiple lines.
 A stop can serve as many lines as needed (interchange).
+
+### Where do I find the help / user guide from inside the app?
+
+The admin toolbar carries a `?` (help) icon that opens this guide on
+GitHub in a new tab. The icon is hidden on small viewports to keep
+the toolbar uncluttered; on phones, navigate to
+<https://github.com/Leigh-Chr/transit-display-hub/blob/main/docs/user-guide.md>
+directly.
+
+### A kiosk shows "Display Error" with a "Retry" button
+
+The error card now includes a **recovery hint** listing the two
+valid URL formats: `/display/<stop-id>` or `/display?token=<device-token>`.
+If retrying doesn't help, the kiosk's URL needs to be adjusted on
+the device itself — the on-screen message tells the installer what
+shape the URL must take.
+
+### My session expired in the middle of editing
+
+You will see a **"Session expired. Please sign in again."** toast
+and be sent to the login screen. After re-authenticating you land
+back where you were (the URL is preserved). A **"Logged in"** toast
+confirms the new session.
