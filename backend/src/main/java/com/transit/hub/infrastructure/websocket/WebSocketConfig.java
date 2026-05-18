@@ -27,6 +27,7 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -112,7 +113,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         @Override
         public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                                   WebSocketHandler wsHandler, Exception exception) {
+                                   WebSocketHandler wsHandler, @Nullable Exception exception) {
             // nothing to clean up — sessions are tracked by Spring
         }
     }
@@ -185,7 +186,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         accessor.setUser(auth);
     }
 
-    static String resolveAccessToken(StompHeaderAccessor accessor) {
+    static @Nullable String resolveAccessToken(StompHeaderAccessor accessor) {
         Map<String, Object> attrs = accessor.getSessionAttributes();
         if (attrs != null) {
             Object cookieToken = attrs.get(ACCESS_TOKEN_SESSION_KEY);
