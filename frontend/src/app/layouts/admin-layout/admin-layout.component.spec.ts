@@ -12,8 +12,10 @@ const en = {
   admin: {
     navigation: {
       dashboard: 'Dashboard',
-      sectionNetwork: 'Network',
-      sectionCommunication: 'Communication',
+      sectionNetworkData: 'Network data',
+      sectionMap: 'Map',
+      sectionBroadcast: 'Broadcast',
+      sectionOperations: 'Operations',
       sectionAdministration: 'Administration',
       lines: 'Lines',
       stops: 'Stops',
@@ -40,8 +42,10 @@ const fr = {
   admin: {
     navigation: {
       dashboard: 'Tableau de bord',
-      sectionNetwork: 'Réseau',
-      sectionCommunication: 'Communication',
+      sectionNetworkData: 'Données réseau',
+      sectionMap: 'Carte',
+      sectionBroadcast: 'Diffusion',
+      sectionOperations: 'Exploitation',
       sectionAdministration: 'Administration',
       lines: 'Lignes',
       stops: 'Arrêts',

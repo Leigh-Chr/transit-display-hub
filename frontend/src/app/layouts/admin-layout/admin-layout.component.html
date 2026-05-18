@@ -27,7 +27,7 @@
 
           @if (authService.isAdmin()) {
             <mat-divider></mat-divider>
-            <div class="nav-section-title">{{ t('admin.navigation.sectionNetwork') }}</div>
+            <div class="nav-section-title">{{ t('admin.navigation.sectionNetworkData') }}</div>
 
             <a
               mat-list-item
@@ -70,6 +70,9 @@
             </a>
           }
 
+          <mat-divider></mat-divider>
+          <div class="nav-section-title">{{ t('admin.navigation.sectionMap') }}</div>
+
           <a
             mat-list-item
             routerLink="/map"
@@ -92,7 +95,7 @@
           }
 
           <mat-divider></mat-divider>
-          <div class="nav-section-title">{{ t('admin.navigation.sectionCommunication') }}</div>
+          <div class="nav-section-title">{{ t('admin.navigation.sectionBroadcast') }}</div>
 
           <a
             mat-list-item
@@ -114,6 +117,9 @@
               <mat-icon matListItemIcon>tv</mat-icon>
               <span matListItemTitle>{{ t('admin.navigation.devices') }}</span>
             </a>
+
+            <mat-divider></mat-divider>
+            <div class="nav-section-title">{{ t('admin.navigation.sectionOperations') }}</div>
 
             <a
               mat-list-item
