@@ -44,6 +44,7 @@ import {
   type NetworkLineRow,
   type NetworkStopLabel,
 } from './schematic-geometry';
+import { useWheelHint } from './use-wheel-hint';
 
 @Component({
   selector: 'app-schematic-map',
@@ -100,10 +101,11 @@ export class SchematicMapComponent {
 
   isPanning = signal(false);
   /** Shown once per browser the first time the user scrolls the wheel
-   *  without Ctrl/Cmd, to teach the new "Ctrl + scroll = zoom" gesture. */
-  wheelHintVisible = signal(false);
-  private wheelHintTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly WHEEL_HINT_KEY = 'transit-hub.wheel-hint-seen';
+   *  without Ctrl/Cmd, to teach the new "Ctrl + scroll = zoom" gesture.
+   *  Toast lifecycle (localStorage seen flag, auto-hide timer, teardown)
+   *  lives in the composable. */
+  private readonly wheelHint = useWheelHint();
+  wheelHintVisible = this.wheelHint.visible;
 
   private readonly panZoom = new SvgPanZoom();
   private readonly NETWORK_PADDING = 80;
@@ -527,10 +529,6 @@ export class SchematicMapComponent {
       destroyRef.onDestroy(() => ro.disconnect());
     });
 
-    destroyRef.onDestroy(() => {
-      if (this.wheelHintTimer) {clearTimeout(this.wheelHintTimer);}
-    });
-
     // Angular 21 attaches template (wheel) and (touchmove) bindings as
     // passive listeners by default, which silently ignores any
     // event.preventDefault() inside the handlers — without this the
@@ -550,22 +548,6 @@ export class SchematicMapComponent {
         wrapper.removeEventListener('touchmove', touchHandler);
       });
     });
-  }
-
-  private maybeShowWheelHint(): void {
-    try {
-      if (localStorage.getItem(SchematicMapComponent.WHEEL_HINT_KEY)) {return;}
-      localStorage.setItem(SchematicMapComponent.WHEEL_HINT_KEY, '1');
-    } catch {
-      // Private mode / disabled storage — show the hint once this session
-      // and skip persistence rather than failing.
-    }
-    this.wheelHintVisible.set(true);
-    if (this.wheelHintTimer) {clearTimeout(this.wheelHintTimer);}
-    this.wheelHintTimer = setTimeout(() => {
-      this.wheelHintVisible.set(false);
-      this.wheelHintTimer = null;
-    }, 3000);
   }
 
   // --- Filter methods ---
@@ -832,7 +814,7 @@ export class SchematicMapComponent {
     if (!svg) {return;}
     const result = this.panZoom.onWheel(event, svg.getBoundingClientRect(), this.baseViewBox());
     this.updateViewBox();
-    if (!result.zoomed) {this.maybeShowWheelHint();}
+    if (!result.zoomed) {this.wheelHint.show();}
   }
 
   /** Keyboard navigation: arrows pan, +/- zoom, 0 reset. The wrapper has
