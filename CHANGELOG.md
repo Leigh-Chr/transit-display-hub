@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.25.1] — 2026-05-18
+
+Bugfix release surfaced by the post-v1.25.0 smoke run on `/map` and `/hub`.
+
+### Fixed
+
+- **Raw i18n keys leaking on first paint.** The network-map subtitle
+  (`map.subtitle.clickStopHint`) and the hub missing-stops fallback
+  (`hub.errors.missingStopIds`) rendered as the key string rather than
+  the translation when the page was the user's first hit. Both live in
+  reactive pieces (a `computed()` on the map, an `effect()` on the
+  hub) that evaluated before Transloco had loaded its JSON bundle and
+  never re-fired once it arrived. `LocaleService` now exposes a
+  `translationsLoaded` signal sourced from
+  `TranslocoService.events$`; the two call sites read it next to
+  `locale.current()` so they re-evaluate the moment the bundle is in
+  memory. No other call sites caught by `transloco.translate(...)`
+  ran in a similar reactive context — they all fire on user actions
+  (snackbars, dialogs) where the bundle is already loaded.
+
 ## [1.25.0] — 2026-05-18
 
 Design-system enforcement pass plus a CI tightening round on the
