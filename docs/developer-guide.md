@@ -437,7 +437,7 @@ src/app/
 |       +-- display-info-ticker/  # Shared kiosk / hub info ticker
 |       +-- empty-state/
 |       +-- feed-credits/         # Attribution renderer
-|       +-- hub-display-dialog/   # Multi-stop picker used by sidenav + Stops
+|       +-- hub-display-dialog/   # Multi-stop picker reached from /admin/stops
 |       +-- search-input/
 |       +-- skeleton/             # Loading placeholders
 |       +-- stop-autocomplete/    # Used by route-search-bar
@@ -477,7 +477,12 @@ src/app/
 |       |   +-- zoom-controls/
 |       +-- utils/
 +-- layouts/
-    +-- admin-layout/
+    +-- admin-layout/                 # Sidenav + toolbar + breadcrumbs +
+                                       # Cmd/Ctrl+K command palette + path
+                                       # breadcrumb derivation
+        +-- admin-layout.component.*
+        +-- command-palette.component.ts  # Cmd+K destination picker
+        +-- _admin-page.scss              # Page-header / toolbar mixins
 ```
 
 ```text
@@ -669,6 +674,44 @@ export class WebSocketService {
   }
 }
 ```
+
+### Cross-cutting services worth knowing
+
+A handful of small singletons under `frontend/src/app/core/services/`
+shape behaviours that span multiple features. Reach for them rather
+than reinventing the wiring:
+
+- **`ThemeService`** — owns the three independent appearance signals
+  (`isDarkMode`, `isHighContrast`, `isLargeText`), persists each in
+  `localStorage`, and exposes `applyFromQueryParams({contrast,largeText,dark})`
+  so a kiosk URL like `/display/STOP?contrast=high&largeText=on` can
+  preset the device at deploy time. See ADR 0035 for the rationale
+  behind the three orthogonal signals.
+- **`LocaleService`** — single source of truth for the active UI
+  language, wraps Transloco. Same boot-time query param support
+  (`?lang=fr|en`) used by kiosk, hub and the network map.
+- **`NotifyService`** — typed wrapper around `MatSnackBar`. Always
+  go through `success/info/warn/error/errorRetryable` rather than
+  opening the snackbar directly so duration + panel class stay
+  consistent. The auth interceptor adds a global toast for `0`
+  (network), `403`, `5xx` and refresh-failure session expiry — page
+  components only need to handle the error path that affects their
+  own state.
+- **`SidenavBadgesService`** — polls the dashboard summary every 60s
+  (or the messages list for agents) and exposes
+  `activeMessagesCount` + `offlineDevicesCount` signals consumed by
+  the admin sidenav badges. `refresh()` is public so a page can poke
+  it right after a mutation.
+- **`BreakpointService`** — wraps `BreakpointObserver` and exposes
+  `isMobile()` / `isSmallScreen()` signals. Used by the admin shell
+  to switch the sidenav mode and hide secondary toolbar controls on
+  phones.
+
+The admin shell also hosts two stand-alone dialogs worth a mention:
+`CommandPaletteComponent` (Cmd/Ctrl+K destination picker — see
+`layouts/admin-layout/command-palette.component.ts`) and
+`MapShortcutsDialogComponent` (keyboard help on the network map,
+opened from the zoom-controls cluster).
 
 ---
 
