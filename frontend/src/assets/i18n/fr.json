@@ -54,14 +54,14 @@
       }
     },
     "changePassword": {
-      "title": "Change ton mot de passe",
-      "subtitle": "Ton compte doit utiliser un nouveau mot de passe avant de continuer.",
+      "title": "Changez votre mot de passe",
+      "subtitle": "Votre compte doit utiliser un nouveau mot de passe avant de continuer.",
       "currentPassword": "Mot de passe actuel",
       "newPassword": "Nouveau mot de passe",
-      "confirmPassword": "Confirme le nouveau mot de passe",
+      "confirmPassword": "Confirmez le nouveau mot de passe",
       "submit": "Mettre à jour",
       "loadingAriaLabel": "Mise à jour en cours",
-      "mustChangeNotice": "Tu dois changer ton mot de passe avant d'accéder à l'application.",
+      "mustChangeNotice": "Vous devez changer votre mot de passe avant d'accéder à l'application.",
       "error": {
         "invalidCurrentPassword": "Le mot de passe actuel est incorrect.",
         "passwordsDoNotMatch": "Les deux mots de passe ne correspondent pas.",
