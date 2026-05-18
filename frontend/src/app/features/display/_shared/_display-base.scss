@@ -306,6 +306,15 @@
     color: var(--app-kiosk-surface);
   }
 
+  /* High-visibility focus ring sized for 2–3m kiosk viewing distance.
+   * Material's default 2px outline disappears against the kiosk's
+   * dark backdrop; a thicker offset ring stays visible even when the
+   * passenger is tabbing the toolbar from across the platform. */
+  ::ng-deep .a11y-toolbar button:focus-visible {
+    outline: 0.5vh solid var(--app-kiosk-focus-ring, currentColor);
+    outline-offset: 0.3vh;
+  }
+
   ::ng-deep .a11y-toolbar mat-icon {
     font-size: 3vh;
     width: 3vh;
