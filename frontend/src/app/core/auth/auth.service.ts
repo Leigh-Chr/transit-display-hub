@@ -78,13 +78,7 @@ export class AuthService {
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>('/api/auth/login', request, { withCredentials: true })
-      .pipe(
-        tap(response => {
-          this.userSignal.set({ username: response.username, role: response.role });
-          this.accessTokenSignal.set(response.token);
-          this.passwordMustChangeSignal.set(response.passwordMustChange);
-        })
-      );
+      .pipe(tap(response => this.hydrateFromResponse(response)));
   }
 
   /** Called by the HTTP interceptor on a 401 to mint a fresh access JWT
@@ -93,13 +87,7 @@ export class AuthService {
   refresh(): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>('/api/auth/refresh', null, { withCredentials: true })
-      .pipe(
-        tap(response => {
-          this.userSignal.set({ username: response.username, role: response.role });
-          this.accessTokenSignal.set(response.token);
-          this.passwordMustChangeSignal.set(response.passwordMustChange);
-        })
-      );
+      .pipe(tap(response => this.hydrateFromResponse(response)));
   }
 
   logout(): void {
@@ -159,5 +147,16 @@ export class AuthService {
         },
         error: () => undefined
       });
+  }
+
+  /** Shared identity hydration used by login + interactive refresh.
+   *  Kept separate from {@link refreshAccessTokenSilently} which
+   *  intentionally skips {@code passwordMustChange} (silent boot-time
+   *  refresh must not flip a flag the user has already cleared
+   *  elsewhere in another tab). */
+  private hydrateFromResponse(response: LoginResponse): void {
+    this.userSignal.set({ username: response.username, role: response.role });
+    this.accessTokenSignal.set(response.token);
+    this.passwordMustChangeSignal.set(response.passwordMustChange);
   }
 }
