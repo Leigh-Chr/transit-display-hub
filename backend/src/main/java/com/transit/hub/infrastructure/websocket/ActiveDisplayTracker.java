@@ -124,13 +124,15 @@ public class ActiveDisplayTracker {
     }
 
     private void removeSubscription(UUID stopId, String sessionId) {
-        Set<String> sessions = activeSubscriptions.get(stopId);
-        if (sessions != null) {
+        // computeIfPresent is the atomic equivalent of "remove the session
+        // and drop the stop entry if the set is now empty" — the previous
+        // get/remove/isEmpty/remove sequence had a window where a second
+        // subscribe between isEmpty() and remove(stopId) would lose its
+        // session because the parent set had just been evicted.
+        activeSubscriptions.computeIfPresent(stopId, (key, sessions) -> {
             sessions.remove(sessionId);
-            if (sessions.isEmpty()) {
-                activeSubscriptions.remove(stopId);
-            }
-        }
+            return sessions.isEmpty() ? null : sessions;
+        });
     }
 
     public Set<UUID> getActiveStopIds() {

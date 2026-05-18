@@ -54,6 +54,22 @@ public class FareCalculatorService {
     private final AreaRepository areaRepository;
     private final MeterRegistry meterRegistry;
 
+    /** Built once at @PostConstruct rather than rebuilt on every
+     *  /api/fares/calculate request — Timer.builder().register()
+     *  was previously re-traversing the meter registry on every hot-path
+     *  call, allocating a new builder per request for no gain (Micrometer
+     *  returns the existing meter when it already exists, but the
+     *  allocation + lookup is still wasted). */
+    private Timer calculationTimer;
+
+    @jakarta.annotation.PostConstruct
+    void registerMeters() {
+        calculationTimer = Timer.builder("fare.calculation.duration")
+                .description("Wall-clock duration of a /api/fares/calculate request")
+                .publishPercentiles(0.5, 0.95, 0.99)
+                .register(meterRegistry);
+    }
+
     @Transactional(readOnly = true)
     public Optional<FareCalculationResponse> calculate(UUID fromStopId, UUID toStopId) {
         Timer.Sample sample = Timer.start(meterRegistry);
@@ -75,10 +91,7 @@ public class FareCalculatorService {
                     v1, v2
             ));
         } finally {
-            sample.stop(Timer.builder("fare.calculation.duration")
-                    .description("Wall-clock duration of a /api/fares/calculate request")
-                    .publishPercentiles(0.5, 0.95, 0.99)
-                    .register(meterRegistry));
+            sample.stop(calculationTimer);
         }
     }
 

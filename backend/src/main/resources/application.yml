@@ -82,6 +82,15 @@ management:
         # probes; everything else stays gated behind the security rules
         # in {@code SecurityConfig}.
         include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        # Separate /actuator/health/liveness and /readiness probes — K8s
+        # uses liveness to decide if the pod is unrecoverable (restart)
+        # and readiness to decide if traffic can be routed to it. Without
+        # this only the aggregate /health is exposed and a slow startup
+        # (Flyway, GTFS bootstrap) looks like an unhealthy pod.
+        enabled: true
   metrics:
     tags:
       # Stable application tag every metric inherits — keeps Grafana
