@@ -14,14 +14,14 @@
 
 ### Database (Production)
 
-- **PostgreSQL**: 15.x or higher
+- **PostgreSQL**: 15.x or higher (the bundled `docker-compose.yml` ships PostgreSQL 17)
 
 ## Development Installation
 
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Leigh-Chr/transit-display-hub.git
 cd transit-display-hub
 ```
 

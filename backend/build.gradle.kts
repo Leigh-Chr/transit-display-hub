@@ -149,7 +149,7 @@ dependencies {
     // landing on main.
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
 
-    // Testcontainers — spins up a real PostgreSQL 16 container so the
+    // Testcontainers — spins up a real PostgreSQL 17 container so the
     // Flyway migrations (PG-specific syntax, extensions, type casts)
     // are validated against the actual prod-target engine. The default
     // H2 test profile catches JPA-level regressions but cannot exercise
@@ -231,7 +231,7 @@ tasks.register<Test>("testPostgres") {
         includeTags("postgres")
     }
     description = "Runs the Flyway migrations against a Testcontainers " +
-            "PostgreSQL 16 container. Requires Docker; skipped from the " +
+            "PostgreSQL 17 container. Requires Docker; skipped from the " +
             "default test task."
     group = "verification"
     testClassesDirs = sourceSets["test"].output.classesDirs

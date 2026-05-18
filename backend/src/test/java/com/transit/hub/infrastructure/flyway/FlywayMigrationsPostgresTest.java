@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FlywayMigrationsPostgresTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("transitdb")
             .withUsername("transit")
             .withPassword("transit-test");

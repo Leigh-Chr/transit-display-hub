@@ -12,7 +12,7 @@
 ### Software
 
 - Java 21 JRE
-- PostgreSQL 15+
+- PostgreSQL 15+ (CI and bundled `docker-compose.yml` both run PostgreSQL 17; migrations validated on 17 via Testcontainers)
 - Nginx (reverse proxy)
 - Docker (optional)
 
