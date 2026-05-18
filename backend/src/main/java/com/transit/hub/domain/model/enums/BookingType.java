@@ -1,5 +1,7 @@
 package com.transit.hub.domain.model.enums;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * GTFS {@code booking_rules.booking_type} — when a passenger has to
  * book the demand-responsive trip. The numeric codes match the spec;
@@ -15,7 +17,10 @@ public enum BookingType {
      *  before a per-day cutoff. */
     PRIOR_DAYS;
 
-    public static BookingType fromGtfsCode(int code) {
+    /** Returns {@code null} when the code falls outside the spec's
+     *  defined values — the caller decides whether that means "drop the
+     *  row", "fall back to REAL_TIME" or "fail the import". */
+    public static @Nullable BookingType fromGtfsCode(int code) {
         return switch (code) {
             case 0 -> REAL_TIME;
             case 1 -> SAME_DAY;

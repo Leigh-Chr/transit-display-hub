@@ -163,6 +163,9 @@ public class Line {
         itinerary.setLine(this);
     }
 
+    @SuppressWarnings("NullAway")  // bidirectional detach mirror of
+    // Itinerary#removeItineraryStop — see the comment there. Hibernate fires
+    // orphanRemoval before flush so the @NotNull constraint is never violated.
     public void removeItinerary(Itinerary itinerary) {
         if (itineraries.remove(itinerary)) {
             itinerary.setLine(null);

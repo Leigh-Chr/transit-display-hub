@@ -1,5 +1,7 @@
 package com.transit.hub.domain.model;
 
+import org.jspecify.annotations.Nullable;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -140,6 +142,10 @@ public class Itinerary {
         itineraryStop.setItinerary(this);
     }
 
+    @SuppressWarnings("NullAway")  // bidirectional detach: ItineraryStop.itinerary is
+    // @NotNull at flush time, but we null it transiently here so a caller holding the
+    // detached child sees the broken link. Hibernate fires orphanRemoval before the
+    // next flush, so the constraint is never actually violated.
     public void removeItineraryStop(ItineraryStop itineraryStop) {
         if (itineraryStops.remove(itineraryStop)) {
             itineraryStop.setItinerary(null);
@@ -180,7 +186,7 @@ public class Itinerary {
      * Returns the terminus name derived from the last stop in the itinerary.
      * Returns null if the itinerary has no stops.
      */
-    public String getTerminusName() {
+    public @Nullable String getTerminusName() {
         if (itineraryStops == null || itineraryStops.isEmpty()) {
             return null;
         }

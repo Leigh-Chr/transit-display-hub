@@ -1,5 +1,7 @@
 package com.transit.hub.domain.model.enums;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * GTFS {@code pathways.pathway_mode}: how a passenger physically traverses
  * the segment between two stations. The numeric codes (1..7) come from
@@ -22,7 +24,10 @@ public enum PathwayMode {
     /** GTFS code 7 — exit gate (one-way out of paid zone). */
     EXIT_GATE;
 
-    public static PathwayMode fromGtfsCode(int code) {
+    /** Returns {@code null} when the code falls outside the spec's
+     *  defined values; the caller decides how to handle the unknown
+     *  mode (typically: drop the pathway row). */
+    public static @Nullable PathwayMode fromGtfsCode(int code) {
         return switch (code) {
             case 1 -> WALKWAY;
             case 2 -> STAIRS;
