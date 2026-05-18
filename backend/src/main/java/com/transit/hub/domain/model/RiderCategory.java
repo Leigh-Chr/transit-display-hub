@@ -40,18 +40,29 @@ public class RiderCategory {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /** GTFS {@code rider_category_id} — Required per spec. */
     @NotBlank
     @Size(max = 100)
     @Column(name = "external_id", nullable = false, length = 100)
     private String externalId;
 
+    /** GTFS {@code rider_category_name} — Required per spec, but kept
+     *  nullable on purpose: feeds sometimes ship a row with only the id
+     *  populated for use as a foreign-key target on
+     *  {@link FareProduct#getRiderCategoryId()}, and rejecting them at
+     *  import would drop the rest of the fare model. Surface the
+     *  missing name through validation in the admin UI rather than at
+     *  the importer boundary. */
     @Size(max = 200)
     @Column(length = 200)
     private @Nullable String name;
 
     /** GTFS {@code is_default_fare_category}: 0 = not the default,
      *  1 = the default category for the rider's fare media when no
-     *  other category matches. */
+     *  other category matches. Required per spec, but kept nullable
+     *  to tolerate feeds that omit the column on rows the importer
+     *  still needs to keep (cf. {@link #name}); callers should treat
+     *  {@code null} as "0 / not default". */
     @Column(name = "is_default_fare_category")
     private @Nullable Short isDefaultFareCategory;
 

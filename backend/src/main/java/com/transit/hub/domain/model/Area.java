@@ -2,6 +2,8 @@ package com.transit.hub.domain.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,6 +45,9 @@ public class Area {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /** GTFS {@code area_id} — Required per spec. */
+    @NotBlank
+    @Size(max = 100)
     @Column(name = "external_id", nullable = false, length = 100)
     private String externalId;
 

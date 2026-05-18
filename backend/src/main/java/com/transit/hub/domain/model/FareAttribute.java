@@ -16,6 +16,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -62,8 +64,13 @@ public class FareAttribute {
     @Column(name = "external_id", length = 100, nullable = false, unique = true)
     private String externalId;
 
-    /** Price stored as {@code BigDecimal} so the kiosk can render
-     *  "1,80 €" exactly without float rounding. */
+    /** GTFS {@code price} — "Non-negative float" per Fares v1 spec.
+     *  Stored as {@code BigDecimal} so the kiosk can render "1,80 €"
+     *  exactly without float rounding. Contrast with
+     *  {@link FareProduct#amount} (Fares v2) which the spec allows to be
+     *  negative for transfer discounts. */
+    @NotNull
+    @PositiveOrZero
     @Column(precision = 12, scale = 4, nullable = false)
     private BigDecimal price;
 
@@ -73,6 +80,8 @@ public class FareAttribute {
     @Column(length = 3, nullable = false)
     private String currency;
 
+    /** GTFS {@code payment_method} — Required per spec. */
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", length = 20, nullable = false)
     private FarePaymentMethod paymentMethod;
