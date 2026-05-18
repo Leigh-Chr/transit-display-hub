@@ -21,6 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop } from '@shared/models';
+import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 
 export interface HubDisplayDialogData {
   lines: Line[];
@@ -45,6 +46,7 @@ export interface HubDisplayDialogResult {
     MatCheckboxModule,
     MatIconModule,
     TranslocoDirective,
+    EmptyStateComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -84,7 +86,10 @@ export interface HubDisplayDialogResult {
           @if (loading()) {
             <div class="loading-state">{{ t('admin.hubDisplay.loadingStops') }}</div>
           } @else if (filteredStops().length === 0) {
-            <div class="empty-state">{{ t('admin.hubDisplay.noStopsMatch') }}</div>
+            <app-empty-state
+              icon="filter_list"
+              [title]="t('admin.hubDisplay.noStopsMatch')"
+            />
           } @else {
             @for (stop of filteredStops(); track stop.id) {
               <button
@@ -225,8 +230,7 @@ export interface HubDisplayDialogResult {
       font-weight: 600;
     }
 
-    .loading-state,
-    .empty-state {
+    .loading-state {
       padding: 32px;
       text-align: center;
       color: var(--app-on-surface-variant);
