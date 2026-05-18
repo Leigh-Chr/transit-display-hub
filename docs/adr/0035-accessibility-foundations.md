@@ -119,3 +119,17 @@ double announcements on screen readers.
   alternative.
 - **`@axe-core/playwright` automated checks**: deferred to 0.12.0
   (qualité dev) where Playwright is being re-introduced for E2E.
+
+> **v1.29.0 footnote (2026-05-18).** The three-toggle pattern
+> originally shipped inline in the kiosk template only. It has
+> been extracted into a shared `<app-a11y-toolbar>` component
+> under `frontend/src/app/shared/components/a11y-toolbar/` and
+> propagated to the hub (high-contrast + large-text, no speech)
+> and the network map (high-contrast + large-text, no speech).
+> The signal model, persistence and ADR rationale are unchanged;
+> the only structural difference is that each toggle is now
+> opt-in via an `input()` so a surface can omit what doesn't
+> make sense for it (a multi-stop hub has no single "next
+> departure" to read aloud). The kiosk-only i18n namespace
+> (`kiosk.{highContrast,largeText,speakNext}`) was renamed to
+> the top-level `a11yToolbar.*`.

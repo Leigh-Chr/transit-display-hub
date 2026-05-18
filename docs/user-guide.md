@@ -74,10 +74,13 @@ administrators.
 
 ### View Lines
 
-1. Click **Lines** in the sidebar
+1. Click **Lines** in the sidebar (under "Network data")
 2. The list displays all lines with their code, name,
    type, color, and stop count
 3. Use the search bar to filter
+4. Each row exposes an **inline action bar**: map icon
+   to open the schematic filtered on this line
+   (`/map?lines={code}`), pencil to edit, trash to delete
 
 ### Create a Line
 
@@ -109,8 +112,15 @@ administrators.
 
 ### View Stops
 
-1. Click **Stops** in the menu
+1. Click **Stops** in the menu (under "Network data")
 2. Use the line filter if needed
+3. The schedules-count cell on each row is a **deep link
+   to `/admin/schedules`**: it opens the schedule editor
+   with both the line and the stop pre-selected and the
+   schedule list already loaded
+4. The action column carries four icons: map (open the
+   stop popup at `/map?stop={id}`), eye (kiosk preview),
+   pencil (edit), trash (delete)
 
 ### Create a Stop
 
@@ -146,10 +156,13 @@ line, corresponding to a direction
 
 ### View Itineraries
 
-1. Click **Itineraries** in the menu
+1. Click **Itineraries** in the menu (under "Network data")
 2. Filter by line if needed
 3. Each itinerary displays its line, name, and ordered
    list of stops
+4. The action column starts with a **"View stops"** icon
+   that jumps to `/admin/stops?lineId={id}` filtered on
+   the line that owns the itinerary
 
 ### Create an Itinerary
 
@@ -188,10 +201,19 @@ line, corresponding to a direction
 
 ### Access Schedules
 
-1. Click **Schedules** in the menu
-2. Select a **Stop**
+1. Click **Schedules** in the menu (under "Network data")
+2. Select a **Line**, then a **Stop**
 
 The stop's schedules are displayed sorted by time.
+
+> **Shortcut**: instead of selecting line + stop by hand,
+> jump from `/admin/stops` by clicking the schedules-count
+> cell on any row. The Schedules page reads `?lineId=…&stopId=…`
+> at boot and pre-fills both selectors for you.
+
+Each row in the schedule table starts with a **"View
+itinerary"** icon that jumps to `/admin/itineraries?lineId={id}`
+filtered on the line of the schedule.
 
 ### Create a Schedule
 
@@ -333,22 +355,35 @@ Or for direct access by stop (testing):
 https://transit.example.com/display/STOP_ID
 ```
 
-### Kiosk accessibility toolbar
+### Accessibility toolbar
 
-Three buttons in the kiosk header let any passenger
-adapt the screen on the fly:
+The same `<app-a11y-toolbar>` component sits in the
+header of every public passenger surface — opt-in per
+surface:
+
+- **Kiosk** (`/display/{stopId}`): the three toggles
+  below.
+- **Hub** (`/hub?stopIds=…`): high-contrast + large-text
+  (speech is omitted — a multi-stop board has no single
+  "next departure" to read aloud).
+- **Network map** (`/map`, `/map/list`): high-contrast +
+  large-text (speech omitted — a static schematic has
+  nothing to announce).
+
+Buttons:
 
 - **High-contrast mode** (icon `contrast`) — switches
   to a WCAG-AAA black/yellow palette. Useful in direct
   sunlight or for low-vision passengers.
 - **Larger text** (icon `format_size`) — boosts every
   font size by ~1.4×.
-- **Read the next departure aloud** (icon `volume_up`)
-  — speaks the head of the arrivals list through the
-  device's text-to-speech engine.
+- **Read the next departure aloud** (icon `volume_up`,
+  kiosk only) — speaks the head of the arrivals list
+  through the device's text-to-speech engine.
 
 Each toggle is independent and persisted on the device,
-so a passenger's preference survives a kiosk restart.
+so a passenger's preference survives a restart and
+follows them across all three surfaces.
 
 ### Language switch
 
@@ -449,6 +484,12 @@ The map is publicly accessible at `/map`
   with transfer-cost weighting from `transfers.txt`
 - **Active alerts**: broadcast messages and GTFS-RT
   ServiceAlerts overlay both lines and stops
+- **Popup footer actions**: every stop popup ends with
+  a "Full-screen kiosk" link that opens
+  `/display/{stopId}` in a new tab. Administrators see
+  a second link "Edit stop" that closes the popup and
+  routes to `/admin/stops` with the stop name pre-filled
+  in the search field
 
 ---
 

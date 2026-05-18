@@ -425,17 +425,26 @@ src/app/
 |       +-- theme.service.ts      # Theme + a11y signals (dark / contrast / large-text)
 |       +-- breakpoint.service.ts # Responsive detection
 +-- shared/
-|   +-- models/
-|   |   +-- index.ts              # TypeScript interfaces
+|   +-- models/                   # TypeScript interfaces (barrelled in index.ts)
+|   +-- utils/                    # Pure helpers (color, time, http error, ...)
+|   +-- admin/                    # CRUD page helpers (createAdminListResource,
+|   |                             # AdminTableState, confirmAndDelete, ...)
+|   +-- browser/                  # DOM-related helpers
 |   +-- components/
-|   |   +-- confirm-dialog/
-|   |   +-- empty-state/
-|   |   +-- search-input/
-|   |   +-- skeleton/             # Loading components
-|   +-- pipes/
+|       +-- a11y-toolbar/         # Shared a11y toggles (kiosk + hub + map)
+|       +-- confirm-dialog/
+|       +-- display-alert-banner/ # Shared kiosk / hub critical banner
+|       +-- display-info-ticker/  # Shared kiosk / hub info ticker
+|       +-- empty-state/
+|       +-- feed-credits/         # Attribution renderer
+|       +-- hub-display-dialog/   # Multi-stop picker used by sidenav + Stops
+|       +-- search-input/
+|       +-- skeleton/             # Loading placeholders
+|       +-- stop-autocomplete/    # Used by route-search-bar
 +-- features/
 |   +-- auth/
 |   |   +-- login/
+|   |   +-- change-password/      # Forced rotation flow (admin first sign-in)
 |   +-- admin/
 |   |   +-- dashboard/
 |   |   +-- lines/
@@ -444,20 +453,28 @@ src/app/
 |   |   +-- schedules/
 |   |   +-- messages/
 |   |   +-- devices/
+|   |   +-- realtime/             # GTFS-RT viewer (alerts + vehicles)
+|   |   +-- import-audit/         # GTFS import timeline + validator report
 |   |   +-- users/
+|   +-- not-found/
 |   +-- display/
+|   |   +-- _shared/              # Composables (useDisplayClock, ...) + row
 |   |   +-- hub/
 |   |   +-- kiosk/
 |   +-- network-map/
 |       +-- network-map.component.ts
-|       +-- network-list/         # Tabular alternative (a11y)
+|       +-- network-list/         # Tabular alternative (a11y, ADR 0035)
 |       +-- services/
+|       +-- _shared/              # use-network-map-subtitle, ...
 |       +-- components/
 |       |   +-- schematic-map/
-|       |   +-- schematic-line/
-|       |   +-- schematic-stop/
-|       |   +-- stop-popup/
+|       |   +-- line-index/
+|       |   +-- line-filter-chips/
+|       |   +-- map-legend/
+|       |   +-- pathway-list/
 |       |   +-- route-search-bar/
+|       |   +-- stop-popup/
+|       |   +-- zoom-controls/
 |       +-- utils/
 +-- layouts/
     +-- admin-layout/
@@ -476,40 +493,35 @@ src/assets/i18n/
 { path: '', redirectTo: '/admin', pathMatch: 'full' },
 { path: 'login', loadComponent: () =>
     import('./features/auth/login/...') },
+{ path: 'auth/change-password',
+  canActivate: [authGuard],
+  loadComponent: () => ... },           // forced rotation flow
 { path: 'admin', canActivate: [authGuard],
   loadComponent: () => ...,
   children: [
     // ADMIN + AGENT
     { path: 'dashboard', loadComponent: () => ... },
     { path: 'messages', loadComponent: () => ... },
-    // ADMIN only
-    { path: 'lines',
-      canActivate: [roleGuard],
-      data: { requiredRole: 'ADMIN' } },
-    { path: 'stops',
-      canActivate: [roleGuard],
-      data: { requiredRole: 'ADMIN' } },
-    { path: 'itineraries',
-      canActivate: [roleGuard],
-      data: { requiredRole: 'ADMIN' } },
-    { path: 'schedules',
-      canActivate: [roleGuard],
-      data: { requiredRole: 'ADMIN' } },
-    { path: 'devices',
-      canActivate: [roleGuard],
-      data: { requiredRole: 'ADMIN' } },
-    { path: 'users',
-      canActivate: [roleGuard],
-      data: { requiredRole: 'ADMIN' } },
+    // ADMIN only — gated by a single canActivateChild on an
+    // anonymous intermediate so the rule isn't repeated per child.
+    { path: 'lines',         loadComponent: () => ... },
+    { path: 'stops',         loadComponent: () => ... },
+    { path: 'itineraries',   loadComponent: () => ... },
+    { path: 'schedules',     loadComponent: () => ... },
+    { path: 'devices',       loadComponent: () => ... },
+    { path: 'realtime',      loadComponent: () => ... },
+    { path: 'import-audit',  loadComponent: () => ... },
+    { path: 'users',         loadComponent: () => ... },
   ]
 },
 // Public routes
-{ path: 'map', loadComponent: () => ... },
-{ path: 'hub', loadComponent: () => ... },
-{ path: 'display', loadComponent: () => ... },
+{ path: 'map',         loadComponent: () => ... },
+{ path: 'map/list',    loadComponent: () => ... }, // tabular a11y alternative
+{ path: 'hub',         loadComponent: () => ... },
+{ path: 'display',     loadComponent: () => ... },
 { path: 'display/:stopId',
-  loadComponent: () => ... },
-{ path: '**', loadComponent: () =>
+                       loadComponent: () => ... },
+{ path: '**',          loadComponent: () =>
     import('./features/not-found/...') },
 ```
 
@@ -1031,18 +1043,30 @@ Applied via classes on `document.documentElement`
 `styles.scss`, so any route hosting the toggles inherits
 the look.
 
-Kiosk surface (`features/display/kiosk/`):
+Shared `<app-a11y-toolbar>` in
+`shared/components/a11y-toolbar/` packages the toggles
+behind opt-in inputs (`showHighContrast`, `showLargeText`,
+`showSpeech`) and is mounted on every passenger surface:
 
-- 3-button toolbar in the header (high contrast / large
-  text / vocal next-departure).
-- `aria-pressed` reflects the toggle state, 44×44 px hit
-  zones, French aria-labels translated through Transloco.
-- Vocal announcement uses
+- **Kiosk** (`features/display/kiosk/`): all three
+  toggles, `aria-pressed` reflects state, 44×44 px hit
+  zones (`display-a11y-controls` SCSS mixin in
+  `_display-base.scss`). Vocal announcement uses
   `window.speechSynthesis` directly — French locale,
   rate 0.95, cancels any in-flight utterance before
-  speaking.
+  speaking. `speak` is a parent-driven output so the
+  toolbar holds no opinion on what to announce.
+- **Hub** (`features/display/hub/`): high-contrast +
+  large-text (speech omitted — a multi-stop board has
+  no single "next" to announce).
+- **Network map** (`features/network-map/`):
+  high-contrast + large-text alongside the existing
+  dark-mode + locale toggles.
 
-Admin and map surfaces:
+i18n keys live under the top-level `a11yToolbar.*`
+namespace so they read sensibly on every surface.
+
+Admin surface:
 
 - Admin layout ships a skip-link to `#main-content`,
   ESLint enforces `template/click-events-have-key-events`,
@@ -1052,7 +1076,9 @@ Admin and map surfaces:
   `/map/list` for keyboard / screen reader users — same
   data, no SVG.
 
-ADR 0035 records the design decisions.
+ADR 0035 records the design decisions (the original
+"kiosk-only" scope was generalised to the three surfaces
+in v1.29.0 without changing the design rules).
 
 ---
 
