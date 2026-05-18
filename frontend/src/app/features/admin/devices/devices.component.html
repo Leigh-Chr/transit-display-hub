@@ -10,7 +10,10 @@
 
       <mat-form-field appearance="outline" class="status-filter">
         <mat-label>{{ t('admin.devices.filterStatus') }}</mat-label>
-        <mat-select [(ngModel)]="statusFilter" (selectionChange)="loadDevices()">
+        <mat-select
+          [ngModel]="statusFilter()"
+          (selectionChange)="onStatusChange($event.value)"
+        >
           <mat-option value="">{{ t('admin.devices.allStatuses') }}</mat-option>
           <mat-option value="ONLINE">{{ t('admin.devices.statusOnline') }}</mat-option>
           <mat-option value="OFFLINE">{{ t('admin.devices.statusOffline') }}</mat-option>

@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -44,13 +46,29 @@ export class DevicesComponent {
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly queryParams = toSignal(this.route.queryParams, { initialValue: {} });
 
-  // Status filter is bound to the <mat-select>; loadDevices() is called by
-  // (selectionChange) so the resource re-fetches with the updated value.
-  statusFilter: DeviceStatus | '' = '';
+  // Status filter is mirrored into the URL ?status=ONLINE|OFFLINE so the
+  // page is deep-linkable and persists across refreshes — matches the
+  // createAdminListResource pattern used elsewhere without dragging the
+  // full pagination/sort machinery into a card-based view.
+  readonly statusFilter = signal<DeviceStatus | ''>(this.readStatusParam());
+
+  constructor() {
+    // URL → signal (browser nav, deep link).
+    effect(() => {
+      const params = this.queryParams() as { status?: string };
+      const fromUrl = this.normaliseStatus(params.status);
+      if (fromUrl !== this.statusFilter()) {
+        this.statusFilter.set(fromUrl);
+      }
+    });
+  }
 
   private readonly devicesResource = createSimpleListResource<Device>(() =>
-    this.deviceService.getAll(this.statusFilter || undefined),
+    this.deviceService.getAll(this.statusFilter() || undefined),
   );
   readonly devices = this.devicesResource.items;
   readonly loading = this.devicesResource.loading;
@@ -63,6 +81,34 @@ export class DevicesComponent {
 
   loadDevices(): void {
     this.devicesResource.reload();
+  }
+
+  onStatusChange(value: DeviceStatus | ''): void {
+    this.statusFilter.set(value);
+    // signal → URL (so a bookmark / share preserves the filter). Reload
+    // is implicit through the queryParams effect picking the change
+    // back up + createSimpleListResource recomputing its loader closure
+    // on the next reload() — fired here too in case the URL did not
+    // actually change (same value re-applied).
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { status: value || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.devicesResource.reload();
+  }
+
+  private readStatusParam(): DeviceStatus | '' {
+    const raw = this.route.snapshot.queryParamMap.get('status');
+    return this.normaliseStatus(raw);
+  }
+
+  private normaliseStatus(raw: string | null | undefined): DeviceStatus | '' {
+    if (raw === 'ONLINE' || raw === 'OFFLINE') {
+      return raw;
+    }
+    return '';
   }
 
   openCreateDialog(): void {

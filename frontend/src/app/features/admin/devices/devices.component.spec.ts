@@ -1,4 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { of, throwError, Subject } from 'rxjs';
@@ -127,6 +128,7 @@ describe('DevicesComponent', () => {
         testTranslocoModule(translocoLang, translocoLangFr),
       ],
       providers: [
+        provideRouter([]),
         { provide: DeviceService, useValue: mockDeviceService },
         { provide: LineService, useValue: mockLineService },
         { provide: MatDialog, useValue: mockDialog },
@@ -155,7 +157,7 @@ describe('DevicesComponent', () => {
     it('should call getAll without filter when statusFilter is empty', async () => {
       fixture.detectChanges();
       await flushResource();
-      component.statusFilter = '';
+      component.statusFilter.set('');
       mockDeviceService.getAll.mockClear();
 
       component.loadDevices();
@@ -169,7 +171,7 @@ describe('DevicesComponent', () => {
     it('should call getAll with status filter when statusFilter is set', async () => {
       fixture.detectChanges();
       await flushResource();
-      component.statusFilter = 'ONLINE';
+      component.statusFilter.set('ONLINE');
       mockDeviceService.getAll.mockClear();
 
       component.loadDevices();
