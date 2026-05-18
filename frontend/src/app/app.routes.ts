@@ -72,10 +72,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
           },
           {
-            path: 'gtfs-data',
-            loadComponent: () => import('./features/admin/gtfs-data/gtfs-data.component').then(m => m.GtfsDataComponent)
-          },
-          {
             path: 'import-audit',
             loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
           },

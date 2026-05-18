@@ -56,8 +56,8 @@ public record NetworkMapResponse(
              *  of its child platforms when the stop is a parent station).
              *  Empty when the feed has no Fares v2 areas — the popup
              *  hides the zone pill in that case. Stored as names rather
-             *  than ids because the popup is a leaf consumer; admins
-             *  who need ids go through {@code /api/admin/fares-v2}. */
+             *  than ids because the popup is a leaf consumer; Fares v2
+             *  is otherwise reachable through Swagger / the repository. */
             List<String> fareAreaNames
     ) {}
 

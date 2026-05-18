@@ -2,77 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { GtfsDataService } from './gtfs-data.service';
-import {
-  BookingRule,
-  FareAttribute,
-  FareLegJoinRule,
-  FaresV2,
-  ImportAudit,
-  Shape,
-  Translation,
-} from '@shared/models';
+import { ImportAudit, Shape } from '@shared/models';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('GtfsDataService', () => {
   let service: GtfsDataService;
   let httpMock: HttpTestingController;
-
-  const mockFare: FareAttribute = {
-    id: 'fare-1',
-    externalId: 'std',
-    price: '1.60',
-    currency: 'EUR',
-    paymentMethod: 'BEFORE_BOARDING',
-    transfers: 1,
-    transferDuration: 3600,
-    agencyId: 'a1',
-    agencyName: 'Acme',
-    rules: [],
-  };
-
-  const mockBookingRule: BookingRule = {
-    id: 'br-1',
-    externalId: 'br-ext',
-    bookingType: 'PRIOR_DAYS',
-    priorNoticeDurationMin: 60,
-    priorNoticeDurationMax: 1440,
-    priorNoticeLastDay: 1,
-    priorNoticeLastTime: '17:00:00',
-    priorNoticeStartDay: 14,
-    phone: '0800-000',
-    bookingUrl: null,
-    infoUrl: null,
-    message: null,
-  };
-
-  const mockLegJoin: FareLegJoinRule = {
-    id: 'lj-1',
-    fromNetworkId: null,
-    toNetworkId: null,
-    fromStopName: null,
-    toStopName: null,
-  };
-
-  const mockFaresV2: FaresV2 = {
-    areas: [],
-    timeframes: [],
-    products: [],
-    legRules: [],
-    transferRules: [],
-    networks: [],
-    fareMedia: [],
-    legJoinRules: [mockLegJoin],
-  };
-
-  const mockTranslation: Translation = {
-    id: 't-1',
-    tableName: 'stops',
-    recordId: 'stop-1',
-    fieldValue: null,
-    fieldName: 'stop_name',
-    language: 'en',
-    translation: 'Central Station',
-  };
 
   const mockImportAudit: ImportAudit = {
     id: 'ia-1',
@@ -119,74 +54,6 @@ describe('GtfsDataService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-  describe('getFares', () => {
-    it('should fetch the fares list', () => {
-      service.getFares().subscribe(fares => {
-        expect(fares).toEqual([mockFare]);
-      });
-
-      const req = httpMock.expectOne('/api/admin/fares');
-      expect(req.request.method).toBe('GET');
-      req.flush([mockFare]);
-    });
-
-    it('should surface a network error', () => {
-      let errored = false;
-      service.getFares().subscribe({ error: () => { errored = true; } });
-
-      const req = httpMock.expectOne('/api/admin/fares');
-      req.error(new ProgressEvent('Network error'));
-      expect(errored).toBe(true);
-    });
-  });
-
-  describe('getBookingRules', () => {
-    it('should fetch the booking-rules list', () => {
-      service.getBookingRules().subscribe(rules => {
-        expect(rules).toEqual([mockBookingRule]);
-      });
-
-      const req = httpMock.expectOne('/api/admin/booking-rules');
-      expect(req.request.method).toBe('GET');
-      req.flush([mockBookingRule]);
-    });
-  });
-
-  describe('getFaresV2', () => {
-    it('should fetch the aggregated fares-v2 payload', () => {
-      service.getFaresV2().subscribe(payload => {
-        expect(payload).toEqual(mockFaresV2);
-      });
-
-      const req = httpMock.expectOne('/api/admin/fares-v2');
-      expect(req.request.method).toBe('GET');
-      req.flush(mockFaresV2);
-    });
-  });
-
-  describe('getTranslations', () => {
-    it('should pass the lang query param', () => {
-      service.getTranslations('en').subscribe(rows => {
-        expect(rows).toEqual([mockTranslation]);
-      });
-
-      const req = httpMock.expectOne(r => r.url === '/api/admin/translations' && r.params.get('lang') === 'en');
-      expect(req.request.params.has('table')).toBe(false);
-      req.flush([mockTranslation]);
-    });
-
-    it('should append the table filter when provided', () => {
-      service.getTranslations('en', 'stops').subscribe();
-
-      const req = httpMock.expectOne(r =>
-        r.url === '/api/admin/translations'
-        && r.params.get('lang') === 'en'
-        && r.params.get('table') === 'stops',
-      );
-      req.flush([]);
-    });
-  });
-
   describe('getImportAudit', () => {
     it('should pass the default limit of 50', () => {
       service.getImportAudit().subscribe(rows => {
