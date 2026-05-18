@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   Itinerary,
@@ -7,9 +7,8 @@ import {
   UpdateItineraryStopsRequest,
   AddItineraryStopRequest,
   PageRequest,
-  PageResponse
 } from '@shared/models';
-import { pageRequestToHttpParams } from '@shared/utils/page-request.utils';
+import { CrudResource } from './crud-resource';
 
 export interface ItineraryPageRequest extends PageRequest {
   lineId?: string | undefined;
@@ -18,37 +17,16 @@ export interface ItineraryPageRequest extends PageRequest {
 @Injectable({
   providedIn: 'root'
 })
-export class ItineraryService {
-  private readonly baseUrl = '/api/itineraries';
-  private readonly http = inject(HttpClient);
+export class ItineraryService extends CrudResource<Itinerary, CreateItineraryRequest, CreateItineraryRequest, ItineraryPageRequest> {
+  protected readonly baseUrl = '/api/itineraries';
+  protected readonly http = inject(HttpClient);
+
+  protected override extraListParams(request: ItineraryPageRequest): Record<string, string | undefined> {
+    return { lineId: request.lineId };
+  }
 
   getAll(lineId?: string): Observable<Itinerary[]> {
-    let params = new HttpParams();
-    if (lineId) {
-      params = params.set('lineId', lineId);
-    }
-    return this.http.get<Itinerary[]>(`${this.baseUrl}/all`, { params });
-  }
-
-  getAllPaginated(request: ItineraryPageRequest = {}): Observable<PageResponse<Itinerary>> {
-    const params = pageRequestToHttpParams(
-      { ...request, page: request.page ?? 0 },
-      { lineId: request.lineId },
-    );
-    return this.http.get<PageResponse<Itinerary>>(this.baseUrl, { params });
-  }
-
-  create(request: CreateItineraryRequest): Observable<Itinerary> {
-    return this.http.post<Itinerary>(this.baseUrl, request);
-  }
-
-  update(id: string, request: CreateItineraryRequest): Observable<Itinerary> {
-    return this.http.put<Itinerary>(`${this.baseUrl}/${id}`, request);
-  }
-
-  delete(id: string): Observable<void> {
-    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.getAllListed({ lineId });
   }
 
   updateStops(id: string, request: UpdateItineraryStopsRequest): Observable<Itinerary> {
