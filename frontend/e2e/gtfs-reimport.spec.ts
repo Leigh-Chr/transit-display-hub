@@ -14,7 +14,7 @@ import { test, expect } from './fixtures/auth.fixture';
  */
 test.describe('Admin — Import audit', () => {
   test('import-audit page renders with the refresh button', async ({ adminPage }) => {
-    await adminPage.goto('/admin/import-audit');
+    await adminPage.goto('/admin/operations/import-history');
     await adminPage.waitForSelector('h1');
 
     const refreshBtn = adminPage.getByRole('button', { name: /refresh|actualiser/i });
@@ -22,7 +22,7 @@ test.describe('Admin — Import audit', () => {
   });
 
   test('audit list or empty-state is shown', async ({ adminPage }) => {
-    await adminPage.goto('/admin/import-audit');
+    await adminPage.goto('/admin/operations/import-history');
     await adminPage.waitForSelector('h1');
 
     // Either we have a table or an empty-state component — both are valid
@@ -34,7 +34,7 @@ test.describe('Admin — Import audit', () => {
   test.skip('reimport button triggers 202 and creates a new audit row', async ({ adminPage: _adminPage }) => {
     /*
      * To unblock this test:
-     *   1. Navigate to /admin/import-audit or the dedicated trigger page.
+     *   1. Navigate to /admin/operations/import-history or the dedicated trigger page.
      *   2. Intercept the POST to /api/gtfs/import and assert the response is 202.
      *   3. Wait for the audit table to gain a new row.
      *

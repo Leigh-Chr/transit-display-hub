@@ -26,7 +26,7 @@ versioned.
 | `network-map.png`         | `/map` with the schematic visible    |
 | `stop-popup.png`          | `/map` with a stop popup open        |
 | `kiosk.png`               | `/display/STA_CENTRAL` from the fixture |
-| `import-audit.png`        | `/admin/import-audit` after a successful import |
+| `import-audit.png`        | `/admin/operations/import-history` after a successful import |
 | `network-list.png`        | `/map/list` accessible alternative   |
 
 When more captures are added (e.g. a fares calculator demo or a

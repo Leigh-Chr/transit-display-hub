@@ -112,22 +112,12 @@
 
             <a
               mat-list-item
-              routerLink="/admin/realtime"
+              routerLink="/admin/operations"
               routerLinkActive="active-link"
               (click)="closeSidenavOnMobile()"
             >
-              <mat-icon matListItemIcon>sensors</mat-icon>
-              <span matListItemTitle>{{ t('admin.navigation.realtime') }}</span>
-            </a>
-
-            <a
-              mat-list-item
-              routerLink="/admin/import-audit"
-              routerLinkActive="active-link"
-              (click)="closeSidenavOnMobile()"
-            >
-              <mat-icon matListItemIcon>history</mat-icon>
-              <span matListItemTitle>{{ t('admin.navigation.importAudit') }}</span>
+              <mat-icon matListItemIcon>monitor_heart</mat-icon>
+              <span matListItemTitle>{{ t('admin.navigation.operations') }}</span>
             </a>
 
             <mat-divider></mat-divider>

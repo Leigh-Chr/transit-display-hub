@@ -68,13 +68,25 @@ export const routes: Routes = [
             loadComponent: () => import('./features/admin/devices/devices.component').then(m => m.DevicesComponent)
           },
           {
-            path: 'realtime',
-            loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
+            path: 'operations',
+            loadComponent: () => import('./features/admin/operations/operations.component').then(m => m.OperationsComponent),
+            children: [
+              { path: '', redirectTo: 'realtime', pathMatch: 'full' },
+              {
+                path: 'realtime',
+                loadComponent: () => import('./features/admin/realtime/realtime.component').then(m => m.RealtimeComponent)
+              },
+              {
+                path: 'import-history',
+                loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
+              }
+            ]
           },
-          {
-            path: 'import-audit',
-            loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
-          },
+          // Backwards-compatible redirects from the pre-1.30 flat URLs that
+          // shipped before the Operations regroup. Keeps bookmarks and any
+          // outbound links working.
+          { path: 'realtime', redirectTo: 'operations/realtime', pathMatch: 'full' },
+          { path: 'import-audit', redirectTo: 'operations/import-history', pathMatch: 'full' },
           {
             path: 'users',
             loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)

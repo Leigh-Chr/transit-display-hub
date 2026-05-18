@@ -119,7 +119,7 @@ test('capture kiosk.png', async ({ page, request }) => {
 });
 
 test('capture import-audit.png', async ({ adminPage }) => {
-  await adminPage.goto('/admin/import-audit', { waitUntil: 'networkidle' });
+  await adminPage.goto('/admin/operations/import-history', { waitUntil: 'networkidle' });
   await adminPage.locator('h1').first().waitFor({ state: 'visible' });
   await waitForAnimationsToSettle(adminPage);
   await adminPage.screenshot({

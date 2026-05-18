@@ -24,6 +24,7 @@ const en = {
       networkMap: 'Network Map',
       messages: 'Messages',
       devices: 'Devices',
+      operations: 'Operations',
       realtime: 'Real-time',
       importAudit: 'Import History',
       users: 'Users',
@@ -53,6 +54,7 @@ const fr = {
       networkMap: 'Carte du réseau',
       messages: 'Messages',
       devices: 'Bornes',
+      operations: 'Exploitation',
       realtime: 'Temps réel',
       importAudit: 'Historique des imports',
       users: 'Utilisateurs',
@@ -220,6 +222,7 @@ describe('AdminLayoutComponent', () => {
       expect(hasLink('Dashboard')).toBe(true);
       expect(hasLink('Messages')).toBe(true);
       expect(hasLink('Network Map')).toBe(true);
+      expect(hasLink('Operations')).toBe(true);
     });
 
     it('should hide admin-only nav links when authService.isAdmin() is false', async () => {
