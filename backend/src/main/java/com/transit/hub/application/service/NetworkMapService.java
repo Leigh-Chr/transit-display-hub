@@ -150,7 +150,7 @@ public class NetworkMapService {
                 lineIdByExternalId.put(l.getExternalId(), l.getId());
             }
         }
-        Set<List<Object>> seen = new HashSet<>();
+        Set<TransferDedupeKey> seen = new HashSet<>();
         List<NetworkTransfer> out = new ArrayList<>();
         for (Transfer t : transfers) {
             UUID from = platformToParentId.getOrDefault(t.getFromStop().getId(), t.getFromStop().getId());
@@ -160,10 +160,7 @@ public class NetworkMapService {
             }
             UUID fromLineId = t.getFromRouteId() == null ? null : lineIdByExternalId.get(t.getFromRouteId());
             UUID toLineId = t.getToRouteId() == null ? null : lineIdByExternalId.get(t.getToRouteId());
-            List<Object> key = Arrays.asList(from, to,
-                    fromLineId == null ? "" : fromLineId,
-                    toLineId == null ? "" : toLineId);
-            if (!seen.add(key)) {
+            if (!seen.add(new TransferDedupeKey(from, to, fromLineId, toLineId))) {
                 continue;
             }
             out.add(new NetworkTransfer(from, to, t.getTransferType(),
@@ -171,6 +168,13 @@ public class NetworkMapService {
         }
         return out;
     }
+
+    /** Dedupe key for network transfers — typed record replaces the
+     *  earlier {@code List<Object>} mixing {@link UUID}s with {@code ""}
+     *  sentinels for absent line qualifiers. The {@code @Nullable}
+     *  line ids ride straight in; the record's auto-generated equals
+     *  and hashCode handle the null comparison correctly. */
+    private record TransferDedupeKey(UUID from, UUID to, UUID fromLineId, UUID toLineId) { }
 
     private NetworkLine toNetworkLine(Line line, long scheduleCount,
                                        Map<UUID, UUID> platformToParentId) {
