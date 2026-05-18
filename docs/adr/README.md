@@ -4,6 +4,35 @@ Each ADR captures a single non-obvious choice that shaped the GTFS
 integration: what we picked, what we rejected, and why future readers
 should think twice before reverting.
 
+## Lecture par thème
+
+Catégorisation indicative. La liste chronologique ci-dessous reste la
+source de vérité. Certaines ADR apparaissent dans plusieurs thèmes
+(notées en *italique* dans les catégories secondaires).
+
+| Thème | ADR |
+|---|---|
+| Modélisation domaine GTFS | 0001, 0002, 0003, 0004, 0005, 0008, 0010, 0014, 0020 |
+| Arrêts, gares & pathways | 0009, 0022 |
+| Pipeline d'import GTFS | 0007, 0013, 0025, 0034 |
+| Routing & transferts | 0006, 0032 |
+| Fares (tarification) | 0012, 0021, 0033 |
+| GTFS-Realtime | 0017, 0018, 0019 |
+| GTFS-flex (transport à la demande) | 0015, 0026, 0029, 0030 |
+| Frontend : UX, rendu, i18n | 0031, 0035, 0036, 0041 |
+| API & OpenAPI | 0011, 0016, 0023 |
+| Auth & sécurité | *0011*, 0039 |
+| Observabilité & qualité | 0024, 0027, 0028, 0037, 0040 |
+| Stratégie & gouvernance | 0038 |
+
+**Cluster transverse — Accessibilité.** Quatre ADR couvrent ensemble
+l'accessibilité bout-en-bout :
+0009 (données pathways/levels) → 0032 (routing PMR) →
+0031 (rendu indoor) → 0035 (UX foundations : high-contrast, large-text,
+vocal kiosk, tabular map).
+
+## Liste chronologique
+
 | # | Title |
 |---|---|
 | [0001](0001-line-type-mapping.md) | LineType enum and the GTFS `route_type` mapping |
