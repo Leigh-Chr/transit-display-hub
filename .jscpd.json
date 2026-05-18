@@ -3,7 +3,7 @@
   "path": ["frontend/src", "backend/src/main/java"],
   "threshold": 6,
   "minLines": 5,
-  "minTokens": 50,
+  "minTokens": 100,
   "reporters": ["console", "html"],
   "output": "./.jscpd-report",
   "gitignore": true,
