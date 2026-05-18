@@ -24,10 +24,6 @@ public class AuthCookieFactory {
 
     private final AuthProperties props;
 
-    public String getAccessCookieName() {
-        return props.accessCookieName();
-    }
-
     public String getRefreshCookieName() {
         return props.refreshCookieName();
     }

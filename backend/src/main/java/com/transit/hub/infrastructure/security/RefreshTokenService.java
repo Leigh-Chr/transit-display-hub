@@ -143,10 +143,6 @@ public class RefreshTokenService {
         }
     }
 
-    public Duration ttl() {
-        return Duration.ofDays(jwtProperties.refreshExpirationDays());
-    }
-
     private Issued mint(User user, String userAgent, String ipAddress) {
         byte[] raw = new byte[RAW_TOKEN_BYTES];
         RANDOM.nextBytes(raw);
