@@ -15,7 +15,7 @@ plugins {
     id("com.github.spotbugs") version "6.5.4"
     // Lists outdated dependencies — manual `./gradlew dependencyUpdates`,
     // not part of `check` (informational, not a gate).
-    id("com.github.ben-manes.versions") version "0.52.0"
+    id("com.github.ben-manes.versions") version "0.54.0"
     // OWASP dependency-check. Runs out-of-band (`./gradlew dependencyCheckAnalyze`)
     // because the first NVD download takes minutes and a CI cache must
     // be primed; the actual gating is in a dedicated workflow.
