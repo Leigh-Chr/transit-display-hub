@@ -3,6 +3,13 @@
 .page-header { @include admin.crud-page-header; }
 .page-title { @include admin.crud-page-title; }
 
+.page-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .toolbar {
   display: flex;
   gap: 16px;

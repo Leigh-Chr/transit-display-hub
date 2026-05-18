@@ -441,6 +441,10 @@
     "lines": {
       "title": "Lignes",
       "newLine": "Nouvelle ligne",
+      "exportCsv": "Exporter CSV",
+      "exportTooltip": "Télécharger toutes les lignes au format CSV",
+      "exportSuccess": "{{ count }} lignes exportées",
+      "exportFailed": "Échec de l'export CSV",
       "searchPlaceholder": "Rechercher des lignes…",
       "sortCodeAsc": "Code (A-Z)",
       "sortCodeDesc": "Code (Z-A)",

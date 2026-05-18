@@ -76,6 +76,41 @@ export class LinesComponent {
     this.tableState.updateUrl();
   }
 
+  /**
+   * Client-side CSV export of every line. Uses the non-paginated
+   * {@code getAll()} so a 200-line network downloads in one shot.
+   * The format matches the visible columns (code, name, type, color,
+   * stop count, itinerary count) so an operator can reconcile against
+   * an external spreadsheet without server help.
+   */
+  exportCsv(): void {
+    this.lineService.getAll().subscribe({
+      next: (lines) => {
+        const header = ['code', 'name', 'type', 'color', 'stopCount', 'itineraryCount'];
+        const rows = lines.map((l) => [
+          l.code,
+          l.name,
+          l.type ?? '',
+          l.color,
+          String(l.stopCount ?? 0),
+          String(l.itineraryCount ?? 0),
+        ]);
+        const csv = [header, ...rows].map(toCsvRow).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `lines-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        this.notify.success(this.transloco.translate('admin.lines.exportSuccess', { count: lines.length }));
+      },
+      error: (err: unknown) => {
+        this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.exportFailed')));
+      },
+    });
+  }
+
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(LineDialogComponent, {
       data: {
@@ -134,4 +169,17 @@ export class LinesComponent {
       },
     );
   }
+}
+
+/** Escape one value for a CSV cell: wrap in quotes when it contains a
+ *  comma, newline or quote, and double any embedded quote. */
+function toCsvCell(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function toCsvRow(values: string[]): string {
+  return values.map(toCsvCell).join(',');
 }
