@@ -1,4 +1,4 @@
-package com.transit.hub.infrastructure.security;
+package com.transit.hub.api.security;
 
 import com.transit.hub.infrastructure.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
