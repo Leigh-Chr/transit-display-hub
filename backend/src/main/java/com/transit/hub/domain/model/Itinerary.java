@@ -115,16 +115,19 @@ public class Itinerary {
     @Column(name = "safe_duration_offset")
     private @Nullable Double safeDurationOffset;
 
-    /** GTFS {@code trips.mean_duration_factor} — multiplier applied
-     *  to the timetabled duration to predict the average dwell time
-     *  on flex segments (point-to-point or zone-to-zone). Used
-     *  alongside {@link #meanDurationOffset} to surface a realistic
-     *  ETA in the kiosk popup. Null when the feed doesn't declare it. */
+    /** <strong>Non-standard extension</strong> mirroring the shape of
+     *  {@code trips.safe_duration_factor}: a multiplier applied to the
+     *  timetabled duration to predict the average dwell time on flex
+     *  segments. Not part of the GTFS Schedule / Flex reference at the
+     *  time of writing — supported on a best-effort basis when the
+     *  feed ships the column. Used alongside {@link #meanDurationOffset}
+     *  to surface a realistic ETA in the kiosk popup. Null when absent. */
     @Column(name = "mean_duration_factor")
     private @Nullable Double meanDurationFactor;
 
-    /** GTFS {@code trips.mean_duration_offset} — additive constant
-     *  (seconds) layered on top of {@link #meanDurationFactor}. */
+    /** <strong>Non-standard extension</strong>, additive constant
+     *  (seconds) layered on top of {@link #meanDurationFactor}. Same
+     *  caveat — read by the importer if present, ignored otherwise. */
     @Column(name = "mean_duration_offset")
     private @Nullable Double meanDurationOffset;
 
