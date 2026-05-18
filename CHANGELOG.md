@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.27.0] — 2026-05-18
+
+Decomposition of the schematic-map god component (the only P2 item
+flagged at 914 LoC by the 2026-05-18 codebase audit), plus the
+pure-helper sweep that fell out of it.
+
+### Refactored
+
+- **`useWheelHint` composable.** Moves the once-per-browser "Ctrl +
+  scroll to zoom" toast (localStorage seen-flag, auto-hide timer,
+  teardown) out of `SchematicMapComponent` into a single-responsibility
+  composable. Host now calls `wheelHint.show()` and binds
+  `wheelHint.visible()` — that's it.
+- **`usePanZoomUrl` composable.** Owns the `?z` / `?p` linked query
+  params, the `currentViewBox` signal, the `zoomLevel` computed and
+  the two effects that round-trip URL ↔ pan/zoom state. Host imperative
+  handlers call `panZoomUrl.syncFromPanZoom()` after every mutation.
+  Also fixes a latent bug: `resetView()` now properly clears `?z` and
+  `?p` from the URL (it used to leave the previous values around).
+- **Pure helpers hoisted to `schematic-map.utils`.** `isTrunkLine`,
+  `frequencyScaleFor`, `zoneColorFor` and `displayLabel` were
+  parameter-free signal consumers — they move to module functions and
+  the host calls them directly. The `zoneColorFor` method is kept as a
+  thin bridge so the existing spec coverage keeps targeting it.
+- **`selectVisibleLabels` + `labelPriority` move to
+  `schematic-geometry`.** The greedy decluttering loop and its
+  priority ranking now live next to the other geometry helpers; the
+  host hands in a small `LabelPriorityContext` (alert/interchange/
+  terminus predicates) instead of owning the algorithm inline.
+
+### Internal
+
+- `SchematicMapComponent`: 914 LoC → 762 LoC (−152, −16.6 %). Still
+  above the 600 warn ceiling — the residual is overwhelmingly
+  view-binding glue (inputs/outputs, computed signals tied to inputs,
+  template-facing helpers) that genuinely belongs at the component
+  level. Sits well under the 950 BLOCK threshold; no allowlist entry.
+
 ## [1.26.0] — 2026-05-18
 
 Refactor pass driven by the 2026-05-18 codebase audit. Nine independent
