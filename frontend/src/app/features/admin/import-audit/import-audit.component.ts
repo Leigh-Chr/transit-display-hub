@@ -14,6 +14,7 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { NotifyService } from '@core/services/notify.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
+import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { createSimpleListResource } from '@shared/admin/simple-list-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
@@ -40,6 +41,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     MatExpansionModule,
     MatProgressSpinnerModule,
     EmptyStateComponent,
+    TableSkeletonComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
