@@ -11,6 +11,9 @@ import { testTranslocoModule } from '../../../../test-translations';
 
 const translocoLangs = {
   en: {
+    common: {
+      ariaLabel: { lineBadge: 'Line {{ code }} — {{ name }}' },
+    },
     kiosk: {
       noArrivals: 'No upcoming departure',
       noScheduledDepartures: 'No scheduled departures',
@@ -28,6 +31,9 @@ const translocoLangs = {
     },
   },
   fr: {
+    common: {
+      ariaLabel: { lineBadge: 'Ligne {{ code }} — {{ name }}' },
+    },
     kiosk: {
       noArrivals: 'Aucun prochain départ',
       noScheduledDepartures: 'Aucun départ programmé',
@@ -125,5 +131,26 @@ describe('HubComponent', () => {
     queryParamsSubject.next({ stopIds: 'stop-1,stop-2', name: 'Test Hub' });
     fixture.detectChanges();
     expect(mockDisplayService.getHubState).toHaveBeenCalledWith(['stop-1', 'stop-2'], 'Test Hub');
+  });
+
+  it('renders each header line badge with a descriptive aria-label so screen readers announce both code and name', () => {
+    mockDisplayService.getHubState.mockReturnValue(of({
+      ...mockHubState,
+      lines: [
+        { id: 'L1', code: 'M1', name: 'Metro Line 1', color: '#ff0000' },
+        { id: 'L2', code: 'B7', name: 'Bus 7 Center', color: '#0000ff' },
+      ],
+    }));
+    const fixture = TestBed.createComponent(HubComponent);
+    fixture.detectChanges();
+    queryParamsSubject.next({ stopIds: 'stop-1,stop-2', name: 'Test Hub' });
+    fixture.detectChanges();
+
+    const badges = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.header-line-badge')
+    );
+    expect(badges.length).toBe(2);
+    expect(badges[0]?.getAttribute('aria-label')).toBe('Line M1 — Metro Line 1');
+    expect(badges[1]?.getAttribute('aria-label')).toBe('Line B7 — Bus 7 Center');
   });
 });

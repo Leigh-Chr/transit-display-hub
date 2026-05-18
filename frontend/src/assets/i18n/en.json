@@ -30,7 +30,8 @@
       "clearSearch": "Clear search",
       "deviceToken": "Device token",
       "loadingDisplay": "Loading display",
-      "loadingHubDisplay": "Loading hub display"
+      "loadingHubDisplay": "Loading hub display",
+      "lineBadge": "Line {{ code }} — {{ name }}"
     },
     "feedCredits": {
       "aria": "GTFS feed credits",

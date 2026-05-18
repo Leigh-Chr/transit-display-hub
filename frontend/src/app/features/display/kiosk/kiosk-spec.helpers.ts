@@ -22,6 +22,7 @@ const KIOSK_TRANSLATIONS = {
     common: {
       retry: 'Retry',
       or: 'or',
+      ariaLabel: { lineBadge: 'Line {{ code }} — {{ name }}' },
     },
     kiosk: {
       errors: {
@@ -76,6 +77,7 @@ const KIOSK_TRANSLATIONS = {
     common: {
       retry: 'Réessayer',
       or: 'ou',
+      ariaLabel: { lineBadge: 'Ligne {{ code }} — {{ name }}' },
     },
     kiosk: {
       errors: {

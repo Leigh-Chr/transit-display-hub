@@ -14,7 +14,8 @@
           @for (line of displayState()!.lines; track line.code) {
             <span class="header-line-badge"
                   [style.backgroundColor]="line.color"
-                  [style.color]="lineTextColor(line)">
+                  [style.color]="lineTextColor(line)"
+                  [attr.aria-label]="'common.ariaLabel.lineBadge' | transloco:{ code: line.code, name: line.name }">
               {{ line.code }}
             </span>
           }

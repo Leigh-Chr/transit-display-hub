@@ -30,7 +30,8 @@
       "clearSearch": "Effacer la recherche",
       "deviceToken": "Jeton appareil",
       "loadingDisplay": "Chargement de l'affichage",
-      "loadingHubDisplay": "Chargement du hub"
+      "loadingHubDisplay": "Chargement du hub",
+      "lineBadge": "Ligne {{ code }} — {{ name }}"
     },
     "feedCredits": {
       "aria": "Crédits du flux GTFS",
