@@ -35,20 +35,29 @@ function buildMockMatchMedia(initialMatches: boolean): { mql: MockMql; matchMedi
 describe('useReducedMotion', () => {
   const originalMatchMedia = window.matchMedia;
 
+  // defineProperty defaults to writable:false when omitted, which would
+  // freeze window.matchMedia and crash other specs that later try to
+  // wrap it via simple assignment (e.g. the test-setup polyfill on a
+  // worker re-init). Always pass writable:true to keep window mutable.
+  const stubMatchMedia = (value: unknown): void => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value,
+    });
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({});
   });
 
   afterEach(() => {
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: originalMatchMedia,
-    });
+    stubMatchMedia(originalMatchMedia);
   });
 
   it('reads the initial MediaQueryList.matches value', () => {
     const { matchMedia } = buildMockMatchMedia(true);
-    Object.defineProperty(window, 'matchMedia', { configurable: true, value: matchMedia });
+    stubMatchMedia(matchMedia);
 
     const injector = TestBed.inject(EnvironmentInjector);
     const signal = runInInjectionContext(injector, () => useReducedMotion());
@@ -58,7 +67,7 @@ describe('useReducedMotion', () => {
 
   it('updates the signal when the OS preference toggles mid-session', () => {
     const { mql, matchMedia } = buildMockMatchMedia(false);
-    Object.defineProperty(window, 'matchMedia', { configurable: true, value: matchMedia });
+    stubMatchMedia(matchMedia);
 
     const injector = TestBed.inject(EnvironmentInjector);
     const signal = runInInjectionContext(injector, () => useReducedMotion());
@@ -72,7 +81,7 @@ describe('useReducedMotion', () => {
 
   it('registers exactly one change listener so a re-init does not leak', () => {
     const { mql, matchMedia } = buildMockMatchMedia(false);
-    Object.defineProperty(window, 'matchMedia', { configurable: true, value: matchMedia });
+    stubMatchMedia(matchMedia);
 
     const injector = TestBed.inject(EnvironmentInjector);
     runInInjectionContext(injector, () => useReducedMotion());
@@ -83,7 +92,7 @@ describe('useReducedMotion', () => {
   it('defaults to false when window.matchMedia is unavailable', () => {
     // The jsdom global ships matchMedia in newer versions, so stub it
     // explicitly to the unsupported case (undefined).
-    Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
+    stubMatchMedia(undefined);
 
     const injector = TestBed.inject(EnvironmentInjector);
     const signal = runInInjectionContext(injector, () => useReducedMotion());

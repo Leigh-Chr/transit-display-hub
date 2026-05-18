@@ -41,11 +41,23 @@ if (typeof window !== 'undefined') {
     return stub;
   };
 
+  // defineProperty (not plain assignment) so a previous spec that froze
+  // window.matchMedia via Object.defineProperty without writable:true
+  // does not prevent the polyfill from being reinstalled on the next
+  // worker re-init.
+  const installMatchMedia = (impl: (query: string) => MediaQueryList): void => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: impl,
+    });
+  };
+
   if (typeof window.matchMedia !== 'function') {
-    window.matchMedia = buildMql;
+    installMatchMedia(buildMql);
   } else {
     const original = window.matchMedia.bind(window);
-    window.matchMedia = (query: string): MediaQueryList => {
+    installMatchMedia((query: string): MediaQueryList => {
       const mql = original(query) as unknown as LegacyMql;
       if (typeof mql.addListener !== 'function') {
         mql.addListener = () => undefined;
@@ -54,7 +66,7 @@ if (typeof window !== 'undefined') {
         mql.removeListener = () => undefined;
       }
       return mql;
-    };
+    });
   }
 }
 /* eslint-enable @typescript-eslint/no-deprecated */
