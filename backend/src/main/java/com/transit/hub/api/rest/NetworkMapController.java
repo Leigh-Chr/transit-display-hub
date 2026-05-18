@@ -6,12 +6,9 @@ import com.transit.hub.application.dto.response.LocationResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse;
 import com.transit.hub.application.dto.response.NetworkMapResponse.AlertsResponse;
 import com.transit.hub.application.dto.response.StationPathwayGraphResponse;
-import com.transit.hub.application.service.BookingRuleService;
-import com.transit.hub.application.service.FlexAvailabilityService;
-import com.transit.hub.application.service.LocationService;
 import com.transit.hub.application.service.NetworkAlertsService;
 import com.transit.hub.application.service.NetworkMapService;
-import com.transit.hub.application.service.PathwayService;
+import com.transit.hub.application.service.StopPopupService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,10 +31,7 @@ public class NetworkMapController {
 
     private final NetworkMapService networkMapService;
     private final NetworkAlertsService networkAlertsService;
-    private final LocationService locationService;
-    private final BookingRuleService bookingRuleService;
-    private final PathwayService pathwayService;
-    private final FlexAvailabilityService flexAvailabilityService;
+    private final StopPopupService stopPopupService;
 
     @GetMapping
     public ResponseEntity<NetworkMapResponse> getNetworkMap() {
@@ -58,7 +52,7 @@ public class NetworkMapController {
      */
     @GetMapping("/stops/{stopId}/tad-zone")
     public ResponseEntity<LocationResponse> getStopTadZone(@PathVariable UUID stopId) {
-        return locationService.findByStop(stopId)
+        return stopPopupService.findTadZoneByStop(stopId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -72,7 +66,7 @@ public class NetworkMapController {
      */
     @GetMapping("/stops/{stopId}/booking-rules")
     public ResponseEntity<List<BookingRuleResponse>> getStopBookingRules(@PathVariable UUID stopId) {
-        return ResponseEntity.ok(bookingRuleService.findByStopId(stopId));
+        return ResponseEntity.ok(stopPopupService.findBookingRulesByStop(stopId));
     }
 
     /**
@@ -84,7 +78,7 @@ public class NetworkMapController {
      */
     @GetMapping("/stops/{stopId}/pathways")
     public ResponseEntity<StationPathwayGraphResponse> getStopPathwayGraph(@PathVariable UUID stopId) {
-        return pathwayService.findStationGraphForStop(stopId)
+        return stopPopupService.findPathwayGraphForStop(stopId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -103,6 +97,6 @@ public class NetworkMapController {
     public ResponseEntity<List<FlexStopTimeResponse>> getLocationFlexWindows(
             @PathVariable String externalId,
             @RequestParam(required = false) LocalDate date) {
-        return ResponseEntity.ok(flexAvailabilityService.findWindowsForLocation(externalId, date));
+        return ResponseEntity.ok(stopPopupService.findFlexWindowsForLocation(externalId, date));
     }
 }

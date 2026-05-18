@@ -1,11 +1,16 @@
 package com.transit.hub.bench;
 
 import com.transit.hub.application.dto.response.FlexStopTimeResponse;
-import com.transit.hub.application.service.FlexAvailabilityService;
+import com.transit.hub.application.service.StopPopupService;
 import com.transit.hub.domain.model.Location;
 import com.transit.hub.domain.model.FlexStopTime;
 import com.transit.hub.domain.model.ServiceCalendar;
+import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
+import com.transit.hub.infrastructure.persistence.LocationRepository;
+import com.transit.hub.infrastructure.persistence.PathwayRepository;
+import com.transit.hub.infrastructure.persistence.StationLevelRepository;
+import com.transit.hub.infrastructure.persistence.StopRepository;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -26,7 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures {@link FlexAvailabilityService#findWindowsForLocation} with
+ * Measures {@link StopPopupService#findFlexWindowsForLocation} with
  * a stubbed repository. The interesting cost is the
  * {@code serviceActiveOn} filter chain (date window + exception scan +
  * day-of-week switch) plus the sort by start time.
@@ -38,17 +43,23 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class FlexAvailabilityServiceBenchmark {
+public class StopPopupFlexBenchmark {
 
     @Param({"10", "100", "500"})
     public int windowCount;
 
-    private FlexAvailabilityService service;
+    private StopPopupService service;
     private String locationExternalId;
 
     @Setup
     public void setUp() {
-        FlexStopTimeRepository repo = Mockito.mock(FlexStopTimeRepository.class);
+        FlexStopTimeRepository flexRepo = Mockito.mock(FlexStopTimeRepository.class);
+        BookingRuleRepository bookingRepo = Mockito.mock(BookingRuleRepository.class);
+        LocationRepository locationRepo = Mockito.mock(LocationRepository.class);
+        PathwayRepository pathwayRepo = Mockito.mock(PathwayRepository.class);
+        StationLevelRepository levelRepo = Mockito.mock(StationLevelRepository.class);
+        StopRepository stopRepo = Mockito.mock(StopRepository.class);
+
         Clock clock = Clock.fixed(LocalDate.of(2026, 5, 9)
                 .atStartOfDay(ZoneId.of("Europe/Paris")).toInstant(),
                 ZoneId.of("Europe/Paris"));
@@ -90,18 +101,19 @@ public class FlexAvailabilityServiceBenchmark {
                     .build();
             windows.add(fst);
         }
-        Mockito.when(repo.findByLocationExternalId(locationExternalId)).thenReturn(windows);
+        Mockito.when(flexRepo.findByLocationExternalId(locationExternalId)).thenReturn(windows);
 
-        service = new FlexAvailabilityService(repo, clock);
+        service = new StopPopupService(bookingRepo, flexRepo, locationRepo,
+                pathwayRepo, levelRepo, stopRepo, clock);
     }
 
     @Benchmark
     public List<FlexStopTimeResponse> findToday() {
-        return service.findWindowsForLocation(locationExternalId, null);
+        return service.findFlexWindowsForLocation(locationExternalId, null);
     }
 
     @Benchmark
     public List<FlexStopTimeResponse> findExplicitDate() {
-        return service.findWindowsForLocation(locationExternalId, LocalDate.of(2026, 5, 11));
+        return service.findFlexWindowsForLocation(locationExternalId, LocalDate.of(2026, 5, 11));
     }
 }

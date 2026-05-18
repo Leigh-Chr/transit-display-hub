@@ -1,11 +1,14 @@
 package com.transit.hub.bench;
 
 import com.transit.hub.application.dto.response.StationPathwayGraphResponse;
-import com.transit.hub.application.service.PathwayService;
+import com.transit.hub.application.service.StopPopupService;
 import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.PathwayMode;
+import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
+import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
+import com.transit.hub.infrastructure.persistence.LocationRepository;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -19,6 +22,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.mockito.Mockito;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures {@link PathwayService#findStationGraphForStop} on a stubbed
+ * Measures {@link StopPopupService#findPathwayGraphForStop} on a stubbed
  * topology of N pathways. The interesting cost is the comparator chain
  * (mode ordinal + signposted_as), the {@link Pathway}-to-DTO mapping
  * and the level join.
@@ -38,12 +42,12 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class PathwayServiceBenchmark {
+public class StopPopupPathwayBenchmark {
 
     @Param({"5", "30", "200"})
     public int pathwayCount;
 
-    private PathwayService service;
+    private StopPopupService service;
     private UUID stopId;
 
     @Setup
@@ -51,6 +55,10 @@ public class PathwayServiceBenchmark {
         StopRepository stopRepo = Mockito.mock(StopRepository.class);
         StationLevelRepository levelRepo = Mockito.mock(StationLevelRepository.class);
         PathwayRepository pathwayRepo = Mockito.mock(PathwayRepository.class);
+        BookingRuleRepository bookingRepo = Mockito.mock(BookingRuleRepository.class);
+        FlexStopTimeRepository flexRepo = Mockito.mock(FlexStopTimeRepository.class);
+        LocationRepository locationRepo = Mockito.mock(LocationRepository.class);
+        Clock clock = Clock.systemDefaultZone();
 
         Stop station = new Stop();
         station.setId(UUID.randomUUID());
@@ -102,11 +110,12 @@ public class PathwayServiceBenchmark {
         Mockito.when(pathwayRepo.findTouchingAny(Mockito.<Collection<UUID>>any()))
                 .thenReturn(pathways);
 
-        service = new PathwayService(pathwayRepo, levelRepo, stopRepo);
+        service = new StopPopupService(bookingRepo, flexRepo, locationRepo,
+                pathwayRepo, levelRepo, stopRepo, clock);
     }
 
     @Benchmark
     public Optional<StationPathwayGraphResponse> findStationGraph() {
-        return service.findStationGraphForStop(stopId);
+        return service.findPathwayGraphForStop(stopId);
     }
 }

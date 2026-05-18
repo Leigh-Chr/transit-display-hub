@@ -5,6 +5,9 @@ import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.StationLevel;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.PathwayMode;
+import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
+import com.transit.hub.infrastructure.persistence.FlexStopTimeRepository;
+import com.transit.hub.infrastructure.persistence.LocationRepository;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
@@ -15,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,8 +28,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PathwayService")
-class PathwayServiceTest {
+@DisplayName("StopPopupService")
+class StopPopupServiceTest {
+
+    @Mock
+    private BookingRuleRepository bookingRuleRepository;
+
+    @Mock
+    private FlexStopTimeRepository flexStopTimeRepository;
+
+    @Mock
+    private LocationRepository locationRepository;
 
     @Mock
     private PathwayRepository pathwayRepository;
@@ -36,22 +49,25 @@ class PathwayServiceTest {
     @Mock
     private StopRepository stopRepository;
 
+    @Mock
+    private Clock clock;
+
     @InjectMocks
-    private PathwayService pathwayService;
+    private StopPopupService stopPopupService;
 
     @Test
-    @DisplayName("findStationGraphForStop returns empty when the stop does not exist")
+    @DisplayName("findPathwayGraphForStop returns empty when the stop does not exist")
     void stationGraph_missingStop() {
         UUID id = UUID.randomUUID();
         when(stopRepository.findById(id)).thenReturn(Optional.empty());
 
-        Optional<StationPathwayGraphResponse> result = pathwayService.findStationGraphForStop(id);
+        Optional<StationPathwayGraphResponse> result = stopPopupService.findPathwayGraphForStop(id);
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("findStationGraphForStop falls back to the stop's own pathways when no parent")
+    @DisplayName("findPathwayGraphForStop falls back to the stop's own pathways when no parent")
     void stationGraph_freeStandingStop() {
         UUID id = UUID.randomUUID();
         Stop standalone = stop(id, "Free-standing");
@@ -62,7 +78,7 @@ class PathwayServiceTest {
                 .thenReturn(List.of());
         when(pathwayRepository.findTouchingAny(any())).thenReturn(List.of());
 
-        Optional<StationPathwayGraphResponse> result = pathwayService.findStationGraphForStop(id);
+        Optional<StationPathwayGraphResponse> result = stopPopupService.findPathwayGraphForStop(id);
 
         assertThat(result).isPresent();
         assertThat(result.get().stationId()).isEqualTo(id);
@@ -71,7 +87,7 @@ class PathwayServiceTest {
     }
 
     @Test
-    @DisplayName("findStationGraphForStop returns the parent station graph for a child platform")
+    @DisplayName("findPathwayGraphForStop returns the parent station graph for a child platform")
     void stationGraph_childPlatformRoutesToParent() {
         UUID parentId = UUID.randomUUID();
         UUID childId = UUID.randomUUID();
@@ -90,7 +106,7 @@ class PathwayServiceTest {
                 .thenReturn(List.of(level));
         when(pathwayRepository.findTouchingAny(any())).thenReturn(List.of());
 
-        Optional<StationPathwayGraphResponse> result = pathwayService.findStationGraphForStop(childId);
+        Optional<StationPathwayGraphResponse> result = stopPopupService.findPathwayGraphForStop(childId);
 
         assertThat(result).isPresent();
         assertThat(result.get().stationId()).isEqualTo(parentId);
@@ -99,7 +115,7 @@ class PathwayServiceTest {
     }
 
     @Test
-    @DisplayName("findStationGraphForStop sorts pathways by mode then signposted text")
+    @DisplayName("findPathwayGraphForStop sorts pathways by mode then signposted text")
     void stationGraph_sortsPathwaysByMode() {
         UUID id = UUID.randomUUID();
         Stop stop = stop(id, "Free-standing");
@@ -115,7 +131,7 @@ class PathwayServiceTest {
         when(pathwayRepository.findTouchingAny(any()))
                 .thenReturn(List.of(elevator, stairs));
 
-        StationPathwayGraphResponse result = pathwayService.findStationGraphForStop(id).orElseThrow();
+        StationPathwayGraphResponse result = stopPopupService.findPathwayGraphForStop(id).orElseThrow();
 
         // STAIRS (ordinal 1) comes before ELEVATOR (ordinal 4)
         assertThat(result.pathways()).hasSize(2);
