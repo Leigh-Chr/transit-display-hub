@@ -144,29 +144,30 @@
 /* --- Error --- */
 
 .error-hint {
-  font-size: var(--m3-type-label-small);
-  color: var(--app-critical);
-  padding: 4px 4px 0;
-}
-
-.error-hint-warning {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 6px;
   padding: 6px 8px;
-  border: 1px solid var(--app-warning, #c97a17);
   border-radius: var(--app-radius-xs);
-  background: color-mix(in srgb, var(--app-warning, #c97a17) 12%, transparent);
-  color: var(--app-warning, #c97a17);
+  border: 1px solid var(--app-critical);
+  background: color-mix(in srgb, var(--app-critical) 12%, transparent);
+  color: var(--app-critical);
+  font-size: var(--m3-type-label-small);
   font-weight: 600;
 }
 
-.error-hint-warning .error-icon {
+.error-hint .error-icon {
   font-size: var(--m3-type-body-large);
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+}
+
+.error-hint-warning {
+  border-color: var(--app-warning, #c97a17);
+  background: color-mix(in srgb, var(--app-warning, #c97a17) 12%, transparent);
+  color: var(--app-warning, #c97a17);
 }
 
 /* --- Route breakdown --- */

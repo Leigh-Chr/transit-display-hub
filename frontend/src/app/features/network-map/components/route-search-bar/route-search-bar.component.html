@@ -40,10 +40,13 @@
   </div>
 
   @if (sameStopError()) {
-    <div class="error-hint">{{ t('sameStopError') }}</div>
+    <div class="error-hint" role="alert">
+      <mat-icon class="error-icon" aria-hidden="true">warning</mat-icon>
+      <span>{{ t('sameStopError') }}</span>
+    </div>
   } @else if (noRouteFound()) {
     <div class="error-hint error-hint-warning" role="alert">
-      <mat-icon class="error-icon">block</mat-icon>
+      <mat-icon class="error-icon" aria-hidden="true">block</mat-icon>
       <span>{{ t('noRouteFound') }}</span>
     </div>
   }
