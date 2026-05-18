@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild, AfterViewInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -11,10 +11,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { ScheduleService } from '@core/api/schedule.service';
-import { Line, Stop, Schedule, CreateScheduleRequest } from '@shared/models';
+import { Stop, Schedule, CreateScheduleRequest } from '@shared/models';
+import { useLinesResource } from '@shared/admin/use-lines-resource';
 import { ScheduleDialogComponent } from './schedule-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -43,8 +43,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
   templateUrl: './schedules.component.html',
   styleUrl: './schedules.component.scss',
 })
-export class SchedulesComponent implements OnInit, AfterViewInit {
-  private readonly lineService = inject(LineService);
+export class SchedulesComponent implements AfterViewInit {
   private readonly stopService = inject(StopService);
   private readonly scheduleService = inject(ScheduleService);
   private readonly dialog = inject(MatDialog);
@@ -55,7 +54,7 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   readonly sort = viewChild(MatSort);
   loading = signal(false);
   loadError = signal<string | null>(null);
-  lines = signal<Line[]>([]);
+  readonly lines = useLinesResource('admin.schedules');
   stops = signal<Stop[]>([]);
   dataSource = new MatTableDataSource<Schedule>([]);
   selectedStop = signal<Stop | null>(null);
@@ -63,13 +62,6 @@ export class SchedulesComponent implements OnInit, AfterViewInit {
   selectedLineId = '';
   selectedStopId = '';
   displayedColumns = ['line', 'destination', 'time', 'actions'];
-
-  ngOnInit(): void {
-    this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error(this.transloco.translate('admin.schedules.loadLinesFailed')),
-    });
-  }
 
   ngAfterViewInit(): void {
     const sortRef = this.sort();

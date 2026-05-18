@@ -13,9 +13,8 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ItineraryService } from '@core/api/itinerary.service';
-import { LineService } from '@core/api/line.service';
 import { AuthService } from '@core/auth/auth.service';
-import { Itinerary, Line, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
+import { Itinerary, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
 import { ItineraryDialogComponent } from './itinerary-dialog.component';
 import { ItineraryStopsDialogComponent } from './itinerary-stops-dialog.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
@@ -24,6 +23,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
+import { useLinesResource } from '@shared/admin/use-lines-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -55,7 +55,6 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 })
 export class ItinerariesComponent implements AfterViewInit {
   private readonly itineraryService = inject(ItineraryService);
-  private readonly lineService = inject(LineService);
   private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
@@ -66,7 +65,7 @@ export class ItinerariesComponent implements AfterViewInit {
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
 
   readonly sort = viewChild(MatSort);
-  readonly lines = signal<Line[]>([]);
+  readonly lines = useLinesResource('admin.itineraries');
   readonly lineId = signal('');
 
   private readonly list = createAdminListResource<Itinerary>({
@@ -100,13 +99,6 @@ export class ItinerariesComponent implements AfterViewInit {
       columns.push('actions');
     }
     return columns;
-  }
-
-  constructor() {
-    this.lineService.getAll().subscribe({
-      next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error(this.transloco.translate('admin.itineraries.loadLinesFailed')),
-    });
   }
 
   ngAfterViewInit(): void {

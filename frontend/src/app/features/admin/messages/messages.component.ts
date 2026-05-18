@@ -12,9 +12,8 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
-import { LineService } from '@core/api/line.service';
 import { MessageService } from '@core/api/message.service';
-import { Line, BroadcastMessage, MessageSeverity, CreateMessageRequest } from '@shared/models';
+import { BroadcastMessage, MessageSeverity, CreateMessageRequest } from '@shared/models';
 import { MessageDialogComponent } from './message-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -22,6 +21,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
+import { useLinesResource } from '@shared/admin/use-lines-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { severityLabel as severityLabelUtil } from '@shared/utils/severity-label';
@@ -53,14 +53,13 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 })
 export class MessagesComponent {
   private readonly messageService = inject(MessageService);
-  private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
   private readonly transloco = inject(TranslocoService);
 
   readonly tableState = inject(AdminTableState);
   protected readonly pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS;
-  readonly lines = signal<Line[]>([]);
+  readonly lines = useLinesResource('admin.messages');
 
   severityLabel(severity: 'CRITICAL' | 'WARNING' | 'INFO',
                 t: (key: string) => string): string {
@@ -101,13 +100,6 @@ export class MessagesComponent {
   readonly loadError = this.list.loadError;
   readonly messages = this.list.items;
   readonly totalElements = this.list.totalElements;
-
-  constructor() {
-    this.lineService.getAll().subscribe({
-      next: (lines) => this.lines.set(lines),
-      error: () => this.notify.error(this.transloco.translate('admin.messages.loadLinesFailed')),
-    });
-  }
 
   loadMessages(): void {
     this.list.reload();

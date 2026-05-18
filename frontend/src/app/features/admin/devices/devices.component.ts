@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -9,15 +8,15 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
-import { LineService } from '@core/api/line.service';
 import { DeviceService } from '@core/api/device.service';
-import { Line, Device, DeviceStatus, DeviceRegistration, RegisterDeviceRequest } from '@shared/models';
+import { Device, DeviceStatus, DeviceRegistration, RegisterDeviceRequest } from '@shared/models';
 import { DeviceDialogComponent } from './device-dialog.component';
 import { DeviceTokenDialogComponent } from './device-token-dialog.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { createSimpleListResource } from '@shared/admin/simple-list-resource';
+import { useLinesResource } from '@shared/admin/use-lines-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -42,10 +41,8 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 })
 export class DevicesComponent {
   private readonly deviceService = inject(DeviceService);
-  private readonly lineService = inject(LineService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly transloco = inject(TranslocoService);
 
   // Status filter is bound to the <mat-select>; loadDevices() is called by
@@ -62,15 +59,7 @@ export class DevicesComponent {
     return err ? httpErrorMessage(err, this.transloco.translate('admin.devices.loadFailed')) : null;
   });
 
-  private readonly linesSignal = signal<Line[]>([]);
-  readonly lines = this.linesSignal.asReadonly();
-
-  constructor() {
-    this.lineService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (lines) => this.linesSignal.set(lines),
-      error: () => this.notify.error(this.transloco.translate('admin.devices.loadLinesFailed')),
-    });
-  }
+  readonly lines = useLinesResource('admin.devices');
 
   loadDevices(): void {
     this.devicesResource.reload();
