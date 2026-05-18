@@ -8,21 +8,18 @@ import { test } from './fixtures/auth.fixture';
  * Baseline established 2026-05-11, étendue 2026-05-16 aux pages
  * d'affichage public (kiosk / hub) et au dashboard admin, resserrée
  * 2026-05-18 après une mesure live des comptes effectifs (cf. le log
- * `[a11y] <name>: <count>` plus bas). Les violations pré-existantes
- * sont épinglées en soft assertion : toute violation critique/sérieuse
- * NOUVELLE au-dessus de la baseline cassera la CI, mais les anciennes
- * ne bloquent pas le merge.
+ * `[a11y] <name>: <count>` plus bas), puis migrée en per-rule allowlist
+ * 2026-05-18 PM. Toute violation dont la rule axe n'est pas listée
+ * dans {@link BASELINE} (même si le nombre total reste identique)
+ * casse maintenant le build — pour qu'une régression NEW (nouveau type
+ * de violation) ne passe plus inaperçue derrière un count constant.
  *
- * Baselines (après resserrement 2026-05-18) :
- *   /login              → 0 (déjà 0 depuis l'origine)
- *   /map                → 1 (résiduel : contraste d'une chip de légende)
- *   /map/list           → 1 (idem sur la liste)
- *   /display/<stopId>   → 0 (le loading/error chrome est propre)
- *   /hub                → 0 (idem hub sans token)
- *   /admin/dashboard    → 0 (post-v1.25.0 design tokens : 0 violation)
- *   /admin/lines        → 1 (résiduel chip ligne)
- *   /admin/stops        → 1 (résiduel chip ligne sur les arrêts)
- *   /admin/{users,messages,schedules} → 0
+ * Baselines per-rule (rule axe → motif) :
+ *   /map                → ['color-contrast'] (chip de légende résiduelle)
+ *   /map/list           → ['color-contrast']
+ *   /admin/lines        → ['color-contrast'] (chip de ligne)
+ *   /admin/stops        → ['color-contrast']
+ *   Toutes les autres pages → []
  */
 
 const publicPages = [
@@ -46,40 +43,66 @@ const adminPages = [
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
-// Per-page baseline: update when a pre-existing violation is fixed.
-// The residual contrast findings on the network pages come from
-// secondary line-chip / legend pairs that do not affect readability
-// of stop or line names. Three CI runs in a row converged on the
-// numbers below (the `[a11y] …` log captures each); a real regression
-// (a new violation on top of these) still trips CI.
-const BASELINE: Record<string, number> = {
-  login:             0,
-  'network-map':     1,
-  'network-list':    1,
-  'kiosk-stop':      0,
-  'hub':             0,
-  'admin-dashboard': 0,
-  // Admin pages share the dashboard's chip / card system; the
-  // post-v1.25.0 design-token migration dropped most violations to 0.
-  // The two pages still at 1 carry a line-chip on the row template.
-  'admin-lines':     1,
-  'admin-stops':     1,
-  'admin-users':     0,
-  'admin-messages':  0,
-  'admin-schedules': 0,
+// Per-page allowlist: list every axe rule that is currently allowed to
+// trip on this page. Empty array = no critical / serious violation is
+// tolerated. The previous count-based budget would silently absorb a
+// NEW rule failing as long as another residual rule had been fixed in
+// the same release — the per-rule allowlist trips the build the moment
+// a previously-unseen rule starts firing, even if the total count
+// stays flat. Update the list when a residual is fixed (drop the rule)
+// or when a new pre-existing residual is accepted (add it, with a
+// reason in a comment).
+const BASELINE: Record<string, string[]> = {
+  login:             [],
+  // The chip strip in the network legend pairs a pastel brand colour
+  // with white text. Fixing this requires a brand-wide colour audit
+  // that lives in a separate work stream.
+  'network-map':     ['color-contrast'],
+  'network-list':    ['color-contrast'],
+  'kiosk-stop':      [],
+  'hub':             [],
+  'admin-dashboard': [],
+  // Admin lines / stops embed the same line-chip pattern as the map.
+  'admin-lines':     ['color-contrast'],
+  'admin-stops':     ['color-contrast'],
+  'admin-users':     [],
+  'admin-messages':  [],
+  'admin-schedules': [],
 };
 
-function assertNoNewViolations(name: string, criticalCount: number, sample: unknown): void {
-  // Surface the live count on every run so a sustained drop motivates a
-  // baseline tighten. The soft expect below only logs the count when it
-  // fails, so without this line a page that quietly improved from 5 → 1
-  // violations would never tell anyone — and the budget would stay loose.
-  console.info(`[a11y] ${name}: ${criticalCount} critical/serious (baseline ${BASELINE[name] ?? 0})`);
+interface CriticalViolation {
+  id: string;
+  impact: string | null | undefined;
+  description: string;
+}
+
+function assertNoNewViolations(name: string, criticals: CriticalViolation[]): void {
+  const allowed = new Set(BASELINE[name] ?? []);
+  const unexpected = criticals.filter(v => !allowed.has(v.id));
+  // Surface the live picture on every run so a sustained drop motivates
+  // tightening the allowlist. The soft expect below only logs the
+  // unexpected violations when it fails, so without this line a page
+  // that quietly stopped tripping its allowlisted rule would never
+  // notify anyone — and the allowlist would stay loose.
+  const seenRules = [...new Set(criticals.map(v => v.id))];
+  const allowedRules = [...allowed];
+  console.info(
+    `[a11y] ${name}: ${criticals.length} critical/serious ` +
+      `(rules seen: [${seenRules.join(', ') || 'none'}], ` +
+      `allowlist: [${allowedRules.join(', ') || 'none'}])`,
+  );
   expect.soft(
-    criticalCount,
-    `${name}: ${criticalCount} critical/serious violation(s) found:\n` +
-      JSON.stringify(sample, null, 2),
-  ).toBeLessThanOrEqual(BASELINE[name] ?? 0);
+    unexpected,
+    `${name}: ${unexpected.length} unexpected critical/serious violation(s) ` +
+      `(not in allowlist [${allowedRules.join(', ') || 'none'}]):\n` +
+      JSON.stringify(unexpected, null, 2),
+  ).toEqual([]);
+}
+
+function toCriticalViolations(violations: { id: string; impact?: string | null; description: string }[]): CriticalViolation[] {
+  return violations
+    .filter(v => v.impact === 'critical' || v.impact === 'serious')
+    .map(v => ({ id: v.id, impact: v.impact, description: v.description }));
 }
 
 for (const p of publicPages) {
@@ -97,15 +120,7 @@ for (const p of publicPages) {
       .withTags(WCAG_TAGS)
       .analyze();
 
-    const critical = results.violations.filter(
-      v => v.impact === 'critical' || v.impact === 'serious',
-    );
-
-    assertNoNewViolations(
-      p.name,
-      critical.length,
-      critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
-    );
+    assertNoNewViolations(p.name, toCriticalViolations(results.violations));
   });
 }
 
@@ -120,15 +135,7 @@ test('kiosk-stop has no axe-detected critical/serious violations', async ({ page
     .withTags(WCAG_TAGS)
     .analyze();
 
-  const critical = results.violations.filter(
-    v => v.impact === 'critical' || v.impact === 'serious',
-  );
-
-  assertNoNewViolations(
-    'kiosk-stop',
-    critical.length,
-    critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
-  );
+  assertNoNewViolations('kiosk-stop', toCriticalViolations(results.violations));
 });
 
 test('hub has no axe-detected critical/serious violations', async ({ page }) => {
@@ -141,15 +148,7 @@ test('hub has no axe-detected critical/serious violations', async ({ page }) => 
     .withTags(WCAG_TAGS)
     .analyze();
 
-  const critical = results.violations.filter(
-    v => v.impact === 'critical' || v.impact === 'serious',
-  );
-
-  assertNoNewViolations(
-    'hub',
-    critical.length,
-    critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
-  );
+  assertNoNewViolations('hub', toCriticalViolations(results.violations));
 });
 
 test('admin-dashboard has no axe-detected critical/serious violations', async ({ adminPage }) => {
@@ -161,15 +160,7 @@ test('admin-dashboard has no axe-detected critical/serious violations', async ({
     .withTags(WCAG_TAGS)
     .analyze();
 
-  const critical = results.violations.filter(
-    v => v.impact === 'critical' || v.impact === 'serious',
-  );
-
-  assertNoNewViolations(
-    'admin-dashboard',
-    critical.length,
-    critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
-  );
+  assertNoNewViolations('admin-dashboard', toCriticalViolations(results.violations));
 });
 
 for (const p of adminPages) {
@@ -184,14 +175,6 @@ for (const p of adminPages) {
       .withTags(WCAG_TAGS)
       .analyze();
 
-    const critical = results.violations.filter(
-      v => v.impact === 'critical' || v.impact === 'serious',
-    );
-
-    assertNoNewViolations(
-      p.name,
-      critical.length,
-      critical.map(v => ({ id: v.id, impact: v.impact, description: v.description })),
-    );
+    assertNoNewViolations(p.name, toCriticalViolations(results.violations));
   });
 }
