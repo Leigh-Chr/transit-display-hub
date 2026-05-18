@@ -48,6 +48,7 @@ import {
   type NetworkStopLabel,
 } from './schematic-geometry';
 import { usePanZoomUrl } from './use-pan-zoom-url';
+import { useSchematicViewport } from './use-schematic-viewport';
 import { useWheelHint } from './use-wheel-hint';
 
 @Component({
@@ -215,85 +216,21 @@ export class SchematicMapComponent {
     return map;
   });
 
-  /** ViewBox that tightly wraps the visible content with margins for labels/badges */
-  baseViewBox = computed(() => {
-    const rows = this.networkLineRows();
-    if (rows.length === 0) {
-      return { x: 0, y: 0, w: 1000, h: 600 };
-    }
-
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-
-    for (const row of rows) {
-      minY = Math.min(minY, row.y);
-      maxY = Math.max(maxY, row.y);
-      for (const s of row.stops) {
-        minX = Math.min(minX, s.x);
-        maxX = Math.max(maxX, s.x);
-      }
-    }
-
-    // When the visible rows have no stops at all (mid-filter transition,
-    // category with empty rows), the min/max sentinels stay at ±Infinity
-    // and would propagate as "Infinity" into the viewBox attribute. Fall
-    // back to a sane default so the SVG keeps rendering.
-    if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
-      return { x: 0, y: 0, w: 1000, h: 600 };
-    }
-
-    const sideMargin = 80;
-    // Rotated labels span ~150 SVG units along their axis for the longest French
-    // stop names. We reserve that on every side that can host them: top is always
-    // populated by upward labels; bottom now also receives the bottom row's
-    // downward labels in multi-line, plus alternating downward labels in single-line.
-    const topMargin = 160;
-    const bottomMargin = 160;
-
-    const contentW = Math.max((maxX - minX) + sideMargin * 2, 200);
-    const w = contentW / 0.6;  // content occupies ~60% of the view width
-    const extraSide = (w - contentW) / 2;
-
-    const x = minX - sideMargin - extraSide;
-    const y = minY - topMargin;
-    const h = Math.max((maxY - minY) + topMargin + bottomMargin, 200);
-
-    return { x, y, w, h };
+  /** ViewBox + screen-space scaling helpers (baseScale, invZoom,
+   *  labelTransform*) live inside the {@link useSchematicViewport}
+   *  composable so the host component shell stays focused on filters
+   *  and event handling. The composable also owns the SVG
+   *  ResizeObserver lifecycle. */
+  private readonly viewport = useSchematicViewport({
+    rows: computed(() => this.networkLineRows()),
+    zoomLevel: computed(() => this.zoomLevel()),
+    svgElement: this.svgElement,
   });
 
-  /** Live size of the SVG element on screen, refreshed by a ResizeObserver
-   *  in the constructor. Drives the screen-space compensation below. */
-  private readonly svgRect = signal<{ w: number; h: number }>({ w: 0, h: 0 });
-
-  /** Natural svg-unit-to-screen-px ratio at zoom 1. Single-line is wider
-   *  than tall so the SVG ends up width-constrained (~0.7 px per unit);
-   *  dense multi-line views are taller and become height-constrained
-   *  (~0.5 px per unit), which is why icons used to feel smaller as the
-   *  number of rows grew. */
-  private readonly baseScale = computed(() => {
-    const r = this.svgRect();
-    const vb = this.baseViewBox();
-    if (r.w === 0 || r.h === 0 || vb.w === 0 || vb.h === 0) {return 1;}
-    return Math.min(r.w / vb.w, r.h / vb.h);
-  });
-
-  /** Inverse total scale used by every "icon" (stop circles, hidden-line
-   *  badges, alert/route markers, line code badges, route arrows, rotated
-   *  labels). Compensates for both the user zoom AND the view-box-to-screen
-   *  ratio, so an SVG-unit value of N gives N screen pixels regardless of
-   *  how many rows are visible or how zoomed-in the user is. The line
-   *  paths and stop positions keep scaling with zoom — only the visuals
-   *  pinned with this factor stay at constant screen size. */
-  invZoom = computed(() => {
-    const total = this.baseScale() * this.zoomLevel();
-    return total > 0 ? 1 / total : 1;
-  });
-
-  /** Transform strings for the rotated label, sharing the same inverse
-   *  scale so a label keeps both its rendered font size and its offset
-   *  from the stop in screen pixels. */
-  labelTransformUp = computed(() => `rotate(-45) scale(${this.invZoom()}) translate(8, -8)`);
-  labelTransformDown = computed(() => `rotate(45) scale(${this.invZoom()}) translate(8, 8)`);
+  baseViewBox = this.viewport.baseViewBox;
+  invZoom = this.viewport.invZoom;
+  labelTransformUp = this.viewport.labelTransformUp;
+  labelTransformDown = this.viewport.labelTransformDown;
 
   // --- Network computed (now always active, filtered by visibleLines) ---
 
@@ -431,24 +368,6 @@ export class SchematicMapComponent {
   zoomLevel = this.panZoomUrl.zoomLevel;
 
   constructor() {
-    // Track the SVG element's screen size so the icon-scaling formula
-    //    can compensate for the view-box-to-screen ratio (different in
-    //    single-line vs dense multi-line). Set up once after first render.
-    const destroyRef = inject(DestroyRef);
-    afterNextRender(() => {
-      const svg = this.svgElement()?.nativeElement;
-      if (!svg) {return;}
-      const update = (): void => {
-        const r = svg.getBoundingClientRect();
-        this.svgRect.set({ w: r.width, h: r.height });
-      };
-      update();
-      if (typeof ResizeObserver === 'undefined') {return;}
-      const ro = new ResizeObserver(update);
-      ro.observe(svg);
-      destroyRef.onDestroy(() => ro.disconnect());
-    });
-
     // Angular 21 attaches template (wheel) and (touchmove) bindings as
     // passive listeners by default, which silently ignores any
     // event.preventDefault() inside the handlers — without this the
@@ -456,6 +375,7 @@ export class SchematicMapComponent {
     // on a trackpad / mobile screen. Bind imperatively with
     // { passive: false } so onWheel / onTouchMove can stop the
     // surrounding scroll.
+    const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       const wrapper = this.diagramWrapper()?.nativeElement;
       if (!wrapper) {return;}
