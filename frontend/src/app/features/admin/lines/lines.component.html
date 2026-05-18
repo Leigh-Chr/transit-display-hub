@@ -76,6 +76,15 @@
                     {{ line.code }}
                   </span>
                   <div class="line-actions">
+                    <a
+                      mat-icon-button
+                      [routerLink]="['/map']"
+                      [queryParams]="{ lines: line.code }"
+                      [matTooltip]="t('admin.lines.viewOnMapTooltip')"
+                      [attr.aria-label]="t('admin.lines.viewOnMapTooltip')"
+                    >
+                      <mat-icon>map</mat-icon>
+                    </a>
                     <button mat-icon-button (click)="openEditDialog(line)" [matTooltip]="t('admin.lines.editTooltip')" [attr.aria-label]="t('admin.lines.editTooltip')">
                       <mat-icon>edit</mat-icon>
                     </button>

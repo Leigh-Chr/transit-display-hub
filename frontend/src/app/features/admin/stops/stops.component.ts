@@ -13,6 +13,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { NotifyService } from '@core/services/notify.service';
 import { MatSortModule } from '@angular/material/sort';
 import { MatPaginatorModule } from '@angular/material/paginator';
+import { RouterLink } from '@angular/router';
 import { LineService } from '@core/api/line.service';
 import { StopService } from '@core/api/stop.service';
 import { Line, Stop, CreateStopRequest } from '@shared/models';
@@ -45,6 +46,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatSortModule,
     MatPaginatorModule,
     MatTooltipModule,
+    RouterLink,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,
