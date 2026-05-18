@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.30.0] — 2026-05-18
+
+Second cohesion pass — the 1.29 release reorganised navigation
+within sections; this one collapses leftover duplicates and bundles
+backend micro-services that only one caller still needed. The admin
+sidenav drops one more entry (10 → 9) and the four GTFS-data
+controllers see no behavioural change.
+
+### Changed
+
+- **Real-time + Import History grouped under a single sidenav entry
+  "Operations"** (`/admin/operations`) wrapping the two existing
+  pages as tabs (`/admin/operations/realtime`,
+  `/admin/operations/import-history`). The previous flat URLs
+  `/admin/realtime` and `/admin/import-audit` redirect to the new
+  ones so bookmarks keep working. The two surfaces are both
+  read-only supervision tools — separating them in the menu read as
+  "two different things you check periodically"; merged they read
+  as "what I look at when I'm monitoring the feed".
+- **Hub Display removed from the sidenav.** It was a button that
+  opened a dialog already reachable from the Stops toolbar, so the
+  sidenav listing duplicated the entry point without adding value.
+  A hub is by definition an aggregate of stops, so the Stops page
+  is the natural home — `docs/user-guide.md` updated accordingly.
+  The unused `MatDialog` / `LineService` injections in
+  `AdminLayoutComponent` and the now-orphan `admin.navigation.hubDisplay`
+  i18n key are dropped.
+
+### Backend
+
+- **Four single-method micro-services merged into one
+  `StopPopupService`.** `BookingRuleService`,
+  `FlexAvailabilityService`, `LocationService` and `PathwayService`
+  each exposed one read and were consumed exclusively by
+  `NetworkMapController` to power the public stop popup.
+  Consolidating them shrinks the controller's dependency list from
+  four collaborators to one and keeps every popup data lookup in
+  one file; method names are clarified
+  (`findTadZoneByStop`, `findBookingRulesByStop`,
+  `findPathwayGraphForStop`, `findFlexWindowsForLocation`).
+  REST contract unchanged, same five endpoints, same DTOs, same
+  caching boundary.
+- **`application/service/overview/` sub-package flattened.** Only
+  two providers lived there and both were consumed by
+  `DataOverviewService` one level up. Moving them to
+  `application/service/` removes a hop that grouped nothing.
+
+### Fixed
+
+- **Six `ItineraryControllerIntegrationTest` cases** still issued
+  anonymous GETs against `/api/itineraries` and
+  `/api/itineraries/{id}` while asserting 200/404, contradicting
+  the 1.28 SecurityConfig that locked those paths to ADMIN. Tests
+  now reuse the admin Bearer token the suite already prepares,
+  plus a fresh 401-without-auth case to lock the new contract.
+
 ## [1.29.0] — 2026-05-18
 
 UX cohesion pass: the admin sidenav, the dashboard, the network map
