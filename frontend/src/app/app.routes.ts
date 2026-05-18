@@ -92,10 +92,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/admin/tad-zones/tad-zones.component').then(m => m.TadZonesComponent)
           },
           {
-            path: 'flex-stop-times',
-            loadComponent: () => import('./features/admin/flex-stop-times/flex-stop-times.component').then(m => m.FlexStopTimesComponent)
-          },
-          {
             path: 'users',
             loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
           }

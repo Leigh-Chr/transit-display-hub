@@ -314,7 +314,6 @@
       "pathways": "Pathways",
       "shapes": "Shapes",
       "tadZones": "Zones TAD",
-      "flexStopTimes": "Stop_times TAD",
       "users": "Utilisateurs",
       "skipToMain": "Aller au contenu principal",
       "toggleSidebar": "Réduire/étendre le panneau",
@@ -979,23 +978,6 @@
         "failed": "Échec",
         "running": "En cours"
       }
-    },
-    "flexStopTimes": {
-      "title": "Stop_times TAD",
-      "subtitle": "Entrées stop_times référençant des zones GTFS-flex (location_type 1–4) plutôt que des arrêts classiques.",
-      "loadFailed": "Impossible de charger les stop_times TAD",
-      "emptyTitle": "Pas de stop_times TAD",
-      "emptyDesc": "Le feed GTFS courant ne déclare pas de service à la demande (location_id / location_group_id + windows sur stop_times).",
-      "legendStop": "Arrêt",
-      "legendLocation": "Zone polygonale",
-      "legendGroup": "Groupe d'arrêts",
-      "colLine": "Ligne",
-      "colItinerary": "Itinéraire",
-      "colTarget": "Cible",
-      "colWindow": "Fenêtre",
-      "colBookings": "Booking rules",
-      "colCalendar": "Calendrier",
-      "calendarAlways": "always"
     },
     "pathways": {
       "title": "Topologie indoor",

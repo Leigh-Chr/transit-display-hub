@@ -314,7 +314,6 @@
       "pathways": "Pathways",
       "shapes": "Shapes",
       "tadZones": "DRT Zones",
-      "flexStopTimes": "DRT Stop Times",
       "users": "Users",
       "skipToMain": "Skip to main content",
       "toggleSidebar": "Toggle sidebar",
@@ -979,23 +978,6 @@
         "failed": "Failed",
         "running": "Running"
       }
-    },
-    "flexStopTimes": {
-      "title": "DRT Stop Times",
-      "subtitle": "stop_times entries referencing GTFS-flex zones (location_type 1–4) rather than standard stops.",
-      "loadFailed": "Failed to load DRT stop times",
-      "emptyTitle": "No DRT stop times",
-      "emptyDesc": "The current GTFS feed declares no on-demand service (location_id / location_group_id + windows on stop_times).",
-      "legendStop": "Stop",
-      "legendLocation": "Polygon zone",
-      "legendGroup": "Stop group",
-      "colLine": "Line",
-      "colItinerary": "Itinerary",
-      "colTarget": "Target",
-      "colWindow": "Window",
-      "colBookings": "Booking rules",
-      "colCalendar": "Calendar",
-      "calendarAlways": "always"
     },
     "pathways": {
       "title": "Indoor Topology",

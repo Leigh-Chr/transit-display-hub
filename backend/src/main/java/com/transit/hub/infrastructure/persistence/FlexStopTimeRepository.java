@@ -42,20 +42,4 @@ public interface FlexStopTimeRepository extends JpaRepository<FlexStopTime, UUID
               WHERE f.stop IS NOT NULL
             """)
     java.util.Set<UUID> findStopIdsTouchedByFlex();
-
-    /** Eagerly fetches every flex stop time for an itinerary so the
-     *  admin browse page can list them with their target. */
-    @Query("""
-            SELECT f FROM FlexStopTime f
-              JOIN FETCH f.itinerary i
-              JOIN FETCH i.line
-              LEFT JOIN FETCH f.location
-              LEFT JOIN FETCH f.locationGroup
-              LEFT JOIN FETCH f.stop
-              LEFT JOIN FETCH f.pickupBookingRule
-              LEFT JOIN FETCH f.dropOffBookingRule
-              LEFT JOIN FETCH f.serviceCalendar
-              ORDER BY f.itinerary.id, f.stopSequence
-            """)
-    List<FlexStopTime> findAllWithRelations();
 }

@@ -40,13 +40,4 @@ public class FlexAvailabilityService {
                 .toList();
     }
 
-    /** Lists every persisted flex stop time, eagerly loaded for an
-     *  admin browse page. Sorted by itinerary then stop_sequence. */
-    @Transactional(readOnly = true)
-    public List<FlexStopTimeResponse> browse() {
-        return flexStopTimeRepository.findAllWithRelations().stream()
-                .map(FlexStopTimeResponse::from)
-                .toList();
-    }
-
 }

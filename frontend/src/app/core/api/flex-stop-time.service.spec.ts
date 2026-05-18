@@ -51,27 +51,6 @@ describe('FlexStopTimeService', () => {
   afterEach(() => {
     httpMock.verify();
   });
-  describe('browse', () => {
-    it('should fetch the admin flex stop_times list', () => {
-      service.browse().subscribe(rows => {
-        expect(rows).toEqual([mockRow]);
-      });
-
-      const req = httpMock.expectOne('/api/admin/flex-stop-times');
-      expect(req.request.method).toBe('GET');
-      req.flush([mockRow]);
-    });
-
-    it('should fall back to an empty array on error (catchError)', () => {
-      let value: FlexStopTime[] | undefined;
-      service.browse().subscribe(rows => { value = rows; });
-
-      const req = httpMock.expectOne('/api/admin/flex-stop-times');
-      req.error(new ProgressEvent('Network error'));
-      expect(value).toEqual([]);
-    });
-  });
-
   describe('getWindowsForLocation', () => {
     it('should fetch windows without a date param when omitted', () => {
       service.getWindowsForLocation('loc-abc').subscribe(rows => {
