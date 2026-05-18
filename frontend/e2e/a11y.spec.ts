@@ -56,15 +56,14 @@ const BASELINE: Record<string, number> = {
   'kiosk-stop':      3,
   'hub':             3,
   'admin-dashboard': 5,
-  // Admin pages share the dashboard's chip / card system, so their
-  // pre-existing counts cluster around the same magnitude. 10 leaves
-  // headroom on the first CI run; tighten after the visual design v2
-  // pass lands.
-  'admin-lines':     10,
-  'admin-stops':     10,
-  'admin-users':     10,
-  'admin-messages':  10,
-  'admin-schedules': 10,
+  // Admin pages share the dashboard's chip / card system; the
+  // post-v1.24 tighten-pass aligned them on the dashboard's
+  // budget after the first CI run came in below 5 on every page.
+  'admin-lines':     5,
+  'admin-stops':     5,
+  'admin-users':     5,
+  'admin-messages':  5,
+  'admin-schedules': 5,
 };
 
 function assertNoNewViolations(name: string, criticalCount: number, sample: unknown): void {
