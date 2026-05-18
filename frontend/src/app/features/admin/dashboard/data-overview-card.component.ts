@@ -24,7 +24,14 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
   imports: [MatCardModule, MatIconModule, MatTooltipModule, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (loaded() && overview(); as data) {
+    @if (!loaded()) {
+      <!-- Reserve the card slot during the fetch so the dashboard layout
+           doesn't jump when the contents land. Same surface treatment as
+           the loaded card, contents replaced by an aria-hidden placeholder. -->
+      <mat-card class="overview-card overview-card-placeholder" aria-hidden="true">
+        <mat-card-content></mat-card-content>
+      </mat-card>
+    } @else if (overview(); as data) {
       <mat-card class="overview-card" *transloco="let t; prefix: 'admin.dashboard.overview'">
         <mat-card-content>
           <div class="overview-header">
@@ -128,6 +135,13 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
   `,
   styles: `
     .overview-card { margin-bottom: 16px; }
+
+    /* Pre-load placeholder: matches the height of a typical loaded card
+       (header + 5–10 stat tiles + optional realtime strip) so the
+       dashboard grid doesn't shift when the data arrives. */
+    .overview-card-placeholder mat-card-content {
+      min-height: 180px;
+    }
 
     .overview-header {
       display: flex;
