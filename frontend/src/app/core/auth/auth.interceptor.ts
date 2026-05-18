@@ -43,6 +43,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
       if (error.status === 403) {
         notify.error(transloco.translate('common.errors.accessDenied'));
+      } else if (error.status >= 500 && error.status < 600) {
+        // 5xx are propagated to the caller for inline handling, but the
+        // global toast guarantees the user sees *something* when a page
+        // forgets to handle the error path on a write.
+        notify.error(transloco.translate('common.errors.server'));
       }
 
       return throwError(() => error);

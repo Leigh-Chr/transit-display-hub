@@ -46,6 +46,7 @@ describe('authInterceptor', () => {
       'common.errors.network': 'Network error: please check your connection',
       'common.errors.accessDenied': 'Access denied: insufficient permissions',
       'common.errors.sessionExpired': 'Session expired. Please sign in again.',
+      'common.errors.server': 'Server error. Please try again in a moment.',
     };
     const translocoSpy = { translate: (key: string) => translations[key] ?? key };
 
@@ -184,6 +185,14 @@ describe('authInterceptor', () => {
         .flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
 
       expect(authServiceSpy.refresh).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a global server-error toast on any 5xx so the user never sees a silent failure', () => {
+      httpClient.get(protectedUrl).subscribe({ error: () => undefined });
+      httpMock.expectOne(protectedUrl)
+        .flush({ message: 'boom' }, { status: 503, statusText: 'Service Unavailable' });
+
+      expect(notifySpy.error).toHaveBeenCalledWith('Server error. Please try again in a moment.');
     });
   });
 });

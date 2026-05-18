@@ -20,7 +20,8 @@
     "errors": {
       "network": "Network error: please check your connection",
       "accessDenied": "Access denied: insufficient permissions",
-      "sessionExpired": "Session expired. Please sign in again."
+      "sessionExpired": "Session expired. Please sign in again.",
+      "server": "Server error. Please try again in a moment."
     },
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",

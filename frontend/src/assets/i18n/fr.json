@@ -20,7 +20,8 @@
     "errors": {
       "network": "Erreur réseau : vérifiez votre connexion",
       "accessDenied": "Accès refusé : permissions insuffisantes",
-      "sessionExpired": "Session expirée. Veuillez vous reconnecter."
+      "sessionExpired": "Session expirée. Veuillez vous reconnecter.",
+      "server": "Erreur serveur. Réessayez dans quelques instants."
     },
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Passer en français",
