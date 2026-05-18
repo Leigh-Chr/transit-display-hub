@@ -26,6 +26,7 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDoubleOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseShortOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsImportSupport.externalIdIndex;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
@@ -98,11 +99,7 @@ public class StopImporter {
         // same UUID — Devices reference Stop.id directly, and dropping
         // the row on re-import would unbind every kiosk in the field.
         // See ADR 0013.
-        Map<String, Stop> existingByExternalId = stopRepository.findAll().stream()
-                .filter(s -> s.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Stop::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
+        Map<String, Stop> existingByExternalId = externalIdIndex(stopRepository, Stop::getExternalId);
 
         // Two-pass persistence: parent stations first (so children can
         // reference them via parentStop FK), then platforms.

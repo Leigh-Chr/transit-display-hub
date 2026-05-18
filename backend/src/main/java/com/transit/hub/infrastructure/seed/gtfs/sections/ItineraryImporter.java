@@ -40,6 +40,7 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDirectionId;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDoubleOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsImportSupport.externalIdIndex;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
@@ -94,11 +95,8 @@ public class ItineraryImporter {
 
         // Pre-load existing itineraries by external_id so re-imports
         // refresh a stable UUID. See ADR 0013.
-        Map<String, Itinerary> existingItinerariesByExternalId = itineraryRepository.findAll().stream()
-                .filter(i -> i.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Itinerary::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
+        Map<String, Itinerary> existingItinerariesByExternalId =
+                externalIdIndex(itineraryRepository, Itinerary::getExternalId);
 
         // Clear stop ↔ line membership before rebuilding so a route
         // reassigning its stops doesn't leave the previous lines

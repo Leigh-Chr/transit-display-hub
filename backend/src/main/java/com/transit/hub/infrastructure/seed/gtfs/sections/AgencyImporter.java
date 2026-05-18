@@ -20,6 +20,7 @@ import java.util.UUID;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseShortOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsImportSupport.externalIdIndex;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
@@ -48,11 +49,7 @@ public class AgencyImporter {
         // Index pre-existing agencies by external_id so a re-import keeps
         // the same UUID — Lines reference it via FK and we don't want to
         // bounce that reference on every refresh. See ADR 0013.
-        Map<String, Agency> existingByExternalId = agencyRepository.findAll().stream()
-                .filter(a -> a.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Agency::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
+        Map<String, Agency> existingByExternalId = externalIdIndex(agencyRepository, Agency::getExternalId);
 
         Map<String, Agency> result = new LinkedHashMap<>();
         Set<UUID> seenIds = new HashSet<>();

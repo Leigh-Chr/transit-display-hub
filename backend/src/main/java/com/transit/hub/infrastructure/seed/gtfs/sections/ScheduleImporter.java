@@ -42,6 +42,7 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.isBlank;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseShortOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseDoubleOrNull;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsImportSupport.externalIdIndex;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.ItineraryImporter.computeBikesOverride;
@@ -201,21 +202,11 @@ public class ScheduleImporter {
     }
 
     private Map<String, Location> indexLocationsByExternalId() {
-        return locationRepository.findAll().stream()
-                .filter(l -> l.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Location::getExternalId,
-                        java.util.function.Function.identity(),
-                        (a, b) -> a));
+        return externalIdIndex(locationRepository, Location::getExternalId);
     }
 
     private Map<String, LocationGroup> indexLocationGroupsByExternalId() {
-        return locationGroupRepository.findAll().stream()
-                .filter(l -> l.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        LocationGroup::getExternalId,
-                        java.util.function.Function.identity(),
-                        (a, b) -> a));
+        return externalIdIndex(locationGroupRepository, LocationGroup::getExternalId);
     }
 
     private void streamStopTimes(Path stopTimesFile, ImportContext ctx) throws IOException {
@@ -355,25 +346,11 @@ public class ScheduleImporter {
         if (!ctx.seen.add(key)) {
             return;
         }
-        ctx.batch.add(Schedule.builder()
+        ctx.batch.add(commonScheduleFields(row)
                 .time(row.time)
                 .departureTime(row.distinctDeparture())
-                .stop(row.stop)
-                .itinerary(row.itinerary)
-                .pickupType(row.pickupType)
-                .dropOffType(row.dropOffType)
-                .wheelchairOverride(row.wheelchairOverride())
-                .bikesAllowedOverride(row.bikesOverride())
-                .timepoint(row.timepoint())
                 .frequencyHeadwaySeconds(null)
                 .frequencyExactTimes(null)
-                .blockId(row.trip.blockId())
-                .serviceCalendar(row.calendar)
-                .pickupBookingRule(row.pickupBooking())
-                .dropOffBookingRule(row.dropOffBooking())
-                .continuousPickup(row.continuousPickup())
-                .continuousDropOff(row.continuousDropOff())
-                .shapeDistTraveled(row.shapeDistTraveled())
                 .build());
         flushBatchIfFull(ctx);
     }
@@ -401,28 +378,38 @@ public class ScheduleImporter {
                 if (!ctx.seen.add(key)) {
                     continue;
                 }
-                ctx.batch.add(Schedule.builder()
+                ctx.batch.add(commonScheduleFields(row)
                         .time(stopTime)
-                        .stop(row.stop)
-                        .itinerary(row.itinerary)
-                        .pickupType(row.pickupType)
-                        .dropOffType(row.dropOffType)
-                        .wheelchairOverride(row.wheelchairOverride())
-                        .bikesAllowedOverride(row.bikesOverride())
-                        .timepoint(row.timepoint())
                         .frequencyHeadwaySeconds(window.headwaySeconds())
                         .frequencyExactTimes(window.exactTimes())
-                        .blockId(row.trip.blockId())
-                        .serviceCalendar(row.calendar)
-                        .pickupBookingRule(row.pickupBooking())
-                        .dropOffBookingRule(row.dropOffBooking())
-                        .continuousPickup(row.continuousPickup())
-                        .continuousDropOff(row.continuousDropOff())
-                        .shapeDistTraveled(row.shapeDistTraveled())
                         .build());
                 flushBatchIfFull(ctx);
             }
         }
+    }
+
+    /**
+     * Fields shared by the fixed-schedule and frequency-expansion
+     * code paths. Only {@code time}, optional {@code departureTime},
+     * and the two {@code frequency*} fields differ between callers,
+     * so they stay at the call site.
+     */
+    private static Schedule.ScheduleBuilder commonScheduleFields(ScheduleRowContext row) {
+        return Schedule.builder()
+                .stop(row.stop)
+                .itinerary(row.itinerary)
+                .pickupType(row.pickupType)
+                .dropOffType(row.dropOffType)
+                .wheelchairOverride(row.wheelchairOverride())
+                .bikesAllowedOverride(row.bikesOverride())
+                .timepoint(row.timepoint())
+                .blockId(row.trip.blockId())
+                .serviceCalendar(row.calendar)
+                .pickupBookingRule(row.pickupBooking())
+                .dropOffBookingRule(row.dropOffBooking())
+                .continuousPickup(row.continuousPickup())
+                .continuousDropOff(row.continuousDropOff())
+                .shapeDistTraveled(row.shapeDistTraveled());
     }
 
     private void flushBatchIfFull(ImportContext ctx) {

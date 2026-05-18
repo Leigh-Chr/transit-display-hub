@@ -31,6 +31,7 @@ import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseInt;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseIntOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.parseShortOrNull;
 import static com.transit.hub.infrastructure.seed.gtfs.GtfsParse.truncate;
+import static com.transit.hub.infrastructure.seed.gtfs.GtfsImportSupport.externalIdIndex;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.openCsv;
 import static com.transit.hub.infrastructure.seed.gtfs.sections.CsvHelper.optional;
 
@@ -63,11 +64,7 @@ public class RouteImporter {
         // same UUID — both Devices (via Stop → stop_lines) and
         // BroadcastMessages (scope=LINE) reference it semantically.
         // See ADR 0013.
-        Map<String, Line> existingByExternalId = lineRepository.findAll().stream()
-                .filter(l -> l.getExternalId() != null)
-                .collect(java.util.stream.Collectors.toMap(
-                        Line::getExternalId, java.util.function.Function.identity(),
-                        (a, b) -> a));
+        Map<String, Line> existingByExternalId = externalIdIndex(lineRepository, Line::getExternalId);
 
         Map<String, Line> result = new LinkedHashMap<>();
         Set<UUID> seenIds = new HashSet<>();
