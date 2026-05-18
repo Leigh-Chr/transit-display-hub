@@ -13,6 +13,7 @@ import { RealtimeAlert, VehiclePosition } from '@shared/models';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { httpErrorMessage } from '@shared/utils/http.utils';
+import { severityLabel as severityLabelUtil } from '@shared/utils/severity-label';
 
 /**
  * Admin browser for the GTFS-Realtime caches. Two tabs (alerts and
@@ -56,12 +57,7 @@ export class RealtimeComponent {
   }
 
   severityLabel(severity: string | null | undefined, t: (key: string) => string): string {
-    switch (severity) {
-      case 'CRITICAL': return t('admin.realtime.severityCritical');
-      case 'WARNING': return t('admin.realtime.severityWarning');
-      case 'INFO': return t('admin.realtime.severityInfo');
-      default: return severity ?? '';
-    }
+    return severityLabelUtil(severity, 'admin.realtime', t);
   }
 
   readonly alerts = signal<RealtimeAlert[]>([]);

@@ -24,6 +24,7 @@ import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
+import { severityLabel as severityLabelUtil } from '@shared/utils/severity-label';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 @Component({
@@ -63,12 +64,7 @@ export class MessagesComponent {
 
   severityLabel(severity: 'CRITICAL' | 'WARNING' | 'INFO',
                 t: (key: string) => string): string {
-    switch (severity) {
-      case 'CRITICAL': return t('admin.messages.severityCritical');
-      case 'WARNING': return t('admin.messages.severityWarning');
-      case 'INFO': return t('admin.messages.severityInfo');
-      default: return severity;
-    }
+    return severityLabelUtil(severity, 'admin.messages', t);
   }
 
   // Extra filter state, persisted into the URL via the extras supplier
