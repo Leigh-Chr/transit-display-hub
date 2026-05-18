@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { BookingRule, FareAttribute, FaresV2, FlexLocation, ImportAudit, Pathway, Shape, Translation } from '@shared/models';
+import { BookingRule, FareAttribute, FaresV2, ImportAudit, Pathway, Shape, Translation } from '@shared/models';
 
 /**
  * Read-only access to the GTFS extension tables that the importer
@@ -66,13 +66,5 @@ export class GtfsDataService {
    *  no shape attached (feed shipped no shape_id). */
   getShapeForItinerary(itineraryId: string): Observable<Shape> {
     return this.http.get<Shape>(`/api/itineraries/${itineraryId}/shape`);
-  }
-
-  /** GTFS-flex {@code locations.geojson} polygons (TAD pickup / dropoff
-   *  zones). Empty when the feed doesn't ship locations. Each row
-   *  carries the raw GeoJSON geometry plus a pre-computed bounding
-   *  box so consumers can pick a viewBox without parsing the JSON. */
-  getFlexLocations(): Observable<FlexLocation[]> {
-    return this.http.get<FlexLocation[]>('/api/admin/locations');
   }
 }

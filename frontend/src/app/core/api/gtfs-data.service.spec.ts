@@ -7,7 +7,6 @@ import {
   FareAttribute,
   FareLegJoinRule,
   FaresV2,
-  FlexLocation,
   ImportAudit,
   Pathway,
   Shape,
@@ -120,19 +119,6 @@ describe('GtfsDataService', () => {
       { latitude: 45.18, longitude: 5.72, distTraveled: 0 },
       { latitude: 45.19, longitude: 5.73, distTraveled: 1500 },
     ],
-  };
-
-  const mockFlexLocation: FlexLocation = {
-    id: 'fl-1',
-    externalId: 'fl-ext-1',
-    stopExternalId: null,
-    name: 'Zone Nord',
-    geometryType: 'Polygon',
-    geometryJson: '{"type":"Polygon","coordinates":[]}',
-    minLatitude: 45.1,
-    minLongitude: 5.6,
-    maxLatitude: 45.3,
-    maxLongitude: 5.9,
   };
 
   beforeEach(() => {
@@ -269,18 +255,6 @@ describe('GtfsDataService', () => {
       const req = httpMock.expectOne('/api/itineraries/it-2/shape');
       req.flush({ message: 'No shape' }, { status: 404, statusText: 'Not Found' });
       expect(errStatus).toBe(404);
-    });
-  });
-
-  describe('getFlexLocations', () => {
-    it('should fetch the admin flex locations list', () => {
-      service.getFlexLocations().subscribe(rows => {
-        expect(rows).toEqual([mockFlexLocation]);
-      });
-
-      const req = httpMock.expectOne('/api/admin/locations');
-      expect(req.request.method).toBe('GET');
-      req.flush([mockFlexLocation]);
     });
   });
 });

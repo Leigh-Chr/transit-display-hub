@@ -313,7 +313,6 @@
       "importAudit": "Import History",
       "pathways": "Pathways",
       "shapes": "Shapes",
-      "tadZones": "DRT Zones",
       "users": "Users",
       "skipToMain": "Skip to main content",
       "toggleSidebar": "Toggle sidebar",
@@ -1016,18 +1015,6 @@
       "emptySelectDesc": "Type a name or line code in the field above to display its shape.",
       "tooltipPoints": "GTFS shape_pt_sequence points",
       "tooltipDistance": "Cumulative shape_dist_traveled"
-    },
-    "tadZones": {
-      "title": "DRT Zones (locations.geojson)",
-      "subtitle": "GTFS-flex polygons describing flexible pickup or drop-off zones. Useful surface to verify that imported zones cover the intended service area.",
-      "loading": "Loading…",
-      "noZones": "No DRT zones imported",
-      "noZonesDesc": "The current feed ships no locations.geojson, or the import persisted nothing.",
-      "mapAria": "DRT zones map",
-      "zoneCount": "{{ count }} zone(s)",
-      "mapFootnote": "Equirectangular projection, free scale. Overlaps visible here reflect actual overlaps in the feed.",
-      "stopTooltip": "This zone is attached to a GTFS stop_id",
-      "loadFailed": "Failed to load DRT zones"
     }
   }
 }

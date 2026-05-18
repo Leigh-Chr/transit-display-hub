@@ -159,18 +159,6 @@ export function ringToSvgPath(
   return `${d}Z`;
 }
 
-/** Deterministic HSL hue for the polygon fill, indexed by feature
- *  position so a deterministic input produces a deterministic palette.
- *  Saturation 55 % + lightness 60 % keeps the fills visible against a
- *  light card background while staying readable when several zones
- *  overlap. */
-export function colorForFeature(featureIndex: number): string {
-  // Golden-angle hue spacing — gives perceptually distinct colours
-  // even at 20+ zones without two adjacent indexes looking the same.
-  const hue = (featureIndex * 137.508) % 360;
-  return `hsl(${hue.toFixed(0)}, 55%, 60%)`;
-}
-
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }

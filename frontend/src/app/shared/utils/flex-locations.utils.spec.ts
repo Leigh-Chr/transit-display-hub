@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { FlexLocation } from '@shared/models';
 import {
   buildViewport,
-  colorForFeature,
   ringToSvgPath,
   ringsFromLocation,
 } from './flex-locations.utils';
@@ -155,15 +154,3 @@ describe('ringToSvgPath', () => {
   });
 });
 
-describe('colorForFeature', () => {
-  it('produces deterministic HSL strings', () => {
-    expect(colorForFeature(0)).toBe(colorForFeature(0));
-    expect(colorForFeature(0)).toMatch(/^hsl\(\d+, 55%, 60%\)$/);
-  });
-
-  it('spreads adjacent indexes far apart on the hue wheel', () => {
-    const a = colorForFeature(0);
-    const b = colorForFeature(1);
-    expect(a).not.toBe(b);
-  });
-});

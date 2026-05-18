@@ -313,7 +313,6 @@
       "importAudit": "Historique imports",
       "pathways": "Pathways",
       "shapes": "Shapes",
-      "tadZones": "Zones TAD",
       "users": "Utilisateurs",
       "skipToMain": "Aller au contenu principal",
       "toggleSidebar": "Réduire/étendre le panneau",
@@ -1016,18 +1015,6 @@
       "emptySelectDesc": "Tape un nom ou un code de ligne dans le champ ci-dessus pour afficher sa shape.",
       "tooltipPoints": "Points GTFS shape_pt_sequence",
       "tooltipDistance": "Cumul shape_dist_traveled"
-    },
-    "tadZones": {
-      "title": "Zones TAD (locations.geojson)",
-      "subtitle": "Polygones GTFS-flex décrivant les zones de prise en charge ou de dépose flexibles. Surface utile pour vérifier que les zones importées couvrent bien le territoire desservi.",
-      "loading": "Chargement…",
-      "noZones": "Aucune zone TAD importée",
-      "noZonesDesc": "Le feed actuel ne ship pas de locations.geojson, ou l'import n'a rien persisté.",
-      "mapAria": "Carte des zones TAD",
-      "zoneCount": "{{ count }} zone(s)",
-      "mapFootnote": "Projection plate carrée, échelle libre. Les chevauchements visibles ici reflètent les chevauchements réels du feed.",
-      "stopTooltip": "Cette zone est rattachée à un stop_id GTFS",
-      "loadFailed": "Impossible de charger les zones TAD"
     }
   }
 }

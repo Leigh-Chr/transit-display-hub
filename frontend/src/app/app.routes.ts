@@ -88,10 +88,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/admin/shapes/shapes.component').then(m => m.ShapesComponent)
           },
           {
-            path: 'tad-zones',
-            loadComponent: () => import('./features/admin/tad-zones/tad-zones.component').then(m => m.TadZonesComponent)
-          },
-          {
             path: 'users',
             loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
           }
