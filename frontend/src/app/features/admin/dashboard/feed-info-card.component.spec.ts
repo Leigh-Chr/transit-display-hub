@@ -1,4 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { FeedInfoCardComponent } from './feed-info-card.component';
@@ -34,7 +35,10 @@ describe('FeedInfoCardComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [FeedInfoCardComponent, testTranslocoModule({})],
-      providers: [{ provide: FeedInfoService, useValue: mockService }],
+      providers: [
+        { provide: FeedInfoService, useValue: mockService },
+        provideRouter([]),
+      ],
     });
     fixture = TestBed.createComponent(FeedInfoCardComponent);
     component = fixture.componentInstance;

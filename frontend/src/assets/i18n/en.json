@@ -400,7 +400,10 @@
         "defaultLang": "default",
         "statusExpired": "Feed validity has lapsed — refresh from source",
         "statusExpiring": "Feed validity ends within a week — refresh soon",
-        "statusCurrent": "Feed is current"
+        "statusCurrent": "Feed is current",
+        "noFeedTitle": "No GTFS feed imported yet",
+        "noFeedDesc": "Import a feed to populate the network, schedules and fares.",
+        "noFeedAction": "Import a feed"
       }
     },
     "lines": {

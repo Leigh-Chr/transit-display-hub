@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { FeedInfoService } from '@core/api/feed-info.service';
 import { FeedInfo } from '@shared/models';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -18,11 +20,28 @@ import { TranslocoDirective } from '@jsverse/transloco';
 @Component({
   selector: 'app-feed-info-card',
   standalone: true,
-  imports: [DatePipe, MatCardModule, MatIconModule, MatTooltipModule, TranslocoDirective],
+  imports: [DatePipe, MatButtonModule, MatCardModule, MatIconModule, MatTooltipModule, RouterLink, TranslocoDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-    @if (loaded() && feed(); as info) {
+    @if (loaded() && !feed()) {
+      <mat-card class="feed-info-card no-feed">
+        <mat-card-content>
+          <div class="feed-header">
+            <mat-icon class="feed-icon">cloud_off</mat-icon>
+            <div class="feed-title">
+              <strong>{{ t('admin.dashboard.feedInfo.noFeedTitle') }}</strong>
+            </div>
+          </div>
+          <p class="no-feed-desc">{{ t('admin.dashboard.feedInfo.noFeedDesc') }}</p>
+          <a mat-flat-button color="primary"
+             routerLink="/admin/operations/import-history">
+            <mat-icon>cloud_download</mat-icon>
+            {{ t('admin.dashboard.feedInfo.noFeedAction') }}
+          </a>
+        </mat-card-content>
+      </mat-card>
+    } @else if (loaded() && feed(); as info) {
       <mat-card class="feed-info-card" [class.expired]="status() === 'expired'" [class.expiring]="status() === 'expiring'">
         <mat-card-content>
           <div class="feed-header">
@@ -84,6 +103,20 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
     .feed-info-card {
       border-left: 4px solid var(--mat-sys-primary);
+    }
+
+    .feed-info-card.no-feed {
+      border-left-color: var(--mat-sys-on-surface-variant);
+    }
+
+    .feed-info-card.no-feed .feed-icon {
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .no-feed-desc {
+      margin: 0 0 12px 0;
+      color: var(--mat-sys-on-surface-variant);
+      font-size: var(--m3-type-body-medium);
     }
 
     .feed-info-card.expiring {

@@ -400,7 +400,10 @@
         "defaultLang": "défaut",
         "statusExpired": "La validité du feed est expirée — rafraîchissez depuis la source",
         "statusExpiring": "La validité du feed expire dans moins d'une semaine — rafraîchissez bientôt",
-        "statusCurrent": "Le feed est à jour"
+        "statusCurrent": "Le feed est à jour",
+        "noFeedTitle": "Aucun feed GTFS importé",
+        "noFeedDesc": "Importez un feed pour peupler le réseau, les horaires et les tarifs.",
+        "noFeedAction": "Importer un feed"
       }
     },
     "lines": {
