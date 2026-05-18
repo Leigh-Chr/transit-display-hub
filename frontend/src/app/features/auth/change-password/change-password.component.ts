@@ -8,7 +8,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { NotifyService } from '@core/services/notify.service';
 import { AuthService } from '@core/auth/auth.service';
 
 /** Minimum new-password length — must stay in sync with the backend
@@ -221,6 +222,8 @@ const MIN_PASSWORD_LENGTH = 12;
 export class ChangePasswordComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly MIN_PASSWORD_LENGTH = MIN_PASSWORD_LENGTH;
 
@@ -272,6 +275,7 @@ export class ChangePasswordComponent {
         next: () => {
           this.loading.set(false);
           const redirectUrl = this.authService.consumeRedirectUrl();
+          this.notify.success(this.transloco.translate('auth.changePassword.success'));
           void this.router.navigateByUrl(redirectUrl ?? '/admin');
         },
         error: (err: unknown) => {

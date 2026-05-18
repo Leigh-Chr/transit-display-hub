@@ -48,6 +48,7 @@
       "submit": "Login",
       "loadingAriaLabel": "Logging in",
       "devHint": "Default credentials: admin / admin123",
+      "success": "Logged in",
       "error": {
         "invalidCredentials": "Invalid credentials",
         "tooManyAttempts": "Too many login attempts. Please try again in a few minutes.",
@@ -63,6 +64,7 @@
       "submit": "Update password",
       "loadingAriaLabel": "Updating password",
       "mustChangeNotice": "You must change your password before accessing the app.",
+      "success": "Password updated",
       "error": {
         "invalidCurrentPassword": "The current password is incorrect.",
         "passwordsDoNotMatch": "The two passwords do not match.",

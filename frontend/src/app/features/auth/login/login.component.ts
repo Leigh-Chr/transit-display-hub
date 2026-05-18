@@ -8,7 +8,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { NgOptimizedImage } from '@angular/common';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { NotifyService } from '@core/services/notify.service';
 import { AuthService } from '@core/auth/auth.service';
 
 @Component({
@@ -191,6 +192,8 @@ import { AuthService } from '@core/auth/auth.service';
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly notify = inject(NotifyService);
+  private readonly transloco = inject(TranslocoService);
 
   protected devMode = isDevMode();
 
@@ -210,6 +213,7 @@ export class LoginComponent {
       .subscribe({
         next: () => {
           const redirectUrl = this.authService.consumeRedirectUrl();
+          this.notify.success(this.transloco.translate('auth.login.success'));
           void this.router.navigateByUrl(redirectUrl ?? '/admin');
         },
         error: (err: unknown) => {

@@ -48,6 +48,7 @@
       "submit": "Connexion",
       "loadingAriaLabel": "Connexion en cours",
       "devHint": "Identifiants par défaut : admin / admin123",
+      "success": "Connecté",
       "error": {
         "invalidCredentials": "Identifiants invalides",
         "tooManyAttempts": "Trop de tentatives. Réessayez dans quelques minutes.",
@@ -63,6 +64,7 @@
       "submit": "Mettre à jour",
       "loadingAriaLabel": "Mise à jour en cours",
       "mustChangeNotice": "Vous devez changer votre mot de passe avant d'accéder à l'application.",
+      "success": "Mot de passe mis à jour",
       "error": {
         "invalidCurrentPassword": "Le mot de passe actuel est incorrect.",
         "passwordsDoNotMatch": "Les deux mots de passe ne correspondent pas.",
