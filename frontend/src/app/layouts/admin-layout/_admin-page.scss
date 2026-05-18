@@ -1,10 +1,10 @@
 // Shared SCSS base for admin pages — both the CRUD shells (lines,
 // stops, users, messages, schedules, devices, itineraries) and the
-// data-overview shells (import-audit, realtime, shapes). Each
-// component @use's this partial and includes the mixins it needs.
-// CSS is still emitted per-component so view encapsulation stays
-// intact; the source duplication that jscpd kept flagging across the
-// admin scss files lives in one place from now on.
+// ops shells (dashboard, import-audit, realtime). Each component
+// @use's this partial and includes the mixins it needs. CSS is still
+// emitted per-component so view encapsulation stays intact; the
+// source duplication that jscpd kept flagging across the admin scss
+// files lives in one place from now on.
 //
 // Usage:
 //   @use '../../../layouts/admin-layout/admin-page' as admin;

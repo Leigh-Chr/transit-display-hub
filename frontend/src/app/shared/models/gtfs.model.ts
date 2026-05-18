@@ -161,7 +161,7 @@ export interface Pathway {
   reversedSignpostedAs: string | null;
 }
 
-export interface StationLevelInfo {
+interface StationLevelInfo {
   id: string;
   externalId: string;
   index: number;
@@ -202,17 +202,6 @@ export interface ImportAudit {
   validationStatus: ValidationStatus | null;
   validationNoticeErrors: number | null;
   validationNoticeWarnings: number | null;
-}
-
-// GTFS translations (admin browse)
-export interface Translation {
-  id: string;
-  tableName: string;
-  recordId: string | null;
-  fieldValue: string | null;
-  fieldName: string;
-  language: string;
-  translation: string;
 }
 
 // GTFS Feed Info (admin)

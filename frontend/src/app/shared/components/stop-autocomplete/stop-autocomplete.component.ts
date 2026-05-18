@@ -24,7 +24,7 @@ export interface StopAutocompleteOption {
  * Reusable stop picker with a debounce-free filter over an already-loaded
  * stop list. Replaces a repeated
  * `[(ngModel)]+filter→slice(0, 30)+mat-autocomplete` block previously
- * inlined in several callers (route-search-bar, pathways, …).
+ * inlined in route-search-bar.
  *
  * The component does NOT fetch the stop list itself — callers feed it via
  * the `stops` input. This keeps the data ownership and error handling in
