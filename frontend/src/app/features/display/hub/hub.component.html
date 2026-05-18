@@ -101,6 +101,10 @@
       <mat-icon>error_outline</mat-icon>
       <h1>{{ 'kiosk.error.title' | transloco }}</h1>
       <p>{{ error() }}</p>
+      <button mat-flat-button color="primary" (click)="reloadPage()">
+        <mat-icon>refresh</mat-icon>
+        {{ 'common.retry' | transloco }}
+      </button>
     </div>
   } @else {
     <div class="loading-state">

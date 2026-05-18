@@ -317,6 +317,14 @@ export class KioskComponent implements OnInit {
     return parts.join(', ');
   }
 
+  /** Bound by the retry button on the error state. Indirected through
+   *  a method so tests can spy on it without monkey-patching
+   *  {@code window.location} (a JSDOM-touchy operation that has bit
+   *  past test runs). */
+  reloadPage(): void {
+    window.location.reload();
+  }
+
   private initializeWithToken(): void {
     if (!this.token) {
       return;

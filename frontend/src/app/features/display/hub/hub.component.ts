@@ -10,6 +10,7 @@ import {
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute, Params } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -42,6 +43,7 @@ const STALE_STOP_THRESHOLD_MS = 30 * 60 * 1000;
   standalone: true,
   imports: [
     NgOptimizedImage,
+    MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
     TranslocoPipe,
@@ -264,5 +266,12 @@ export class HubComponent {
       version: (current?.version ?? 0) + 1,
       generatedAt: new Date().toISOString(),
     });
+  }
+
+  /** Bound by the retry button on the error state — public so the
+   *  template can call it, indirected so tests can stub the reload
+   *  without touching {@code window.location} directly. */
+  reloadPage(): void {
+    window.location.reload();
   }
 }
