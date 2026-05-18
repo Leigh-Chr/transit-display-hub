@@ -77,10 +77,10 @@ management:
     web:
       exposure:
         # /actuator/prometheus exposes the scrape format wired by the
-        # micrometer-registry-prometheus dependency. Health and info
-        # stay public for compatibility with existing load-balancer
-        # probes; everything else stays gated behind the security rules
-        # in {@code SecurityConfig}.
+        # micrometer-registry-prometheus dependency. Only /actuator/health
+        # stays public for load-balancer probes — health, info, prometheus
+        # and metrics are gated ADMIN-only by {@code SecurityConfig} so
+        # the endpoint catalogue isn't leaked to anonymous callers.
         include: health,info,prometheus,metrics
   endpoint:
     health:
