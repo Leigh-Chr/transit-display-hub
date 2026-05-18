@@ -41,13 +41,12 @@ visualisation paradigm.
 
 ## Implementation
 
-- Public endpoint `GET /api/network-map/stops/{stopId}/pathways`
+- Public endpoint `GET /api/network-map/stops/{stopId}/pathway-graph`
   returns the sub-graph rooted at the parent station: every level +
   every pathway whose either endpoint is a child of the station.
 - `PathwayListComponent` is a standalone Angular component, embedded
-  in the public stop popup and reused by the admin pathways page.
-- The admin pathways page also displays the levels chip row when a
-  stop is selected, using the same endpoint.
+  in the public stop popup. (The dedicated admin pathways page that
+  also reused the component was dropped 2026-05-18 — see ADR 0009.)
 
 ## Consequences
 

@@ -1,6 +1,16 @@
 # ADR 0029 — In-memory point-in-polygon for `locations.geojson`
 
-**Status:** Accepted
+**Status:** Superseded 2026-05-18. The `/api/admin/locations/contains`
+endpoint and the `PolygonContains` helper were dropped along with the
+admin TAD viewer — no remaining consumer needs the point-in-polygon
+query. `LocationService.findByStop`, still used by the network-map
+popup, joins on `stop_external_id` directly and doesn't need
+containment math. The body below is preserved for context, in case
+a future passenger trip planner re-introduces the need.
+
+---
+
+**Original status:** Accepted
 
 ## Context
 

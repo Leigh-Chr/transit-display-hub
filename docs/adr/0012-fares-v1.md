@@ -1,6 +1,10 @@
 # ADR 0012 — GTFS Fares v1 (fare_attributes + fare_rules)
 
-**Status:** Accepted
+**Status:** Accepted. **Amended 2026-05-18**: the `GET /api/admin/fares`
+browse endpoint described in §4 was dropped along with `FareController`;
+Fares v1 data still feeds the public `FareCalculatorService` consumed
+by the network-map stop popup. The persistence model and the import
+pipeline are unchanged.
 
 ## Context
 
@@ -69,13 +73,13 @@ Single migration adds both tables. ON DELETE behaviour:
    warning.
 4. Saves the parents again so the cascade picks up the new rules.
 
-### 4. Endpoint shape
+### 4. Endpoint shape (superseded 2026-05-18)
 
-`GET /api/admin/fares` returns every fare attribute with its rules
-inline, sorted by price ascending (admins see the cheapest tickets
-first; tiebreak by `external_id`). `FareController` lives under
-`/api/admin/**`, so the existing `hasRole("ADMIN")` rule in
-`SecurityConfig` covers it.
+Originally exposed `GET /api/admin/fares` returning every fare
+attribute with its rules inline. The endpoint and its controller
+were dropped along with the admin GTFS-data viewer — Fares v1 now
+reaches users only through `/api/fares/calculate` (the popup-side
+fare lookup).
 
 ## Why we don't compute "the fare for this trip"
 

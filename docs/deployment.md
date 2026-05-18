@@ -328,7 +328,7 @@ backend/src/main/resources/db/migration/
 ├── V25__pathways_and_levels.sql         # Indoor topology (ADR 0009)
 ├── V26__add_translations.sql            # GTFS translations (ADR 0010)
 ├── V27__add_fares_v1.sql                # Fares v1 (ADR 0012)
-├── V28__add_shapes.sql                  # Shapes / polylines (ADR 0014)
+├── V28__add_shapes.sql                  # Shapes / polylines (ADR 0014, dropped by V53)
 ├── V29__add_location_groups_*.sql       # TAD location groups + booking rules (ADR 0015)
 ├── V30__add_fares_v2.sql                # Fares v2 core (ADR 0021)
 ├── V31__add_fares_v2_networks_*.sql     # Networks + fare media follow-up
@@ -339,7 +339,10 @@ backend/src/main/resources/db/migration/
 │                                        #   boarding times, translation sub-id)
 ├── V48__add_itinerary_mean_duration.sql # GTFS-flex 2024 mean_duration_* fields
 ├── V49__add_import_audit_validation.sql # MobilityData validator outcome on the audit row
-└── V50__refresh_tokens.sql               # Refresh tokens for cookie-based auth (ADR 0039)
+├── V50__refresh_tokens.sql               # Refresh tokens for cookie-based auth (ADR 0039)
+├── V51__add_user_token_version.sql       # JWT jti rotation support (ADR 0039)
+├── V52__add_user_password_must_change.sql # First-login forced password change
+└── V53__drop_shapes.sql                  # Drop shapes pipeline (ADR 0014 superseded)
 ```
 
 The full per-migration story lives in the

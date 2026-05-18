@@ -77,7 +77,6 @@ com.transit.hub/
 |   |   +-- StopDeletedEvent.java
 |   +-- util/
 |       +-- ServiceCalendarMatcher.java  # GTFS active-day rules
-|       +-- PolygonContains.java         # TAD zone hit-test
 +-- application/
 |   +-- service/                         # Business services
 |   |   +-- AuthService.java
@@ -128,7 +127,7 @@ com.transit.hub/
 |   |   +-- GtfsDownloader.java          # download / cache feeds
 |   |   +-- sections/                    # one importer per GTFS table
 |   |       +-- AgencyImporter / RouteImporter / StopImporter / ItineraryImporter
-|   |       +-- ScheduleImporter / TransferImporter / ShapeImporter / PathwayImporter
+|   |       +-- ScheduleImporter / TransferImporter / PathwayImporter
 |   |       +-- FareV1Importer / FareV2Importer / StationLevelImporter / …
 |   |       +-- ServiceCalendarLoader.java   # extracted from ScheduleImporter (v1.11.1)
 |   |       +-- FlexStopTimeMapper.java      # extracted from ScheduleImporter (v1.11.1)

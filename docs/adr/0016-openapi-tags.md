@@ -1,6 +1,10 @@
 # ADR 0016 — Conventions de tags OpenAPI
 
-**Status:** Accepted
+**Status:** Accepted. **Amended 2026-05-18** : les controllers cités
+en exemple `PathwayController`, `ShapeController`, `FareController`,
+`BookingRuleController`, `TranslationController` ont été supprimés
+avec les viewers admin correspondants. La convention de tags
+elle-même reste valide ; les exemples ci-dessous sont mis à jour.
 
 ## Contexte
 
@@ -23,9 +27,9 @@ d'authentification :
 | « Authentification » | Public POST | `AuthController` |
 | « Écrans publics » | Public GET | `DisplayController` |
 | « Carte réseau » | Public GET | `NetworkMapController` |
+| « Tarification » | Public GET | `FareCalculatorController` |
 | « Information publique » | Public GET | `AttributionController` |
-| « Données GTFS — *X* » | Lecture authentifiée (admin/agent) | `PathwayController`, `ShapeController` |
-| « Administration — *X* » | ROLE_ADMIN | `FareController`, `BookingRuleController`, `TranslationController`, `FeedInfoController`, `GtfsAdminController`, `ImportAuditController` |
+| « Administration — *X* » | ROLE_ADMIN | `FeedInfoController`, `GtfsAdminController`, `ImportAuditController`, `RealtimeAlertController`, `RealtimeVehicleController`, `DataOverviewController`, `DashboardController` |
 
 Le préfixe seul indique la barrière de sécurité, le suffixe
 clarifie la fonction. L'admin qui ouvre Swagger UI voit donc d'abord

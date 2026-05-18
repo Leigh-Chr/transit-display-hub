@@ -1,7 +1,12 @@
 # ADR 0026 — Persist `locations.geojson` as TEXT, no JTS / Hibernate Spatial
 
 **Status:** Accepted (extended by ADR 0029 — point-in-polygon support
-landed without invalidating the storage decision)
+landed without invalidating the storage decision). **Amended 2026-05-18**:
+the `/api/admin/locations` browse + `/contains` endpoints (and the
+`LocationControllerIntegrationTest`) were dropped along with the
+admin TAD viewer; the storage decision below stays valid for the
+popup-side `LocationService.findByStop` which still reads the persisted
+geometry through `NetworkMapController`.
 
 ## Context
 
@@ -97,5 +102,6 @@ shapes some feeds publish.
   Acceptable for an admin-only browse — a real passenger surface would
   validate at import time before reaching here.
 - **Tests stay light.** No PostGIS image to spin up for integration
-  tests; the `LocationControllerIntegrationTest` writes the geometry
+  tests; the popup-side test path (`StopPopupControllerIntegrationTest`
+  hitting `/api/network-map/stops/{id}/tad-zone`) writes the geometry
   string directly and asserts shape on the way out.
