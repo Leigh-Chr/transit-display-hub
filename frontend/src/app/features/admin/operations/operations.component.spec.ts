@@ -44,7 +44,7 @@ describe('OperationsComponent', () => {
     expect(links.length).toBe(2);
 
     const labels = Array.from(links as NodeListOf<HTMLAnchorElement>).map((l) =>
-      l.textContent?.trim() ?? '',
+      l.textContent.trim(),
     );
     expect(labels.some((l) => l.includes('Real-time'))).toBe(true);
     expect(labels.some((l) => l.includes('Import History'))).toBe(true);
