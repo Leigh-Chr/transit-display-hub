@@ -365,6 +365,8 @@
       "onboardingDescription": "No GTFS feed has been imported yet. Start by loading a feed from Operations → Import history: lines, stops, itineraries and schedules will all flow from there.",
       "onboardingCta": "Import a GTFS feed",
       "onboardingDocs": "Read the install guide",
+      "gotoMessages": "Open broadcast messages",
+      "newBroadcast": "New broadcast",
       "statLines": "Lines",
       "statStops": "Stops",
       "statItineraries": "Itineraries",

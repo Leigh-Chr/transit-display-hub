@@ -78,16 +78,19 @@
         </mat-card>
       }
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <div class="stat-icon messages-icon">
-            <mat-icon>campaign</mat-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ activeMessages().length }}</div>
-            <div class="stat-label">{{ t('admin.dashboard.statActiveMessages') }}</div>
-          </div>
-        </mat-card-content>
+      <mat-card class="stat-card stat-card-actionable">
+        <a class="stat-card-link" routerLink="/admin/messages" [attr.aria-label]="t('admin.dashboard.gotoMessages')">
+          <mat-card-content>
+            <div class="stat-icon messages-icon">
+              <mat-icon>campaign</mat-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ activeMessages().length }}</div>
+              <div class="stat-label">{{ t('admin.dashboard.statActiveMessages') }}</div>
+            </div>
+            <mat-icon class="stat-card-arrow" aria-hidden="true">chevron_right</mat-icon>
+          </mat-card-content>
+        </a>
       </mat-card>
 
       @if (isAdmin()) {
@@ -246,6 +249,10 @@
       <mat-card class="ops-ok-card" animate.enter="fade-in">
         <mat-icon class="ops-ok-icon">check_circle</mat-icon>
         <span class="ops-ok-text">{{ t('admin.dashboard.allClear') }}</span>
+        <a mat-stroked-button routerLink="/admin/messages" class="ops-ok-action">
+          <mat-icon aria-hidden="true">campaign</mat-icon>
+          {{ t('admin.dashboard.newBroadcast') }}
+        </a>
       </mat-card>
     }
 

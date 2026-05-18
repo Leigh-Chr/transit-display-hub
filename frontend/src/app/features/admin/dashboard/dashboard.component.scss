@@ -337,6 +337,35 @@
   opacity: 0.5;
 }
 
+/* The "Active messages" stat card is wrapped in a router link so a
+   click anywhere on the card drills into /admin/messages — match the
+   "View All" cross-links the rest of the dashboard already uses. */
+.stat-card-actionable {
+  padding: 0;
+}
+
+.stat-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: inherit;
+}
+
+.stat-card-link:hover {
+  background: color-mix(in srgb, var(--app-primary) 6%, transparent);
+}
+
+.stat-card-link mat-card-content {
+  display: flex;
+  align-items: center;
+}
+
+.stat-card-arrow {
+  margin-left: auto;
+  color: var(--app-on-surface-variant);
+  opacity: 0.6;
+}
+
 /* "All clear" placeholder shown when no critical messages exist —
    intentionally subdued so that the rare error state, when it returns,
    grabs attention by contrast. */
@@ -358,6 +387,13 @@
 .ops-ok-text {
   font-weight: 500;
   font-size: var(--m3-type-body-medium);
+  flex: 1;
+}
+
+/* Push the secondary action to the right side of the ops-ok card so
+   "All clear + send broadcast" reads as a status + next-action pair. */
+.ops-ok-action {
+  margin-left: auto;
 }
 
 /* Alerts */
