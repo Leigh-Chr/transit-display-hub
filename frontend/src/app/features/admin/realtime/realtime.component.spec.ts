@@ -99,13 +99,14 @@ describe('RealtimeComponent', () => {
     expect(component.refreshingAlerts()).toBe(false);
   });
 
-  it('refreshAlerts surfaces an info notification when the feed is not configured', () => {
+  it('refreshAlerts surfaces a warn notification when the feed is not configured', () => {
     mockService.refreshAlerts = vi.fn().mockReturnValue(throwError(() => new Error('400')));
     fixture.detectChanges();
 
     component.refreshAlerts();
 
-    expect(mockNotify.info).toHaveBeenCalled();
+    expect(mockNotify.warn).toHaveBeenCalled();
+    expect(mockNotify.info).not.toHaveBeenCalled();
     expect(component.refreshingAlerts()).toBe(false);
   });
 

@@ -92,7 +92,7 @@ export class RealtimeComponent {
       },
       error: () => {
         this.refreshingAlerts.set(false);
-        this.notify.info(this.transloco.translate('admin.realtime.alertsNotConfigured'));
+        this.notify.warn(this.transloco.translate('admin.realtime.alertsNotConfigured'));
       },
     });
   }
@@ -107,7 +107,7 @@ export class RealtimeComponent {
       },
       error: () => {
         this.refreshingVehicles.set(false);
-        this.notify.info(this.transloco.translate('admin.realtime.vehiclesNotConfigured'));
+        this.notify.warn(this.transloco.translate('admin.realtime.vehiclesNotConfigured'));
       },
     });
   }
