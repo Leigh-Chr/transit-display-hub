@@ -33,10 +33,6 @@ import {
 } from './schematic-map.utils';
 import { LINE_COLOR_FALLBACK } from '@shared/utils/color.utils';
 import {
-  buildRouteActiveEdges,
-  buildRouteStopsByLine,
-  buildRouteOverlayPaths,
-  buildRouteDirectionArrows,
   buildInterchangeConnectors,
   buildStopLabels,
   buildSeverityMap,
@@ -48,6 +44,7 @@ import {
   type NetworkStopLabel,
 } from './schematic-geometry';
 import { usePanZoomUrl } from './use-pan-zoom-url';
+import { useRouteOverlay } from './use-route-overlay';
 import { useSchematicViewport } from './use-schematic-viewport';
 import { useWheelHint } from './use-wheel-hint';
 
@@ -189,24 +186,22 @@ export class SchematicMapComponent {
     return [...zones].sort();
   });
 
-  // --- Route overlay computed ---
+  // --- Route overlay (delegated to useRouteOverlay) ---
 
-  hasRoute = computed(() => this.routeResult() !== null);
-  routeTransferIds = computed(() => new Set(this.routeResult()?.transferStopIds ?? []));
+  /** Bundle of six derived signals (hasRoute, transfer stop IDs, active
+   *  edges, per-line stops, overlay paths and direction arrows) used to
+   *  paint the highlighted route on top of the schematic. */
+  private readonly routeOverlay = useRouteOverlay({
+    routeResult: computed(() => this.routeResult()),
+    networkLineRows: computed(() => this.networkLineRows()),
+  });
 
-  /** Map<lineId, Set<edgeKey>> where edgeKey = "stopA|stopB" (sorted) */
-  routeActiveEdges = computed(() => buildRouteActiveEdges(this.routeResult()));
-
-  /** Map<lineId, Set<stopId>> — stops that touch an active edge on that line */
-  routeStopsByLine = computed(() => buildRouteStopsByLine(this.routeResult()));
-
-  /** For each visible line row, build a path covering only the route edges */
-  routeOverlayPaths = computed(() =>
-    buildRouteOverlayPaths(this.routeActiveEdges(), this.networkLineRows()));
-
-  /** Direction arrows placed along each route segment */
-  routeDirectionArrows = computed(() =>
-    buildRouteDirectionArrows(this.routeResult(), this.networkLineRows()));
+  hasRoute = this.routeOverlay.hasRoute;
+  routeTransferIds = this.routeOverlay.transferStopIds;
+  routeActiveEdges = this.routeOverlay.activeEdges;
+  routeStopsByLine = this.routeOverlay.stopsByLine;
+  routeOverlayPaths = this.routeOverlay.overlayPaths;
+  routeDirectionArrows = this.routeOverlay.directionArrows;
 
   stopsMap = computed(() => {
     const map = new Map<string, LayoutStop>();
