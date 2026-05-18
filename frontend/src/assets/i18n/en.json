@@ -352,6 +352,10 @@
       "openUserGuide": "Open user guide (new tab)",
       "logout": "Logout"
     },
+    "commandPalette": {
+      "placeholder": "Jump to… (Ctrl/Cmd + K)",
+      "noMatch": "No destination matches"
+    },
     "common": {
       "remove": "Remove",
       "sortBy": "Sort by",

@@ -352,6 +352,10 @@
       "openUserGuide": "Ouvrir le guide utilisateur (nouvel onglet)",
       "logout": "Déconnexion"
     },
+    "commandPalette": {
+      "placeholder": "Aller à… (Ctrl/Cmd + K)",
+      "noMatch": "Aucune destination ne correspond"
+    },
     "common": {
       "remove": "Retirer",
       "sortBy": "Trier par",
