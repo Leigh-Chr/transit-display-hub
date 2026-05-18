@@ -1,8 +1,6 @@
 package com.transit.hub.application.service;
 
 import com.transit.hub.application.dto.response.DataOverviewResponse;
-import com.transit.hub.application.service.overview.RealtimeOverviewProvider;
-import com.transit.hub.application.service.overview.StaticGtfsOverviewProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
