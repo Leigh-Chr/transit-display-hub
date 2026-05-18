@@ -356,6 +356,9 @@
       "placeholder": "Aller à… (Ctrl/Cmd + K)",
       "noMatch": "Aucune destination ne correspond"
     },
+    "breadcrumbs": {
+      "aria": "Fil d'Ariane"
+    },
     "common": {
       "remove": "Retirer",
       "sortBy": "Trier par",

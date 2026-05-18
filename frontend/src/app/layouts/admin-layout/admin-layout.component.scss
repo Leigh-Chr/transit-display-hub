@@ -95,6 +95,51 @@
       overflow: auto;
     }
 
+    .breadcrumbs {
+      padding: 8px 32px 0;
+      background-color: var(--app-surface);
+      font-size: var(--m3-type-label-medium);
+    }
+
+    .breadcrumbs ol {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .breadcrumbs li {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .breadcrumbs a {
+      color: var(--app-on-surface-variant);
+      text-decoration: none;
+    }
+
+    .breadcrumbs a:hover {
+      color: var(--app-primary);
+      text-decoration: underline;
+    }
+
+    .breadcrumbs [aria-current="page"] {
+      color: var(--app-on-surface);
+      font-weight: 600;
+    }
+
+    .breadcrumbs .breadcrumb-sep {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--app-on-surface-variant);
+      opacity: 0.6;
+    }
+
     /* Enter animations */
     @keyframes routeEnter {
       from { opacity: 0; transform: translateY(10px); }

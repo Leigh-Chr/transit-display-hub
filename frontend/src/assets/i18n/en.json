@@ -356,6 +356,9 @@
       "placeholder": "Jump to… (Ctrl/Cmd + K)",
       "noMatch": "No destination matches"
     },
+    "breadcrumbs": {
+      "aria": "Breadcrumb"
+    },
     "common": {
       "remove": "Remove",
       "sortBy": "Sort by",

@@ -192,6 +192,22 @@
           </button>
         </mat-toolbar>
 
+        @if (breadcrumbs().length > 0) {
+          <nav class="breadcrumbs" [attr.aria-label]="t('admin.breadcrumbs.aria')">
+            <ol>
+              @for (crumb of breadcrumbs(); track crumb.path; let last = $last) {
+                <li>
+                  @if (!last) {
+                    <a [routerLink]="crumb.path">{{ t(crumb.labelKey) }}</a>
+                    <mat-icon class="breadcrumb-sep" aria-hidden="true">chevron_right</mat-icon>
+                  } @else {
+                    <span aria-current="page">{{ t(crumb.labelKey) }}</span>
+                  }
+                </li>
+              }
+            </ol>
+          </nav>
+        }
         <main id="main-content" class="main-content" animate.enter="route-enter">
           <router-outlet></router-outlet>
         </main>
