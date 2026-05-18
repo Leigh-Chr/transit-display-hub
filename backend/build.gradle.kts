@@ -103,8 +103,8 @@ dependencies {
     // Pulls Guava 31 + Gson 2.8 + Apache HttpClient 5 transitively;
     // we accept the runtime overlap with Spring Boot's Jackson stack
     // because the validator owns its own JSON output format.
-    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.0")
-    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.0")
+    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-main:8.0.1")
+    implementation("org.mobilitydata.gtfs-validator:gtfs-validator-core:8.0.1")
 
     // Pin commons-compress ahead of the gtfs-validator transitive (1.20),
     // which carries four DoS CVEs reachable from POST /api/admin/gtfs/reimport
