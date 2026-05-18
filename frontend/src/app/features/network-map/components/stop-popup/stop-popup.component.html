@@ -216,3 +216,27 @@
     }
   }
 </mat-dialog-content>
+
+<mat-dialog-actions align="end" class="popup-actions">
+  <a
+    mat-stroked-button
+    [href]="'/display/' + data.stop.id"
+    target="_blank"
+    rel="noopener"
+  >
+    <mat-icon>open_in_new</mat-icon>
+    {{ 'map.stopPopup.openFullscreen' | transloco }}
+  </a>
+  @if (authService.isAdmin()) {
+    <a
+      mat-stroked-button
+      color="primary"
+      [routerLink]="['/admin/stops']"
+      [queryParams]="{ search: data.stop.name }"
+      (click)="closeDialog()"
+    >
+      <mat-icon>edit</mat-icon>
+      {{ 'map.stopPopup.editStop' | transloco }}
+    </a>
+  }
+</mat-dialog-actions>

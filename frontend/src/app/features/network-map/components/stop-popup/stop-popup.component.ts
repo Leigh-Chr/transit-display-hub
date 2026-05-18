@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, signal, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '@core/auth/auth.service';
 import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { ScheduleService } from '@core/api/schedule.service';
@@ -75,7 +77,7 @@ interface TimetableGroup {
   standalone: true,
   imports: [
     MatDialogModule, MatButtonModule, MatDividerModule, MatIconModule, MatProgressSpinnerModule,
-    PathwayListComponent, TranslocoPipe,
+    PathwayListComponent, RouterLink, TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './stop-popup.component.html',
@@ -89,7 +91,17 @@ export class StopPopupComponent {
   private readonly locale = inject(LocaleService);
   private readonly transloco = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogRef = inject(MatDialogRef<StopPopupComponent>);
+  /** Exposed to the template so the "Edit stop" action only renders for
+   *  authenticated administrators — passengers see the kiosk link only. */
+  readonly authService = inject(AuthService);
   readonly data = inject<StopPopupData>(MAT_DIALOG_DATA);
+
+  /** Closes the popup before the router transitions to the admin page,
+   *  so the dialog backdrop doesn't linger over the destination view. */
+  closeDialog(): void {
+    this.dialogRef.close();
+  }
 
   loading = signal(true);
   error = signal<string | null>(null);

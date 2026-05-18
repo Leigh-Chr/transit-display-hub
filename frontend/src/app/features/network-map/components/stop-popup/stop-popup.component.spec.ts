@@ -3,8 +3,10 @@ import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Subject, of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { provideRouter } from '@angular/router';
 import { testTranslocoModule } from '../../../../../test-translations';
 import { StopPopupComponent, StopPopupData } from './stop-popup.component';
+import { AuthService } from '@core/auth/auth.service';
 import { FareCalculatorService } from '@core/api/fare-calculator.service';
 import { FlexStopTimeService } from '@core/api/flex-stop-time.service';
 import { ScheduleService } from '@core/api/schedule.service';
@@ -34,6 +36,8 @@ const stopPopupDict = {
       loadingSchedulesAria: 'Chargement des horaires',
       loadSchedulesFailed: 'Failed to load schedules',
       noDepartures: 'No scheduled departures',
+      openFullscreen: 'Full-screen kiosk',
+      editStop: 'Edit stop',
     },
     accessibility: {
       accessible: 'Accessible PMR',
@@ -149,7 +153,10 @@ describe('StopPopupComponent', () => {
     },
   ];
 
-  function createComponent(data: Partial<StopPopupData> = {}): void {
+  function createComponent(
+    data: Partial<StopPopupData> = {},
+    options: { isAdmin?: boolean } = {},
+  ): void {
     const dialogData = { ...baseMockData, ...data };
 
     TestBed.configureTestingModule({
@@ -158,6 +165,7 @@ describe('StopPopupComponent', () => {
         testTranslocoModule(stopPopupDict),
       ],
       providers: [
+        provideRouter([]),
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },
         { provide: ScheduleService, useValue: mockScheduleService },
@@ -165,6 +173,7 @@ describe('StopPopupComponent', () => {
         { provide: FareCalculatorService, useValue: mockFareCalculator },
         { provide: FlexStopTimeService, useValue: mockFlexStopTimes },
         { provide: LocaleService, useValue: { current: signal('fr') } },
+        { provide: AuthService, useValue: { isAdmin: signal(options.isAdmin ?? false) } },
       ],
     });
 
@@ -280,6 +289,42 @@ describe('StopPopupComponent', () => {
     expect(component.getMessageIcon('WARNING')).toBe('warning');
     expect(component.getMessageIcon('INFO')).toBe('info');
     expect(component.getMessageIcon('OTHER')).toBe('info');
+  });
+
+  describe('footer actions', () => {
+    it('always exposes the kiosk full-screen link', async () => {
+      createComponent();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const link = fixture.nativeElement.querySelector('.popup-actions a[href]');
+      expect(link).not.toBeNull();
+      expect(link.getAttribute('href')).toBe('/display/stop-1');
+      expect(link.getAttribute('target')).toBe('_blank');
+    });
+
+    it('hides the edit-stop action for passengers', async () => {
+      createComponent({}, { isAdmin: false });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const actions = fixture.nativeElement.querySelectorAll('.popup-actions a');
+      // Only the kiosk link should be present, the edit-stop link should not.
+      expect(actions.length).toBe(1);
+      const labels = Array.from(actions as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
+      expect(labels.some((t) => t.includes('Edit stop'))).toBe(false);
+    });
+
+    it('shows the edit-stop link for administrators', async () => {
+      createComponent({}, { isAdmin: true });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const actions = fixture.nativeElement.querySelectorAll('.popup-actions a');
+      expect(actions.length).toBe(2);
+      const labels = Array.from(actions as NodeListOf<HTMLElement>).map((el) => el.textContent.trim());
+      expect(labels.some((t) => t.includes('Edit stop'))).toBe(true);
+    });
   });
 
   describe('TAD zone', () => {

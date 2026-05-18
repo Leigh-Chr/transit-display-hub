@@ -258,7 +258,9 @@
       "loadingSchedulesAria": "Loading schedules",
       "loadSchedulesFailed": "Failed to load schedules",
       "noDepartures": "No scheduled departures",
-      "ariaDepartures": "Departures from {{ stopName }}"
+      "ariaDepartures": "Departures from {{ stopName }}",
+      "openFullscreen": "Full-screen kiosk",
+      "editStop": "Edit stop"
     },
     "accessibility": {
       "accessible": "Wheelchair accessible",

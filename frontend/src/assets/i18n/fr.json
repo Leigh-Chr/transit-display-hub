@@ -258,7 +258,9 @@
       "loadingSchedulesAria": "Chargement des horaires",
       "loadSchedulesFailed": "Échec du chargement des horaires",
       "noDepartures": "Aucun passage prévu",
-      "ariaDepartures": "Départs depuis {{ stopName }}"
+      "ariaDepartures": "Départs depuis {{ stopName }}",
+      "openFullscreen": "Tableau plein écran",
+      "editStop": "Modifier l'arrêt"
     },
     "accessibility": {
       "accessible": "Accessible PMR",
