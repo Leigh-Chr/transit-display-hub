@@ -1,5 +1,6 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -17,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -36,6 +38,7 @@ import java.util.zip.ZipOutputStream;
  * self-hosted feeds that change at most weekly.
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class GtfsDownloader {
 
@@ -43,6 +46,17 @@ public class GtfsDownloader {
     private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(2);
     private static final Duration DEFAULT_TTL = Duration.ofHours(24);
     private static final String CACHE_SUBDIR = "transit-display-hub-gtfs";
+
+    private final Clock clock;
+
+    /** Built once at construction — JDK HttpClient is thread-safe and
+     *  the connection pool stays warm across calls. The previous code
+     *  spun up a new client per invocation, throwing the pool away each
+     *  time and burning a fresh executor too. */
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(CONNECT_TIMEOUT)
+            .build();
 
     public Path downloadOrCached(String feedUrl) throws IOException, InterruptedException {
         Path cacheDir = Path.of(System.getProperty("java.io.tmpdir"), CACHE_SUBDIR);
@@ -65,56 +79,50 @@ public class GtfsDownloader {
         }
 
         log.info("Downloading GTFS feed from {}", feedUrl);
-        try (HttpClient client = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(CONNECT_TIMEOUT)
-                .build()) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(feedUrl))
+                .timeout(REQUEST_TIMEOUT)
+                .GET();
+        CachedHeaders cached = readCachedHeaders(meta);
+        if (Files.exists(target) && cached != null) {
+            cached.lastModified().ifPresent(v -> builder.header("If-Modified-Since", v));
+            cached.etag().ifPresent(v -> builder.header("If-None-Match", v));
+        }
 
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(feedUrl))
-                    .timeout(REQUEST_TIMEOUT)
-                    .GET();
-            CachedHeaders cached = readCachedHeaders(meta);
-            if (Files.exists(target) && cached != null) {
-                cached.lastModified().ifPresent(v -> builder.header("If-Modified-Since", v));
-                cached.etag().ifPresent(v -> builder.header("If-None-Match", v));
-            }
+        Path tmp = Files.createTempFile(cacheDir, "download-", ".zip.tmp");
+        HttpResponse<Path> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofFile(tmp));
 
-            Path tmp = Files.createTempFile(cacheDir, "download-", ".zip.tmp");
-            HttpResponse<Path> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofFile(tmp));
-
-            if (response.statusCode() == 304 && Files.exists(target)) {
-                // Server confirmed the cached copy is current. Touch the file so
-                // future calls within DEFAULT_TTL can short-circuit on isFresh.
-                Files.deleteIfExists(tmp);
-                Files.setLastModifiedTime(target, java.nio.file.attribute.FileTime.from(Instant.now()));
-                log.info("GTFS feed unchanged (304 Not Modified) — reusing cached copy: {}", target);
-                return target;
-            }
-
-            if (response.statusCode() / 100 != 2) {
-                Files.deleteIfExists(tmp);
-                throw new IOException("GTFS download failed: HTTP " + response.statusCode() + " from " + feedUrl);
-            }
-
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            writeCachedHeaders(meta,
-                    response.headers().firstValue("Last-Modified").orElse(null),
-                    response.headers().firstValue("ETag").orElse(null));
-            log.info("GTFS feed downloaded: {} ({} bytes)", target, Files.size(target));
+        if (response.statusCode() == 304 && Files.exists(target)) {
+            // Server confirmed the cached copy is current. Touch the file so
+            // future calls within DEFAULT_TTL can short-circuit on isFresh.
+            Files.deleteIfExists(tmp);
+            Files.setLastModifiedTime(target, java.nio.file.attribute.FileTime.from(Instant.now(clock)));
+            log.info("GTFS feed unchanged (304 Not Modified) — reusing cached copy: {}", target);
             return target;
         }
+
+        if (response.statusCode() / 100 != 2) {
+            Files.deleteIfExists(tmp);
+            throw new IOException("GTFS download failed: HTTP " + response.statusCode() + " from " + feedUrl);
+        }
+
+        Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        writeCachedHeaders(meta,
+                response.headers().firstValue("Last-Modified").orElse(null),
+                response.headers().firstValue("ETag").orElse(null));
+        log.info("GTFS feed downloaded: {} ({} bytes)", target, Files.size(target));
+        return target;
     }
 
-    private static boolean isFresh(Path path, Duration ttl) throws IOException {
+    private boolean isFresh(Path path, Duration ttl) throws IOException {
         if (!Files.exists(path)) {
             return false;
         }
         Instant modified = Files.getLastModifiedTime(path).toInstant();
-        return Duration.between(modified, Instant.now()).compareTo(ttl) < 0;
+        return Duration.between(modified, Instant.now(clock)).compareTo(ttl) < 0;
     }
 
-    private static Duration ageOf(Path path) throws IOException {
-        return Duration.between(Files.getLastModifiedTime(path).toInstant(), Instant.now());
+    private Duration ageOf(Path path) throws IOException {
+        return Duration.between(Files.getLastModifiedTime(path).toInstant(), Instant.now(clock));
     }
 
     /**

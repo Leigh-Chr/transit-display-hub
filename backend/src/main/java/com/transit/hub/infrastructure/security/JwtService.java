@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -23,6 +24,7 @@ import java.util.function.Function;
 public class JwtService {
 
     private final JwtProperties props;
+    private final Clock clock;
 
     /**
      * HS-family JWT keys must be at least 256 bits (32 bytes) for HS256.
@@ -40,7 +42,7 @@ public class JwtService {
     }
 
     public String generateToken(User user) {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         Instant expiration = now.plus(props.expirationHours(), ChronoUnit.HOURS);
 
         return Jwts.builder()
@@ -109,7 +111,7 @@ public class JwtService {
     private boolean isTokenExpired(String token) {
         return extractExpiration(token)
                 .plusSeconds(CLOCK_SKEW_SECONDS)
-                .isBefore(Instant.now());
+                .isBefore(Instant.now(clock));
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

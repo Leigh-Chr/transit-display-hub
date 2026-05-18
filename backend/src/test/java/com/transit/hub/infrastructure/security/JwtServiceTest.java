@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -31,7 +32,7 @@ class JwtServiceTest {
     @BeforeEach
     void setUp() {
         jwtService = new JwtService(new com.transit.hub.infrastructure.config.JwtProperties(
-                TEST_SECRET, EXPIRATION_HOURS, TEST_ISSUER, TEST_AUDIENCE, 14));
+                TEST_SECRET, EXPIRATION_HOURS, TEST_ISSUER, TEST_AUDIENCE, 14), Clock.systemUTC());
     }
 
     @Nested
@@ -341,7 +342,7 @@ class JwtServiceTest {
         @DisplayName("fails fast if secret is shorter than 32 bytes")
         void failsForShortSecret() {
             JwtService svc = new JwtService(new com.transit.hub.infrastructure.config.JwtProperties(
-                    "too-short-secret", 1, TEST_ISSUER, TEST_AUDIENCE, 14));
+                    "too-short-secret", 1, TEST_ISSUER, TEST_AUDIENCE, 14), Clock.systemUTC());
 
             assertThatThrownBy(svc::validateSecretLength)
                     .isInstanceOf(IllegalStateException.class)
@@ -353,7 +354,7 @@ class JwtServiceTest {
         void acceptsMinimumSecret() {
             String exactly32 = "12345678901234567890123456789012"; // 32 chars / 32 bytes ASCII
             JwtService svc = new JwtService(new com.transit.hub.infrastructure.config.JwtProperties(
-                    exactly32, 1, TEST_ISSUER, TEST_AUDIENCE, 14));
+                    exactly32, 1, TEST_ISSUER, TEST_AUDIENCE, 14), Clock.systemUTC());
 
             assertThatNoException().isThrownBy(svc::validateSecretLength);
         }
