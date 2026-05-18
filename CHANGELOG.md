@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.29.0] — 2026-05-18
+
+UX cohesion pass: the admin sidenav, the dashboard, the network map
+popup and the four GTFS-data CRUD pages have been reorganised so the
+app feels like a single system rather than a stack of independent
+screens. The accessibility toolbar that used to live only on the
+kiosk is now shared with the hub and the map.
+
+### Changed
+
+- **Admin sidenav regrouped by activity.** The previous
+  "Communication" section mixed three different concerns
+  (broadcasting, monitoring, data administration). New layout:
+  Network data (Lines, Stops, Itineraries, Schedules) → Map
+  (Network Map, Hub Display) → Broadcast (Messages, Devices) →
+  Operations (Real-time, Import History) → Administration (Users).
+  For an AGENT, the visible sidenav narrows naturally to the three
+  items the role can actually use.
+- **Dashboard slimmed down.** The Quick Actions card duplicated
+  seven sidenav entries with no contextual value. Removing it
+  shrinks the template by ~50 lines and drops nine i18n keys.
+  Hub Display remains reachable from the sidenav and the Stops
+  toolbar — `docs/user-guide.md` updated accordingly.
+- **Network-map stop popup gains a footer.** Every popup now ends
+  with a "Full-screen kiosk" link (everyone) and, for admins, an
+  "Edit stop" link that pre-fills the admin Stops search with the
+  stop name.
+- **Cross-page links between the four GTFS-data admin pages.**
+  Itineraries row → "View stops served by this line", Stops row's
+  schedule-count cell becomes a deep link to Schedules
+  (`?lineId=L&stopId=S`, both selectors pre-filled), Schedules row
+  → "View the full itinerary".
+- **"View on map" buttons on Lines and Stops rows.** Each row
+  routes to `/map?lines={code}` or `/map?stop={id}`, leveraging
+  the existing query-param contract on the map.
+
+### Added
+
+- **Shared `<app-a11y-toolbar>`** in `shared/components/a11y-toolbar`.
+  Packages the three accessibility toggles (high-contrast,
+  large-text, speak-next) the kiosk used to ship inline. Each
+  toggle is opt-in via an input; speech is parent-driven so the
+  surface owns the announcement payload.
+  - Kiosk: same three buttons as before.
+  - Hub: high-contrast + large-text (no speech — multi-stop
+    boards have no single "next" to announce).
+  - Map: high-contrast + large-text. Closes a real WCAG gap —
+    the map had no a11y controls at all.
+  - i18n keys `kiosk.{highContrast,largeText,speakNext}` renamed
+    to the top-level `a11yToolbar.*` namespace so they read
+    sensibly on map and hub.
+- **`display-a11y-controls` SCSS mixin** in `_display-base.scss`
+  so the kiosk's vh-based touch-target sizing applies to the hub
+  for free.
+- **SchedulesComponent reads `?lineId=L&stopId=S` at boot** to
+  support the new deep-link from the Stops page.
+
 ## [1.28.0] — 2026-05-18
 
 Major scope cut: drops the six admin viewer pages that duplicated or
