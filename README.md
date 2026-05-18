@@ -3,8 +3,8 @@
 [![Backend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml/badge.svg)](https://github.com/Leigh-Chr/transit-display-hub/actions/workflows/frontend.yml)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![ADRs](https://img.shields.io/badge/ADRs-40-informational)](docs/adr/README.md)
-[![Version](https://img.shields.io/badge/version-1.24.2-success)](CHANGELOG.md)
+[![ADRs](https://img.shields.io/badge/ADRs-41-informational)](docs/adr/README.md)
+[![Version](https://img.shields.io/badge/version-1.25.1-success)](CHANGELOG.md)
 
 > **The only open-source transit back-office that combines GTFS
 > Schedule, Fares v2, GTFS-flex and GTFS-Realtime in a single
