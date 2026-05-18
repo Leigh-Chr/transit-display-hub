@@ -62,8 +62,11 @@ public class FeedInfo {
     @Column(name = "feed_version", length = 50)
     private @Nullable String feedVersion;
 
-    @Size(max = 50)
-    @Column(name = "contact_email", length = 50)
+    /** RFC 5321 caps the addr-spec at 254 chars; 50 was tight for the
+     *  longer forms (e.g. {@code "feedmaster+integration-prod@operator.example"}).
+     *  200 leaves real-world headroom without storing the full RFC max. */
+    @Size(max = 200)
+    @Column(name = "contact_email", length = 200)
     private @Nullable String contactEmail;
 
     @Size(max = 500)

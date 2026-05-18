@@ -70,8 +70,11 @@ public class Agency {
     @Column(length = 60)
     private @Nullable String timezone;
 
-    @Size(max = 10)
-    @Column(length = 10)
+    /** BCP-47 language tag — same width as {@link FeedInfo#getLang()}
+     *  and {@link Translation#getLanguage()} (20). 10 was too tight for
+     *  the longer extended tags ({@code "zh-Hans-CN"} = 10, no margin). */
+    @Size(max = 20)
+    @Column(length = 20)
     private @Nullable String lang;
 
     @Size(max = 30)

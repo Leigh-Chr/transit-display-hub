@@ -113,9 +113,12 @@ public class Stop {
     private @Nullable String description;
 
     /** GTFS {@code stop_url}. Public-facing link, often the operator's
-     *  page describing the stop. */
-    @Size(max = 255)
-    @Column(length = 255)
+     *  page describing the stop. Width aligned with {@link Agency#getUrl()}
+     *  and {@link FeedInfo#getContactUrl()} (500) — 255 was a leftover
+     *  from earlier installs and rejected the longer tracking-laden URLs
+     *  some operators ship. */
+    @Size(max = 500)
+    @Column(length = 500)
     private @Nullable String url;
 
     /** GTFS {@code zone_id}. Opaque label that fare rules

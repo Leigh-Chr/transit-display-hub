@@ -117,9 +117,9 @@ public class Line {
     private @Nullable String description;
 
     /** GTFS {@code route_url}. Public link to the operator's page about
-     *  this line. */
-    @Size(max = 255)
-    @Column(length = 255)
+     *  this line. Width aligned with {@link Agency#getUrl()} (500). */
+    @Size(max = 500)
+    @Column(length = 500)
     private @Nullable String url;
 
     /** GTFS {@code routes.cemv_support}: line-level contactless EMV
