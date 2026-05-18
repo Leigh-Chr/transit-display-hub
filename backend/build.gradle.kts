@@ -26,7 +26,7 @@ plugins {
 }
 
 group = "com.transit"
-version = "1.27.1"
+version = "1.28.0"
 
 java {
     toolchain {

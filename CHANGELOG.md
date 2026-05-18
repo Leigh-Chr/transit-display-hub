@@ -7,6 +7,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.28.0] — 2026-05-18
+
+Major scope cut: drops the six admin viewer pages that duplicated or
+fed nothing visible to passengers (`/admin/{fare-calculator,
+flex-stop-times, tad-zones, pathways, gtfs-data, shapes}`), plus the
+cascade of orphan controllers, services, DTOs and i18n entries they
+carried. Admin navigation shrinks from 16 to 10 items — only true
+CRUD (lines, stops, itineraries, schedules, messages, devices, users)
+and operations (dashboard, import-audit, realtime) remain. The
+public surfaces are unchanged: every extension that mattered
+(Fares v1+v2, GTFS-flex windows, pathways, booking rules, TAD zones,
+translations) still flows into the stop popup, the kiosk and the
+schematic map through the existing public endpoints.
+
+Net delta: ~6,700 LoC removed, no new dependency, no behavioural
+change for end users, one anonymous-read regression on the admin
+itinerary endpoint plugged along the way.
+
+### Removed
+
+- **`/admin/fare-calculator`** — the network-map stop-popup already
+  consumes the same `/api/fares/calculate` endpoint with a more
+  contextual UX. ADR 0033 amended; service + public endpoint kept.
+- **`/admin/flex-stop-times`** — the controller doc itself admitted
+  the page was "empty on every feed that doesn't ship flex data".
+  Drops the page, `/api/admin/flex-stop-times` controller,
+  `FlexAvailabilityService.browse()` and the matching repository
+  query. Passengers keep seeing flex windows in the popup.
+- **`/admin/tad-zones`** — verification surface for QA-of-import,
+  not a passenger tool. Drops the page, `/api/admin/locations`
+  browse + `/contains` endpoints, `LocationController`,
+  `LocationService.browse()` + `findContainingPoint()`,
+  `PolygonContains` util (+ its test) and the related repository
+  methods. Single-zone access via `getStopTadZone` unchanged.
+- **`/admin/pathways`** — duplicated the indoor topology already
+  surfaced by `<app-pathway-list>` in the stop popup. Drops the
+  page, `/api/stops/{stopId}/pathways` controller,
+  `PathwayService.findPathwaysForStop()` and
+  `PathwayRepository.findTouchingStop`. The station graph used by
+  the popup stays untouched. ADR 0009 amended.
+- **`/admin/gtfs-data`** (4 tabs: Fares v1, Fares v2, Booking rules,
+  Translations) — read-only viewers that duplicated Swagger or the
+  popup. Drops the page, the four `/api/admin/{fares, fares-v2,
+  booking-rules, translations}` controllers, `FareService`,
+  `FaresV2Service`, `TranslationService`,
+  `BookingRuleService.browse()`, and the matching frontend service
+  methods. Runtime translations keep flowing into the kiosk through
+  `DisplayStateCalculator`. ADR 0021 amended.
+- **`/admin/shapes` + the entire shapes pipeline.** ADR 0014 already
+  acknowledged the data was persisted for a "future map view that
+  doesn't exist yet" — the schematic map is topological by design.
+  Drops `ShapeController`, `ShapeService`, `Shape` + `ShapePoint`
+  entities, `ShapeRepository`, `ShapeImporter`, `ShapeResponse`,
+  `Itinerary.shape` FK, `TripInfo.shapeId`, the dashboard shapes
+  badge, the unused `GtfsSectionImporter.runAggregating` helper,
+  and adds **V53__drop_shapes.sql** to drop the `shapes` /
+  `shape_points` tables and the `itineraries.shape_id` column.
+  ADR 0014 marked **Superseded**.
+- **Cascade orphans.** `FaresV2Response`, `TranslationResponse`,
+  `FareAttributeResponse` DTOs; `TranslationRepository.findByLanguageAndTableName`,
+  `NetworkRepository.findAllWithRoutes`,
+  `FareTransferRuleRepository.findAllWithProduct`,
+  `FareLegJoinRuleRepository.findAllWithStops` queries;
+  `FareAttribute`, `FaresV2`, `FareLegJoinRule` + their inner types
+  (`FareNetwork`, `FareMedia`, `FareArea`, `FareTimeframe`,
+  `FareProduct`, `FareLegRule`, `FareTransferRule`,
+  `FarePaymentMethod`, `FareRuleSummary`), `Translation` on the
+  frontend.
+
+Also dropped along the way (pre-existing dead code surfaced by the
+sweep): `validation.password.size` i18n key (superseded by
+`.length`), `AuthCookieFactory.getAccessCookieName` and
+`RefreshTokenService.ttl` (zero callers), `Severity` TS union (the
+helper accepts `string`), the orphan `AdminDashboardPage` e2e page
+object, four dead M3 design tokens
+(`--m3-easing-emphasized-accelerate`, `--m3-type-display-medium`,
+`--m3-type-title-medium`, `--m3-type-title-small`), the dead
+mobile-chrome visual snapshot baseline, two stale `.gitignore` /
+`.dockerignore` entries, and the now-unused `gtfs-rich/shapes.txt`
+fixture.
+
+### Security
+
+- **Remove leftover `permitAll` on `GET /api/itineraries/**`.** The
+  public access existed for the `GET /api/itineraries/{id}/shape`
+  endpoint that `ShapeController` used to expose. With the shapes
+  pipeline removed, `ItineraryService` is now consumed exclusively by
+  the admin schedule dialog and the admin itineraries page — both
+  authenticated as ADMIN. The `hasRole('ADMIN')` matcher further down
+  in `SecurityConfig` already covers every method including GET, so
+  dropping the `permitAll` line plugs an unintended anonymous read on
+  the admin itinerary list/detail.
+
+### Fixed
+
+- **Stale `shapes` field in two data-overview specs.** TS strict
+  flagged `TS2353: 'shapes' does not exist in type 'DataOverviewStaticGtfs'`
+  after the field was removed from the DTO. `ng test` had been
+  tolerating it; clean now.
+- **Trailing commas in `en.json` / `fr.json`.** The shapes pipeline
+  removal left a dangling `},` after the last admin sub-tree.
+  `JSON.parse` strict failed; Transloco's loader was tolerating it
+  at runtime by accident.
+
+### Documentation
+
+- **README** reformulated. The "100 % GTFS spec coverage" claim is
+  replaced with an honest description of which extensions feed which
+  user surface; `shapes.txt` is now explicitly marked as skipped
+  ("topological map by design").
+- **ADR 0009** (pathways), **0014** (shapes, Superseded), **0021**
+  (Fares v2) and **0033** (FareCalculator) amended to reflect the
+  surfaces dropped, with the underlying data flow and decision
+  unchanged.
+- **`docs/user-guide.md`** loses its "TAD Zones" admin section.
+- **`docs/adr/README.md`** index marks ADR 0014 as superseded by V53.
+
+### Migration
+
+- **V53__drop_shapes.sql** — drops `shape_points`, `shapes`,
+  `itineraries.shape_id`. Append-only Flyway, no rollback path
+  (intentional: ADR 0014 Superseded). Existing instances will lose
+  the persisted shape rows; nothing read them.
+
 ## [1.27.1] — 2026-05-18
 
 Cleanup patch absorbing the remaining P2 / P3 items from the
