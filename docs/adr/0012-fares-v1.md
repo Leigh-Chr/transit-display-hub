@@ -118,3 +118,9 @@ add v2 tables without changing v1 data.
   is stable enough that validation can live in the importer's
   `truncate(... 3)` clamp; we accept rare malformed feeds will
   produce uppercase 3-letter strings that aren't currencies.
+
+> _Update (2026-05-18) — `Stop.zone_id` est désormais persisté comme
+> colonne (migration `V37__add_stop_zone_id.sql`, v1.0.0) pour alimenter
+> le matching `FareCalculator` (cf. ADR 0033). Le reste de la décision
+> tient : pas de `FareZone` entity, pas de FK relationnelle, juste une
+> colonne opaque sur `stops`._
