@@ -139,9 +139,15 @@ public class LineService {
             throw new EntityNotFoundException("Line", id);
         }
         Set<UUID> affectedStopIds = getStopIdsForLine(id);
-        // Delete related entities in dependency order. itinerary_stops has a FK
-        // to itineraries without ON DELETE CASCADE, so it must be cleared before
-        // the bulk delete on itineraries.
+        // Bulk JPQL deletes here, even though Line.itineraries declares
+        // CascadeType.ALL + orphanRemoval. The cascade only fires when
+        // Hibernate sees the parent entity managed and removed, which
+        // would force us to hydrate every itinerary + itinerary_stop +
+        // schedule of the line just to delete them — fine for a 3-stop
+        // tutorial line, disastrous for a metro line with 50k schedules.
+        // The JPQL DELETE skips the load entirely; we keep the ordering
+        // explicit because itinerary_stops has a FK to itineraries
+        // without ON DELETE CASCADE.
         scheduleRepository.deleteByItineraryLineId(id);
         itineraryStopRepository.deleteByItineraryLineId(id);
         itineraryRepository.deleteByLineId(id);

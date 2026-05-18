@@ -163,10 +163,14 @@ public class StopService {
                 .orElseThrow(() -> new EntityNotFoundException("Stop", id));
         String stopName = stop.getName();
 
-        // Delete related entities in correct order
+        // Bulk JPQL deletes, ordered to honour the FKs that don't carry
+        // ON DELETE CASCADE (itinerary_stops, devices). Stop.schedules
+        // declares CascadeType.ALL + orphanRemoval, but driving the
+        // delete through the cascade would force hydrating every
+        // schedule of the stop just to evict it — the bulk JPQL skips
+        // the load. Same rationale as LineService#deleteLine.
         scheduleRepository.deleteByStopId(id);
         itineraryStopRepository.deleteByStopId(id);
-        // Devices and messages
         deviceRepository.deleteByStopId(id);
         messageRepository.deleteByScopeTypeAndScopeId(MessageScope.STOP, id);
         stopRepository.deleteById(id);
