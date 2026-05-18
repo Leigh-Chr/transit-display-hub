@@ -21,10 +21,13 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -144,9 +147,12 @@ class GtfsImportOrchestratorTest {
     @Test
     void runImport_returnsSkippedWhenLockAlreadyHeld() throws Exception {
         Path feed = Files.writeString(tempDir.resolve("feed.zip"), "x").toAbsolutePath();
+        CountDownLatch firstEntered = new CountDownLatch(1);
+        CountDownLatch firstMayProceed = new CountDownLatch(1);
         when(downloader.downloadOrCached(any())).thenAnswer(inv -> {
-            // Hold the lock for as long as we're inside the importer.
-            Thread.sleep(120);
+            firstEntered.countDown();
+            assertTrue(firstMayProceed.await(5, TimeUnit.SECONDS),
+                    "main thread should release the first import");
             return feed;
         });
         when(importer.importFromZip(any(), any(), any()))
@@ -155,21 +161,26 @@ class GtfsImportOrchestratorTest {
 
         Thread first = new Thread(() -> orchestrator.runImport("http://feed", "long"));
         first.start();
-        // Give the first thread time to enter the locked section.
-        Thread.sleep(40);
+        assertTrue(firstEntered.await(5, TimeUnit.SECONDS),
+                "first thread should reach the locked section");
 
         GtfsImportOrchestrator.ImportOutcome contended = orchestrator.runImport("http://feed", "second");
         assertEquals(ImportStatus.SKIPPED_UNCHANGED, contended.status());
         assertEquals("Another import is already running", contended.message());
 
+        firstMayProceed.countDown();
         first.join();
     }
 
     @Test
     void runImportAsync_throwsWhenLockAlreadyHeld() throws Exception {
         Path feed = Files.writeString(tempDir.resolve("feed.zip"), "x").toAbsolutePath();
+        CountDownLatch firstEntered = new CountDownLatch(1);
+        CountDownLatch firstMayProceed = new CountDownLatch(1);
         when(downloader.downloadOrCached(any())).thenAnswer(inv -> {
-            Thread.sleep(120);
+            firstEntered.countDown();
+            assertTrue(firstMayProceed.await(5, TimeUnit.SECONDS),
+                    "main thread should release the first import");
             return feed;
         });
         when(importer.importFromZip(any(), any(), any()))
@@ -178,11 +189,13 @@ class GtfsImportOrchestratorTest {
 
         Thread first = new Thread(() -> orchestrator.runImport("http://feed", "long"));
         first.start();
-        Thread.sleep(40);
+        assertTrue(firstEntered.await(5, TimeUnit.SECONDS),
+                "first thread should reach the locked section");
 
         assertThrows(ImportAlreadyRunningException.class,
                 () -> orchestrator.runImportAsync("http://feed", "second"));
 
+        firstMayProceed.countDown();
         first.join();
     }
 
