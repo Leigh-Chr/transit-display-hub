@@ -222,7 +222,18 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(parseOrigins(allowedOriginsCsv));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        // Explicit allowlist (least-privilege) instead of "*". Covers every
+        // header the SPA actually sends: JSON bodies, language switching,
+        // optimistic-concurrency tags and the CSRF token issued by the
+        // Spring XSRF cookie filter.
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Accept-Language",
+                "X-XSRF-TOKEN",
+                "If-Match"
+        ));
         configuration.setExposedHeaders(List.of("X-Device-Id", "WWW-Authenticate"));
         configuration.setAllowCredentials(true);
 
