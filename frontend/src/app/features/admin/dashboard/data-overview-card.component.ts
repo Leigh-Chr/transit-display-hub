@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -235,22 +235,14 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     }
   `,
 })
-export class DataOverviewCardComponent implements OnInit {
+export class DataOverviewCardComponent {
   private readonly overviewService = inject(DataOverviewService);
   private readonly locale = inject(LocaleService);
 
   readonly overview = signal<DataOverview | null>(null);
   readonly loaded = signal<boolean>(false);
 
-  readonly anyRealtimeConfigured = computed<boolean>(() => {
-    const o = this.overview();
-    if (!o) {return false;}
-    return o.realtime.alertsEnabled
-        || o.realtime.tripUpdatesEnabled
-        || o.realtime.vehiclePositionsEnabled;
-  });
-
-  ngOnInit(): void {
+  constructor() {
     this.overviewService.getOverview().subscribe({
       next: (data) => {
         this.overview.set(data);
@@ -263,6 +255,14 @@ export class DataOverviewCardComponent implements OnInit {
       },
     });
   }
+
+  readonly anyRealtimeConfigured = computed<boolean>(() => {
+    const o = this.overview();
+    if (!o) {return false;}
+    return o.realtime.alertsEnabled
+        || o.realtime.tripUpdatesEnabled
+        || o.realtime.vehiclePositionsEnabled;
+  });
 
   /** Compact rendering for >=10k counts: "12 345" → "12.3k". Keeps
    *  the cell width tight on dense feeds without losing magnitude. */

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -41,11 +41,18 @@ import { PathwayGraphLayout, buildPathwayGraphLayout } from './pathway-graph-lay
   templateUrl: './pathways.component.html',
   styleUrl: './pathways.component.scss',
 })
-export class PathwaysComponent implements OnInit {
+export class PathwaysComponent {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly stopService = inject(StopService);
   private readonly networkMapData = inject(NetworkMapDataService);
   private readonly transloco = inject(TranslocoService);
+
+  constructor() {
+    this.stopService.getAll().subscribe({
+      next: (data) => this.stops.set(data),
+      error: () => this.stops.set([]),
+    });
+  }
 
   readonly pathways = signal<Pathway[]>([]);
   readonly stationLevels = signal<StationLevelInfo[]>([]);
@@ -65,13 +72,6 @@ export class PathwaysComponent implements OnInit {
     if (pathways.length === 0 || !root) {return null;}
     return buildPathwayGraphLayout(pathways, root.id, this.transloco);
   });
-
-  ngOnInit(): void {
-    this.stopService.getAll().subscribe({
-      next: (data) => this.stops.set(data),
-      error: () => this.stops.set([]),
-    });
-  }
 
   /** Handler bound to the shared {@code <app-stop-autocomplete>} output.
    *  The autocomplete is generic over {@link StopAutocompleteOption} —

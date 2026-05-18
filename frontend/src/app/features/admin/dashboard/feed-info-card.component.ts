@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -160,11 +160,26 @@ import { TranslocoDirective } from '@jsverse/transloco';
     }
   `,
 })
-export class FeedInfoCardComponent implements OnInit {
+export class FeedInfoCardComponent {
   private readonly feedInfoService = inject(FeedInfoService);
 
   readonly feed = signal<FeedInfo | null>(null);
   readonly loaded = signal<boolean>(false);
+
+  constructor() {
+    this.feedInfoService.getFeedInfo().subscribe({
+      next: (feed) => {
+        this.feed.set(feed);
+        this.loaded.set(true);
+      },
+      error: () => {
+        // Silently swallow — non-admin users (forbidden) and missing
+        // endpoints shouldn't crash the dashboard. The card simply
+        // stays hidden when {@code loaded} is true and {@code feed} null.
+        this.loaded.set(true);
+      },
+    });
+  }
 
   readonly daysRemaining = computed<number | null>(() => {
     const info = this.feed();
@@ -206,18 +221,4 @@ export class FeedInfoCardComponent implements OnInit {
     }
   }
 
-  ngOnInit(): void {
-    this.feedInfoService.getFeedInfo().subscribe({
-      next: (feed) => {
-        this.feed.set(feed);
-        this.loaded.set(true);
-      },
-      error: () => {
-        // Silently swallow — non-admin users (forbidden) and missing
-        // endpoints shouldn't crash the dashboard. The card simply
-        // stays hidden when {@code loaded} is true and {@code feed} null.
-        this.loaded.set(true);
-      },
-    });
-  }
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, ViewEncapsulation } from '@angular/core';
 import { CdkDropList, CdkDrag, CdkDragHandle, CdkDragDrop, CdkDragPlaceholder, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -261,7 +261,7 @@ interface StopItem {
     }
   `,
 })
-export class ItineraryStopsDialogComponent implements OnInit {
+export class ItineraryStopsDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<ItineraryStopsDialogComponent>);
   readonly data = inject<ItineraryStopsDialogData>(MAT_DIALOG_DATA);
   private readonly stopService = inject(StopService);
@@ -275,14 +275,12 @@ export class ItineraryStopsDialogComponent implements OnInit {
 
   private allLineStops: Stop[] = [];
 
-  ngOnInit(): void {
-    // Initialize selectedStops from itinerary's current stops
+  constructor() {
     const currentStops: StopItem[] = this.data.itinerary.stops
       .sort((a, b) => a.position - b.position)
       .map(s => ({ id: s.id, name: s.name }));
     this.selectedStops.set(currentStops);
 
-    // Load all stops for the line
     const lineId = this.data.itinerary.line.id;
     if (lineId) {
       this.stopService.getAll(lineId).subscribe({

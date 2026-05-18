@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -222,7 +222,7 @@ interface MessageForm {
     }
   `,
 })
-export class MessageDialogComponent implements OnInit {
+export class MessageDialogComponent {
   private readonly stopService = inject(StopService);
   readonly dialogRef = inject(MatDialogRef<MessageDialogComponent>);
   readonly data = inject<MessageDialogData>(MAT_DIALOG_DATA);
@@ -232,7 +232,7 @@ export class MessageDialogComponent implements OnInit {
 
   form: MessageForm = this.initForm();
 
-  ngOnInit(): void {
+  constructor() {
     if (this.form.lineId && this.form.scopeType === 'STOP') {
       this.loadStops();
     }

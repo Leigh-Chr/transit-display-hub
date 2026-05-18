@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -51,10 +51,20 @@ interface ProjectedPoint { x: number; y: number; }
   templateUrl: './shapes.component.html',
   styleUrl: './shapes.component.scss',
 })
-export class ShapesComponent implements OnInit {
+export class ShapesComponent {
   private readonly gtfsData = inject(GtfsDataService);
   private readonly itineraryService = inject(ItineraryService);
   private readonly transloco = inject(TranslocoService);
+
+  constructor() {
+    this.itineraryService.getAll().subscribe({
+      next: (data) => {
+        this.itineraries.set(data);
+        this.filteredItins.set(data.slice(0, 30));
+      },
+      error: () => this.itineraries.set([]),
+    });
+  }
 
   private static readonly VIEW_W = 800;
   private static readonly VIEW_H = 480;
@@ -103,16 +113,6 @@ export class ShapesComponent implements OnInit {
     // is almost certainly metres on a single trip.
     return last > 10_000 ? last / 1000 : last;
   });
-
-  ngOnInit(): void {
-    this.itineraryService.getAll().subscribe({
-      next: (data) => {
-        this.itineraries.set(data);
-        this.filteredItins.set(data.slice(0, 30));
-      },
-      error: () => this.itineraries.set([]),
-    });
-  }
 
   onSearchChange(): void {
     if (typeof this.search === 'object') {return;}

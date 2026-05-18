@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -127,7 +127,7 @@ export interface ScheduleDialogData {
     }
   `,
 })
-export class ScheduleDialogComponent implements OnInit {
+export class ScheduleDialogComponent {
   readonly dialogRef = inject(MatDialogRef<ScheduleDialogComponent>);
   readonly data = inject<ScheduleDialogData>(MAT_DIALOG_DATA);
   private readonly itineraryService = inject(ItineraryService);
@@ -140,7 +140,7 @@ export class ScheduleDialogComponent implements OnInit {
     itineraryId: this.data.entry?.itinerary.id ?? '',
   };
 
-  ngOnInit(): void {
+  constructor() {
     this.loadItineraries();
   }
 
