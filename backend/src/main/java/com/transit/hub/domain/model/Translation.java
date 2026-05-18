@@ -34,7 +34,12 @@ import java.util.UUID;
 @Table(name = "translations",
        uniqueConstraints = @UniqueConstraint(
            name = "uk_translation_target",
-           columnNames = {"table_name", "record_id", "record_sub_id", "field_name", "language"}),
+           // field_value is part of the spec key for the value-based
+           // matching mode (record_id null → match every row whose
+           // field equals field_value); leaving it out of the UK let
+           // duplicate field_value translations slip past the import.
+           columnNames = {"table_name", "record_id", "record_sub_id",
+                          "field_value", "field_name", "language"}),
        indexes = {
            @Index(name = "idx_translation_lang_table",
                   columnList = "language, table_name"),
@@ -83,10 +88,13 @@ public class Translation {
     @Column(name = "record_sub_id", length = 100)
     private @Nullable String recordSubId;
 
-    /** GTFS {@code language_context}. Disambiguates two translations of
-     *  the same record/field/language for distinct display contexts
-     *  (e.g. {@code "long-form"} vs {@code "short-form"}). Null for
-     *  the default rendering. */
+    /** <strong>Project extension, not part of the GTFS spec.</strong>
+     *  Disambiguates two translations of the same record/field/language
+     *  for distinct display contexts (e.g. {@code "long-form"} vs
+     *  {@code "short-form"}) when the rendering surface needs a hint.
+     *  Always {@code null} on rows produced by the standard importer —
+     *  populated only by admin-side authoring flows that opt into the
+     *  extension. */
     @Size(max = 100)
     @Column(name = "language_context", length = 100)
     private @Nullable String languageContext;
