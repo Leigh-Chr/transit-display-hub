@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { RouteFinderService } from './route-finder.service';
 import { NetworkMap } from '@shared/models';
 
@@ -38,7 +39,8 @@ describe('RouteFinderService', () => {
   };
 
   beforeEach(() => {
-    service = new RouteFinderService();
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(RouteFinderService);
   });
 
   it('should return null when from and to are the same stop', () => {
