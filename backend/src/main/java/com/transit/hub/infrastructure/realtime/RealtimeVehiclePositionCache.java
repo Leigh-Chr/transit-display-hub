@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.realtime;
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.net.http.HttpClient;
@@ -38,21 +39,21 @@ public class RealtimeVehiclePositionCache extends AbstractRealtimeFeedCache<List
      */
     public record VehicleSnapshot(
             String entityId,
-            String vehicleId,
-            String vehicleLabel,
-            String tripId,
-            String routeId,
-            Double latitude,
-            Double longitude,
-            Float bearing,
-            Float speed,
-            String currentStatus,
-            String currentStopId,
-            Integer currentStopSequence,
-            String congestionLevel,
-            String occupancyStatus,
-            Integer occupancyPercentage,
-            Long timestampEpochSeconds
+            @Nullable String vehicleId,
+            @Nullable String vehicleLabel,
+            @Nullable String tripId,
+            @Nullable String routeId,
+            @Nullable Double latitude,
+            @Nullable Double longitude,
+            @Nullable Float bearing,
+            @Nullable Float speed,
+            @Nullable String currentStatus,
+            @Nullable String currentStopId,
+            @Nullable Integer currentStopSequence,
+            @Nullable String congestionLevel,
+            @Nullable String occupancyStatus,
+            @Nullable Integer occupancyPercentage,
+            @Nullable Long timestampEpochSeconds
     ) {}
 
     @Override
@@ -88,7 +89,9 @@ public class RealtimeVehiclePositionCache extends AbstractRealtimeFeedCache<List
     /** Returns the current snapshot, ordered by route then by vehicle id
      *  for stable admin browsing. The list is unmodifiable. */
     public List<VehicleSnapshot> currentSnapshot() {
-        return snapshot.get();
+        // AtomicReference is seeded with emptySnapshot() in the
+        // superclass constructor and never set to null afterwards.
+        return java.util.Objects.requireNonNull(snapshot.get());
     }
 
     static List<VehicleSnapshot> parseVehicles(GtfsRealtime.FeedMessage feed) {
@@ -121,53 +124,53 @@ public class RealtimeVehiclePositionCache extends AbstractRealtimeFeedCache<List
                 timestamp(v));
     }
 
-    private static String vehicleId(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String vehicleId(GtfsRealtime.VehiclePosition v) {
         return v.hasVehicle() && v.getVehicle().hasId() ? v.getVehicle().getId() : null;
     }
-    private static String vehicleLabel(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String vehicleLabel(GtfsRealtime.VehiclePosition v) {
         return v.hasVehicle() && v.getVehicle().hasLabel() ? v.getVehicle().getLabel() : null;
     }
-    private static String tripId(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String tripId(GtfsRealtime.VehiclePosition v) {
         return v.hasTrip() && v.getTrip().hasTripId() ? v.getTrip().getTripId() : null;
     }
-    private static String routeId(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String routeId(GtfsRealtime.VehiclePosition v) {
         return v.hasTrip() && v.getTrip().hasRouteId() ? v.getTrip().getRouteId() : null;
     }
-    private static Double latitude(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Double latitude(GtfsRealtime.VehiclePosition v) {
         return v.hasPosition() ? (double) v.getPosition().getLatitude() : null;
     }
-    private static Double longitude(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Double longitude(GtfsRealtime.VehiclePosition v) {
         return v.hasPosition() ? (double) v.getPosition().getLongitude() : null;
     }
-    private static Float bearing(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Float bearing(GtfsRealtime.VehiclePosition v) {
         return v.hasPosition() && v.getPosition().hasBearing() ? v.getPosition().getBearing() : null;
     }
-    private static Float speed(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Float speed(GtfsRealtime.VehiclePosition v) {
         return v.hasPosition() && v.getPosition().hasSpeed() ? v.getPosition().getSpeed() : null;
     }
-    private static String currentStatus(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String currentStatus(GtfsRealtime.VehiclePosition v) {
         return v.hasCurrentStatus() ? v.getCurrentStatus().name() : null;
     }
-    private static String stopId(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String stopId(GtfsRealtime.VehiclePosition v) {
         return v.hasStopId() ? v.getStopId() : null;
     }
-    private static Integer stopSequence(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Integer stopSequence(GtfsRealtime.VehiclePosition v) {
         return v.hasCurrentStopSequence() ? v.getCurrentStopSequence() : null;
     }
-    private static String congestion(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String congestion(GtfsRealtime.VehiclePosition v) {
         return v.hasCongestionLevel() ? v.getCongestionLevel().name() : null;
     }
-    private static String occupancyStatus(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable String occupancyStatus(GtfsRealtime.VehiclePosition v) {
         return v.hasOccupancyStatus() ? v.getOccupancyStatus().name() : null;
     }
-    private static Integer occupancyPct(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Integer occupancyPct(GtfsRealtime.VehiclePosition v) {
         return v.hasOccupancyPercentage() ? v.getOccupancyPercentage() : null;
     }
-    private static Long timestamp(GtfsRealtime.VehiclePosition v) {
+    private static @Nullable Long timestamp(GtfsRealtime.VehiclePosition v) {
         return v.hasTimestamp() ? v.getTimestamp() : null;
     }
 
-    private static int nullSafeCompare(String a, String b) {
+    private static int nullSafeCompare(@Nullable String a, @Nullable String b) {
         if (a == null && b == null) {return 0;}
         if (a == null) {return 1;}
         if (b == null) {return -1;}

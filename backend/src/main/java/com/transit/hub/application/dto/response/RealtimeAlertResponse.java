@@ -1,5 +1,7 @@
 package com.transit.hub.application.dto.response;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -12,11 +14,11 @@ public record RealtimeAlertResponse(
         List<String> routeIds,
         List<String> stopIds,
         List<String> agencyIds,
-        String headerText,
-        String descriptionText,
-        String url,
-        String cause,
-        String effect,
-        String severity
+        @Nullable String headerText,
+        @Nullable String descriptionText,
+        @Nullable String url,
+        @Nullable String cause,
+        @Nullable String effect,
+        @Nullable String severity
 ) {
 }

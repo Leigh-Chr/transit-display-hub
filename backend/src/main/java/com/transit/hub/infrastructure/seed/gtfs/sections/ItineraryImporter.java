@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -70,7 +71,7 @@ public class ItineraryImporter {
      */
     /** Compact stop reference threaded through the import — captured as
      *  package-private so the per-trip builder can stash entries. */
-    private record TimedStop(String stopId, int sequence, String headsign) {}
+    private record TimedStop(String stopId, int sequence, @Nullable String headsign) {}
 
     public ItineraryImport importItineraries(
             Path tripsFile,
@@ -175,7 +176,9 @@ public class ItineraryImporter {
         Map<RouteDirKey, Integer> bestCount = new HashMap<>();
         for (Map.Entry<String, Integer> entry : buckets.stopsPerTrip.entrySet()) {
             String tripId = entry.getKey();
-            TripInfo info = tripInfos.get(tripId);
+            // loadStopTimes() filters out trips with no TripInfo, so the
+            // lookup here is guaranteed to hit; assert it for NullAway.
+            TripInfo info = java.util.Objects.requireNonNull(tripInfos.get(tripId));
             int count = entry.getValue();
             RouteDirKey key = new RouteDirKey(info.routeId(), info.directionId());
             if (count > bestCount.getOrDefault(key, 0)) {
@@ -212,7 +215,11 @@ public class ItineraryImporter {
             trip.sort((a, b) -> Integer.compare(a.sequence(), b.sequence()));
             Itinerary itinerary = upsertItinerary(key, tripId, tripInfos, linesByGtfsId,
                     existingItinerariesByExternalId);
-            attachStops(itinerary, trip, stopImport, linesByGtfsId.get(key.routeId()), result);
+            // pickRepresentativeTrips() returns keys whose routeId is
+            // present in linesByGtfsId (loadStopTimes filtered both), so
+            // requireNonNull surfaces a regression rather than an NPE.
+            attachStops(itinerary, trip, stopImport,
+                    java.util.Objects.requireNonNull(linesByGtfsId.get(key.routeId())), result);
             itineraryRepository.save(itinerary);
             result.itinerariesByRouteDir.put(key, itinerary);
             result.seenItineraryIds.add(itinerary.getId());
@@ -225,7 +232,10 @@ public class ItineraryImporter {
                                       Map<String, TripInfo> tripInfos,
                                       Map<String, Line> linesByGtfsId,
                                       Map<String, Itinerary> existingByExternalId) {
-        TripInfo info = tripInfos.get(tripId);
+        // Caller in importItineraries() iterates over keys vetted by
+        // pickRepresentativeTrips(), so tripId is guaranteed to have a
+        // TripInfo and routeId to resolve a Line.
+        TripInfo info = java.util.Objects.requireNonNull(tripInfos.get(tripId));
         // Majority vote across every trip matching (route, direction) so
         // the representative trip alone doesn't underestimate
         // accessibility when the longest variant is the non-accessible one.
@@ -248,7 +258,7 @@ public class ItineraryImporter {
         // Single mutation site so a field added later can't silently miss
         // either the create or the update path.
         itinerary.setExternalId(externalId);
-        itinerary.setLine(linesByGtfsId.get(key.routeId()));
+        itinerary.setLine(java.util.Objects.requireNonNull(linesByGtfsId.get(key.routeId())));
         itinerary.setName(truncate(buildItineraryName(info.headsign(), key.directionId()),
                 GtfsLimits.LINE_NAME_MAX_LENGTH));
         itinerary.setDirectionId(directionId);
@@ -363,7 +373,7 @@ public class ItineraryImporter {
      * schedule row stores nothing).
      */
     public static Optional<Boolean> computeWheelchairOverride(int tripWheelchair,
-            WheelchairAccess itineraryDefault) {
+            @Nullable WheelchairAccess itineraryDefault) {
         if (tripWheelchair == 1) {
             return itineraryDefault == WheelchairAccess.ACCESSIBLE
                     ? Optional.empty() : Optional.of(Boolean.TRUE);
@@ -380,7 +390,7 @@ public class ItineraryImporter {
      * empty-means-inherit rule as {@link #computeWheelchairOverride}.
      */
     public static Optional<Boolean> computeBikesOverride(int tripBikes,
-            BikesAllowed itineraryDefault) {
+            @Nullable BikesAllowed itineraryDefault) {
         if (tripBikes == 1) {
             return itineraryDefault == BikesAllowed.ALLOWED
                     ? Optional.empty() : Optional.of(Boolean.TRUE);
@@ -394,8 +404,8 @@ public class ItineraryImporter {
 
     // ---------- name builder ----------
 
-    static String buildItineraryName(String headsign, String directionId) {
-        if (!isBlank(headsign)) {
+    static String buildItineraryName(@Nullable String headsign, String directionId) {
+        if (headsign != null && !headsign.isBlank()) {
             return "→ " + headsign.trim();
         }
         return "Direction " + ("0".equals(directionId) ? "0" : "1");

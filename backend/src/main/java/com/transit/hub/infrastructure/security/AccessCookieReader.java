@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.security;
 
 import jakarta.servlet.http.Cookie;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Resolves the access JWT out of the cookie jar of a servlet request.
@@ -19,7 +20,7 @@ public final class AccessCookieReader {
      * @return the access token value, or {@code null} if the cookie is
      *         missing or blank.
      */
-    public static String readAccessToken(Cookie[] cookies, String accessCookieName) {
+    public static @Nullable String readAccessToken(@Nullable Cookie[] cookies, String accessCookieName) {
         if (cookies == null) {
             return null;
         }

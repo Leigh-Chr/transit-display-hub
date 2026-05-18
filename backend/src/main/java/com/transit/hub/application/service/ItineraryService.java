@@ -20,6 +20,7 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -78,21 +79,25 @@ public class ItineraryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ItineraryResponse> getAllItineraries(UUID lineId, String search, Pageable pageable) {
+    public PageResponse<ItineraryResponse> getAllItineraries(@Nullable UUID lineId, @Nullable String search, Pageable pageable) {
         boolean hasLineId = lineId != null;
         boolean hasSearch = search != null && !search.isBlank();
-        String trimmedSearch = hasSearch ? search.trim() : null;
+        String trimmedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
 
         // Two-step pagination — page over Itinerary ids without a
         // collection JOIN FETCH so Hibernate paginates in SQL, then
         // hydrate only the page's entities with line + itineraryStops.
         Page<UUID> idsPage;
         if (hasLineId && hasSearch) {
-            idsPage = itineraryRepository.findIdsByLineIdAndSearch(lineId, trimmedSearch, pageable);
+            idsPage = itineraryRepository.findIdsByLineIdAndSearch(
+                    java.util.Objects.requireNonNull(lineId),
+                    java.util.Objects.requireNonNull(trimmedSearch), pageable);
         } else if (hasLineId) {
-            idsPage = itineraryRepository.findIdsByLineId(lineId, pageable);
+            idsPage = itineraryRepository.findIdsByLineId(
+                    java.util.Objects.requireNonNull(lineId), pageable);
         } else if (hasSearch) {
-            idsPage = itineraryRepository.findIdsBySearch(trimmedSearch, pageable);
+            idsPage = itineraryRepository.findIdsBySearch(
+                    java.util.Objects.requireNonNull(trimmedSearch), pageable);
         } else {
             idsPage = itineraryRepository.findAllIds(pageable);
         }

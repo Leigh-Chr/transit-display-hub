@@ -98,7 +98,9 @@ public class AuthService {
             throw new BadCredentialsException("Invalid current password");
         }
 
-        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setPassword(java.util.Objects.requireNonNull(
+                passwordEncoder.encode(request.newPassword()),
+                "PasswordEncoder returned null hash"));
         user.clearPasswordMustChange();
     }
 

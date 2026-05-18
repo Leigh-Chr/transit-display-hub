@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.FeedInfo;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -12,18 +13,18 @@ import java.time.LocalDate;
  * as "unknown" rather than rendering empty strings.
  */
 public record FeedInfoResponse(
-        String publisherName,
-        String publisherUrl,
-        String lang,
-        String defaultLang,
-        String feedVersion,
-        String contactEmail,
-        String contactUrl,
-        LocalDate startDate,
-        LocalDate endDate,
-        String sourceUrl,
-        String sourceHash,
-        Instant importedAt
+        @Nullable String publisherName,
+        @Nullable String publisherUrl,
+        @Nullable String lang,
+        @Nullable String defaultLang,
+        @Nullable String feedVersion,
+        @Nullable String contactEmail,
+        @Nullable String contactUrl,
+        @Nullable LocalDate startDate,
+        @Nullable LocalDate endDate,
+        @Nullable String sourceUrl,
+        @Nullable String sourceHash,
+        @Nullable Instant importedAt
 ) {
     public static FeedInfoResponse from(FeedInfo info) {
         return new FeedInfoResponse(

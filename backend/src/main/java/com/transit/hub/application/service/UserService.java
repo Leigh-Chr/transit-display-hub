@@ -55,7 +55,9 @@ public class UserService {
 
         User user = User.builder()
                 .username(request.username())
-                .password(passwordEncoder.encode(request.password()))
+                .password(java.util.Objects.requireNonNull(
+                        passwordEncoder.encode(request.password()),
+                        "PasswordEncoder returned null hash"))
                 .role(request.role())
                 .enabled(true)
                 .build();
@@ -78,7 +80,9 @@ public class UserService {
         boolean disabling = user.isEnabled() && !request.enabled();
 
         if (passwordChanged) {
-            user.setPassword(passwordEncoder.encode(request.password()));
+            user.setPassword(java.util.Objects.requireNonNull(
+                    passwordEncoder.encode(request.password()),
+                    "PasswordEncoder returned null hash"));
         }
 
         user.setRole(request.role());

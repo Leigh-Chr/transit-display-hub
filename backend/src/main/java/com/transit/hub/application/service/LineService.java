@@ -20,6 +20,7 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,7 +66,7 @@ public class LineService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<LineResponse> getAllLines(String search, Pageable pageable) {
+    public PageResponse<LineResponse> getAllLines(@Nullable String search, Pageable pageable) {
         // Two-step: page over Line ids without JOIN FETCH (Hibernate
         // paginates in SQL), then hydrate only the page's entities with
         // their collections in a second query.

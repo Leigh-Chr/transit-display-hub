@@ -1,5 +1,7 @@
 package com.transit.hub.application.exception;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Raised when a service cannot find the addressed entity. Surfaces as
  * a 404 through GlobalExceptionHandler.
@@ -12,8 +14,8 @@ package com.transit.hub.application.exception;
 public class EntityNotFoundException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
-    private final String messageKey;
-    private final transient Object[] messageArgs;
+    private final @Nullable String messageKey;
+    private final transient Object @Nullable [] messageArgs;
 
     public EntityNotFoundException(String message) {
         super(message);
@@ -27,11 +29,11 @@ public class EntityNotFoundException extends RuntimeException {
         this.messageArgs = new Object[] { entityName, id };
     }
 
-    public String getMessageKey() {
+    public @Nullable String getMessageKey() {
         return messageKey;
     }
 
-    public Object[] getMessageArgs() {
+    public Object @Nullable [] getMessageArgs() {
         return messageArgs == null ? null : messageArgs.clone();
     }
 }

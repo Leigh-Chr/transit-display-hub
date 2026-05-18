@@ -1,5 +1,7 @@
 package com.transit.hub.application.dto.response;
 
+import org.jspecify.annotations.Nullable;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -15,39 +17,39 @@ import java.util.List;
 public record FareCalculationResponse(
         String fromStopId,
         String fromStopName,
-        String fromZoneId,
+        @Nullable String fromZoneId,
         String toStopId,
         String toStopName,
-        String toZoneId,
+        @Nullable String toZoneId,
         List<V1Option> v1,
         List<V2Option> v2
 ) {
     public record V1Option(
             String fareId,
-            BigDecimal price,
+            @Nullable BigDecimal price,
             String currency,
-            String paymentMethod,
-            Integer transfers,
-            Integer transferDurationSeconds,
-            String agencyName,
-            String matchedRoute,
-            String matchedOriginZone,
-            String matchedDestinationZone
+            @Nullable String paymentMethod,
+            @Nullable Integer transfers,
+            @Nullable Integer transferDurationSeconds,
+            @Nullable String agencyName,
+            @Nullable String matchedRoute,
+            @Nullable String matchedOriginZone,
+            @Nullable String matchedDestinationZone
     ) {}
 
     public record V2Option(
-            String legGroupId,
-            String fareProductId,
-            String fareProductName,
-            BigDecimal amount,
-            String currency,
-            String fromAreaId,
-            String fromAreaName,
-            String toAreaId,
-            String toAreaName,
-            Integer rulePriority,
-            String networkId,
-            String fromTimeframeGroupId,
-            String toTimeframeGroupId
+            @Nullable String legGroupId,
+            @Nullable String fareProductId,
+            @Nullable String fareProductName,
+            @Nullable BigDecimal amount,
+            @Nullable String currency,
+            @Nullable String fromAreaId,
+            @Nullable String fromAreaName,
+            @Nullable String toAreaId,
+            @Nullable String toAreaName,
+            @Nullable Integer rulePriority,
+            @Nullable String networkId,
+            @Nullable String fromTimeframeGroupId,
+            @Nullable String toTimeframeGroupId
     ) {}
 }

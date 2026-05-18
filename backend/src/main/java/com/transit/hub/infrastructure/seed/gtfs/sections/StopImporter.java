@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -61,10 +62,10 @@ public class StopImporter {
      * @return index of persisted stops keyed by GTFS stop_id
      */
     public StopImport importStops(Path stopsFile) throws IOException {
-        record RawStop(String id, String name, Double lat, Double lon, String parent, int locationType,
-                       String shortCode, String ttsName, String timezone, String description, String url,
-                       int wheelchairBoarding, String platformCode, String zoneId,
-                       Short stopAccess) {}
+        record RawStop(String id, @Nullable String name, @Nullable Double lat, @Nullable Double lon, @Nullable String parent, int locationType,
+                       @Nullable String shortCode, @Nullable String ttsName, @Nullable String timezone, @Nullable String description, @Nullable String url,
+                       int wheelchairBoarding, @Nullable String platformCode, @Nullable String zoneId,
+                       @Nullable Short stopAccess) {}
 
         List<RawStop> raw = new ArrayList<>();
         try (CSVParser parser = openCsv(stopsFile)) {

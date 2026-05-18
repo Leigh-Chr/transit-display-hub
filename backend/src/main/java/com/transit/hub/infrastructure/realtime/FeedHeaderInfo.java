@@ -1,5 +1,7 @@
 package com.transit.hub.infrastructure.realtime;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * GTFS-Realtime {@code FeedHeader} fields captured at parse time so a
  * downstream consumer can validate the freshness of a feed and detect
@@ -22,9 +24,9 @@ package com.transit.hub.infrastructure.realtime;
  * publication schedules.
  */
 public record FeedHeaderInfo(
-        Long timestampEpochSeconds,
-        String incrementality,
-        String version) {
+        @Nullable Long timestampEpochSeconds,
+        @Nullable String incrementality,
+        @Nullable String version) {
 
     /** Empty header used as the initial snapshot before the first
      *  successful refresh. */

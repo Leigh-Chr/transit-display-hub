@@ -61,6 +61,7 @@ public class SecurityConfig {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Bean
+    @SuppressWarnings("NullAway") // Spring API expects null to opt out of request attribute resolution
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
         csrfHandler.setCsrfRequestAttributeName(null);
@@ -250,6 +251,10 @@ public class SecurityConfig {
      *  Falls back to the key itself if a translation is missing so the
      *  response stays JSON-safe even on a misconfigured deploy. */
     private String localised(String key) {
-        return messageSource.getMessage(key, null, key, LocaleContextHolder.getLocale());
+        // Spring's getMessage signature is @Nullable on the return, but
+        // we pass a non-null defaultMessage (the key itself) so the
+        // result is guaranteed non-null; assert it so NullAway can see.
+        return java.util.Objects.requireNonNull(
+                messageSource.getMessage(key, null, key, LocaleContextHolder.getLocale()));
     }
 }

@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.StationLevel;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +25,7 @@ public record StationPathwayGraphResponse(
             UUID id,
             String externalId,
             double index,
-            String name
+            @Nullable String name
     ) {
         public static LevelInfo from(StationLevel level) {
             return new LevelInfo(

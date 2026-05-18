@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -57,7 +58,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
      * back. Tomcat normally rejects bad headers up the chain, but the
      * filter is the trust boundary so we re-validate here too.
      */
-    private static String sanitize(String raw) {
+    private static @Nullable String sanitize(@Nullable String raw) {
         if (raw == null || raw.isBlank() || raw.length() > 64) {
             return null;
         }

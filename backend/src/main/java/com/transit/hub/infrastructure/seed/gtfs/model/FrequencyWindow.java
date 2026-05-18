@@ -1,5 +1,7 @@
 package com.transit.hub.infrastructure.seed.gtfs.model;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.LocalTime;
 
 /**
@@ -11,4 +13,4 @@ import java.time.LocalTime;
  * after mod-24 folding) is normalised by the schedule fan-out iterator.
  */
 public record FrequencyWindow(LocalTime start, LocalTime end,
-                              int headwaySeconds, Boolean exactTimes) {}
+                              int headwaySeconds, @Nullable Boolean exactTimes) {}

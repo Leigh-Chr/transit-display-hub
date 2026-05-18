@@ -2,6 +2,7 @@ package com.transit.hub.domain.util;
 
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.Stop;
+import org.jspecify.annotations.Nullable;
 
 import java.time.ZoneId;
 import java.util.Comparator;
@@ -43,7 +44,9 @@ public final class StopZoneResolver {
                     .filter(l -> l.getAgency() != null && l.getAgency().getTimezone() != null)
                     .sorted(Comparator
                             .comparing((Line l) -> l.getCode() == null ? "" : l.getCode()))
-                    .map(l -> tryParseZone(l.getAgency().getTimezone()))
+                    // filter() above guarantees agency != null; assert it
+                    // so NullAway can see across the lambda boundary.
+                    .map(l -> tryParseZone(java.util.Objects.requireNonNull(l.getAgency()).getTimezone()))
                     .filter(z -> z != null)
                     .findFirst()
                     .orElse(null);
@@ -55,7 +58,7 @@ public final class StopZoneResolver {
         return fallback != null ? fallback : ZoneId.of("Europe/Paris");
     }
 
-    public static ZoneId tryParseZone(String zone) {
+    public static @Nullable ZoneId tryParseZone(@Nullable String zone) {
         if (zone == null || zone.isBlank()) {
             return null;
         }

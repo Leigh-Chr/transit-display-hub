@@ -7,6 +7,7 @@ import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.infrastructure.realtime.RealtimeAlertCache;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -72,7 +73,7 @@ public class RealtimeAlertMatcher {
     }
 
     static boolean matchesStop(RealtimeAlertCache.AlertSnapshot a,
-                               String stopExternalId,
+                               @Nullable String stopExternalId,
                                Set<String> lineExternalIds,
                                Set<String> agencyExternalIds) {
         // Empty informed_entity means "applies to the whole network";

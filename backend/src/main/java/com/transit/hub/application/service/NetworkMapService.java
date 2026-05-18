@@ -19,6 +19,7 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -174,7 +175,7 @@ public class NetworkMapService {
      *  sentinels for absent line qualifiers. The {@code @Nullable}
      *  line ids ride straight in; the record's auto-generated equals
      *  and hashCode handle the null comparison correctly. */
-    private record TransferDedupeKey(UUID from, UUID to, UUID fromLineId, UUID toLineId) { }
+    private record TransferDedupeKey(UUID from, UUID to, @Nullable UUID fromLineId, @Nullable UUID toLineId) { }
 
     private NetworkLine toNetworkLine(Line line, long scheduleCount,
                                        Map<UUID, UUID> platformToParentId) {
@@ -223,7 +224,7 @@ public class NetworkMapService {
         );
     }
 
-    private NetworkStop toNetworkStop(Stop stop, List<Stop> children,
+    private NetworkStop toNetworkStop(Stop stop, @Nullable List<Stop> children,
                                        Set<UUID> onDemandStopIds,
                                        Map<UUID, List<String>> areaNamesByStopId) {
         // Union of own lines + children's lines, deduped + sorted.

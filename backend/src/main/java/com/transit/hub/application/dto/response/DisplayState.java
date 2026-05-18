@@ -2,6 +2,7 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.domain.model.enums.PickupKind;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -14,12 +15,12 @@ public record DisplayState(
         /** GTFS platform_code for stops that publish one (railway feeds,
          *  hub kiosks). Null on bus poles and any stop without a platform
          *  designation. */
-        String stopPlatformCode,
+        @Nullable String stopPlatformCode,
         /** GTFS stop_code — the short identifier printed on the physical
          *  signpost (e.g. "BSP1234"). Null when the feed doesn't publish
          *  one; the kiosk renders it discreetly so passengers can confirm
          *  they're at the right stop without comparing line lists. */
-        String stopShortCode,
+        @Nullable String stopShortCode,
         List<LineInfo> lines,
         List<ArrivalInfo> arrivals,
         List<MessageInfo> messages,
@@ -28,7 +29,7 @@ public record DisplayState(
 ) {
     public record ArrivalInfo(
             LocalTime scheduledTime,
-            String destinationName,
+            @Nullable String destinationName,
             LineInfo line,
             PickupKind pickupKind,
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
@@ -37,37 +38,37 @@ public record DisplayState(
             /** Headway from frequencies.txt when applicable. The kiosk
              *  surfaces it as "every X min" so passengers don't expect
              *  a strict timetable on high-frequency lines. */
-            Integer frequencyHeadwaySeconds,
+            @Nullable Integer frequencyHeadwaySeconds,
             /** Realtime delay applied to {@code scheduledTime} (in
              *  seconds). Positive means late, negative means early.
              *  Null when the GTFS-RT cache has no update for this
              *  trip / stop pair. The kiosk can render a "live" badge
              *  whenever this is non-null, even when the value is 0. */
-            Integer realtimeDelaySeconds,
+            @Nullable Integer realtimeDelaySeconds,
             /** Platform_code of the actual stop this arrival comes
              *  from. On a per-platform kiosk this matches the stop's
              *  own platformCode and the kiosk can ignore it. On a
              *  parent-station kiosk (Phase 1.3 aggregation) it varies
              *  per arrival and the kiosk renders it as a badge so
              *  passengers know which quay to head for. */
-            String platformCode,
+            @Nullable String platformCode,
             /** Booking flow attached to this arrival when the pickup
              *  is on-demand (TAD). Null on regular fixed-route trips.
              *  The kiosk renders the phone / URL as a CTA so a
              *  passenger looking at a TAD arrival can immediately
              *  call or book without leaving the screen. */
-            BookingInfo booking
+            @Nullable BookingInfo booking
     ) {}
 
     /** Subset of {@link com.transit.hub.domain.model.BookingRule}
      *  exposed on passenger surfaces — phone, URL, prior notice,
      *  free-form message. Stripped of admin-only metadata. */
     public record BookingInfo(
-            String phone,
-            String bookingUrl,
-            String infoUrl,
-            String message,
-            Integer priorNoticeMinutes
+            @Nullable String phone,
+            @Nullable String bookingUrl,
+            @Nullable String infoUrl,
+            @Nullable String message,
+            @Nullable Integer priorNoticeMinutes
     ) {}
 
     public record MessageInfo(

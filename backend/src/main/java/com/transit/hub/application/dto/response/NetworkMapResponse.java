@@ -3,6 +3,7 @@ package com.transit.hub.application.dto.response;
 import com.transit.hub.domain.model.enums.LineType;
 import com.transit.hub.domain.model.enums.MessageSeverity;
 import com.transit.hub.domain.model.enums.WheelchairAccess;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -13,16 +14,16 @@ public record NetworkMapResponse(
         List<NetworkStop> stops,
         List<NetworkTransfer> transfers,
         Bounds bounds,
-        String attribution
+        @Nullable String attribution
 ) {
     public record NetworkLine(
             UUID id,
             String code,
             String name,
             String color,
-            String textColor,
-            LineType type,
-            String category,
+            @Nullable String textColor,
+            @Nullable LineType type,
+            @Nullable String category,
             List<List<UUID>> itineraries,
             /** Aggregate schedule count for the line (across every
              *  itinerary, every stop, every service calendar). The
@@ -36,16 +37,16 @@ public record NetworkMapResponse(
     public record NetworkStop(
             UUID id,
             String name,
-            Double latitude,
-            Double longitude,
-            Double schematicX,
-            Double schematicY,
+            @Nullable Double latitude,
+            @Nullable Double longitude,
+            @Nullable Double schematicX,
+            @Nullable Double schematicY,
             List<String> lineCodes,
             /** GTFS wheelchair_boarding tri-state on the stop itself
              *  (or on its first wheelchair-accessible child for parent
              *  stations). Drives the accessibility filter and the
              *  pictogram in the popup. */
-            WheelchairAccess wheelchairBoarding,
+            @Nullable WheelchairAccess wheelchairBoarding,
             /** True when at least one schedule on this stop (or any of
              *  its child platforms) requires booking — pickup_type 2
              *  (on-request agency) or 3 (on-request driver). The kiosk
@@ -75,9 +76,9 @@ public record NetworkMapResponse(
             UUID fromStopId,
             UUID toStopId,
             short transferType,
-            Integer minTransferTimeSeconds,
-            UUID fromLineId,
-            UUID toLineId
+            @Nullable Integer minTransferTimeSeconds,
+            @Nullable UUID fromLineId,
+            @Nullable UUID toLineId
     ) {}
 
     public record Bounds(

@@ -3,10 +3,13 @@ package com.transit.hub.infrastructure.security;
 import com.transit.hub.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 /**
  * Bootstraps the admin password from {@code INITIAL_ADMIN_PASSWORD}
@@ -46,7 +49,7 @@ public class AdminPasswordBootstrap implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.security.initial-admin-password:}")
-    private String initialAdminPassword;
+    private @Nullable String initialAdminPassword;
 
     @Override
     public void run(String... args) {
@@ -56,7 +59,9 @@ public class AdminPasswordBootstrap implements CommandLineRunner {
         }
         userRepository.findByUsername(ADMIN_USERNAME).ifPresentOrElse(admin -> {
             if (SEEDED_HASH.equals(admin.getPassword())) {
-                admin.setPassword(passwordEncoder.encode(initialAdminPassword));
+                admin.setPassword(Objects.requireNonNull(
+                        passwordEncoder.encode(initialAdminPassword),
+                        "PasswordEncoder returned null hash"));
                 admin.setPasswordMustChange(true);
                 userRepository.save(admin);
                 log.info("Replaced seeded admin password from INITIAL_ADMIN_PASSWORD; first login must still rotate");

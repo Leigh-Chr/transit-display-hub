@@ -1,11 +1,13 @@
 package com.transit.hub.infrastructure.seed.gtfs.model;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * In-memory representation of a GTFS {@code trips.txt} row, used during
  * itinerary selection and schedule fan-out.
  */
-public record TripInfo(String routeId, String directionId, String serviceId, String headsign,
+public record TripInfo(String routeId, String directionId, @Nullable String serviceId, @Nullable String headsign,
                        int wheelchairAccessible, int bikesAllowed, int carsAllowed,
-                       Double safeDurationFactor, Double safeDurationOffset,
-                       Double meanDurationFactor, Double meanDurationOffset,
-                       String blockId) {}
+                       @Nullable Double safeDurationFactor, @Nullable Double safeDurationOffset,
+                       @Nullable Double meanDurationFactor, @Nullable Double meanDurationOffset,
+                       @Nullable String blockId) {}

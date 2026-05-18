@@ -1,6 +1,7 @@
 package com.transit.hub.domain.util;
 
 import com.transit.hub.domain.model.Translation;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -78,14 +79,14 @@ public final class TranslationLookup {
 
     /** Resolve a translation by record id (the common path). Tries the
      *  context-specific key first, then falls back to the default. */
-    public Optional<String> resolve(String tableName, String recordId, String fieldName) {
+    public Optional<String> resolve(String tableName, @Nullable String recordId, String fieldName) {
         return resolve(tableName, recordId, null, fieldName, null);
     }
 
     /** Full lookup including {@code record_sub_id} (for stop_times)
      *  and {@code language_context} (long-form / short-form). */
-    public Optional<String> resolve(String tableName, String recordId, String recordSubId,
-                                    String fieldName, String languageContext) {
+    public Optional<String> resolve(String tableName, @Nullable String recordId, @Nullable String recordSubId,
+                                    String fieldName, @Nullable String languageContext) {
         if (tableName == null || recordId == null || fieldName == null) {
             return Optional.empty();
         }
@@ -115,7 +116,7 @@ public final class TranslationLookup {
     }
 
     public Optional<String> resolveByFieldValue(String tableName, String fieldValue,
-                                                String fieldName, String languageContext) {
+                                                String fieldName, @Nullable String languageContext) {
         if (tableName == null || fieldValue == null || fieldName == null) {
             return Optional.empty();
         }
@@ -132,7 +133,7 @@ public final class TranslationLookup {
     /** Convenience overload — returns the original value when no
      *  translation is found. Saves callers from writing
      *  {@code .orElse(original)} on every site. */
-    public String resolveOr(String tableName, String recordId, String fieldName, String fallback) {
+    public String resolveOr(String tableName, @Nullable String recordId, String fieldName, String fallback) {
         return resolve(tableName, recordId, fieldName).orElse(fallback);
     }
 
@@ -140,14 +141,14 @@ public final class TranslationLookup {
         return byRecordKey.isEmpty() && byFieldValueKey.isEmpty();
     }
 
-    private static String recordKey(String tableName, String recordId, String recordSubId,
-                                    String fieldName, String languageContext) {
+    private static String recordKey(String tableName, String recordId, @Nullable String recordSubId,
+                                    String fieldName, @Nullable String languageContext) {
         return tableName + SEP + recordId + SEP + (recordSubId == null ? "" : recordSubId)
                 + SEP + fieldName + SEP + (languageContext == null ? "" : languageContext);
     }
 
     private static String fieldValueKey(String tableName, String fieldValue,
-                                        String fieldName, String languageContext) {
+                                        String fieldName, @Nullable String languageContext) {
         return tableName + SEP + fieldValue + SEP + fieldName
                 + SEP + (languageContext == null ? "" : languageContext);
     }

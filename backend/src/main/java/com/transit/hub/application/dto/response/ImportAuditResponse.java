@@ -2,27 +2,28 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.ImportAudit;
 import com.transit.hub.domain.model.enums.ImportStatus;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
 
 public record ImportAuditResponse(
         UUID id,
-        String sourceUrl,
-        String sourceHash,
+        @Nullable String sourceUrl,
+        @Nullable String sourceHash,
         Instant startedAt,
-        Instant completedAt,
-        Long durationMs,
-        Integer linesCount,
-        Integer stopsCount,
-        Integer itinerariesCount,
-        Integer schedulesCount,
+        @Nullable Instant completedAt,
+        @Nullable Long durationMs,
+        @Nullable Integer linesCount,
+        @Nullable Integer stopsCount,
+        @Nullable Integer itinerariesCount,
+        @Nullable Integer schedulesCount,
         ImportStatus status,
-        String errorMessage,
-        String triggeredBy,
-        String validationStatus,
-        Integer validationNoticeErrors,
-        Integer validationNoticeWarnings
+        @Nullable String errorMessage,
+        @Nullable String triggeredBy,
+        @Nullable String validationStatus,
+        @Nullable Integer validationNoticeErrors,
+        @Nullable Integer validationNoticeWarnings
 ) {
     public static ImportAuditResponse from(ImportAudit audit) {
         return new ImportAuditResponse(

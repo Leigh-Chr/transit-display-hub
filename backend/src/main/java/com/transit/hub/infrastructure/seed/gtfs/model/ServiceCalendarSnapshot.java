@@ -1,5 +1,7 @@
 package com.transit.hub.infrastructure.seed.gtfs.model;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.EnumSet;
@@ -12,8 +14,8 @@ import java.util.Set;
  * referenced by trips.
  */
 public record ServiceCalendarSnapshot(
-        LocalDate startDate,
-        LocalDate endDate,
+        @Nullable LocalDate startDate,
+        @Nullable LocalDate endDate,
         Set<DayOfWeek> daysOfWeek,
         Set<LocalDate> addedDates,
         Set<LocalDate> removedDates) {
@@ -29,13 +31,13 @@ public record ServiceCalendarSnapshot(
     // ---------- builder ----------
 
     public static final class Builder {
-        private LocalDate startDate;
-        private LocalDate endDate;
+        private @Nullable LocalDate startDate;
+        private @Nullable LocalDate endDate;
         private Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
         private final Set<LocalDate> added = new HashSet<>();
         private final Set<LocalDate> removed = new HashSet<>();
 
-        public void withWeekly(LocalDate start, LocalDate end, Set<DayOfWeek> daysOfWeek) {
+        public void withWeekly(@Nullable LocalDate start, @Nullable LocalDate end, Set<DayOfWeek> daysOfWeek) {
             this.startDate = start;
             this.endDate = end;
             this.days = daysOfWeek;

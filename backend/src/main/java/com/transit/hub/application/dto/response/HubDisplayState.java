@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.enums.PickupKind;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -16,19 +17,19 @@ public record HubDisplayState(
 ) {
     public record HubArrivalInfo(
             LocalTime scheduledTime,
-            String destinationName,
+            @Nullable String destinationName,
             String platform,
             LineInfo line,
             PickupKind pickupKind,
             com.transit.hub.domain.model.enums.WheelchairAccess wheelchairAccessible,
             com.transit.hub.domain.model.enums.BikesAllowed bikesAllowed,
             boolean timepoint,
-            Integer frequencyHeadwaySeconds,
+            @Nullable Integer frequencyHeadwaySeconds,
             /** Realtime delay applied to {@code scheduledTime} (seconds).
              *  Same semantics as {@link DisplayState.ArrivalInfo#realtimeDelaySeconds}. */
-            Integer realtimeDelaySeconds,
+            @Nullable Integer realtimeDelaySeconds,
             /** TAD booking flow when this arrival's pickup is on-demand;
              *  null on regular fixed-route trips. */
-            DisplayState.BookingInfo booking
+            DisplayState.@Nullable BookingInfo booking
     ) {}
 }

@@ -10,6 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -76,11 +77,14 @@ abstract class AbstractRealtimeFeedCache<S> {
     }
 
     public S getSnapshot() {
-        return snapshot.get();
+        // AtomicReference.get() is @Nullable in its signature, but the
+        // constructor seeds the reference with emptySnapshot() and every
+        // set() call writes a non-null value, so the invariant holds.
+        return Objects.requireNonNull(snapshot.get());
     }
 
     public FeedHeaderInfo currentHeader() {
-        return headerRef.get();
+        return Objects.requireNonNull(headerRef.get());
     }
 
     /**

@@ -18,6 +18,7 @@ import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.websocket.ActiveDisplayTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -66,10 +67,10 @@ public class MessageService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<MessageResponse> getAllMessages(Boolean active, MessageSeverity severity, String search, Pageable pageable) {
+    public PageResponse<MessageResponse> getAllMessages(@Nullable Boolean active, @Nullable MessageSeverity severity, @Nullable String search, Pageable pageable) {
         Instant now = Instant.now(clock);
         boolean hasSearch = search != null && !search.isBlank();
-        String trimmedSearch = hasSearch ? search.trim() : null;
+        String trimmedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
 
         // Build a composite specification; (root, q, cb) -> null is the JPA
         // "match everything" predicate and avoids the Specification.where(null)
@@ -83,7 +84,8 @@ public class MessageService {
             spec = spec.and(MessageSpecifications.hasSeverity(severity));
         }
         if (hasSearch) {
-            spec = spec.and(MessageSpecifications.textMatches(trimmedSearch));
+            spec = spec.and(MessageSpecifications.textMatches(
+                    java.util.Objects.requireNonNull(trimmedSearch)));
         }
 
         Page<BroadcastMessage> page = messageRepository.findAll(spec, pageable);
@@ -236,10 +238,14 @@ public class MessageService {
             // the full findAllIds() call and the downstream fan-out over
             // every stop in the database.
             case NETWORK -> activeDisplayTracker.getActiveStopIds();
-            case LINE -> stopRepository.findByLineId(message.getScopeId()).stream()
+            // LINE / STOP scopes always carry a non-null scope id (the create /
+            // update validators guarantee it); requireNonNull surfaces a bug
+            // loud and clear if that invariant ever breaks.
+            case LINE -> stopRepository.findByLineId(
+                            java.util.Objects.requireNonNull(message.getScopeId())).stream()
                     .map(Stop::getId)
                     .collect(Collectors.toSet());
-            case STOP -> Set.of(message.getScopeId());
+            case STOP -> Set.of(java.util.Objects.requireNonNull(message.getScopeId()));
         };
     }
 

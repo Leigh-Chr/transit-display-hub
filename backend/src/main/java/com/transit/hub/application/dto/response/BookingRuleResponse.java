@@ -2,6 +2,7 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.domain.model.enums.BookingType;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -16,15 +17,15 @@ public record BookingRuleResponse(
         UUID id,
         String externalId,
         BookingType bookingType,
-        Integer priorNoticeDurationMin,
-        Integer priorNoticeDurationMax,
-        Integer priorNoticeLastDay,
-        LocalTime priorNoticeLastTime,
-        Integer priorNoticeStartDay,
-        String phone,
-        String bookingUrl,
-        String infoUrl,
-        String message
+        @Nullable Integer priorNoticeDurationMin,
+        @Nullable Integer priorNoticeDurationMax,
+        @Nullable Integer priorNoticeLastDay,
+        @Nullable LocalTime priorNoticeLastTime,
+        @Nullable Integer priorNoticeStartDay,
+        @Nullable String phone,
+        @Nullable String bookingUrl,
+        @Nullable String infoUrl,
+        @Nullable String message
 ) {
     public static BookingRuleResponse from(BookingRule b) {
         return new BookingRuleResponse(

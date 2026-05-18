@@ -2,6 +2,7 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Pathway;
 import com.transit.hub.domain.model.enums.PathwayMode;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -20,13 +21,13 @@ public record PathwayResponse(
         String toStopName,
         PathwayMode pathwayMode,
         boolean bidirectional,
-        Double lengthMetres,
-        Integer traversalTimeSeconds,
-        Integer stairCount,
-        Double maxSlope,
-        Double minWidthMetres,
-        String signpostedAs,
-        String reversedSignpostedAs
+        @Nullable Double lengthMetres,
+        @Nullable Integer traversalTimeSeconds,
+        @Nullable Integer stairCount,
+        @Nullable Double maxSlope,
+        @Nullable Double minWidthMetres,
+        @Nullable String signpostedAs,
+        @Nullable String reversedSignpostedAs
 ) {
     public static PathwayResponse from(Pathway p) {
         return new PathwayResponse(

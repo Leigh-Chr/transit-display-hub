@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -150,8 +151,8 @@ public class FareV1Importer {
      * this differs from "0 transfers" which is "no transfers allowed".
      * Returning {@code null} preserves that distinction.
      */
-    private static Integer parseTransfersField(String raw) {
-        if (isBlank(raw)) { return null; }
+    private static @Nullable Integer parseTransfersField(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) { return null; }
         return parseIntOrNull(raw.trim());
     }
 }

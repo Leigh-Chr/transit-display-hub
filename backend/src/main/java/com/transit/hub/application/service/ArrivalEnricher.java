@@ -13,6 +13,7 @@ import com.transit.hub.domain.model.enums.WheelchairAccess;
 import com.transit.hub.domain.util.TranslationLookup;
 import com.transit.hub.infrastructure.realtime.RealtimeTripUpdateCache;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -63,8 +64,14 @@ public class ArrivalEnricher {
             if (translated != null) {destination = translated;}
         }
         if (destination == null) {
-            destination = translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign",
-                    resolveTranslatedTerminus(itinerary, translations));
+            String terminus = resolveTranslatedTerminus(itinerary, translations);
+            // When the itinerary's terminus is itself unresolved, leave
+            // destination as null so the kiosk renders no headsign at
+            // all rather than inventing a label that didn't come from
+            // the feed (covered by EmptyItineraryHandling tests).
+            destination = terminus == null
+                    ? null
+                    : translations.resolveOr("trips", itinerary.getExternalId(), "trip_headsign", terminus);
         }
         // Realtime delay: positive = late, negative = early. The
         // scheduled time stays as-published; the kiosk applies the
@@ -110,7 +117,7 @@ public class ArrivalEnricher {
      * adjustment, then stop's external_id → stop-level adjustment.
      * The stop-level delay wins when both are present.
      */
-    Integer resolveRealtimeDelay(Schedule schedule) {
+    @Nullable Integer resolveRealtimeDelay(Schedule schedule) {
         Itinerary itinerary = schedule.getItinerary();
         if (itinerary.getExternalId() == null) {return null;}
         return realtimeTripUpdateCache.findUpdate(itinerary.getExternalId())
@@ -137,7 +144,7 @@ public class ArrivalEnricher {
      * "alighting reservation" message at boarding time confuses more
      * than it helps.
      */
-    static DisplayState.BookingInfo resolveBookingInfo(Schedule schedule) {
+    static DisplayState.@Nullable BookingInfo resolveBookingInfo(Schedule schedule) {
         BookingRule rule = schedule.getPickupBookingRule();
         if (rule == null) {return null;}
         // Only surface when the pickup type signals "on-demand" — a
@@ -185,7 +192,7 @@ public class ArrivalEnricher {
                 : itinerary.getWheelchairDefault();
     }
 
-    static String resolveStopHeadsign(Itinerary itinerary, UUID stopId) {
+    static @Nullable String resolveStopHeadsign(Itinerary itinerary, UUID stopId) {
         // Itinerary.getItineraryStops() now returns a non-null unmodifiable
         // view, so the legacy null guard is redundant.
         for (var is : itinerary.getItineraryStops()) {
@@ -219,7 +226,7 @@ public class ArrivalEnricher {
      * {@code stop_headsign} nor a trip-level {@code trip_headsign}
      * translation is available.
      */
-    static String resolveTranslatedTerminus(Itinerary itinerary, TranslationLookup translations) {
+    static @Nullable String resolveTranslatedTerminus(Itinerary itinerary, TranslationLookup translations) {
         if (itinerary.getItineraryStops() == null || itinerary.getItineraryStops().isEmpty()) {
             return itinerary.getTerminusName();
         }

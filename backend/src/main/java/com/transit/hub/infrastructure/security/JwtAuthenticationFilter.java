@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -131,5 +132,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return new TokenSource(cookieToken, false);
     }
 
-    private record TokenSource(String token, boolean fromBearer) {}
+    private record TokenSource(@Nullable String token, boolean fromBearer) {}
 }

@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.FlexStopTime;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalTime;
 import java.util.UUID;
@@ -14,33 +15,33 @@ import java.util.UUID;
  */
 public record FlexStopTimeResponse(
         UUID id,
-        UUID itineraryId,
-        String itineraryName,
-        String lineCode,
-        String lineColor,
-        Integer stopSequence,
+        @Nullable UUID itineraryId,
+        @Nullable String itineraryName,
+        @Nullable String lineCode,
+        @Nullable String lineColor,
+        @Nullable Integer stopSequence,
         /** UUID of the target {@code Stop}, when the row uses stop_id. */
-        UUID stopId,
-        String stopName,
+        @Nullable UUID stopId,
+        @Nullable String stopName,
         /** External id of the target {@code Location} (GeoJSON feature id),
          *  when the row uses location_id. */
-        String locationExternalId,
-        String locationName,
+        @Nullable String locationExternalId,
+        @Nullable String locationName,
         /** External id of the target {@code LocationGroup}, when the row
          *  uses location_group_id. */
-        String locationGroupExternalId,
-        String locationGroupName,
-        LocalTime startPickupDropOffWindow,
-        LocalTime endPickupDropOffWindow,
-        Short pickupType,
-        Short dropOffType,
-        UUID pickupBookingRuleId,
-        String pickupBookingRuleExternalId,
-        UUID dropOffBookingRuleId,
-        String dropOffBookingRuleExternalId,
-        UUID serviceCalendarId,
-        String serviceCalendarExternalId,
-        String stopHeadsign
+        @Nullable String locationGroupExternalId,
+        @Nullable String locationGroupName,
+        @Nullable LocalTime startPickupDropOffWindow,
+        @Nullable LocalTime endPickupDropOffWindow,
+        @Nullable Short pickupType,
+        @Nullable Short dropOffType,
+        @Nullable UUID pickupBookingRuleId,
+        @Nullable String pickupBookingRuleExternalId,
+        @Nullable UUID dropOffBookingRuleId,
+        @Nullable String dropOffBookingRuleExternalId,
+        @Nullable UUID serviceCalendarId,
+        @Nullable String serviceCalendarExternalId,
+        @Nullable String stopHeadsign
 ) {
     public static FlexStopTimeResponse from(FlexStopTime f) {
         var line = f.getItinerary() != null ? f.getItinerary().getLine() : null;

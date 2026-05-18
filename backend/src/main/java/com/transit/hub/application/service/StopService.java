@@ -19,6 +19,7 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -71,21 +72,25 @@ public class StopService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<StopResponse> getAllStops(UUID lineId, String search, Pageable pageable) {
+    public PageResponse<StopResponse> getAllStops(@Nullable UUID lineId, @Nullable String search, Pageable pageable) {
         boolean hasLineId = lineId != null;
         boolean hasSearch = search != null && !search.isBlank();
-        String trimmedSearch = hasSearch ? search.trim() : null;
+        String trimmedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
 
         // Two-step pagination — page over Stop ids without a collection
         // JOIN FETCH so Hibernate paginates in SQL, then hydrate only
         // the page's entities with lines + devices.
+        // hasSearch ⇒ trimmedSearch != null; assert it so NullAway can see
+        // through the boolean → string null-state correlation.
         Page<UUID> idsPage;
         if (hasLineId && hasSearch) {
-            idsPage = stopRepository.findIdsByLineIdAndSearch(lineId, trimmedSearch, pageable);
+            idsPage = stopRepository.findIdsByLineIdAndSearch(
+                    java.util.Objects.requireNonNull(lineId),
+                    java.util.Objects.requireNonNull(trimmedSearch), pageable);
         } else if (hasLineId) {
-            idsPage = stopRepository.findIdsByLineId(lineId, pageable);
+            idsPage = stopRepository.findIdsByLineId(java.util.Objects.requireNonNull(lineId), pageable);
         } else if (hasSearch) {
-            idsPage = stopRepository.findIdsBySearch(trimmedSearch, pageable);
+            idsPage = stopRepository.findIdsBySearch(java.util.Objects.requireNonNull(trimmedSearch), pageable);
         } else {
             idsPage = stopRepository.findAllIds(pageable);
         }

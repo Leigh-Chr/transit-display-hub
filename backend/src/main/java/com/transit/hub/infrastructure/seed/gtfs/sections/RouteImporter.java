@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -214,7 +215,7 @@ public class RouteImporter {
         return routeTypeLabel(mapRouteType(routeType));
     }
 
-    static String routeTypeLabel(LineType type) {
+    static String routeTypeLabel(@Nullable LineType type) {
         if (type == null) { return "Bus"; }
         return switch (type) {
             case TRAM -> "Tram";
@@ -230,15 +231,15 @@ public class RouteImporter {
         };
     }
 
-    private static String formatColor(String raw) {
-        if (isBlank(raw)) { return DEFAULT_COLOR; }
+    private static String formatColor(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) { return DEFAULT_COLOR; }
         String trimmed = raw.trim();
         String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
         return hex.matches("^#[0-9A-Fa-f]{6}$") ? hex : DEFAULT_COLOR;
     }
 
-    private static String resolveTextColor(String rawTextColor, String backgroundColor) {
-        if (!isBlank(rawTextColor)) {
+    private static String resolveTextColor(@Nullable String rawTextColor, String backgroundColor) {
+        if (rawTextColor != null && !rawTextColor.isBlank()) {
             String trimmed = rawTextColor.trim();
             String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
             if (hex.matches("^#[0-9A-Fa-f]{6}$")) {
@@ -248,9 +249,9 @@ public class RouteImporter {
         return ColorContrast.readableTextColor(backgroundColor);
     }
 
-    static Agency resolveAgency(String agencyId, Map<String, Agency> agencies) {
+    static @Nullable Agency resolveAgency(@Nullable String agencyId, Map<String, Agency> agencies) {
         if (agencies.isEmpty()) { return null; }
-        if (!isBlank(agencyId)) {
+        if (agencyId != null && !agencyId.isBlank()) {
             Agency match = agencies.get(agencyId.trim());
             if (match != null) { return match; }
         }

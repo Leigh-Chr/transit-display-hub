@@ -2,6 +2,7 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Line;
 import com.transit.hub.domain.model.enums.LineType;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -10,18 +11,18 @@ public record LineResponse(
         String code,
         String name,
         String color,
-        String textColor,
-        LineType type,
-        Integer sortOrder,
-        String description,
-        String url,
+        @Nullable String textColor,
+        @Nullable LineType type,
+        @Nullable Integer sortOrder,
+        @Nullable String description,
+        @Nullable String url,
         /** Identifier of the operating agency. Null for lines created via
          *  the legacy admin form or imported from feeds without
          *  agency.txt. */
-        UUID agencyId,
+        @Nullable UUID agencyId,
         /** Convenience name of the operating agency, denormalised so the
          *  admin UI can render the column without a second request. */
-        String agencyName,
+        @Nullable String agencyName,
         /** GTFS {@code routes.continuous_pickup}: 0 = continuous (any
          *  point), 1 = no continuous service (default), 2 = phone agency,
          *  3 = coordinate with the driver. */
@@ -30,7 +31,7 @@ public record LineResponse(
         short continuousDropOff,
         /** GTFS {@code routes.cemv_support}: contactless EMV acceptance
          *  for this line. Takes precedence over the agency value. */
-        Short cemvSupport,
+        @Nullable Short cemvSupport,
         int stopCount,
         int itineraryCount
 ) {

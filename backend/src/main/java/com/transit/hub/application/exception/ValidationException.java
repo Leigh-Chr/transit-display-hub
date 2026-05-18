@@ -1,5 +1,7 @@
 package com.transit.hub.application.exception;
 
+import org.jspecify.annotations.Nullable;
+
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -26,8 +28,8 @@ public class ValidationException extends RuntimeException {
             Locale.ENGLISH,
             ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_DEFAULT));
 
-    private final String messageKey;
-    private final transient Object[] messageArgs;
+    private final @Nullable String messageKey;
+    private final transient Object @Nullable [] messageArgs;
 
     public ValidationException(String message) {
         super(message);
@@ -47,15 +49,15 @@ public class ValidationException extends RuntimeException {
         return new ValidationException(key, args);
     }
 
-    public String getMessageKey() {
+    public @Nullable String getMessageKey() {
         return messageKey;
     }
 
-    public Object[] getMessageArgs() {
+    public Object @Nullable [] getMessageArgs() {
         return messageArgs == null ? null : messageArgs.clone();
     }
 
-    private static String renderEnglishPreview(String key, Object[] args) {
+    private static String renderEnglishPreview(String key, Object @Nullable [] args) {
         if (!EN_BUNDLE.containsKey(key)) {
             return key;
         }

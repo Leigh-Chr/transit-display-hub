@@ -6,6 +6,7 @@ import com.transit.hub.domain.model.Location;
 import com.transit.hub.infrastructure.persistence.LocationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -72,7 +73,7 @@ public class LocationImporter {
 
     /** Returns null when the feature is unusable (missing geometry or id);
      *  the caller increments its skipped counter on null. */
-    private Location buildLocation(JsonNode feature) throws IOException {
+    private @Nullable Location buildLocation(JsonNode feature) throws IOException {
         JsonNode geom = feature.get("geometry");
         if (geom == null || !geom.has("type") || !geom.has("coordinates")) {
             return null;
@@ -97,7 +98,7 @@ public class LocationImporter {
                 .build();
     }
 
-    private static String resolveExternalId(JsonNode feature, JsonNode props) {
+    private static @Nullable String resolveExternalId(JsonNode feature, @Nullable JsonNode props) {
         if (feature.has("id")) {
             return feature.get("id").asText();
         }
@@ -107,14 +108,14 @@ public class LocationImporter {
         return null;
     }
 
-    private static String resolveStopExternalId(JsonNode props) {
+    private static @Nullable String resolveStopExternalId(@Nullable JsonNode props) {
         return props != null && props.has("stop_id") ? props.get("stop_id").asText() : null;
     }
 
     /** The current GTFS-flex spec stores the human-readable name under
      *  {@code properties.name}. Older feeds (and the original
      *  Mobility-Data fixture set) used {@code stop_name}. Try both. */
-    private static String resolveName(JsonNode props) {
+    private static @Nullable String resolveName(@Nullable JsonNode props) {
         if (props == null) {
             return null;
         }

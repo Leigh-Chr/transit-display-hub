@@ -3,6 +3,7 @@ package com.transit.hub.application.dto.response;
 import com.transit.hub.domain.model.BroadcastMessage;
 import com.transit.hub.domain.model.enums.MessageScope;
 import com.transit.hub.domain.model.enums.MessageSeverity;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,8 +16,8 @@ public record MessageResponse(
         Instant startTime,
         Instant endTime,
         MessageScope scopeType,
-        UUID scopeId,
-        ScopeInfo scopeInfo,
+        @Nullable UUID scopeId,
+        @Nullable ScopeInfo scopeInfo,
         boolean active
 ) {
     public record ScopeInfo(String name) {}
@@ -25,7 +26,7 @@ public record MessageResponse(
         return from(message, null, evaluatedAt);
     }
 
-    public static MessageResponse from(BroadcastMessage message, ScopeInfo scopeInfo, Instant evaluatedAt) {
+    public static MessageResponse from(BroadcastMessage message, @Nullable ScopeInfo scopeInfo, Instant evaluatedAt) {
         return new MessageResponse(
                 message.getId(),
                 message.getTitle(),

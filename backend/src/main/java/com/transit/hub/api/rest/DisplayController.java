@@ -53,8 +53,12 @@ public class DisplayController {
         if (!auth.valid()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        // auth.valid() ⇒ deviceId and stopId are non-null (DeviceService
+        // contract); assert it for NullAway since it can't infer the
+        // valid() → fields correlation.
         return ResponseEntity.ok()
-                .header("X-Device-Id", auth.deviceId().toString())
-                .body(displayStateService.getDisplayState(auth.stopId()));
+                .header("X-Device-Id", java.util.Objects.requireNonNull(auth.deviceId()).toString())
+                .body(displayStateService.getDisplayState(
+                        java.util.Objects.requireNonNull(auth.stopId())));
     }
 }

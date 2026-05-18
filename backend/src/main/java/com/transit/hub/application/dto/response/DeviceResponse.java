@@ -2,6 +2,7 @@ package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Device;
 import com.transit.hub.domain.model.enums.DeviceStatus;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,7 +14,7 @@ public record DeviceResponse(
         String stopName,
         List<LineInfo> lines,
         DeviceStatus status,
-        Instant lastHeartbeat
+        @Nullable Instant lastHeartbeat
 ) {
     public static DeviceResponse from(Device device) {
         List<LineInfo> lines = LineInfo.fromSorted(device.getStop().getLines());

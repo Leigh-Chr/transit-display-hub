@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 /**
  * One-shot bootstrap loader. Creates the default users and triggers a
  * single GTFS import via {@link GtfsImportOrchestrator}; the heavy lifting
@@ -68,7 +70,7 @@ public class GtfsDataLoader implements CommandLineRunner {
         // away from the production behaviour the e2e suite relies on.
         userRepository.save(User.builder()
                 .username("admin")
-                .password(passwordEncoder.encode("admin123"))
+                .password(hash("admin123"))
                 .role(UserRole.ADMIN)
                 .enabled(true)
                 .passwordMustChange(true)
@@ -76,33 +78,38 @@ public class GtfsDataLoader implements CommandLineRunner {
 
         userRepository.save(User.builder()
                 .username("supervisor")
-                .password(passwordEncoder.encode("super123"))
+                .password(hash("super123"))
                 .role(UserRole.ADMIN)
                 .enabled(true)
                 .build());
 
         userRepository.save(User.builder()
                 .username("agent")
-                .password(passwordEncoder.encode("agent123"))
+                .password(hash("agent123"))
                 .role(UserRole.AGENT)
                 .enabled(true)
                 .build());
 
         userRepository.save(User.builder()
                 .username("operator1")
-                .password(passwordEncoder.encode("oper123"))
+                .password(hash("oper123"))
                 .role(UserRole.AGENT)
                 .enabled(true)
                 .build());
 
         userRepository.save(User.builder()
                 .username("operator2")
-                .password(passwordEncoder.encode("oper123"))
+                .password(hash("oper123"))
                 .role(UserRole.AGENT)
                 .enabled(true)
                 .build());
 
         log.info("Created {} users", userRepository.count());
+    }
+
+    private String hash(String raw) {
+        return Objects.requireNonNull(passwordEncoder.encode(raw),
+                "PasswordEncoder returned null hash");
     }
 
     private void logSummary(GtfsImportService.ImportResult r) {

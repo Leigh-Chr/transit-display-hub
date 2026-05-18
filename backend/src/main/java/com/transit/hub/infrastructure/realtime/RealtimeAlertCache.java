@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.realtime;
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.net.http.HttpClient;
@@ -45,9 +46,9 @@ public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeA
             Set<String> routeExternalIds,
             Set<String> stopExternalIds,
             Set<String> agencyExternalIds,
-            String headerText,
-            String descriptionText,
-            String url,
+            @Nullable String headerText,
+            @Nullable String descriptionText,
+            @Nullable String url,
             GtfsRealtime.Alert.Cause cause,
             GtfsRealtime.Alert.Effect effect,
             GtfsRealtime.Alert.SeverityLevel severity,
@@ -106,7 +107,7 @@ public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeA
     /** Returns every alert currently in the cache that is active at
      *  {@code now}. The kiosk filters further by route / stop. */
     public List<AlertSnapshot> activeAlerts(Instant now) {
-        List<AlertSnapshot> all = snapshot.get();
+        List<AlertSnapshot> all = getSnapshot();
         if (all.isEmpty()) {
             return List.of();
         }
@@ -163,7 +164,7 @@ public class RealtimeAlertCache extends AbstractRealtimeFeedCache<List<RealtimeA
      * rendering we keep the first entry, which by convention is the
      * default language.
      */
-    private static String pickFirst(GtfsRealtime.TranslatedString translated) {
+    private static @Nullable String pickFirst(GtfsRealtime.@Nullable TranslatedString translated) {
         if (translated == null || translated.getTranslationCount() == 0) {
             return null;
         }

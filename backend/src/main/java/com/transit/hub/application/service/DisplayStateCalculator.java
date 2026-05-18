@@ -18,6 +18,7 @@ import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -236,7 +237,7 @@ public class DisplayStateCalculator {
      * legacy rows that predate Phase 1.4) keep showing every day, which the
      * matcher handles via its {@code calendar == null} branch.
      */
-    private static ServiceCalendar resolveCalendar(Schedule schedule, Map<UUID, ServiceCalendar> calendarsById) {
+    private static @Nullable ServiceCalendar resolveCalendar(Schedule schedule, Map<UUID, ServiceCalendar> calendarsById) {
         ServiceCalendar lazy = schedule.getServiceCalendar();
         if (lazy == null) {
             return null;
@@ -251,18 +252,23 @@ public class DisplayStateCalculator {
         // instead of IN; saves one planning step on the hot path
         // (most kiosks bind to a single platform).
         boolean singleStop = stopIds.size() == 1;
+        // NullAway can't infer that singleStop ⇒ singleId != null, so the
+        // single-stop branches assert the invariant explicitly.
         UUID singleId = singleStop ? stopIds.iterator().next() : null;
         if (windowEnd.isAfter(now)) {
             return singleStop
-                    ? scheduleRepository.findByStopIdAndTimeWindowWithItinerary(singleId, now, windowEnd)
+                    ? scheduleRepository.findByStopIdAndTimeWindowWithItinerary(
+                            java.util.Objects.requireNonNull(singleId), now, windowEnd)
                     : scheduleRepository.findByStopIdsAndTimeWindowWithItinerary(stopIds, now, windowEnd);
         }
         // Window crosses midnight: union of "after now today" and "up to windowEnd tomorrow"
         List<Schedule> beforeMidnight = singleStop
-                ? scheduleRepository.findByStopIdAndTimeAfterWithItinerary(singleId, now)
+                ? scheduleRepository.findByStopIdAndTimeAfterWithItinerary(
+                        java.util.Objects.requireNonNull(singleId), now)
                 : scheduleRepository.findByStopIdsAndTimeAfterWithItinerary(stopIds, now);
         List<Schedule> afterMidnight = singleStop
-                ? scheduleRepository.findByStopIdAndTimeBeforeOrEqualWithItinerary(singleId, windowEnd)
+                ? scheduleRepository.findByStopIdAndTimeBeforeOrEqualWithItinerary(
+                        java.util.Objects.requireNonNull(singleId), windowEnd)
                 : scheduleRepository.findByStopIdsAndTimeBeforeOrEqualWithItinerary(stopIds, windowEnd);
         List<Schedule> combined = new ArrayList<>(beforeMidnight.size() + afterMidnight.size());
         combined.addAll(beforeMidnight);

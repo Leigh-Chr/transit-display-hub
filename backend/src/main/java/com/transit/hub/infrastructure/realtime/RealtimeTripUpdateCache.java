@@ -3,6 +3,7 @@ package com.transit.hub.infrastructure.realtime;
 import com.google.transit.realtime.GtfsRealtime;
 import com.transit.hub.infrastructure.config.GtfsRtProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.net.http.HttpClient;
@@ -40,13 +41,13 @@ public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<Strin
      */
     public record StopAdjustment(
             String stopExternalId,
-            Integer arrivalDelaySeconds,
-            Integer departureDelaySeconds,
-            Long arrivalEpochSeconds,
-            Long departureEpochSeconds,
+            @Nullable Integer arrivalDelaySeconds,
+            @Nullable Integer departureDelaySeconds,
+            @Nullable Long arrivalEpochSeconds,
+            @Nullable Long departureEpochSeconds,
             boolean skipped
     ) {
-        public Integer effectiveDelaySeconds() {
+        public @Nullable Integer effectiveDelaySeconds() {
             if (arrivalDelaySeconds != null) {return arrivalDelaySeconds;}
             return departureDelaySeconds;
         }
@@ -68,10 +69,10 @@ public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<Strin
      */
     public record TripAdjustment(
             String tripId,
-            Integer tripLevelDelaySeconds,
-            String vehicleId,
-            String vehicleLabel,
-            Long timestampEpochSeconds,
+            @Nullable Integer tripLevelDelaySeconds,
+            @Nullable String vehicleId,
+            @Nullable String vehicleLabel,
+            @Nullable Long timestampEpochSeconds,
             Map<String, StopAdjustment> byStopExternalId
     ) {}
 
@@ -108,12 +109,12 @@ public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<Strin
     /** Number of trips currently in the cache. Used by the
      *  data-overview dashboard. */
     public int snapshotSize() {
-        return snapshot.get().size();
+        return getSnapshot().size();
     }
 
-    public Optional<TripAdjustment> findUpdate(String tripExternalId) {
+    public Optional<TripAdjustment> findUpdate(@Nullable String tripExternalId) {
         if (tripExternalId == null) {return Optional.empty();}
-        TripAdjustment hit = snapshot.get().get(tripExternalId);
+        TripAdjustment hit = getSnapshot().get(tripExternalId);
         return Optional.ofNullable(hit);
     }
 
@@ -166,11 +167,11 @@ public class RealtimeTripUpdateCache extends AbstractRealtimeFeedCache<Map<Strin
         return new StopAdjustment(stu.getStopId(), arrDelay, depDelay, arrTime, depTime, skipped);
     }
 
-    private static String vehicleId(GtfsRealtime.TripUpdate update) {
+    private static @Nullable String vehicleId(GtfsRealtime.TripUpdate update) {
         return update.hasVehicle() && update.getVehicle().hasId() ? update.getVehicle().getId() : null;
     }
 
-    private static String vehicleLabel(GtfsRealtime.TripUpdate update) {
+    private static @Nullable String vehicleLabel(GtfsRealtime.TripUpdate update) {
         return update.hasVehicle() && update.getVehicle().hasLabel() ? update.getVehicle().getLabel() : null;
     }
 }

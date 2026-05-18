@@ -24,6 +24,7 @@ import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -305,36 +306,36 @@ public class ScheduleImporter {
      *  short and identical in argument shape. */
     private record ScheduleRowContext(CSVRecord record, TripInfo trip, Itinerary itinerary,
                                       ServiceCalendar calendar, Stop stop,
-                                      LocalTime time, LocalTime departureTime,
+                                      LocalTime time, @Nullable LocalTime departureTime,
                                       short pickupType, short dropOffType,
                                       Map<String, BookingRule> bookingRules) {
-        LocalTime distinctDeparture() {
+        @Nullable LocalTime distinctDeparture() {
             return (departureTime != null && !departureTime.equals(time)) ? departureTime : null;
         }
-        Short continuousPickup() {
+        @Nullable Short continuousPickup() {
             return parseShortOrNull(optional(record, "continuous_pickup"));
         }
-        Short continuousDropOff() {
+        @Nullable Short continuousDropOff() {
             return parseShortOrNull(optional(record, "continuous_drop_off"));
         }
-        Double shapeDistTraveled() {
+        @Nullable Double shapeDistTraveled() {
             return parseDoubleOrNull(optional(record, "shape_dist_traveled"));
         }
         boolean timepoint() {
             String raw = optional(record, "timepoint");
-            return isBlank(raw) || !"0".equals(raw.trim());
+            return raw == null || raw.isBlank() || !"0".equals(raw.trim());
         }
-        BookingRule pickupBooking() {
+        @Nullable BookingRule pickupBooking() {
             return bookingRules.get(optional(record, "pickup_booking_rule_id"));
         }
-        BookingRule dropOffBooking() {
+        @Nullable BookingRule dropOffBooking() {
             return bookingRules.get(optional(record, "drop_off_booking_rule_id"));
         }
-        Boolean wheelchairOverride() {
+        @Nullable Boolean wheelchairOverride() {
             return computeWheelchairOverride(trip.wheelchairAccessible(),
                     itinerary.getWheelchairDefault()).orElse(null);
         }
-        Boolean bikesOverride() {
+        @Nullable Boolean bikesOverride() {
             return computeBikesOverride(trip.bikesAllowed(),
                     itinerary.getBikesAllowedDefault()).orElse(null);
         }
@@ -356,7 +357,7 @@ public class ScheduleImporter {
     }
 
     private void expandFrequencyWindows(ScheduleRowContext row, List<FrequencyWindow> windows,
-                                        LocalTime tripStart, ImportContext ctx) {
+                                        @Nullable LocalTime tripStart, ImportContext ctx) {
         if (tripStart == null) {
             return;
         }

@@ -1,6 +1,7 @@
 package com.transit.hub.application.dto.response;
 
 import com.transit.hub.domain.model.Location;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -13,14 +14,14 @@ import java.util.UUID;
 public record LocationResponse(
         UUID id,
         String externalId,
-        String stopExternalId,
-        String name,
+        @Nullable String stopExternalId,
+        @Nullable String name,
         String geometryType,
         String geometryJson,
-        Double minLatitude,
-        Double minLongitude,
-        Double maxLatitude,
-        Double maxLongitude
+        @Nullable Double minLatitude,
+        @Nullable Double minLongitude,
+        @Nullable Double maxLatitude,
+        @Nullable Double maxLongitude
 ) {
     public static LocationResponse from(Location l) {
         return new LocationResponse(

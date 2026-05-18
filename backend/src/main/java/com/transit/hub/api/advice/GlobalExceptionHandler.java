@@ -5,6 +5,7 @@ import com.transit.hub.application.exception.ImportAlreadyRunningException;
 import com.transit.hub.application.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,11 +44,11 @@ public class GlobalExceptionHandler {
             Instant timestamp,
             int status,
             String error,
-            String message,
-            List<FieldErrorInfo> errors,
+            @Nullable String message,
+            @Nullable List<FieldErrorInfo> errors,
             String path
     ) {
-        public record FieldErrorInfo(String field, String message) {}
+        public record FieldErrorInfo(String field, @Nullable String message) {}
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -168,8 +169,8 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ApiError> buildErrorResponse(
             HttpStatus status,
-            String message,
-            List<ApiError.FieldErrorInfo> fieldErrors,
+            @Nullable String message,
+            @Nullable List<ApiError.FieldErrorInfo> fieldErrors,
             WebRequest request
     ) {
         String path = request.getDescription(false).replace("uri=", "");

@@ -2,6 +2,7 @@ package com.transit.hub.infrastructure.seed.gtfs;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -132,7 +133,7 @@ public class GtfsDownloader {
      */
     private record CachedHeaders(Optional<String> lastModified, Optional<String> etag) {}
 
-    private static CachedHeaders readCachedHeaders(Path meta) {
+    private static @Nullable CachedHeaders readCachedHeaders(Path meta) {
         if (!Files.exists(meta)) {
             return null;
         }
@@ -155,7 +156,7 @@ public class GtfsDownloader {
         }
     }
 
-    private static void writeCachedHeaders(Path meta, String lastModified, String etag) {
+    private static void writeCachedHeaders(Path meta, @Nullable String lastModified, @Nullable String etag) {
         if (lastModified == null && etag == null) {
             // Nothing to remember — drop a stale meta file so the next call
             // doesn't replay yesterday's headers against today's response.

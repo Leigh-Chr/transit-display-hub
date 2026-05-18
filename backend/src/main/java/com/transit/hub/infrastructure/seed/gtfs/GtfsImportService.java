@@ -32,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,7 +118,7 @@ public class GtfsImportService {
      * unchanged re-downloads.
      */
     @Transactional
-    public ImportResult importFromZip(Path zipPath, String sourceUrl, String sourceHash) throws IOException {
+    public ImportResult importFromZip(Path zipPath, @Nullable String sourceUrl, @Nullable String sourceHash) throws IOException {
         Path workDir = Files.createTempDirectory("gtfs-extract-");
         try {
             extractZip(zipPath, workDir);
@@ -195,7 +196,7 @@ public class GtfsImportService {
      * missing we still write a row so admins can see at least the source
      * URL and import timestamp.
      */
-    private void persistFeedInfo(Path feedInfoFile, String sourceUrl, String sourceHash) throws IOException {
+    private void persistFeedInfo(Path feedInfoFile, @Nullable String sourceUrl, @Nullable String sourceHash) throws IOException {
         FeedInfo.FeedInfoBuilder builder = FeedInfo.builder()
                 .sourceUrl(sourceUrl)
                 .sourceHash(sourceHash)

@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
 import com.transit.hub.domain.model.enums.LineType;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -24,8 +25,8 @@ public final class GtfsParse {
      * represent natively, so the hour component is folded back into the
      * {@code 0..23} range. Acceptable loss of date information for kiosk display.
      */
-    public static LocalTime parseGtfsTime(String s) {
-        if (isBlank(s)) {return null;}
+    public static @Nullable LocalTime parseGtfsTime(@Nullable String s) {
+        if (s == null || s.isBlank()) {return null;}
         String[] parts = s.trim().split(":");
         if (parts.length < 2) {return null;}
         try {
@@ -39,8 +40,8 @@ public final class GtfsParse {
     }
 
     /** Parses a GTFS yyyyMMdd date, returning null on blank or invalid input. */
-    public static LocalDate parseGtfsDate(String s) {
-        if (isBlank(s)) {return null;}
+    public static @Nullable LocalDate parseGtfsDate(@Nullable String s) {
+        if (s == null || s.isBlank()) {return null;}
         try {return LocalDate.parse(s.trim(), GTFS_DATE);} catch (Exception e) {return null;}
     }
 
@@ -49,8 +50,8 @@ public final class GtfsParse {
      * stopping at the first non-letter. Used to bucket bus lines whose code
      * follows a "{prefix}{number}" convention (e.g. "C1", "BR12", "N5").
      */
-    public static String extractAlphaPrefix(String code) {
-        if (isBlank(code)) {return "";}
+    public static String extractAlphaPrefix(@Nullable String code) {
+        if (code == null || code.isBlank()) {return "";}
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < code.length(); i++) {
             char c = code.charAt(i);
@@ -117,28 +118,28 @@ public final class GtfsParse {
     // General string / number helpers shared with GtfsImportService       //
     // ------------------------------------------------------------------ //
 
-    public static boolean isBlank(String s) {
+    public static boolean isBlank(@Nullable String s) {
         return s == null || s.isBlank();
     }
 
-    public static String firstNonBlank(String... values) {
+    public static String firstNonBlank(@Nullable String... values) {
         for (String v : values) {
-            if (!isBlank(v)) {
+            if (v != null && !v.isBlank()) {
                 return v.trim();
             }
         }
         return "";
     }
 
-    public static String truncate(String s, int max) {
+    public static String truncate(@Nullable String s, int max) {
         if (s == null) {
             return "";
         }
         return s.length() <= max ? s : s.substring(0, max);
     }
 
-    public static int parseInt(String s, int defaultValue) {
-        if (isBlank(s)) {
+    public static int parseInt(@Nullable String s, int defaultValue) {
+        if (s == null || s.isBlank()) {
             return defaultValue;
         }
         try {
@@ -148,8 +149,8 @@ public final class GtfsParse {
         }
     }
 
-    public static Integer parseIntOrNull(String s) {
-        if (isBlank(s)) {
+    public static @Nullable Integer parseIntOrNull(@Nullable String s) {
+        if (s == null || s.isBlank()) {
             return null;
         }
         try {
@@ -159,8 +160,8 @@ public final class GtfsParse {
         }
     }
 
-    public static Double parseDoubleOrNull(String s) {
-        if (isBlank(s)) {
+    public static @Nullable Double parseDoubleOrNull(@Nullable String s) {
+        if (s == null || s.isBlank()) {
             return null;
         }
         try {
@@ -170,7 +171,7 @@ public final class GtfsParse {
         }
     }
 
-    public static Short parseShortOrNull(String s) {
+    public static @Nullable Short parseShortOrNull(@Nullable String s) {
         if (s == null || s.isBlank()) {
             return null;
         }
@@ -188,8 +189,8 @@ public final class GtfsParse {
      * short the column expects, leaving null for feeds that don't
      * declare a direction.
      */
-    public static Short parseDirectionId(String raw) {
-        if (isBlank(raw)) {
+    public static @Nullable Short parseDirectionId(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
             return null;
         }
         try {

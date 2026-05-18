@@ -14,6 +14,7 @@ import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import org.jspecify.annotations.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,7 @@ public class FareCalculatorService {
      *  call, allocating a new builder per request for no gain (Micrometer
      *  returns the existing meter when it already exists, but the
      *  allocation + lookup is still wasted). */
+    @SuppressWarnings("NullAway.Init") // assigned by @PostConstruct before first calculate() call
     private Timer calculationTimer;
 
     @jakarta.annotation.PostConstruct
@@ -129,8 +131,8 @@ public class FareCalculatorService {
                 .toList();
     }
 
-    private V1Option toV1Option(FareAttribute attr, String routeCode,
-                                String matchedOrigin, String matchedDest) {
+    private V1Option toV1Option(FareAttribute attr, @Nullable String routeCode,
+                                @Nullable String matchedOrigin, @Nullable String matchedDest) {
         return new V1Option(
                 attr.getExternalId(),
                 attr.getPrice(),

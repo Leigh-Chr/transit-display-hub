@@ -3,6 +3,7 @@ package com.transit.hub.domain.util;
 import com.transit.hub.domain.model.ServiceCalendar;
 import com.transit.hub.domain.model.ServiceCalendarException;
 import com.transit.hub.domain.model.enums.ServiceExceptionType;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 
@@ -20,7 +21,7 @@ public final class ServiceCalendarMatcher {
 
     private ServiceCalendarMatcher() {}
 
-    public static boolean isActive(ServiceCalendar calendar, LocalDate date) {
+    public static boolean isActive(@Nullable ServiceCalendar calendar, @Nullable LocalDate date) {
         if (calendar == null || date == null) {
             return calendar == null; // null calendar = always-on; null date = no answer.
         }
