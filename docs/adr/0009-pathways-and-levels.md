@@ -110,3 +110,9 @@ with the import pipeline.
   `level_id`. We follow that indirection rather than denormalising
   on the pathway row. The admin endpoint can join through the
   endpoints when it needs the floor labels.
+
+> _Update (2026-05-18) — la promesse « Phase 1.3 complete will rewire
+> these FKs to per-platform stops » a été livrée par ADR 0022 (v0.8.2).
+> Le caveat « self-pathways at the root stop » est résolu : les
+> in-station segments collapsent désormais sur des Stop rows distinctes
+> par quai._

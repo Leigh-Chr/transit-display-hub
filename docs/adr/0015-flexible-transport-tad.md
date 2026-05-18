@@ -125,3 +125,9 @@ adding semantics.
   changed, so the wipe-and-rebuild only fires on real updates.
 - **No per-stop_time FK.** Phase-scoped: cost is a one-line ALTER
   when needed.
+
+> _Update (2026-05-18) — des trois « deferred » listés plus haut :
+> `locations.geojson` a été livré par ADR 0026 (stockage TEXT, v0.8.2)
+> et ADR 0029 (PIP in-memory, v0.8.3) ; `stop_areas.txt` est livré par
+> ADR 0021 sous forme de table `stop_areas` (Fares v2, v0.8.2) ; les
+> FKs booking-rule par stop_time restent deferred._

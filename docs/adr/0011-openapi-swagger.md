@@ -81,3 +81,8 @@ Three reasons:
 > 4.0.6 (`backend/build.gradle.kts`). Springdoc 2.8.6 still boots
 > cleanly there; this footnote keeps the ADR auditable without
 > mutating the original decision body._
+
+> _Update (2026-05-18) — l'auth applicative est désormais cookies
+> httpOnly + CSRF (cf. ADR 0039, v1.4.2). Ce schéma Bearer JWT reste
+> valide pour Swagger UI et les clients CLI — c'est désormais le seul
+> caller path Bearer légitime._
