@@ -20,7 +20,6 @@ describe('DataOverviewService', () => {
       schedules: 2000,
       serviceCalendars: 4,
       transfers: 5,
-      shapes: 25,
       pathways: 0,
       stationLevels: 0,
       fareAttributes: 2,

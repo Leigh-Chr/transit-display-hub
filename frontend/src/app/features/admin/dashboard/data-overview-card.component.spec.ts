@@ -17,7 +17,7 @@ describe('DataOverviewCardComponent', () => {
     staticGtfs: {
       agencies: 1, lines: 12, stops: 1500, disabledStops: 0, itineraries: 24,
       itineraryStops: 4000, schedules: 320_000, serviceCalendars: 5, transfers: 0,
-      shapes: 0, pathways: 0, stationLevels: 0, fareAttributes: 0,
+      pathways: 0, stationLevels: 0, fareAttributes: 0,
       locationGroups: 0, bookingRules: 0, translations: 0, attributions: 0,
     },
     realtime: {
