@@ -112,6 +112,15 @@
   50% { opacity: 0.62; }
 }
 
+/* Respect the system motion preference: the rest of the kiosk
+   disables its marquee scroll under reduced-motion, this pulse
+   was the last animation still firing. */
+@media (prefers-reduced-motion: reduce) {
+  .time-relative.imminent {
+    animation: none;
+  }
+}
+
 .time-absolute {
   font-size: clamp(2.5vh, 3.5vh, 5vh);
   font-weight: 500;
