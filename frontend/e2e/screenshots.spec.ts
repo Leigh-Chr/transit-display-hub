@@ -52,17 +52,24 @@ test('capture network-map.png', async ({ page }) => {
   });
 });
 
-test('capture stop-popup.png', async ({ page }) => {
-  await page.goto('/map', { waitUntil: 'networkidle' });
-  // Si on tombe en mode line-index (cas Grenoble : 55 lignes), on isole
-  // une seule ligne via la première puce pour basculer en schematic ;
-  // sinon on est déjà en schematic et l'opération est no-op.
-  const lineIndex = page.locator('app-line-index').first();
-  if (await lineIndex.isVisible().catch(() => false)) {
-    const firstLineChip = page.locator('app-line-index button, app-line-index a').first();
-    await firstLineChip.click();
-    await page.waitForTimeout(800);
+test('capture stop-popup.png', async ({ page, request }) => {
+  // Pour garantir un schematic riche en stops, on isole la ligne avec le
+  // plus de schedules au lieu de cliquer la première puce du line-index
+  // (qui peut tomber sur une ligne scolaire sparse comme `0E33608` sans
+  // aucun stop affichable au render). `scheduleCount` côté payload est
+  // l'agrégat itinerary × stop × service calendar — il pique au plus haut
+  // les lignes vraiment denses (CHRONO/PROXIMO/tram).
+  const resp = await request.get('http://localhost:8080/api/network-map');
+  const { lines } = await resp.json() as {
+    lines: { code: string; scheduleCount?: number }[];
+  };
+  const densest = [...lines].sort(
+    (a, b) => (b.scheduleCount ?? 0) - (a.scheduleCount ?? 0),
+  )[0];
+  if (!densest) {
+    throw new Error('No lines available in seed — cannot capture stop-popup');
   }
+  await page.goto(`/map?lines=${encodeURIComponent(densest.code)}`, { waitUntil: 'networkidle' });
   await page.locator('app-schematic-map svg').first().waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForTimeout(1_200);
   // Le markup réel : groupes SVG `.stop-group` portant `(click)="onStopClick(...)"`.
