@@ -3,7 +3,6 @@ package com.transit.hub.infrastructure.seed.gtfs.sections;
 import com.transit.hub.domain.model.Itinerary;
 import com.transit.hub.domain.model.ItineraryStop;
 import com.transit.hub.domain.model.Line;
-import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.domain.model.enums.BikesAllowed;
 import com.transit.hub.domain.model.enums.CarsAllowed;
@@ -67,7 +66,6 @@ public class ItineraryImporter {
      * @param stopTimesFile  path to {@code stop_times.txt}
      * @param linesByGtfsId  already-imported lines keyed by GTFS {@code route_id}
      * @param stopImport     pre-loaded stop lookup from {@link StopImporter}
-     * @param shapesByGtfsId already-imported shapes keyed by GTFS {@code shape_id}
      * @return import result carrying counts and the in-memory indexes needed by the schedule step
      */
     /** Compact stop reference threaded through the import — captured as
@@ -78,8 +76,7 @@ public class ItineraryImporter {
             Path tripsFile,
             Path stopTimesFile,
             Map<String, Line> linesByGtfsId,
-            StopImport stopImport,
-            Map<String, Shape> shapesByGtfsId) throws IOException {
+            StopImport stopImport) throws IOException {
 
         Map<String, TripInfo> tripInfos = loadTripInfos(tripsFile);
         log.info("GTFS import: {} trips loaded", tripInfos.size());
@@ -106,7 +103,7 @@ public class ItineraryImporter {
         }
 
         ItineraryBuildResult result = buildItineraries(bestTrip, tripInfos, buckets.stopsByTrip,
-                linesByGtfsId, stopImport, shapesByGtfsId, existingItinerariesByExternalId);
+                linesByGtfsId, stopImport, existingItinerariesByExternalId);
 
         stopRepository.saveAll(result.stopsTouched);
         int orphans = removeOrphanedItineraries(existingItinerariesByExternalId, result.seenItineraryIds);
@@ -124,7 +121,6 @@ public class ItineraryImporter {
         try (CSVParser parser = openCsv(tripsFile)) {
             for (CSVRecord record : parser) {
                 String rawBlockId = optional(record, "block_id");
-                String rawShapeId = optional(record, "shape_id");
                 tripInfos.put(record.get("trip_id"), new TripInfo(
                         record.get("route_id"),
                         firstNonBlank(optional(record, "direction_id"), "0"),
@@ -137,8 +133,7 @@ public class ItineraryImporter {
                         parseDoubleOrNull(optional(record, "safe_duration_offset")),
                         parseDoubleOrNull(optional(record, "mean_duration_factor")),
                         parseDoubleOrNull(optional(record, "mean_duration_offset")),
-                        isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40),
-                        isBlank(rawShapeId) ? null : rawShapeId.trim()));
+                        isBlank(rawBlockId) ? null : truncate(rawBlockId.trim(), 40)));
             }
         }
         return tripInfos;
@@ -205,7 +200,6 @@ public class ItineraryImporter {
             Map<String, List<TimedStop>> stopsByTrip,
             Map<String, Line> linesByGtfsId,
             StopImport stopImport,
-            Map<String, Shape> shapesByGtfsId,
             Map<String, Itinerary> existingItinerariesByExternalId) {
         ItineraryBuildResult result = new ItineraryBuildResult();
         for (Map.Entry<RouteDirKey, String> entry : bestTrip.entrySet()) {
@@ -217,7 +211,7 @@ public class ItineraryImporter {
             }
             trip.sort((a, b) -> Integer.compare(a.sequence(), b.sequence()));
             Itinerary itinerary = upsertItinerary(key, tripId, tripInfos, linesByGtfsId,
-                    shapesByGtfsId, existingItinerariesByExternalId);
+                    existingItinerariesByExternalId);
             attachStops(itinerary, trip, stopImport, linesByGtfsId.get(key.routeId()), result);
             itineraryRepository.save(itinerary);
             result.itinerariesByRouteDir.put(key, itinerary);
@@ -230,7 +224,6 @@ public class ItineraryImporter {
     private Itinerary upsertItinerary(RouteDirKey key, String tripId,
                                       Map<String, TripInfo> tripInfos,
                                       Map<String, Line> linesByGtfsId,
-                                      Map<String, Shape> shapesByGtfsId,
                                       Map<String, Itinerary> existingByExternalId) {
         TripInfo info = tripInfos.get(tripId);
         // Majority vote across every trip matching (route, direction) so
@@ -241,9 +234,6 @@ public class ItineraryImporter {
         BikesAllowed bikesDefault = majorityBikes(tripInfos, key);
         CarsAllowed carsDefault = majorityCars(tripInfos, key);
 
-        // Null shape = the feed didn't ship a shape for this trip;
-        // the future map view falls back to stop-to-stop lines.
-        Shape shape = (info.shapeId() == null) ? null : shapesByGtfsId.get(info.shapeId());
         Short directionId = parseDirectionId(key.directionId());
         String externalId = truncate(tripId, 100);
 
@@ -269,7 +259,6 @@ public class ItineraryImporter {
         itinerary.setSafeDurationOffset(info.safeDurationOffset());
         itinerary.setMeanDurationFactor(info.meanDurationFactor());
         itinerary.setMeanDurationOffset(info.meanDurationOffset());
-        itinerary.setShape(shape);
         return itineraryRepository.save(itinerary);
     }
 

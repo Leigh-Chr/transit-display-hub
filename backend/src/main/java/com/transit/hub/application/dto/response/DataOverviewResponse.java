@@ -21,7 +21,6 @@ public record DataOverviewResponse(
             long schedules,
             long serviceCalendars,
             long transfers,
-            long shapes,
             long pathways,
             long stationLevels,
             long fareAttributes,

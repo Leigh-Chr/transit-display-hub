@@ -3,7 +3,6 @@ package com.transit.hub.infrastructure.seed.gtfs;
 import com.transit.hub.domain.model.Agency;
 import com.transit.hub.domain.model.FeedInfo;
 import com.transit.hub.domain.model.Line;
-import com.transit.hub.domain.model.Shape;
 import com.transit.hub.domain.model.Stop;
 import com.transit.hub.infrastructure.seed.gtfs.model.FrequencyWindow;
 import com.transit.hub.infrastructure.seed.gtfs.model.ItineraryImport;
@@ -21,7 +20,6 @@ import com.transit.hub.infrastructure.seed.gtfs.sections.LocationImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.LocationGroupImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.PathwayImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.RouteImporter;
-import com.transit.hub.infrastructure.seed.gtfs.sections.ShapeImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StationLevelImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.StopImporter;
 import com.transit.hub.infrastructure.seed.gtfs.sections.TransferImporter;
@@ -77,7 +75,6 @@ public class GtfsImportService {
 
     private final AgencyImporter agencyImporter;
     private final RouteImporter routeImporter;
-    private final ShapeImporter shapeImporter;
     private final StopImporter stopImporter;
     private final PathwayImporter pathwayImporter;
     private final TransferImporter transferImporter;
@@ -136,15 +133,11 @@ public class GtfsImportService {
             // unsortable batch. Each flush still respects order_inserts.
             entityManager.flush();
 
-            Map<String, Shape> shapesByGtfsId = shapeImporter.importShapes(workDir.resolve("shapes.txt"));
-            entityManager.flush();
-
             ItineraryImport itineraryImport = itineraryImporter.importItineraries(
                     workDir.resolve("trips.txt"),
                     workDir.resolve("stop_times.txt"),
                     linesByGtfsId,
-                    stopImport,
-                    shapesByGtfsId);
+                    stopImport);
             entityManager.flush();
 
             Map<String, List<FrequencyWindow>> frequencies =

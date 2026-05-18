@@ -310,7 +310,6 @@
       "devices": "Devices",
       "realtime": "Real-time",
       "importAudit": "Import History",
-      "shapes": "Shapes",
       "users": "Users",
       "skipToMain": "Skip to main content",
       "toggleSidebar": "Toggle sidebar",
@@ -373,7 +372,6 @@
         "schedules": "schedules",
         "calendars": "calendars",
         "transfers": "transfers",
-        "shapes": "shapes",
         "pathways": "pathways",
         "fares": "fares",
         "translations": "translations",
@@ -385,7 +383,6 @@
         "tooltipSchedules": "Persisted schedules (all lines, all services)",
         "tooltipCalendars": "Service calendars (calendar.txt + calendar_dates.txt)",
         "tooltipTransfers": "Transfers between stops",
-        "tooltipShapes": "Geographic polylines (shapes.txt)",
         "tooltipPathways": "Intra-station connections (pathways.txt)",
         "tooltipFares": "Fares (Fares v1)",
         "tooltipTranslations": "Translations (translations.txt)",
@@ -872,19 +869,5 @@
         "running": "Running"
       }
     },
-    "shapes": {
-      "title": "GTFS Shapes",
-      "subtitle": "Geographic preview of GTFS polylines — useful to verify that the import correctly attached shapes to itineraries and that the geometry matches the actual route.",
-      "itinPickerLabel": "Itinerary",
-      "itinPickerPlaceholder": "Type a name or line code…",
-      "loading": "Loading…",
-      "loadFailed": "Failed to load shape",
-      "emptyShapeTitle": "No shape for this itinerary",
-      "emptyShapeDesc": "The feed did not attach a shape_id to this trip, or the shape has fewer than two points.",
-      "emptySelectTitle": "Select an itinerary",
-      "emptySelectDesc": "Type a name or line code in the field above to display its shape.",
-      "tooltipPoints": "GTFS shape_pt_sequence points",
-      "tooltipDistance": "Cumulative shape_dist_traveled"
-    }
   }
 }

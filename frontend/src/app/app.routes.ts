@@ -76,10 +76,6 @@ export const routes: Routes = [
             loadComponent: () => import('./features/admin/import-audit/import-audit.component').then(m => m.ImportAuditComponent)
           },
           {
-            path: 'shapes',
-            loadComponent: () => import('./features/admin/shapes/shapes.component').then(m => m.ShapesComponent)
-          },
-          {
             path: 'users',
             loadComponent: () => import('./features/admin/users/users.component').then(m => m.UsersComponent)
           }

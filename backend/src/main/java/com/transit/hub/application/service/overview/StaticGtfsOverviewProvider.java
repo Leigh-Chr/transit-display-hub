@@ -12,7 +12,6 @@ import com.transit.hub.infrastructure.persistence.LocationGroupRepository;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
-import com.transit.hub.infrastructure.persistence.ShapeRepository;
 import com.transit.hub.infrastructure.persistence.StationLevelRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
@@ -39,7 +38,6 @@ public class StaticGtfsOverviewProvider {
     private final ScheduleRepository scheduleRepository;
     private final ServiceCalendarRepository serviceCalendarRepository;
     private final TransferRepository transferRepository;
-    private final ShapeRepository shapeRepository;
     private final PathwayRepository pathwayRepository;
     private final StationLevelRepository stationLevelRepository;
     private final FareAttributeRepository fareAttributeRepository;
@@ -62,7 +60,6 @@ public class StaticGtfsOverviewProvider {
                 scheduleRepository.count(),
                 serviceCalendarRepository.count(),
                 transferRepository.count(),
-                shapeRepository.count(),
                 pathwayRepository.count(),
                 stationLevelRepository.count(),
                 fareAttributeRepository.count(),

@@ -65,12 +65,6 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
                 <span class="label">{{ t('transfers') }}</span>
               </div>
             }
-            @if (data.staticGtfs.shapes > 0) {
-              <div class="overview-item" [matTooltip]="t('tooltipShapes')">
-                <span class="count">{{ data.staticGtfs.shapes }}</span>
-                <span class="label">{{ t('shapes') }}</span>
-              </div>
-            }
             @if (data.staticGtfs.pathways > 0) {
               <div class="overview-item" [matTooltip]="t('tooltipPathways')">
                 <span class="count">{{ data.staticGtfs.pathways }}</span>

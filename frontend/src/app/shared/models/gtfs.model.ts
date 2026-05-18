@@ -62,7 +62,6 @@ interface DataOverviewStaticGtfs {
   schedules: number;
   serviceCalendars: number;
   transfers: number;
-  shapes: number;
   pathways: number;
   stationLevels: number;
   fareAttributes: number;
@@ -132,21 +131,6 @@ export interface BookingRule {
   bookingUrl: string | null;
   infoUrl: string | null;
   message: string | null;
-}
-
-// GTFS shape (admin browse, per-itinerary)
-export interface ShapePoint {
-  latitude: number;
-  longitude: number;
-  /** Cumulative distance from the trip's first point, when the feed
-   *  declares it. Useful for rendering distance markers along the path. */
-  distTraveled: number | null;
-}
-
-export interface Shape {
-  id: string;
-  externalId: string | null;
-  points: ShapePoint[];
 }
 
 // GTFS pathways (admin browse, per-stop)

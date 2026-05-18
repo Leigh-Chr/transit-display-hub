@@ -310,7 +310,6 @@
       "devices": "Équipements",
       "realtime": "Temps réel",
       "importAudit": "Historique imports",
-      "shapes": "Shapes",
       "users": "Utilisateurs",
       "skipToMain": "Aller au contenu principal",
       "toggleSidebar": "Réduire/étendre le panneau",
@@ -373,7 +372,6 @@
         "schedules": "horaires",
         "calendars": "calendriers",
         "transfers": "transfers",
-        "shapes": "shapes",
         "pathways": "pathways",
         "fares": "tarifs",
         "translations": "traductions",
@@ -385,7 +383,6 @@
         "tooltipSchedules": "Horaires persistés (toutes lignes, tous services)",
         "tooltipCalendars": "Calendriers de service (calendar.txt + calendar_dates.txt)",
         "tooltipTransfers": "Transfers entre arrêts",
-        "tooltipShapes": "Polylines géographiques (shapes.txt)",
         "tooltipPathways": "Connexions intra-station (pathways.txt)",
         "tooltipFares": "Tarifs (Fares v1)",
         "tooltipTranslations": "Traductions (translations.txt)",
@@ -872,19 +869,5 @@
         "running": "En cours"
       }
     },
-    "shapes": {
-      "title": "Shapes GTFS",
-      "subtitle": "Aperçu géographique des polylines GTFS — utile pour vérifier que l'import a correctement attaché les shapes aux itinéraires et que la géométrie correspond au tracé réel.",
-      "itinPickerLabel": "Itinéraire",
-      "itinPickerPlaceholder": "Tape un nom ou code de ligne…",
-      "loading": "Chargement…",
-      "loadFailed": "Impossible de charger le tracé",
-      "emptyShapeTitle": "Pas de shape pour cet itinéraire",
-      "emptyShapeDesc": "Le feed n'a pas attaché de shape_id à ce trip, ou le shape ne contient qu'un point.",
-      "emptySelectTitle": "Sélectionne un itinéraire",
-      "emptySelectDesc": "Tape un nom ou un code de ligne dans le champ ci-dessus pour afficher sa shape.",
-      "tooltipPoints": "Points GTFS shape_pt_sequence",
-      "tooltipDistance": "Cumul shape_dist_traveled"
-    }
   }
 }

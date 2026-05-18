@@ -1,12 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ImportAudit, Shape } from '@shared/models';
+import { ImportAudit } from '@shared/models';
 
 /**
- * Admin-side helpers around the GTFS importer — list past runs,
- * trigger a fresh reimport, fetch the polyline of a single itinerary's
- * shape. Each browse returns the latest imported snapshot.
+ * Admin-side helpers around the GTFS importer — list past runs and
+ * trigger a fresh reimport.
  */
 @Injectable({ providedIn: 'root' })
 export class GtfsDataService {
@@ -24,12 +23,5 @@ export class GtfsDataService {
   triggerReimport(): Observable<void> {
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- known typescript-eslint issue with expression-level generics
     return this.http.post<void>('/api/admin/gtfs/reimport', null);
-  }
-
-  /** Geographic polyline of an itinerary's shape, ordered along the
-   *  trip's natural direction. Returns 404 when the itinerary has
-   *  no shape attached (feed shipped no shape_id). */
-  getShapeForItinerary(itineraryId: string): Observable<Shape> {
-    return this.http.get<Shape>(`/api/itineraries/${itineraryId}/shape`);
   }
 }

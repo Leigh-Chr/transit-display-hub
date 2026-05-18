@@ -43,8 +43,6 @@ import java.util.stream.Collectors;
  *       duplicates)</li>
  *   <li>{@code BookingRuleImporter} ({@link #runWithStats}, skips
  *       invalid {@code booking_type})</li>
- *   <li>{@code ShapeImporter} ({@link #runAggregating}: N CSV rows
- *       fold into 1 {@code Shape} entity)</li>
  * </ul>
  *
  * <h3>Importers that intentionally stay bespoke (7)</h3>
@@ -206,70 +204,4 @@ public final class GtfsSectionImporter {
         }
     }
 
-    /**
-     * Variant of {@link #run} for importers where N CSV rows fold into a
-     * single entity — the typical case being {@code shapes.txt}, which
-     * lists one row per shape point and groups them under a shared
-     * {@code shape_id} to materialise a {@link Number Shape} entity with
-     * its ordered points.
-     *
-     * @param <T>           the persisted entity type
-     * @param <R>           the intermediate row representation produced by
-     *                      {@code rowMapper} and consumed by {@code entityBuilder}
-     * @param repository    JPA repository to wipe + reuse for the save
-     * @param file          CSV file path; missing files are silently skipped
-     * @param label         human-readable name for the log lines
-     * @param keyExtractor  pulls the grouping key (e.g. {@code shape_id})
-     *                      from a row; rows whose key resolves to {@code null}
-     *                      or blank are dropped
-     * @param rowMapper     parses one row into the intermediate representation;
-     *                      returning {@link Optional#empty()} drops the row
-     * @param entityBuilder builds the persisted entity from the accumulated
-     *                      rows for a given key
-     * @param log           the caller's logger so the line reads with the
-     *                      right class name
-     * @return number of persisted entities (zero when the file is missing
-     *         or every row is filtered out)
-     */
-    public static <T, R> int runAggregating(
-            JpaRepository<T, ?> repository,
-            Path file,
-            String label,
-            Function<CSVRecord, String> keyExtractor,
-            Function<CSVRecord, Optional<R>> rowMapper,
-            BiFunction<String, List<R>, T> entityBuilder,
-            Logger log
-    ) throws IOException {
-        repository.deleteAllInBatch();
-        repository.flush();
-
-        if (!Files.exists(file)) {
-            log.info("GTFS import: {} missing, skipping", label);
-            return 0;
-        }
-
-        Map<String, List<R>> rowsByKey = new LinkedHashMap<>();
-        try (CSVParser parser = CsvHelper.openCsv(file)) {
-            for (CSVRecord record : parser) {
-                String key = keyExtractor.apply(record);
-                if (key == null || key.isBlank()) {continue;}
-                Optional<R> row = rowMapper.apply(record);
-                if (row.isEmpty()) {continue;}
-                rowsByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(row.get());
-            }
-        }
-
-        List<T> batch = new ArrayList<>(rowsByKey.size());
-        int totalRows = 0;
-        for (Map.Entry<String, List<R>> entry : rowsByKey.entrySet()) {
-            batch.add(entityBuilder.apply(entry.getKey(), entry.getValue()));
-            totalRows += entry.getValue().size();
-        }
-        if (!batch.isEmpty()) {
-            repository.saveAll(batch);
-        }
-        log.info("GTFS import: {} {} / {} rows persisted",
-                batch.size(), label, totalRows);
-        return batch.size();
-    }
 }

@@ -9,7 +9,6 @@ import com.transit.hub.infrastructure.persistence.LineRepository;
 import com.transit.hub.infrastructure.persistence.PathwayRepository;
 import com.transit.hub.infrastructure.persistence.ScheduleRepository;
 import com.transit.hub.infrastructure.persistence.ServiceCalendarRepository;
-import com.transit.hub.infrastructure.persistence.ShapeRepository;
 import com.transit.hub.infrastructure.persistence.StopRepository;
 import com.transit.hub.infrastructure.persistence.TransferRepository;
 import com.transit.hub.infrastructure.persistence.TranslationRepository;
@@ -74,7 +73,6 @@ class GtfsImportServiceRichFixtureIntegrationTest {
     @Autowired private StopRepository stopRepository;
     @Autowired private ScheduleRepository scheduleRepository;
     @Autowired private ServiceCalendarRepository serviceCalendarRepository;
-    @Autowired private ShapeRepository shapeRepository;
     @Autowired private TransferRepository transferRepository;
     @Autowired private PathwayRepository pathwayRepository;
     @Autowired private TranslationRepository translationRepository;
@@ -106,9 +104,6 @@ class GtfsImportServiceRichFixtureIntegrationTest {
         assertThat(result.lines()).isGreaterThanOrEqualTo(3);
         assertThat(result.stops()).isGreaterThanOrEqualTo(10);
         assertThat(result.schedules()).isGreaterThan(0);
-
-        // shapes.txt declares two shape_ids (SHAPE_M1_NB, SHAPE_M1_SB).
-        assertThat(shapeRepository.count()).isEqualTo(2);
 
         // transfers.txt declares six rows (one duplicate pair on
         // (M1A, M2A) survives because the second adds a from_route_id /

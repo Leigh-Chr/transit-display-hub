@@ -8,4 +8,4 @@ public record TripInfo(String routeId, String directionId, String serviceId, Str
                        int wheelchairAccessible, int bikesAllowed, int carsAllowed,
                        Double safeDurationFactor, Double safeDurationOffset,
                        Double meanDurationFactor, Double meanDurationOffset,
-                       String blockId, String shapeId) {}
+                       String blockId) {}

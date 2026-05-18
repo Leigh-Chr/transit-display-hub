@@ -29,7 +29,7 @@ class ItineraryImporterTest {
                                  int wheelchair, int bikes, int cars) {
         return new TripInfo(routeId, directionId, "S1", "headsign",
                 wheelchair, bikes, cars,
-                null, null, null, null, null, null);
+                null, null, null, null, null);
     }
 
     private static Map<String, TripInfo> tripsOf(TripInfo... trips) {
