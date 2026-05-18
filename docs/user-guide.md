@@ -500,13 +500,12 @@ single screen, ideal for interchange stations or transport hubs.
 
 ### Opening the Hub Display
 
-The hub display can be opened from two places in the admin
-interface (administrator only):
+Administrators open the hub display from the **Stops** page —
+click the "Hub Display" button in the toolbar. A hub is by
+definition an aggregate of stops, so the entry point lives
+where stops are managed.
 
-1. **Sidebar**: Click "Hub Display" in the navigation
-2. **Stops page**: Click the "Hub Display" button in the toolbar
-
-Each opens a configuration dialog where you can:
+It opens a configuration dialog where you can:
 
 - **Filter by line**: Show only stops served by a specific line
 - **Search**: Find stops by name

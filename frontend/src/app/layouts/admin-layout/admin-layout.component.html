@@ -83,17 +83,6 @@
             <span matListItemTitle>{{ t('admin.navigation.networkMap') }}</span>
           </a>
 
-          @if (authService.isAdmin()) {
-            <button
-              type="button"
-              mat-list-item
-              (click)="openHubDisplay(); closeSidenavOnMobile()"
-            >
-              <mat-icon matListItemIcon>hub</mat-icon>
-              <span matListItemTitle>{{ t('admin.navigation.hubDisplay') }}</span>
-            </button>
-          }
-
           <mat-divider></mat-divider>
           <div class="nav-section-title">{{ t('admin.navigation.sectionBroadcast') }}</div>
 
