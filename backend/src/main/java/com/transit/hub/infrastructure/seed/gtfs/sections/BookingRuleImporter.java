@@ -7,6 +7,7 @@ import com.transit.hub.infrastructure.seed.gtfs.GtfsParse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -76,8 +77,16 @@ public class BookingRuleImporter {
         BookingRule rule = BookingRule.builder()
                 .externalId(truncate(trimmed, 100))
                 .bookingType(bookingType)
-                .priorNoticeDurationMin(parseIntOrNull(optional(record, "prior_notice_duration_min")))
-                .priorNoticeDurationMax(parseIntOrNull(optional(record, "prior_notice_duration_max")))
+                // GTFS booking_rules.prior_notice_duration_{min,max} are
+                // in MINUTES per spec. Internal storage and the frontend
+                // formatter (stop-popup priorNoticeMinutes/Hours) both work
+                // in seconds, so we multiply at the boundary — a feed
+                // declaring `30` (30 minutes) ends up as 1800 seconds and
+                // the kiosk renders "au moins 30 min" correctly. The
+                // pre-fix code stored 30 as-is and the UI then divided
+                // by 60 to print "0 min".
+                .priorNoticeDurationMin(minutesToSecondsOrNull(optional(record, "prior_notice_duration_min")))
+                .priorNoticeDurationMax(minutesToSecondsOrNull(optional(record, "prior_notice_duration_max")))
                 .priorNoticeLastDay(parseIntOrNull(optional(record, "prior_notice_last_day")))
                 .priorNoticeLastTime(cutoff)
                 .priorNoticeStartDay(parseIntOrNull(optional(record, "prior_notice_start_day")))
@@ -88,5 +97,10 @@ public class BookingRuleImporter {
                 .build();
         resultIndex.put(trimmed, rule);
         return Optional.of(rule);
+    }
+
+    private static @Nullable Integer minutesToSecondsOrNull(@Nullable String raw) {
+        Integer minutes = parseIntOrNull(raw);
+        return minutes == null ? null : Math.multiplyExact(minutes, 60);
     }
 }

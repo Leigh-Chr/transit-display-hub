@@ -55,13 +55,19 @@ public class BookingRule {
     @Column(name = "booking_type", length = 20, nullable = false)
     private BookingType bookingType;
 
-    /** Minimum notice period in seconds. {@code SAME_DAY} bookings
-     *  use this to express "at least 30 min before departure". */
+    /** Minimum notice period stored in <strong>seconds</strong>. The
+     *  GTFS spec declares {@code prior_notice_duration_min} in minutes;
+     *  {@code BookingRuleImporter} multiplies by 60 at the boundary so
+     *  the stop-popup formatter (which renders "au moins 30 min" /
+     *  "au moins 2 h" by dividing by 60 or 3600) gets a consistent
+     *  unit. {@code SAME_DAY} bookings use this to express "at least
+     *  30 min before departure". */
     @Column(name = "prior_notice_duration_min")
     private @Nullable Integer priorNoticeDurationMin;
 
-    /** Maximum notice period in seconds. The spec allows this to cap
-     *  same-day windows ("can book up to 4 h before"). */
+    /** Maximum notice period in seconds — same minutes-from-spec ⇒
+     *  seconds-in-storage convention as {@link #priorNoticeDurationMin}.
+     *  Caps same-day windows ("can book up to 4 h before"). */
     @Column(name = "prior_notice_duration_max")
     private @Nullable Integer priorNoticeDurationMax;
 

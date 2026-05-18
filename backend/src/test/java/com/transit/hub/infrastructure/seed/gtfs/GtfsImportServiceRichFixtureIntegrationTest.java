@@ -1,6 +1,8 @@
 package com.transit.hub.infrastructure.seed.gtfs;
 
+import com.transit.hub.domain.model.BookingRule;
 import com.transit.hub.infrastructure.persistence.AgencyRepository;
+import com.transit.hub.infrastructure.persistence.BookingRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareAttributeRepository;
 import com.transit.hub.infrastructure.persistence.FareLegRuleRepository;
 import com.transit.hub.infrastructure.persistence.FareMediaRepository;
@@ -79,6 +81,7 @@ class GtfsImportServiceRichFixtureIntegrationTest {
     @Autowired private FareMediaRepository fareMediaRepository;
     @Autowired private FareProductRepository fareProductRepository;
     @Autowired private FareLegRuleRepository fareLegRuleRepository;
+    @Autowired private BookingRuleRepository bookingRuleRepository;
 
     @TempDir Path tempDir;
 
@@ -128,6 +131,18 @@ class GtfsImportServiceRichFixtureIntegrationTest {
         assertThat(fareMediaRepository.count()).isGreaterThan(0);
         assertThat(fareProductRepository.count()).isGreaterThan(0);
         assertThat(fareLegRuleRepository.count()).isGreaterThan(0);
+
+        // booking_rules.txt — BOOK_PHONE row declares prior_notice_duration_min=60
+        // (minutes per spec). The importer multiplies by 60 so internal storage
+        // and the frontend formatter (priorNoticeHours threshold at 3600s) stay
+        // consistent — 60 minutes ⇒ 3600 seconds ⇒ "au moins 1 h" on the kiosk.
+        // Same conversion on prior_notice_duration_max=1440 (24h) ⇒ 86400 seconds.
+        BookingRule bookPhone = bookingRuleRepository.findAll().stream()
+                .filter(r -> "BOOK_PHONE".equals(r.getExternalId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("BOOK_PHONE row missing"));
+        assertThat(bookPhone.getPriorNoticeDurationMin()).isEqualTo(60 * 60);
+        assertThat(bookPhone.getPriorNoticeDurationMax()).isEqualTo(1440 * 60);
     }
 
     /** Zips every fixture file into {@code zipPath}, skipping files that
