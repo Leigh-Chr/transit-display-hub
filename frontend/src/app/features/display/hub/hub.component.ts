@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DisplayService } from '@core/api/display.service';
+import { LocaleService } from '@core/i18n/locale.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
@@ -56,6 +57,7 @@ export class HubComponent {
   private readonly displayService = inject(DisplayService);
   private readonly hubWsService = inject(HubWebSocketService);
   private readonly transloco = inject(TranslocoService);
+  private readonly locale = inject(LocaleService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly queryParamsSignal = toSignal<Params, Params>(this.route.queryParams, { initialValue: {} });
 
@@ -119,6 +121,10 @@ export class HubComponent {
     // an injection-aware lifecycle without an explicit subscribe/destroy.
     effect(() => {
       const params = this.queryParamsSignal();
+      // Re-run when translations finish loading so the error fallback
+      // resolves the actual sentence on first paint instead of leaving
+      // the raw "hub.errors.missingStopIds" key on screen.
+      this.locale.translationsLoaded();
       const stopIdsParam = String(params['stopIds'] ?? '');
       this.hubName = String(params['name'] ?? '') || 'Hub';
 

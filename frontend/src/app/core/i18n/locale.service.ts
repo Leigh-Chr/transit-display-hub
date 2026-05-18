@@ -1,6 +1,8 @@
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { TranslocoService } from '@jsverse/transloco';
+import { filter, map } from 'rxjs/operators';
 import { TRANSLOCO_AVAILABLE_LANGS } from './transloco.providers';
 
 export type SupportedLang = (typeof TRANSLOCO_AVAILABLE_LANGS)[number];
@@ -29,6 +31,23 @@ export class LocaleService {
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   readonly current = signal<SupportedLang>(this.resolveInitial());
+
+  /**
+   * Tick that increments every time Transloco finishes loading a
+   * translation bundle. Computed pieces that call
+   * {@link TranslocoService#translate} directly (rather than going
+   * through the {@code transloco} pipe / directive, which subscribe
+   * to language changes themselves) should read this signal so they
+   * re-fire once the JSON is in memory — otherwise their first
+   * evaluation captures the key string instead of the translation.
+   */
+  readonly translationsLoaded = toSignal(
+    this.transloco.events$.pipe(
+      filter(e => e.type === 'translationLoadSuccess'),
+      map((_, idx) => idx + 1),
+    ),
+    { initialValue: 0 },
+  );
 
   constructor() {
     this.transloco.setActiveLang(this.current());

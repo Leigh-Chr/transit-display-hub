@@ -127,6 +127,7 @@ describe('NetworkMapComponent', () => {
 
     const mockLocaleService = {
       current: signal('fr'),
+      translationsLoaded: signal(1),
       setLang: vi.fn(),
       toggle: vi.fn(),
     };

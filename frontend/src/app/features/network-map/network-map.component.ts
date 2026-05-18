@@ -98,7 +98,11 @@ export class NetworkMapComponent {
   subtitle = computed(() => {
     // Reading the active language signal makes the computed re-fire on
     // language switch so the rendered subtitle picks up the new strings.
+    // Also depend on translationsLoaded so the first evaluation re-runs
+    // once Transloco has the JSON in memory (otherwise the computed
+    // captures the bare i18n key on initial render).
     this.locale.current();
+    this.locale.translationsLoaded();
     const result = this.routeResult();
     if (result) {
       const stops = result.allStopIds.length;
