@@ -7,38 +7,181 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.24.0] — 2026-05-18
+
+Post-v1.23.0 cross-axis re-audit (six parallel agents — backend
+architecture, frontend architecture, code quality, tests, build &
+dependencies, security & robustness). No real P0 surfaced — the
+baseline stayed green — and ~30 actionable P1/P2 items were burnt
+down across six lots: auth hardening (A), i18n + CI guardrail (B),
+API hygiene (C), CI/hooks (D), quick-win refactors (F), and the
+larger structural refactors (G). A manual "Re-import now" button
+finally wires the orphaned `/api/admin/gtfs/reimport` endpoint into
+the UI.
+
 ### Added
 
-- `GET /api/admin/gtfs/imports/{id}` — read companion to the `/reimport`
-  202 Accepted contract. Resolves the audit row referenced by the
-  `Location` header to its full `ImportAuditResponse`, returns 404 when
-  the id is unknown, ADMIN-only. Closes the TODO left by v1.21.0.
+- **"Run import now" button** on the import-audit page, mapping the
+  three responses of `POST /api/admin/gtfs/reimport`: 202 → success
+  snackbar + delayed reload so the new `RUNNING` audit row appears,
+  409 → warn with the backend i18n message, 400 → error pointing at
+  the missing feed URL. Guarded by a `triggering` signal so
+  double-clicks can't double-fire.
+- `GET /api/admin/gtfs/imports/{id}` — read companion to the
+  `/reimport` 202 Accepted contract. Resolves the audit row
+  referenced by the `Location` header to its full
+  `ImportAuditResponse`, returns 404 when the id is unknown,
+  ADMIN-only. Closes the TODO left by v1.21.0.
+- **Five GTFS columns previously persisted but never read** now
+  surfaced on the API: `RiderCategorySummary` (new endpoint),
+  `TransferRuleSummary` gains `minutesBefore`/`minutesAfter`, and
+  `ScheduleResponse` gains `continuousPickup`, `continuousDropOff`
+  and `shapeDistTraveled`. Admins can finally inspect the GTFS-Fares
+  v2 fields the importer has been writing since v1.5.
+- **Rate-limited `/api/auth/refresh`** (default 30/min/IP) plus a
+  factored `AuthIpRateLimitFilter` base so the existing
+  `LoginRateLimitFilter` and the new refresh filter share one
+  implementation.
+- **Graceful Spring Boot shutdown** with a 30s phase timeout so
+  in-flight requests drain before the container stops — important
+  for `docker compose down` and K8s rolling updates.
+- **i18n hardcoded-text guardrail** (`scripts/check-i18n-hardcoded.sh`
+  + new step in `frontend.yml`): catches the regression three audits
+  in a row have flagged — English literals slipping into
+  `matTooltip` / `aria-label` / `MatDialogConfig.ariaLabel` /
+  setter calls. The two previously-flagged itineraries direction
+  badges/tooltips are also translated.
+- **K8s liveness/readiness probes** enabled
+  (`management.endpoint.health.probes.enabled: true`), so slow
+  startups (Flyway, GTFS bootstrap) stop looking like an unhealthy
+  pod.
+
+### Changed
+
+- **Bifurcated list endpoints split into `/` (paginated) + `/all`
+  (full snapshot)** on User, Stop, Line, Itinerary and Message
+  controllers, with the front-end services adjusted accordingly. The
+  previous single endpoint quietly switched between paginated and
+  unpaginated based on a query parameter, which was confusing to
+  document and untestable as one shape.
+- **`CrudResource<T, Create, Update>` base** extracted from
+  `UserService` and reused: the boilerplate `list / get / create /
+  update / delete` quartet now lives once. Six other CRUD services
+  stayed in place because they layer custom filters on top — a
+  `paramsFor` hook is the natural next step.
+- **`useLinesResource` composable** dedupes the same lines-fetch +
+  loading + error wiring that lived in the itineraries, messages,
+  devices and schedules admin pages.
+- **`BaseStompService.createPayloadStream<T>()`** absorbs the
+  per-service payload-stream lifecycle (subscription + auto-reset on
+  disconnect) the three WebSocket services were re-implementing —
+  net −30 LoC.
+- **`severityLabel` utility** shared between the messages and
+  realtime admin pages instead of duplicated locally.
+- **`JwtService` and `GtfsDownloader` now take an injected `Clock`**
+  (and `GtfsDownloader` reuses one `HttpClient` to spare the pool),
+  unlocking deterministic time in tests.
+- **`handleIllegalArgument` routed through i18n** in
+  `GlobalExceptionHandler` so the cause string is no longer leaked
+  raw in the response body.
+- **`empty-state.title` made `input.required<string>()`** to surface
+  missing titles at component construction; all 44 call-sites
+  already passed a translated value.
+- **`ActiveDisplayTracker.removeSubscription`** uses
+  `computeIfPresent` to close the race window the previous
+  remove-then-check left open.
+- **`FareCalculator` `Timer.builder(...)` lifted to `@PostConstruct`**
+  so the hot path no longer re-builds the timer on every fare
+  computation.
 
 ### Fixed
 
+- **`trusted-proxies` config parsed as `IpAddressMatcher`** in
+  `LoginRateLimitFilter` so CIDR ranges (`10.0.0.0/8`) are honoured
+  instead of being string-compared verbatim against the remote
+  address.
+- **GTFS zip extraction capped at 200 MB per entry and 500 MB
+  total**, closing the zip-bomb vector that an attacker-controlled
+  feed URL could have exploited.
+- **`CreateUser` / `UpdateUser` password floor aligned to 12 chars**,
+  matching the self-service change-password endpoint and the NIST
+  SP 800-63B floor.
+- **Admins can no longer delete their own account** — the controller
+  now checks the `SecurityContext` principal against the target id
+  and rejects with 403.
+- **Seven hardcoded i18n strings** translated (the ones flagged by
+  the i18n audit before the new guardrail was wired).
 - `GtfsDataLoader.createUsers()` now seeds the dev admin row with
   `passwordMustChange = TRUE`, matching Flyway V52. Before, the dev
-  profile silently re-created the user on every boot without the flag,
-  so the forced rotation flow never fired against H2 and broke the
-  Playwright `global-setup`.
-- `ChangePasswordComponent` switched its submit gate from `computed()`
-  (which read plain string fields and therefore never tracked them as
-  signal dependencies) to a plain method, so the button now disables /
-  re-enables correctly on every ngModel update.
+  profile silently re-created the user on every boot without the
+  flag, so the forced rotation flow never fired against H2 and broke
+  the Playwright `global-setup`.
+- `ChangePasswordComponent` switched its submit gate from
+  `computed()` (which read plain string fields and therefore never
+  tracked them as signal dependencies) to a plain method, so the
+  button now disables/re-enables correctly on every ngModel update.
+- `e2e/i18n-public-pages.spec.ts` switched to page-specific anchors
+  — the original generic list asserted on chrome the public pages
+  never rendered, so six cases were red even on the v1.4.2 baseline.
+
+### Removed
+
+- **`@EnableMethodSecurity` annotation** dropped — authorisation has
+  been 100 % URL-based in `SecurityConfig` for a while now, and the
+  annotation only suggested a second source of truth that didn't
+  exist. Re-add it the day a controller needs finer-grain than a URL
+  prefix.
+- **Dead repository methods on `BroadcastMessage` and `Line`** (~280
+  lines of source + tests) that no service was calling since the
+  v1.18.0 query consolidation.
+
+### Tests
+
+- Eight redundant "delegates to Specification" message tests
+  collapsed into one parameterized test.
+- Four pass-through display scope tests merged into one mixed-scope
+  test.
+- axe-core scan extended to five admin pages (lines, stops, users,
+  messages, schedules) with a violation baseline of 10/page — to be
+  tightened once CI confirms the first green run.
+- Five new `ImportAuditComponent` specs cover the Re-import button's
+  three response paths plus the re-entry guard and a 5xx fallback.
+
+### Security
+
+- **All Lot A hardening** (rate-limited refresh, zip-bomb cap,
+  CIDR-aware trusted proxies, 12-char password floor on create/
+  update, deny self-delete for admins, i18n'd error responses,
+  dropped `@EnableMethodSecurity`, graceful shutdown) ships together.
+- Nothing is breaking — but anyone running the import behind an
+  external rate-limiter should double-check the new refresh limit
+  doesn't conflict.
+
+### CI / Operations
+
+- **Seven non-release workflows now SHA-pin their third-party
+  actions** (SHAs fetched live via `gh api`). The release workflow
+  was already pinned in v1.20.2.
+- **`husky` pre-push lightened** — by default runs frontend lint +
+  backend compile (the two regressions that bite most often); set
+  `PUSH_FULL=1` for the full lint + knip + test suite + gradle
+  `check`. Cuts the routine push wait from ~50s to ~10s.
 
 ### Documentation
 
-- README version badge bumped to 1.23.0, project structure mentions
+- `/actuator/info` YAML comment corrected — the previous note
+  claimed it stayed public for load-balancer probes, but
+  `SecurityConfig` has been gating it (alongside prometheus +
+  metrics) behind `hasRole("ADMIN")` since the actuator hardening
+  pass. Only `/actuator/health` is anonymous.
+- README version badge bumped to 1.24.0, project structure mentions
   `Makefile` and `ops/prometheus/`, documentation index links to
   `docs/i18n.md`.
 - `docs/installation.md`, `docs/deployment.md` and `docs/user-guide.md`
   now flag the forced first-login password rotation (Flyway V52).
 - `docs/developer-guide.md` cross-references the v1.22.0+ patterns
-  (`rxResource`, `createSimpleListResource`, display composables) next
-  to the legacy `OnInit` example.
-- `e2e/i18n-public-pages.spec.ts` switched to page-specific anchors —
-  the original generic list asserted on chrome the public pages never
-  rendered, so six cases were red even on the v1.4.2 baseline.
+  (`rxResource`, `createSimpleListResource`, display composables)
+  next to the legacy `OnInit` example.
 
 ## [1.23.0] — 2026-05-17
 
