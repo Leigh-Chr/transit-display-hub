@@ -1,11 +1,24 @@
 import { computed, inject, Injectable, OnDestroy, Signal, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Client, IFrame, IMessage, StompConfig, StompSubscription } from '@stomp/stompjs';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { STOMP_CLIENT_FACTORY } from './stomp-client.factory';
 
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
+
+/**
+ * Handle returned by {@link BaseStompService#createPayloadStream}. The
+ * caller emits with {@link emit} and exposes the live stream to
+ * consumers via {@link observe}. The underlying Subject is completed
+ * and replaced on every {@link BaseStompService#disconnect} so a
+ * later reconnect doesn't push values into a completed stream — see
+ * the per-service notes for the rationale on each subclass.
+ */
+export interface PayloadStream<T> {
+  emit(value: T): void;
+  observe(): Observable<T>;
+}
 
 @Injectable()
 export abstract class BaseStompService implements OnDestroy {
@@ -22,6 +35,7 @@ export abstract class BaseStompService implements OnDestroy {
   private readonly reconnectedSubject = new Subject<void>();
   readonly reconnected$ = this.reconnectedSubject.asObservable();
   private stompSubscriptions: StompSubscription[] = [];
+  private readonly payloadStreamResets: (() => void)[] = [];
 
   constructor() {
     // Centralise the "log the user out → drop the socket" wiring. Tied to
@@ -93,6 +107,26 @@ export abstract class BaseStompService implements OnDestroy {
     this.client.activate();
   }
 
+  /**
+   * Create a payload stream the subclass uses to bridge inbound STOMP
+   * frames to its public Observable. The base class then takes care of
+   * completing + replacing the underlying Subject every time
+   * {@link disconnect} is called, so the three subclasses no longer
+   * need to override disconnect just to manage their payload stream's
+   * lifecycle.
+   */
+  protected createPayloadStream<T>(): PayloadStream<T> {
+    let subject = new Subject<T>();
+    this.payloadStreamResets.push(() => {
+      subject.complete();
+      subject = new Subject<T>();
+    });
+    return {
+      emit: (value: T) => subject.next(value),
+      observe: () => subject.asObservable(),
+    };
+  }
+
   protected subscribeToTopic<T>(
     destination: string,
     parse: (body: string) => T,
@@ -126,6 +160,12 @@ export abstract class BaseStompService implements OnDestroy {
       // late socket error doesn't surface as an UnhandledPromiseRejection.
       this.client.deactivate().catch(() => undefined);
       this.client = null;
+    }
+    // Complete and replace each subclass-owned payload Subject so a
+    // late frame can't push into a torn-down stream — the next
+    // connect() observe() call returns the freshly-built Subject.
+    for (const reset of this.payloadStreamResets) {
+      reset();
     }
     this.hasConnectedOnce = false;
     this._connectionState.set('DISCONNECTED');

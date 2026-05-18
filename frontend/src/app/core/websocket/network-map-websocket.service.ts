@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { NetworkMapUpdate } from '@shared/models';
 import { BaseStompService } from './base-stomp.service';
 
@@ -7,9 +7,8 @@ import { BaseStompService } from './base-stomp.service';
   providedIn: 'root'
 })
 export class NetworkMapWebSocketService extends BaseStompService {
-  private updateSubject = new Subject<NetworkMapUpdate>();
-
-  // Logout-on-disconnect is handled by BaseStompService.
+  // Subject lifecycle (complete + recreate on disconnect) handled by the base class.
+  private readonly updateStream = this.createPayloadStream<NetworkMapUpdate>();
 
   protected override buildBrokerUrl(): string {
     return BaseStompService.buildWsUrl();
@@ -19,19 +18,13 @@ export class NetworkMapWebSocketService extends BaseStompService {
     this.subscribeToTopic<NetworkMapUpdate>(
       '/topic/network-map',
       (body) => JSON.parse(body) as NetworkMapUpdate,
-      (update) => this.updateSubject.next(update),
+      (update) => this.updateStream.emit(update),
       'network map update',
     );
   }
 
   connect(): Observable<NetworkMapUpdate> {
     this.activateClient();
-    return this.updateSubject.asObservable();
-  }
-
-  override disconnect(): void {
-    super.disconnect();
-    this.updateSubject.complete();
-    this.updateSubject = new Subject<NetworkMapUpdate>();
+    return this.updateStream.observe();
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { DisplayState } from '@shared/models';
 import { BaseStompService } from './base-stomp.service';
 
@@ -7,10 +7,9 @@ import { BaseStompService } from './base-stomp.service';
   providedIn: 'root'
 })
 export class HubWebSocketService extends BaseStompService {
-  private updateSubject = new Subject<DisplayState>();
+  // Subject lifecycle (complete + recreate on disconnect) handled by the base class.
+  private readonly updateStream = this.createPayloadStream<DisplayState>();
   private stopIds: string[] = [];
-
-  // Logout-on-disconnect is handled by BaseStompService.
 
   protected override buildBrokerUrl(): string {
     return BaseStompService.buildWsUrl();
@@ -21,7 +20,7 @@ export class HubWebSocketService extends BaseStompService {
       this.subscribeToTopic<DisplayState>(
         `/topic/display/${stopId}`,
         (body) => JSON.parse(body) as DisplayState,
-        (state) => this.updateSubject.next(state),
+        (state) => this.updateStream.emit(state),
         `hub display state (${stopId})`,
       );
     }
@@ -30,12 +29,6 @@ export class HubWebSocketService extends BaseStompService {
   connect(stopIds: string[]): Observable<DisplayState> {
     this.stopIds = stopIds;
     this.activateClient();
-    return this.updateSubject.asObservable();
-  }
-
-  override disconnect(): void {
-    super.disconnect();
-    this.updateSubject.complete();
-    this.updateSubject = new Subject<DisplayState>();
+    return this.updateStream.observe();
   }
 }

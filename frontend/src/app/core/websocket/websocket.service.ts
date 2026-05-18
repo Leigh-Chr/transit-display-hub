@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject, timer } from 'rxjs';
+import { Observable, timer } from 'rxjs';
 import { takeUntil, tap } from 'rxjs/operators';
 import { DisplayState } from '@shared/models';
 import { BaseStompService } from './base-stomp.service';
@@ -11,11 +11,10 @@ export type { ConnectionState } from './base-stomp.service';
   providedIn: 'root'
 })
 export class WebSocketService extends BaseStompService {
-  private displayStateSubject = new Subject<DisplayState>();
+  // Subject lifecycle (complete + recreate on disconnect) handled by the base class.
+  private readonly displayStateStream = this.createPayloadStream<DisplayState>();
   private deviceId: string | null = null;
   private stopId: string | null = null;
-
-  // Logout-on-disconnect is handled by BaseStompService; no constructor needed.
 
   protected override buildBrokerUrl(): string {
     return BaseStompService.buildWsUrl();
@@ -30,17 +29,13 @@ export class WebSocketService extends BaseStompService {
     this.stopId = stopId;
     this.deviceId = deviceId;
     this.activateClient();
-    return this.displayStateSubject.asObservable();
+    return this.displayStateStream.observe();
   }
 
   override disconnect(): void {
     super.disconnect();
-    // Mirror HubWebSocketService / NetworkMapWebSocketService:
-    // complete the active subject so any subscriber teardown fires,
-    // then swap in a fresh one so a later connect() doesn't push
-    // values into a completed stream.
-    this.displayStateSubject.complete();
-    this.displayStateSubject = new Subject<DisplayState>();
+    // Subject reset is handled by the base; only WebSocketService-specific
+    // per-connect state needs clearing here.
     this.deviceId = null;
     this.stopId = null;
   }
@@ -51,7 +46,7 @@ export class WebSocketService extends BaseStompService {
     this.subscribeToTopic<DisplayState>(
       `/topic/display/${stopId}`,
       (body) => JSON.parse(body) as DisplayState,
-      (state) => this.displayStateSubject.next(state),
+      (state) => this.displayStateStream.emit(state),
       'display state',
     );
   }
