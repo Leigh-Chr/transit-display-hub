@@ -25,7 +25,7 @@ interface PageAnchors {
   en: string[];
 }
 
-const PUBLIC_PAGES: ReadonlyArray<readonly [string, PageAnchors]> = [
+const PUBLIC_PAGES: readonly (readonly [string, PageAnchors])[] = [
   ['/login', {
     fr: ['Connexion', 'Identifiants', 'Mot de passe'],
     en: ['Login', 'Username', 'Password'],

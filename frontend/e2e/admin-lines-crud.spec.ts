@@ -12,7 +12,7 @@ test.describe('Admin — Lines CRUD', () => {
   // intercepts pointer events on the form actions. The functional
   // coverage on Chromium / Firefox is enough; mobile-chrome runs only
   // public-facing flows (kiosk, hub, network map).
-  test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile === true,
+  test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile,
     'Admin UI is desktop-only');
   // Unique code that also sorts to the top of the list (default sort is by
   // code ASC) so the newly-created card is visible on page 1 without

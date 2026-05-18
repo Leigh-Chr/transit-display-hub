@@ -49,6 +49,7 @@ async function globalSetup(_config: FullConfig): Promise<void> {
     await page.waitForURL(/\/admin(\/|$)/, { timeout: 30_000 });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Node's fs module isn't typed under the strict project tsconfig used to lint e2e; the call is plain and safe.
   mkdirSync('e2e/.auth', { recursive: true });
   await page.context().storageState({ path: 'e2e/.auth/admin.json' });
 

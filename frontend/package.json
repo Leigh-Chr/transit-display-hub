@@ -14,8 +14,8 @@
     "test:coverage": "ng test --watch=false --coverage --coverage-reporters=html --coverage-reporters=lcov --coverage-reporters=json-summary --coverage-reporters=text-summary",
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
-    "lint": "eslint \"src/**/*.ts\" \"src/**/*.html\"",
-    "lint:fix": "eslint \"src/**/*.ts\" \"src/**/*.html\" --fix",
+    "lint": "eslint \"src/**/*.ts\" \"src/**/*.html\" \"e2e/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" \"src/**/*.html\" \"e2e/**/*.ts\" --fix",
     "knip": "knip"
   },
   "private": true,

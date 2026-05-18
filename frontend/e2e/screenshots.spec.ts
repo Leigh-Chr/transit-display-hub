@@ -19,7 +19,7 @@ import * as path from 'node:path';
 
 const OUTPUT_DIR = path.resolve(__dirname, '..', '..', 'docs', 'screenshots');
 
-const enabled = process.env['SCREENSHOTS_ENABLED'] === '1';
+const enabled = process.env.SCREENSHOTS_ENABLED === '1';
 
 test.beforeEach(({}, testInfo) => {
   testInfo.setTimeout(60_000);

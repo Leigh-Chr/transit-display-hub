@@ -31,7 +31,7 @@ test.describe('Admin — Import audit', () => {
     expect(hasTable + hasEmpty).toBeGreaterThan(0);
   });
 
-  test.skip('reimport button triggers 202 and creates a new audit row', async ({ adminPage }) => {
+  test.skip('reimport button triggers 202 and creates a new audit row', async ({ adminPage: _adminPage }) => {
     /*
      * To unblock this test:
      *   1. Navigate to /admin/import-audit or the dedicated trigger page.
