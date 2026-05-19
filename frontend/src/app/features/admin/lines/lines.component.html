@@ -107,9 +107,7 @@
                     (change)="toggleSelection(line.id, $event.checked)"
                     [attr.aria-label]="t('admin.lines.selectAria', { code: line.code })"
                   />
-                  <span class="line-code" [style.backgroundColor]="line.color">
-                    {{ line.code }}
-                  </span>
+                  <app-line-badge [code]="line.code" [color]="line.color" size="lg" />
                   <div class="line-actions">
                     <a
                       mat-icon-button

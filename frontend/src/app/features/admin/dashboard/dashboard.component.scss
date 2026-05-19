@@ -169,17 +169,6 @@
   background-color: var(--app-surface-container-high);
 }
 
-.line-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: var(--app-line-badge-radius);
-  color: white;
-  font-size: var(--m3-type-label-medium);
-  font-weight: 600;
-  min-width: 36px;
-  text-align: center;
-}
-
 .line-name {
   flex: 1;
   font-weight: 500;

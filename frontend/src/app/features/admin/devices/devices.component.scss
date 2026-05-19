@@ -48,35 +48,6 @@
       gap: 6px;
     }
 
-    .line-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: var(--app-line-badge-radius);
-      color: white;
-      font-size: var(--m3-type-label-medium);
-      font-weight: 600;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: var(--app-line-badge-radius);
-      font-size: var(--m3-type-label-medium);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .status-online {
-      background-color: var(--app-success-container);
-      color: var(--app-on-success-container);
-    }
-
-    .status-offline {
-      background-color: var(--app-critical-container);
-      color: var(--app-on-critical-container);
-    }
-
     .device-meta {
       font-size: var(--m3-type-body-medium);
       color: var(--app-on-surface-variant);

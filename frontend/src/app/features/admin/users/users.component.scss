@@ -25,38 +25,6 @@
       height: 20px;
     }
 
-    .role-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: var(--app-line-badge-radius);
-      font-size: var(--m3-type-label-medium);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background-color: var(--app-surface-variant);
-      color: var(--app-on-surface-variant);
-    }
-
-    .role-badge.admin {
-      background-color: var(--app-info-container);
-      color: var(--app-on-info-container);
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: var(--app-line-badge-radius);
-      font-size: var(--m3-type-label-medium);
-      font-weight: 600;
-      background-color: var(--app-critical-container);
-      color: var(--app-on-critical-container);
-    }
-
-    .status-badge.active {
-      background-color: var(--app-success-container);
-      color: var(--app-on-success-container);
-    }
-
     .actions-column {
       text-align: right;
       width: var(--app-actions-column-width);

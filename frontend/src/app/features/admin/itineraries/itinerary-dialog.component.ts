@@ -15,6 +15,7 @@ import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Itinerary, Line, CreateItineraryRequest } from '@shared/models';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
 
 export interface ItineraryDialogData {
   itinerary?: Itinerary;
@@ -40,6 +41,7 @@ interface ItineraryForm {
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    LineBadgeComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,9 +63,7 @@ interface ItineraryForm {
             @for (line of data.lines; track line.id) {
               <mat-option [value]="line.id">
                 <span class="line-option">
-                  <span class="line-badge" [style.backgroundColor]="line.color">
-                    {{ line.code }}
-                  </span>
+                  <app-line-badge [code]="line.code" [color]="line.color" />
                   {{ line.name }}
                 </span>
               </mat-option>
@@ -136,15 +136,6 @@ interface ItineraryForm {
       display: flex;
       align-items: center;
       gap: 10px;
-    }
-
-    .line-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: var(--app-line-badge-radius);
-      color: white;
-      font-size: var(--m3-type-label-medium);
-      font-weight: 600;
     }
 
     .info-text {

@@ -14,6 +14,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { User, CreateUserRequest, UpdateUserRequest } from '@shared/models';
 import { UserDialogComponent } from './user-dialog.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
+import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
@@ -37,6 +38,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatPaginatorModule,
     MatTooltipModule,
     AdminPageHeaderComponent,
+    StatusBadgeComponent,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,

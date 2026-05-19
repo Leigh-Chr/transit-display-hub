@@ -117,22 +117,22 @@
                   <div class="validation-row">
                     <span class="validation-counts" [matTooltip]="validationCountsTooltip(a, t)">
                       @if ((a.validationNoticeErrors ?? 0) > 0) {
-                        <span class="badge errors">
-                          <mat-icon class="inline-icon">error</mat-icon>
+                        <app-status-badge tone="critical">
+                          <mat-icon>error</mat-icon>
                           {{ a.validationNoticeErrors }}
-                        </span>
+                        </app-status-badge>
                       }
                       @if ((a.validationNoticeWarnings ?? 0) > 0) {
-                        <span class="badge warnings">
-                          <mat-icon class="inline-icon">warning</mat-icon>
+                        <app-status-badge tone="warning">
+                          <mat-icon>warning</mat-icon>
                           {{ a.validationNoticeWarnings }}
-                        </span>
+                        </app-status-badge>
                       }
                       @if ((a.validationNoticeErrors ?? 0) === 0 && (a.validationNoticeWarnings ?? 0) === 0) {
-                        <span class="badge clean">
-                          <mat-icon class="inline-icon">verified</mat-icon>
+                        <app-status-badge tone="success">
+                          <mat-icon>verified</mat-icon>
                           {{ t('admin.importAudit.noValidationNotices') }}
-                        </span>
+                        </app-status-badge>
                       }
                     </span>
                     <a mat-icon-button class="report-link"

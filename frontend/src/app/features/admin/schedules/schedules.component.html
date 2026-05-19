@@ -86,9 +86,10 @@
               <ng-container matColumnDef="line">
                 <th mat-header-cell *matHeaderCellDef>{{ t('admin.schedules.colLine') }}</th>
                 <td mat-cell *matCellDef="let entry">
-                  <span class="line-badge" [style.backgroundColor]="entry.itinerary.line.color">
-                    {{ entry.itinerary.line.code }}
-                  </span>
+                  <app-line-badge
+                    [code]="entry.itinerary.line.code"
+                    [color]="entry.itinerary.line.color"
+                  />
                 </td>
               </ng-container>
 

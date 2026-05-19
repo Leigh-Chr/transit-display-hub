@@ -14,6 +14,7 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { NotifyService } from '@core/services/notify.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
+import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -42,6 +43,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     MatExpansionModule,
     MatProgressSpinnerModule,
     AdminPageHeaderComponent,
+    StatusBadgeComponent,
     EmptyStateComponent,
     TableSkeletonComponent,
     TranslocoDirective,

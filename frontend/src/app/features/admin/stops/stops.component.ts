@@ -23,6 +23,7 @@ import {
   HubDisplayDialogResult,
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
+import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
@@ -49,6 +50,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatTooltipModule,
     RouterLink,
     AdminPageHeaderComponent,
+    LineBadgeComponent,
     TableSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,

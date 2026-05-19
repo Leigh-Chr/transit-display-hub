@@ -15,6 +15,8 @@ import { Device, DeviceStatus, DeviceRegistration, RegisterDeviceRequest } from 
 import { DeviceDialogComponent } from './device-dialog.component';
 import { DeviceTokenDialogComponent } from './device-token-dialog.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
+import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
+import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
@@ -35,6 +37,8 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatSelectModule,
     MatFormFieldModule,
     AdminPageHeaderComponent,
+    LineBadgeComponent,
+    StatusBadgeComponent,
     CardSkeletonComponent,
     EmptyStateComponent,
     TranslocoDirective,

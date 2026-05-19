@@ -71,27 +71,6 @@
       gap: 6px;
       align-items: center;
     }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: var(--m3-type-body-medium);
-      font-weight: 500;
-    }
-    .badge.errors {
-      background: rgba(220, 38, 38, 0.12);
-      color: var(--app-critical);
-    }
-    .badge.warnings {
-      background: rgba(241, 158, 11, 0.16);
-      color: rgb(180, 134, 6);
-    }
-    .badge.clean {
-      background: rgba(46, 174, 96, 0.12);
-      color: var(--app-success);
-    }
     .validation-badge.failed {
       display: inline-flex;
       align-items: center;

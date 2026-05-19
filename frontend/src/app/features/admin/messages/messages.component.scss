@@ -135,41 +135,6 @@
   flex-wrap: wrap;
 }
 
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: var(--app-line-badge-radius);
-  font-size: var(--m3-type-label-small);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-critical {
-  background-color: var(--app-critical-container);
-  color: var(--app-on-critical-container);
-}
-
-.badge-warning {
-  background-color: var(--app-warning-container);
-  color: var(--app-on-warning-container);
-}
-
-.badge-info {
-  background-color: var(--app-info-container);
-  color: var(--app-on-info-container);
-}
-
-.badge-active {
-  background-color: var(--app-success-container);
-  color: var(--app-on-success-container);
-}
-
-.badge-inactive {
-  background-color: var(--app-surface-container-high);
-  color: var(--app-on-surface-variant);
-}
-
 .hide-mobile {
   @media (max-width: 600px) {
     display: none !important;

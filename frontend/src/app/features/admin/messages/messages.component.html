@@ -123,19 +123,23 @@
               <div class="message-header">
                 <h3 class="message-title">{{ message.title }}</h3>
                 <div class="badges">
-                  <span
-                    class="badge"
-                    [class.badge-critical]="message.severity === 'CRITICAL'"
-                    [class.badge-warning]="message.severity === 'WARNING'"
-                    [class.badge-info]="message.severity === 'INFO'"
+                  <app-status-badge
+                    [tone]="
+                      message.severity === 'CRITICAL' ? 'critical' :
+                      message.severity === 'WARNING' ? 'warning' : 'info'
+                    "
+                    size="sm"
+                    [uppercase]="true"
                   >
                     {{ severityLabel(message.severity, t) }}
-                  </span>
-                  @if (isActive(message)) {
-                    <span class="badge badge-active">{{ t('admin.messages.badgeActive') }}</span>
-                  } @else {
-                    <span class="badge badge-inactive">{{ t('admin.messages.badgeInactive') }}</span>
-                  }
+                  </app-status-badge>
+                  <app-status-badge
+                    [tone]="isActive(message) ? 'success' : 'neutral'"
+                    size="sm"
+                    [uppercase]="true"
+                  >
+                    {{ isActive(message) ? t('admin.messages.badgeActive') : t('admin.messages.badgeInactive') }}
+                  </app-status-badge>
                 </div>
               </div>
               <p class="message-text">{{ message.content }}</p>

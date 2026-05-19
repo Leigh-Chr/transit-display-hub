@@ -142,13 +142,11 @@
                   class="line-item"
                   [matTooltip]="line.name + ' - ' + line.stopCount + ' ' + t('admin.dashboard.stopsSuffix') + ', ' + line.itineraryCount + ' ' + t('admin.dashboard.statItineraries')"
                 >
-                  <span
-                    class="line-badge"
-                    [style.backgroundColor]="line.color"
-                    [style.color]="lineTextColor(line)"
-                  >
-                    {{ line.code }}
-                  </span>
+                  <app-line-badge
+                    [code]="line.code"
+                    [color]="line.color"
+                    [textColor]="lineTextColor(line)"
+                  />
                   <span class="line-name">{{ line.name }}</span>
                   <span class="line-stats">{{ line.stopCount }} {{ t('admin.dashboard.stopsSuffix') }}</span>
                 </a>

@@ -104,9 +104,7 @@
           <td mat-cell *matCellDef="let stop">
             <div class="line-badges">
               @for (line of stop.lines; track line.id) {
-                <span class="line-badge" [style.backgroundColor]="line.color">
-                  {{ line.code }}
-                </span>
+                <app-line-badge [code]="line.code" [color]="line.color" />
               }
             </div>
           </td>

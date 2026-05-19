@@ -60,20 +60,17 @@
                       <h3 class="device-stop">{{ device.stopName }}</h3>
                       <div class="line-badges">
                         @for (line of device.lines; track line.code) {
-                          <span class="line-badge" [style.backgroundColor]="line.color">
-                            {{ line.code }}
-                          </span>
+                          <app-line-badge [code]="line.code" [color]="line.color" />
                         }
                       </div>
                     </div>
                   </div>
-                  <span
-                    class="status-badge"
-                    [class.status-online]="device.status === 'ONLINE'"
-                    [class.status-offline]="device.status === 'OFFLINE'"
+                  <app-status-badge
+                    [tone]="device.status === 'ONLINE' ? 'success' : 'critical'"
+                    [uppercase]="true"
                   >
                     {{ device.status === 'ONLINE' ? t('admin.devices.statusOnline') : t('admin.devices.statusOffline') }}
-                  </span>
+                  </app-status-badge>
                 </div>
 
                 <div class="device-meta">

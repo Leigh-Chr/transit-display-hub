@@ -15,15 +15,6 @@ mat-card {
   overflow: hidden;
 }
 
-.line-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: var(--app-line-badge-radius);
-  color: white;
-  font-size: var(--m3-type-label-medium);
-  font-weight: 600;
-}
-
 .terminus-cell {
   font-weight: 500;
   color: var(--app-on-surface);
