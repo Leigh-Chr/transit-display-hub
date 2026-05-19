@@ -13,6 +13,7 @@ import { DashboardService, DashboardSummary } from '@core/api/dashboard.service'
 import { BroadcastMessage } from '@shared/models';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
+import { SeverityIconComponent } from '@shared/components/severity-icon/severity-icon.component';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -50,6 +51,7 @@ type DashboardData = DashboardSummary | AgentView;
     MatTooltipModule,
     AdminPageHeaderComponent,
     LineBadgeComponent,
+    SeverityIconComponent,
     StatsSkeletonComponent,
     FeedInfoCardComponent,
     DataOverviewCardComponent,

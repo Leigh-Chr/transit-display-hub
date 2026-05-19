@@ -510,35 +510,6 @@
   background-color: var(--app-surface-container);
 }
 
-.message-severity {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--app-radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.message-severity mat-icon {
-  font-size: var(--m3-type-headline-small);
-  width: 20px;
-  height: 20px;
-  color: white;
-}
-
-.message-severity.critical {
-  background-color: var(--app-critical);
-}
-
-.message-severity.warning {
-  background-color: var(--app-warning);
-}
-
-.message-severity.info {
-  background-color: var(--app-info);
-}
-
 .message-info {
   flex: 1;
   min-width: 0;

@@ -20,6 +20,7 @@ import { MessageDialogComponent } from './message-dialog.component';
 import { AdminBulkToolbarComponent } from '@shared/components/admin-bulk-toolbar/admin-bulk-toolbar.component';
 import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
+import { SeverityIconComponent } from '@shared/components/severity-icon/severity-icon.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -51,6 +52,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     AdminBulkToolbarComponent,
     AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
+    SeverityIconComponent,
     StatusBadgeComponent,
     CardSkeletonComponent,
     EmptyStateComponent,

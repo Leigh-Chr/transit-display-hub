@@ -33,31 +33,6 @@
   align-items: flex-start;
 }
 
-.severity-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--app-radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.severity-icon mat-icon {
-  color: white;
-}
-
-.severity-icon.critical {
-  background-color: var(--app-critical);
-}
-
-.severity-icon.warning {
-  background-color: var(--app-warning);
-}
-
-.severity-icon.info {
-  background-color: var(--app-info);
-}
 
 .message-body {
   flex: 1;

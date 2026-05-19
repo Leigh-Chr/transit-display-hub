@@ -265,24 +265,7 @@
           <div class="messages-list">
             @for (message of recentMessages(); track message.id) {
               <div class="message-item">
-                <div
-                  class="message-severity"
-                  [class.critical]="message.severity === 'CRITICAL'"
-                  [class.warning]="message.severity === 'WARNING'"
-                  [class.info]="message.severity === 'INFO'"
-                >
-                  @switch (message.severity) {
-                    @case ('CRITICAL') {
-                      <mat-icon>error</mat-icon>
-                    }
-                    @case ('WARNING') {
-                      <mat-icon>warning</mat-icon>
-                    }
-                    @default {
-                      <mat-icon>info</mat-icon>
-                    }
-                  }
-                </div>
+                <app-severity-icon [severity]="message.severity" size="sm" />
                 <div class="message-info">
                   <div class="message-title">{{ message.title }}</div>
                   <div class="message-meta">
