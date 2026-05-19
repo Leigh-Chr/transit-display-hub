@@ -27,6 +27,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
+import { openCrudDialog } from '@shared/admin/open-crud-dialog';
 import { useLinesResource } from '@shared/admin/use-lines-resource';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
@@ -204,47 +205,38 @@ export class MessagesComponent {
   }
 
   openCreateDialog(): void {
-    const dialogRef = this.dialog.open(MessageDialogComponent, {
-      data: {
-        lines: this.lines(),
-        submit: (request: CreateMessageRequest) => this.messageService.create(request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.createFailed')));
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: MessageDialogComponent,
+        data: { lines: this.lines() },
+        width: '500px',
+        titleKey: 'admin.messages.dialog.titleCreate',
+        successKey: 'admin.messages.createSuccess',
+        errorKey: 'admin.messages.createFailed',
+        submitOp: (request: CreateMessageRequest) => this.messageService.create(request),
+        onSuccess: () => {
+          this.tableState.resetToFirstPage();
+          this.loadMessages();
         },
       },
-      width: '500px',
-      ariaLabel: this.transloco.translate('admin.messages.dialog.titleCreate'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.tableState.resetToFirstPage();
-        this.loadMessages();
-        this.notify.success(this.transloco.translate('admin.messages.createSuccess'));
-      }
-    });
+    );
   }
 
   openEditDialog(message: BroadcastMessage): void {
-    const dialogRef = this.dialog.open(MessageDialogComponent, {
-      data: {
-        message,
-        lines: this.lines(),
-        submit: (request: CreateMessageRequest) => this.messageService.update(message.id, request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.messages.updateFailed')));
-        },
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: MessageDialogComponent,
+        data: { message, lines: this.lines() },
+        width: '500px',
+        titleKey: 'admin.messages.dialog.titleEdit',
+        successKey: 'admin.messages.updateSuccess',
+        errorKey: 'admin.messages.updateFailed',
+        submitOp: (request: CreateMessageRequest) => this.messageService.update(message.id, request),
+        onSuccess: () => this.loadMessages(),
       },
-      width: '500px',
-      ariaLabel: this.transloco.translate('admin.messages.dialog.titleEdit'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.loadMessages();
-        this.notify.success(this.transloco.translate('admin.messages.updateSuccess'));
-      }
-    });
+    );
   }
 
   deleteMessage(message: BroadcastMessage): void {

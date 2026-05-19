@@ -31,7 +31,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
-import { httpErrorMessage } from '@shared/utils/http.utils';
+import { openCrudDialog } from '@shared/admin/open-crud-dialog';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -131,48 +131,38 @@ export class StopsComponent {
   }
 
   openCreateDialog(): void {
-    const dialogRef = this.dialog.open(StopDialogComponent, {
-      data: {
-        lines: this.lines(),
-        selectedLineId: this.lineId(),
-        submit: (request: CreateStopRequest) => this.stopService.create(request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.createFailed')));
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: StopDialogComponent,
+        data: { lines: this.lines(), selectedLineId: this.lineId() },
+        width: '450px',
+        titleKey: 'admin.stops.dialog.titleCreate',
+        successKey: 'admin.stops.createSuccess',
+        errorKey: 'admin.stops.createFailed',
+        submitOp: (request: CreateStopRequest) => this.stopService.create(request),
+        onSuccess: () => {
+          this.tableState.resetToFirstPage();
+          this.loadStops();
         },
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.stops.dialog.titleCreate'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.tableState.resetToFirstPage();
-        this.loadStops();
-        this.notify.success(this.transloco.translate('admin.stops.createSuccess'));
-      }
-    });
+    );
   }
 
   openEditDialog(stop: Stop): void {
-    const dialogRef = this.dialog.open(StopDialogComponent, {
-      data: {
-        stop,
-        lines: this.lines(),
-        submit: (request: CreateStopRequest) => this.stopService.update(stop.id, request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.stops.updateFailed')));
-        },
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: StopDialogComponent,
+        data: { stop, lines: this.lines() },
+        width: '450px',
+        titleKey: 'admin.stops.dialog.titleEdit',
+        successKey: 'admin.stops.updateSuccess',
+        errorKey: 'admin.stops.updateFailed',
+        submitOp: (request: CreateStopRequest) => this.stopService.update(stop.id, request),
+        onSuccess: () => this.loadStops(),
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.stops.dialog.titleEdit'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.loadStops();
-        this.notify.success(this.transloco.translate('admin.stops.updateSuccess'));
-      }
-    });
+    );
   }
 
   deleteStop(stop: Stop): void {

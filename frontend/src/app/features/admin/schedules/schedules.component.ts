@@ -22,6 +22,7 @@ import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.com
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
+import { openCrudDialog } from '@shared/admin/open-crud-dialog';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -156,49 +157,39 @@ export class SchedulesComponent implements AfterViewInit {
     const stop = this.selectedStop();
     if (!stop) {return;}
 
-    const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: {
-        lines: stop.lines,
-        submit: (request: CreateScheduleRequest) => this.scheduleService.create(this.selectedStopId, request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.createFailed')));
-        },
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: ScheduleDialogComponent,
+        data: { lines: stop.lines },
+        width: '450px',
+        titleKey: 'admin.schedules.dialog.titleCreate',
+        successKey: 'admin.schedules.createSuccess',
+        errorKey: 'admin.schedules.createFailed',
+        submitOp: (request: CreateScheduleRequest) =>
+          this.scheduleService.create(this.selectedStopId, request),
+        onSuccess: () => this.loadSchedules(),
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.schedules.dialog.titleCreate'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.loadSchedules();
-        this.notify.success(this.transloco.translate('admin.schedules.createSuccess'));
-      }
-    });
+    );
   }
 
   openEditDialog(entry: Schedule): void {
     const stop = this.selectedStop();
     if (!stop) {return;}
 
-    const dialogRef = this.dialog.open(ScheduleDialogComponent, {
-      data: {
-        entry,
-        lines: stop.lines,
-        submit: (request: CreateScheduleRequest) => this.scheduleService.update(entry.id, request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.schedules.updateFailed')));
-        },
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: ScheduleDialogComponent,
+        data: { entry, lines: stop.lines },
+        width: '450px',
+        titleKey: 'admin.schedules.dialog.titleEdit',
+        successKey: 'admin.schedules.updateSuccess',
+        errorKey: 'admin.schedules.updateFailed',
+        submitOp: (request: CreateScheduleRequest) => this.scheduleService.update(entry.id, request),
+        onSuccess: () => this.loadSchedules(),
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.schedules.dialog.titleEdit'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.loadSchedules();
-        this.notify.success(this.transloco.translate('admin.schedules.updateSuccess'));
-      }
-    });
+    );
   }
 
   deleteSchedule(entry: Schedule): void {

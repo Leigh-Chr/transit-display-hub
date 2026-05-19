@@ -22,7 +22,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
-import { httpErrorMessage } from '@shared/utils/http.utils';
+import { openCrudDialog } from '@shared/admin/open-crud-dialog';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -103,49 +103,40 @@ export class UsersComponent implements AfterViewInit {
   }
 
   openCreateDialog(): void {
-    const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: {
-        isEdit: false,
-        submit: (request: CreateUserRequest | UpdateUserRequest) =>
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: UserDialogComponent,
+        data: { isEdit: false },
+        width: '450px',
+        titleKey: 'admin.users.dialog.titleCreate',
+        successKey: 'admin.users.createSuccess',
+        errorKey: 'admin.users.createFailed',
+        submitOp: (request: CreateUserRequest | UpdateUserRequest) =>
           this.userService.create(request as CreateUserRequest),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.createFailed')));
+        onSuccess: () => {
+          this.tableState.resetToFirstPage();
+          this.loadUsers();
         },
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.users.dialog.titleCreate'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.tableState.resetToFirstPage();
-        this.loadUsers();
-        this.notify.success(this.transloco.translate('admin.users.createSuccess'));
-      }
-    });
+    );
   }
 
   openEditDialog(user: User): void {
-    const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: {
-        user,
-        isEdit: true,
-        submit: (request: CreateUserRequest | UpdateUserRequest) =>
+    openCrudDialog(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: UserDialogComponent,
+        data: { user, isEdit: true },
+        width: '450px',
+        titleKey: 'admin.users.dialog.titleEdit',
+        successKey: 'admin.users.updateSuccess',
+        errorKey: 'admin.users.updateFailed',
+        submitOp: (request: CreateUserRequest | UpdateUserRequest) =>
           this.userService.update(user.id, request as UpdateUserRequest),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.users.updateFailed')));
-        },
+        onSuccess: () => this.loadUsers(),
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.users.dialog.titleEdit'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.loadUsers();
-        this.notify.success(this.transloco.translate('admin.users.updateSuccess'));
-      }
-    });
+    );
   }
 
   deleteUser(user: User): void {

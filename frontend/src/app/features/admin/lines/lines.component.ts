@@ -27,6 +27,7 @@ import { SearchInputComponent } from '@shared/components/search-input/search-inp
 import { AdminTableState } from '@shared/admin/admin-table-state.service';
 import { createAdminListResource } from '@shared/admin/admin-list-resource';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
+import { openCrudDialog } from '@shared/admin/open-crud-dialog';
 import { httpErrorMessage } from '@shared/utils/http.utils';
 import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
 
@@ -205,47 +206,39 @@ export class LinesComponent {
   }
 
   openCreateDialog(): void {
-    const dialogRef = this.dialog.open(LineDialogComponent, {
-      data: {
-        submit: (request: CreateLineRequest) => this.lineService.create(request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.createFailed')));
+    openCrudDialog<object, CreateLineRequest, Line>(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: LineDialogComponent,
+        width: '450px',
+        titleKey: 'admin.lines.dialog.titleCreate',
+        successKey: 'admin.lines.createSuccess',
+        errorKey: 'admin.lines.createFailed',
+        submitOp: (request) => this.lineService.create(request),
+        onSuccess: () => {
+          // Jump back to page 0 so the user actually sees the new item
+          // (which sorts wherever the active sort dictates).
+          this.tableState.resetToFirstPage();
+          this.loadLines();
         },
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.lines.dialog.titleCreate'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        // Jump back to page 0 so the user actually sees the new item
-        // (which sorts wherever the active sort dictates).
-        this.tableState.resetToFirstPage();
-        this.loadLines();
-        this.notify.success(this.transloco.translate('admin.lines.createSuccess'));
-      }
-    });
+    );
   }
 
   openEditDialog(line: Line): void {
-    const dialogRef = this.dialog.open(LineDialogComponent, {
-      data: {
-        line,
-        submit: (request: CreateLineRequest) => this.lineService.update(line.id, request),
-        onError: (err: unknown) => {
-          this.notify.error(httpErrorMessage(err, this.transloco.translate('admin.lines.updateFailed')));
-        },
+    openCrudDialog<{ line: Line }, CreateLineRequest, Line>(
+      { dialog: this.dialog, transloco: this.transloco, notify: this.notify },
+      {
+        component: LineDialogComponent,
+        data: { line },
+        width: '450px',
+        titleKey: 'admin.lines.dialog.titleEdit',
+        successKey: 'admin.lines.updateSuccess',
+        errorKey: 'admin.lines.updateFailed',
+        submitOp: (request) => this.lineService.update(line.id, request),
+        onSuccess: () => this.loadLines(),
       },
-      width: '450px',
-      ariaLabel: this.transloco.translate('admin.lines.dialog.titleEdit'),
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.loadLines();
-        this.notify.success(this.transloco.translate('admin.lines.updateSuccess'));
-      }
-    });
+    );
   }
 
   deleteLine(line: Line): void {
