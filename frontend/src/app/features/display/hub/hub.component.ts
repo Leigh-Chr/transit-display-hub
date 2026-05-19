@@ -20,6 +20,7 @@ import { ThemeService } from '@core/services/theme.service';
 import { HubWebSocketService } from '@core/websocket/hub-websocket.service';
 import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
+import { DisplayConnectionWarningComponent } from '@shared/components/display-connection-warning/display-connection-warning.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import {
   DisplayState,
@@ -50,6 +51,7 @@ const STALE_STOP_THRESHOLD_MS = 30 * 60 * 1000;
     TranslocoPipe,
     A11yToolbarComponent,
     DisplayAlertBannerComponent,
+    DisplayConnectionWarningComponent,
     DisplayInfoTickerComponent,
     DisplayDeparturesRowComponent,
   ],

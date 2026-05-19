@@ -21,6 +21,7 @@ import { DisplayService } from '@core/api/display.service';
 import { WebSocketService } from '@core/websocket/websocket.service';
 import { A11yToolbarComponent } from '@shared/components/a11y-toolbar/a11y-toolbar.component';
 import { DisplayAlertBannerComponent } from '@shared/components/display-alert-banner/display-alert-banner.component';
+import { DisplayConnectionWarningComponent } from '@shared/components/display-connection-warning/display-connection-warning.component';
 import { DisplayInfoTickerComponent } from '@shared/components/display-info-ticker/display-info-ticker.component';
 import { ArrivalInfo, DisplayState, HubArrivalInfo, PickupKind } from '@shared/models';
 import { lineTextColor } from '@shared/utils/color.utils';
@@ -58,6 +59,7 @@ const MAX_VISIBLE_ARRIVALS = 5;
     TranslocoPipe,
     A11yToolbarComponent,
     DisplayAlertBannerComponent,
+    DisplayConnectionWarningComponent,
     DisplayInfoTickerComponent,
     DisplayDeparturesRowComponent,
   ],

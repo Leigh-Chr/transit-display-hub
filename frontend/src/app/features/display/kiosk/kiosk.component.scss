@@ -175,10 +175,6 @@
   }
 }
 
-/* --- Connection Warning --- */
-.connection-warning { @include base.display-connection-warning; }
-@include base.display-keyframes-connection-pulse;
-
 /* --- Error & Loading States --- */
 @include base.display-status-states;
 

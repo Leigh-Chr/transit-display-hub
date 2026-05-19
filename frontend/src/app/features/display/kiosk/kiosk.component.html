@@ -125,18 +125,11 @@
       [messages]="infoMessages()"
       [durationSeconds]="tickerDuration()" />
 
-    <!-- Connection status indicator (minimal) -->
-    @if (!connected()) {
-      <div class="connection-warning" role="status" aria-live="polite">
-        <mat-icon aria-hidden="true">wifi_off</mat-icon>
-        {{ 'kiosk.connection.reconnecting' | transloco }}
-      </div>
-    } @else if (isStale()) {
-      <div class="connection-warning stale-warning" role="status" aria-live="polite">
-        <mat-icon aria-hidden="true">schedule</mat-icon>
-        {{ 'kiosk.connection.stale' | transloco:{ minutes: staleMinutes() } }}
-      </div>
-    }
+    <app-display-connection-warning
+      [connected]="connected()"
+      [isStale]="isStale()"
+      [staleMinutes]="staleMinutes()"
+    />
   } @else if (error()) {
     <div class="error-state">
       <mat-icon>error_outline</mat-icon>

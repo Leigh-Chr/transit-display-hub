@@ -58,10 +58,6 @@
 
 @include base.display-keyframes-scroll;
 
-/* --- Connection Warning --- */
-.connection-warning { @include base.display-connection-warning; }
-@include base.display-keyframes-connection-pulse;
-
 /* --- Hub-specific: banner for stops that disappeared from the rebuild --- */
 .hub-offline-banner {
   display: flex;
