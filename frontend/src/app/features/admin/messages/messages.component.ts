@@ -17,6 +17,7 @@ import { NotifyService } from '@core/services/notify.service';
 import { MessageService } from '@core/api/message.service';
 import { BroadcastMessage, MessageSeverity, CreateMessageRequest } from '@shared/models';
 import { MessageDialogComponent } from './message-dialog.component';
+import { AdminBulkToolbarComponent } from '@shared/components/admin-bulk-toolbar/admin-bulk-toolbar.component';
 import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
@@ -46,6 +47,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatFormFieldModule,
     MatPaginatorModule,
     MatTooltipModule,
+    AdminBulkToolbarComponent,
     AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
     StatusBadgeComponent,

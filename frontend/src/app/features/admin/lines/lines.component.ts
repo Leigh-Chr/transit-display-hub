@@ -17,6 +17,7 @@ import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confir
 import { Line, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { AdminBulkToolbarComponent } from '@shared/components/admin-bulk-toolbar/admin-bulk-toolbar.component';
 import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
@@ -43,6 +44,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
     MatSelectModule,
     MatFormFieldModule,
     RouterLink,
+    AdminBulkToolbarComponent,
     AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
     LineBadgeComponent,

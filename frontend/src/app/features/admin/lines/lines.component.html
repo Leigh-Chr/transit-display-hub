@@ -77,25 +77,18 @@
           />
         </mat-card>
       } @else {
-        <div class="bulk-toolbar">
-          <mat-checkbox
-            [checked]="allCurrentSelected()"
-            [indeterminate]="someCurrentSelected()"
-            (change)="toggleSelectAllOnPage($event.checked)"
-          >
-            {{ t('admin.lines.selectAllOnPage') }}
-          </mat-checkbox>
-          @if (selectionCount() > 0) {
-            <span class="bulk-count">{{ t('admin.lines.selectedCount', { count: selectionCount() }) }}</span>
-            <button mat-button type="button" (click)="clearSelection()">
-              {{ t('common.cancel') }}
-            </button>
-            <button mat-flat-button color="warn" type="button" (click)="bulkDeleteSelected()">
-              <mat-icon aria-hidden="true">delete</mat-icon>
-              {{ t('admin.lines.bulkDelete', { count: selectionCount() }) }}
-            </button>
-          }
-        </div>
+        <app-admin-bulk-toolbar
+          [allCurrentSelected]="allCurrentSelected()"
+          [someCurrentSelected]="someCurrentSelected()"
+          [selectionCount]="selectionCount()"
+          [selectAllLabel]="t('admin.lines.selectAllOnPage')"
+          [selectedCountLabel]="t('admin.lines.selectedCount', { count: selectionCount() })"
+          [bulkDeleteLabel]="t('admin.lines.bulkDelete', { count: selectionCount() })"
+          [cancelLabel]="t('common.cancel')"
+          (selectAllToggle)="toggleSelectAllOnPage($event)"
+          (clearSelection)="clearSelection()"
+          (bulkDelete)="bulkDeleteSelected()"
+        />
         <div class="lines-grid" animate.enter="grid-stagger">
           @for (line of lines(); track line.id) {
             <mat-card class="line-card" [class.line-card-selected]="selectedIds().has(line.id)">
