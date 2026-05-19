@@ -11,6 +11,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { MessageService } from '@core/api/message.service';
 import { DashboardService, DashboardSummary } from '@core/api/dashboard.service';
 import { BroadcastMessage } from '@shared/models';
+import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { StatsSkeletonComponent } from '@shared/components/skeleton/stats-skeleton.component';
 import { FeedCreditsComponent } from '@shared/components/feed-credits/feed-credits.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -46,6 +47,7 @@ type DashboardData = DashboardSummary | AgentView;
     MatIconModule,
     MatProgressBarModule,
     MatTooltipModule,
+    AdminPageHeaderComponent,
     StatsSkeletonComponent,
     FeedInfoCardComponent,
     DataOverviewCardComponent,

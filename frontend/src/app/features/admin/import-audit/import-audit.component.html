@@ -1,9 +1,10 @@
     <ng-container *transloco="let t">
     <div class="audit-page">
-      <div class="page-header">
-        <h1 class="page-title">{{ t('admin.importAudit.title') }}</h1>
-        <p class="page-subtitle">{{ t('admin.importAudit.subtitle') }}</p>
-      </div>
+      <app-admin-page-header
+        [title]="t('admin.importAudit.title')"
+        [subtitle]="t('admin.importAudit.subtitle')"
+        size="medium"
+      />
 
       <div class="toolbar">
         <button mat-flat-button color="primary"

@@ -17,6 +17,7 @@ import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confir
 import { Line, CreateLineRequest } from '@shared/models';
 import { LineDialogComponent } from './line-dialog.component';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
@@ -40,6 +41,7 @@ import { ADMIN_PAGE_SIZE_OPTIONS } from '@shared/utils/pagination.constants';
     MatSelectModule,
     MatFormFieldModule,
     RouterLink,
+    AdminPageHeaderComponent,
     CardSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,

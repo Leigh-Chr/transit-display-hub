@@ -1,12 +1,11 @@
 <ng-container *transloco="let t">
 <div class="messages-page">
-  <div class="page-header">
-    <h1 class="page-title">{{ t('admin.messages.title') }}</h1>
-    <button mat-flat-button color="primary" (click)="openCreateDialog()">
+  <app-admin-page-header [title]="t('admin.messages.title')">
+    <button actions mat-flat-button color="primary" (click)="openCreateDialog()">
       <mat-icon>add</mat-icon>
       {{ t('admin.messages.newMessage') }}
     </button>
-  </div>
+  </app-admin-page-header>
 
   <div class="toolbar">
     <app-search-input

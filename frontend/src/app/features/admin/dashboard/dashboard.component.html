@@ -1,6 +1,6 @@
 <ng-container *transloco="let t">
 <div class="dashboard">
-  <h1 class="page-title">{{ t('admin.dashboard.title') }}</h1>
+  <app-admin-page-header [title]="t('admin.dashboard.title')" />
 
   @if (isFreshInstall()) {
     <mat-card class="onboarding-card" animate.enter="fade-in">

@@ -1,8 +1,3 @@
-@use '../../../layouts/admin-layout/admin-page' as admin;
-
-.page-header { @include admin.crud-page-header; }
-.page-title { @include admin.crud-page-title; }
-
     .selector-card {
       margin-bottom: 28px;
       border-radius: var(--app-radius-md);

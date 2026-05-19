@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
+import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
@@ -19,6 +20,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
     RouterOutlet,
     MatTabsModule,
     MatIconModule,
+    AdminPageHeaderComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,12 +1,11 @@
     <ng-container *transloco="let t">
     <div class="users-page">
-      <div class="page-header">
-        <h1 class="page-title">{{ t('admin.users.title') }}</h1>
-        <button mat-flat-button color="primary" (click)="openCreateDialog()">
+      <app-admin-page-header [title]="t('admin.users.title')">
+        <button actions mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>person_add</mat-icon>
           {{ t('admin.users.newUser') }}
         </button>
-      </div>
+      </app-admin-page-header>
 
       <div class="toolbar">
         <app-search-input

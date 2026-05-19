@@ -1,12 +1,11 @@
     <ng-container *transloco="let t">
     <div class="devices-page">
-      <div class="page-header">
-        <h1 class="page-title">{{ t('admin.devices.title') }}</h1>
-        <button mat-flat-button color="primary" (click)="openCreateDialog()">
+      <app-admin-page-header [title]="t('admin.devices.title')">
+        <button actions mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>add</mat-icon>
           {{ t('admin.devices.registerDevice') }}
         </button>
-      </div>
+      </app-admin-page-header>
 
       <mat-form-field appearance="outline" class="status-filter">
         <mat-label>{{ t('admin.devices.filterStatus') }}</mat-label>

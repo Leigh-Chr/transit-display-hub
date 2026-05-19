@@ -1,8 +1,7 @@
     <ng-container *transloco="let t">
     <div class="lines-page">
-      <div class="page-header">
-        <h1 class="page-title">{{ t('admin.lines.title') }}</h1>
-        <div class="page-actions">
+      <app-admin-page-header [title]="t('admin.lines.title')">
+        <ng-container actions>
           <button
             mat-stroked-button
             type="button"
@@ -16,8 +15,8 @@
             <mat-icon>add</mat-icon>
             {{ t('admin.lines.newLine') }}
           </button>
-        </div>
-      </div>
+        </ng-container>
+      </app-admin-page-header>
 
       <div class="toolbar">
         <app-search-input

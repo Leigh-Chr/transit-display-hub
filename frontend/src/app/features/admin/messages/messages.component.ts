@@ -17,6 +17,7 @@ import { NotifyService } from '@core/services/notify.service';
 import { MessageService } from '@core/api/message.service';
 import { BroadcastMessage, MessageSeverity, CreateMessageRequest } from '@shared/models';
 import { MessageDialogComponent } from './message-dialog.component';
+import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
@@ -43,6 +44,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatFormFieldModule,
     MatPaginatorModule,
     MatTooltipModule,
+    AdminPageHeaderComponent,
     CardSkeletonComponent,
     EmptyStateComponent,
     SearchInputComponent,

@@ -1,5 +1,3 @@
-@use '../../../layouts/admin-layout/admin-page' as admin;
-
 .realtime-page { max-width: 1200px; }
 .occupancy-badge {
   display: inline-flex;
@@ -24,10 +22,6 @@
   background: var(--mat-sys-secondary-container);
   color: var(--mat-sys-on-secondary-container);
 }
-.page-header { @include admin.overview-page-header; }
-.page-title { @include admin.overview-page-title; }
-.page-subtitle { @include admin.overview-page-subtitle; }
-
 .tab-icon { margin-right: 6px; vertical-align: middle; }
 .tab-count {
   margin-left: 8px;

@@ -1,8 +1,8 @@
     <ng-container *transloco="let t">
     <div class="schedules-page">
-      <div class="page-header">
-        <h1 class="page-title">{{ t('admin.schedules.title') }}</h1>
+      <app-admin-page-header [title]="t('admin.schedules.title')">
         <button
+          actions
           mat-flat-button
           color="primary"
           (click)="openCreateDialog()"
@@ -11,7 +11,7 @@
           <mat-icon>add</mat-icon>
           {{ t('admin.schedules.newEntry') }}
         </button>
-      </div>
+      </app-admin-page-header>
 
       <mat-card class="selector-card">
         <mat-card-content>

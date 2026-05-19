@@ -10,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { NotifyService } from '@core/services/notify.service';
 import { RealtimeService } from '@core/api/realtime.service';
 import { RealtimeAlert, VehiclePosition } from '@shared/models';
+import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { CardSkeletonComponent } from '@shared/components/skeleton/card-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
@@ -41,6 +42,7 @@ import { severityLabel as severityLabelUtil } from '@shared/utils/severity-label
     MatTableModule,
     MatChipsModule,
     MatTooltipModule,
+    AdminPageHeaderComponent,
     CardSkeletonComponent,
     EmptyStateComponent,
     TableSkeletonComponent,

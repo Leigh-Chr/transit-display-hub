@@ -17,6 +17,7 @@ import { ScheduleService } from '@core/api/schedule.service';
 import { Stop, Schedule, CreateScheduleRequest } from '@shared/models';
 import { useLinesResource } from '@shared/admin/use-lines-resource';
 import { ScheduleDialogComponent } from './schedule-dialog.component';
+import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
 import { confirmAndDelete } from '@shared/admin/confirm-and-delete';
@@ -37,6 +38,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatSortModule,
     MatTooltipModule,
     RouterLink,
+    AdminPageHeaderComponent,
     TableSkeletonComponent,
     EmptyStateComponent,
     TranslocoDirective,
