@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Modularity pass — frontend-only audit + extract of nine shared admin
+components and one CRUD-dialog helper. The audit ran three parallel
+`Explore` agents over admin / display / shared zones, a re-audit caught
+two omissions (the helper and a `.full-width` global already in
+`styles.scss`), and a third pass surfaced a stray severity-icon clone.
+All findings are now closed.
+
+No backend code changes, no new runtime dependency, jscpd reports 0
+markup / scss / typescript clones in the frontend. Test suite grows
+to 1 178 specs (all green).
+
+### Added
+
+- **`AdminPageHeaderComponent`** — single header (title + actions slot +
+  optional subtitle, sm/lg variants). Replaces 11 inline copies.
+- **`AdminFilterToolbarComponent`** — wrapper for the search + filter
+  row sitting above every admin list, with the mobile breakpoint
+  baked in. Adopted by 6 features.
+- **`AdminBulkToolbarComponent`** — the select-all + count + cancel +
+  delete cluster used by lines and messages.
+- **`CrudDialogComponent`** — shell with `[title]`, `[submitLabel]`,
+  `[cancelLabel]`, `[submitDisabled]`, `[submitting]`, `(submitted)`,
+  and a `[wide]` variant for the messages dialog grid. Adopted by 7
+  CRUD dialogs.
+- **`openCrudDialog` helper** (`@shared/admin/open-crud-dialog`) —
+  centralises the `dialog.open → afterClosed → reload + notify` flow
+  with `onSuccess`. Adopted in 11 of the 12 admin call sites
+  (devices' cascade-to-token-dialog stays inline).
+- **`LineBadgeComponent`** — GTFS line code + colour, sm/md/lg sizes,
+  optional `textColor` for light palettes. Replaces ~8 inline copies.
+- **`StatusBadgeComponent`** — pill with neutral / success / warning /
+  critical / info tones and optional sm + uppercase modifiers.
+  Replaces the role-, status-, severity- and import-audit badges.
+- **`SeverityIconComponent`** — coloured square icon used in the
+  messages card (md) and the dashboard recent-messages list (sm).
+- **`DisplayConnectionWarningComponent`** — the floating
+  reconnecting / stale pill shared by hub + kiosk (was a 16-line
+  jscpd clone).
+- **`AuthCardComponent`** — centred gradient card shared by login +
+  change-password.
+
+### Changed
+
+- **`HubDisplayDialogComponent`** moved from `shared/components/` to
+  `features/admin/stops/` — its only caller.
+- **`schematic-map.scss`** — `accessibility-toggle` and
+  `zone-overlay-toggle` collapsed into a single `map-toggle-chip`
+  SCSS mixin parameterised by active colour (was the only intra-file
+  jscpd clone).
+
+### Removed
+
+- `_admin-page.scss` partial (`crud-page-header`, `crud-page-title`,
+  `crud-toolbar`, `overview-*` mixins) — every consumer migrated into
+  shared components.
+- `display-connection-warning` + `display-keyframes-connection-pulse`
+  mixins from `_display-base.scss` — now owned by the component.
+- Per-dialog `.full-width { width: 100% }` re-declarations in the 7
+  CRUD dialogs — `styles.scss` already exposes it as a global utility.
+
 ## [1.31.0] — 2026-05-19
 
 UX marathon — a single panoramic audit followed by a six-wave
