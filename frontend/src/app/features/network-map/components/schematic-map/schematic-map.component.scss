@@ -192,7 +192,7 @@
   min-width: 0;
 }
 
-.accessibility-toggle {
+@mixin map-toggle-chip($active-color) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -208,43 +208,27 @@
   transition: all var(--m3-duration-short3) var(--m3-easing-standard);
   user-select: none;
   letter-spacing: 0.04em;
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &.active {
+    background: $active-color;
+    border-color: $active-color;
+    color: white;
+  }
 }
-.accessibility-toggle:hover {
-  opacity: 0.85;
-}
-.accessibility-toggle.active {
-  background: var(--app-success);
-  border-color: var(--app-success);
-  color: white;
+
+.accessibility-toggle {
+  @include map-toggle-chip(var(--app-success));
 }
 .accessibility-label {
   font-size: var(--m3-type-label-small);
 }
 
 .zone-overlay-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 2px solid var(--app-map-chip-inactive);
-  border-radius: var(--app-radius-pill);
-  background: var(--app-map-surface);
-  color: var(--app-map-chip-inactive);
-  font-size: var(--m3-type-label-medium);
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all var(--m3-duration-short3) var(--m3-easing-standard);
-  user-select: none;
-  letter-spacing: 0.04em;
-}
-.zone-overlay-toggle:hover {
-  opacity: 0.85;
-}
-.zone-overlay-toggle.active {
-  background: rgb(99, 102, 241);
-  border-color: rgb(99, 102, 241);
-  color: white;
+  @include map-toggle-chip(rgb(99, 102, 241));
 }
 .zone-overlay-label {
   font-size: var(--m3-type-label-small);
