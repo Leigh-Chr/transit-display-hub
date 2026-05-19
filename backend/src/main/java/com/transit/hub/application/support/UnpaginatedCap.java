@@ -1,12 +1,15 @@
 package com.transit.hub.application.support;
 
+import com.transit.hub.application.dto.response.PageResponse;
 import org.slf4j.Logger;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Defensive cap for service methods that still return {@code List<T>}
@@ -65,5 +68,24 @@ public final class UnpaginatedCap {
                                             Logger log,
                                             String callerLabel) {
         return findAllCapped(repository, Sort.unsorted(), log, callerLabel);
+    }
+
+    /**
+     * Variant for services whose unpaginated entry-point delegates to
+     * the paginated one — the lambda receives a {@link Pageable} pinned
+     * to the first page of size {@link #MAX_ROWS} and returns the
+     * service's {@link PageResponse}, so callers never spell out the
+     * constant themselves. Warns when {@code totalPages > 1}, i.e. real
+     * data exceeded the cap.
+     */
+    public static <T> List<T> findAllCapped(Function<Pageable, PageResponse<T>> pagedFetcher,
+                                            Logger log,
+                                            String callerLabel) {
+        PageResponse<T> page = pagedFetcher.apply(PageRequest.of(0, MAX_ROWS));
+        if (page.totalPages() > 1) {
+            log.warn("{} capped at {} rows (totalElements={}); the caller should switch to a paginated endpoint",
+                    callerLabel, MAX_ROWS, page.totalElements());
+        }
+        return page.content();
     }
 }

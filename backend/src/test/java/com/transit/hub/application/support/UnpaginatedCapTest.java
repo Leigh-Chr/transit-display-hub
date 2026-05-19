@@ -1,5 +1,6 @@
 package com.transit.hub.application.support;
 
+import com.transit.hub.application.dto.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,6 +70,43 @@ class UnpaginatedCapTest {
         when(repository.findAll(any(Pageable.class))).thenReturn(page);
 
         List<String> result = UnpaginatedCap.findAllCapped(repository, log, "capped");
+
+        assertThat(result).hasSize(UnpaginatedCap.MAX_ROWS);
+        verify(log).warn(any(String.class), any(), any(), any());
+    }
+
+    @Test
+    void pagedFetcherVariant_passesAPageableMatchingTheConstantCap() {
+        AtomicReference<Pageable> received = new AtomicReference<>();
+
+        UnpaginatedCap.findAllCapped(pageable -> {
+            received.set(pageable);
+            return PageResponse.from(new PageImpl<>(List.of("a"), pageable, 1));
+        }, log, "paged-fetcher.matches-cap");
+
+        Pageable issued = received.get();
+        assertThat(issued.getPageSize()).isEqualTo(UnpaginatedCap.MAX_ROWS);
+        assertThat(issued.getPageNumber()).isZero();
+    }
+
+    @Test
+    void pagedFetcherVariant_returnsTheFetchedContentWhenTotalPagesIsOne() {
+        List<String> result = UnpaginatedCap.findAllCapped(pageable ->
+                PageResponse.from(new PageImpl<>(List.of("a", "b", "c"), pageable, 3)),
+                log, "paged-fetcher.below-cap");
+
+        assertThat(result).containsExactly("a", "b", "c");
+        verify(log, never()).warn(any(), any(), any(), any());
+    }
+
+    @Test
+    void pagedFetcherVariant_logsAWarningWhenTotalPagesExceedsOne() {
+        // totalElements = MAX_ROWS + 1 ⇒ totalPages = 2, the trigger condition.
+        List<String> capped = java.util.Collections.nCopies(UnpaginatedCap.MAX_ROWS, "row");
+
+        List<String> result = UnpaginatedCap.findAllCapped(pageable ->
+                PageResponse.from(new PageImpl<>(capped, pageable, UnpaginatedCap.MAX_ROWS + 1L)),
+                log, "paged-fetcher.over-cap");
 
         assertThat(result).hasSize(UnpaginatedCap.MAX_ROWS);
         verify(log).warn(any(String.class), any(), any(), any());

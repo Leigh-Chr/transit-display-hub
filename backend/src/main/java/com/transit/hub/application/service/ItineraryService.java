@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,13 +51,9 @@ public class ItineraryService {
     public List<ItineraryResponse> getAllItineraries() {
         // Defensive cap (audit P1 B-7): unpaginated path delegates to
         // the paginated implementation with a one-page cap.
-        PageResponse<ItineraryResponse> page = getAllItineraries(null, null,
-                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
-        if (page.totalPages() > 1) {
-            log.warn("getAllItineraries() capped at {} rows (totalElements={}); switch to the paginated endpoint",
-                    UnpaginatedCap.MAX_ROWS, page.totalElements());
-        }
-        return page.content();
+        return UnpaginatedCap.findAllCapped(
+                pageable -> getAllItineraries(null, null, pageable),
+                log, "ItineraryService.getAllItineraries");
     }
 
     @Transactional(readOnly = true)

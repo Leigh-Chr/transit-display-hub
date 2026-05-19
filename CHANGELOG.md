@@ -14,9 +14,13 @@ two omissions (the helper and a `.full-width` global already in
 `styles.scss`), and a third pass surfaced a stray severity-icon clone.
 All findings are now closed.
 
-No backend code changes, no new runtime dependency, jscpd reports 0
-markup / scss / typescript clones in the frontend. Test suite grows
-to 1 178 specs (all green).
+No new runtime dependency, jscpd reports 0 markup / scss / typescript
+clones in the frontend. Test suite grows to 1 178 specs (all green).
+
+A small backend follow-up extracts the cap-or-warn boilerplate that
+the three unpaginated-list services (`LineService`, `StopService`,
+`ItineraryService`) shared verbatim into a new `UnpaginatedCap`
+overload — same observability, fewer copies.
 
 ### Added
 
@@ -50,6 +54,12 @@ to 1 178 specs (all green).
 
 ### Changed
 
+- **`UnpaginatedCap.findAllCapped`** — new
+  `Function<Pageable, PageResponse<T>>` overload adopted by
+  `LineService.getAllLines`, `StopService.getAllStops` and
+  `ItineraryService.getAllItineraries`; their unpaginated entry
+  points shed the cap-or-warn boilerplate and route through the
+  shared helper with a stable log shape.
 - **`HubDisplayDialogComponent`** moved from `shared/components/` to
   `features/admin/stops/` — its only caller.
 - **`schematic-map.scss`** — `accessibility-toggle` and

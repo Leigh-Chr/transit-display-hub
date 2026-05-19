@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,13 +52,9 @@ public class StopService {
         // through the paginated implementation with a one-page cap so a
         // future feed with 30k stops does not blow memory on this
         // endpoint. Operators see a warning when the cap fires.
-        PageResponse<StopResponse> page = getAllStops(null, null,
-                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
-        if (page.totalPages() > 1) {
-            log.warn("getAllStops() capped at {} rows (totalElements={}); switch to the paginated endpoint",
-                    UnpaginatedCap.MAX_ROWS, page.totalElements());
-        }
-        return page.content();
+        return UnpaginatedCap.findAllCapped(
+                pageable -> getAllStops(null, null, pageable),
+                log, "StopService.getAllStops");
     }
 
     @Transactional(readOnly = true)

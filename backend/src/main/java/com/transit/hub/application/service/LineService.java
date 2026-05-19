@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,13 +55,9 @@ public class LineService {
         // the round trip while the rare caller (admin overview) gets
         // the same list shape it always did. Warns when the cap was
         // actually hit so operators see when to migrate to paging.
-        PageResponse<LineResponse> page = getAllLines(null,
-                PageRequest.of(0, UnpaginatedCap.MAX_ROWS));
-        if (page.totalPages() > 1) {
-            log.warn("getAllLines() capped at {} rows (totalElements={}); switch to the paginated endpoint",
-                    UnpaginatedCap.MAX_ROWS, page.totalElements());
-        }
-        return page.content();
+        return UnpaginatedCap.findAllCapped(
+                pageable -> getAllLines(null, pageable),
+                log, "LineService.getAllLines");
     }
 
     @Transactional(readOnly = true)
