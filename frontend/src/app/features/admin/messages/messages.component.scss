@@ -1,10 +1,3 @@
-@use '../../../layouts/admin-layout/admin-page' as admin;
-
-.toolbar {
-  @include admin.crud-toolbar;
-  align-items: center;
-}
-
 .severity-filter {
   width: 180px;
 }
@@ -149,11 +142,6 @@ mat-paginator {
 /* Enter animations defined globally — see styles.scss section 13a */
 
 @media (max-width: 600px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .severity-filter {
     width: 100%;
   }

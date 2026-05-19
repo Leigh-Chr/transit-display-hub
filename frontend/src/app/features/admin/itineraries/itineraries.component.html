@@ -15,7 +15,7 @@
     }
   </app-admin-page-header>
 
-  <div class="toolbar">
+  <app-admin-filter-toolbar>
     <mat-form-field appearance="outline" class="line-filter">
       <mat-label>{{ t('admin.itineraries.filterByLine') }}</mat-label>
       <mat-select [value]="lineId()" (selectionChange)="onLineChange($event.value)">
@@ -33,7 +33,7 @@
       [initialValue]="tableState.search"
       (searchChange)="tableState.onSearchChange($event)"
     />
-  </div>
+  </app-admin-filter-toolbar>
 
   @if (loading()) {
     <app-table-skeleton

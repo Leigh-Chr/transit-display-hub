@@ -13,7 +13,7 @@
     </button>
   </app-admin-page-header>
 
-  <div class="toolbar">
+  <app-admin-filter-toolbar>
     <mat-form-field appearance="outline" class="line-filter">
       <mat-label>{{ t('admin.stops.filterByLine') }}</mat-label>
       <mat-select [value]="lineId()" (selectionChange)="onLineChange($event.value)">
@@ -44,7 +44,7 @@
       <mat-icon aria-hidden="true">hub</mat-icon>
       {{ t('admin.stops.hubDisplay') }}
     </button>
-  </div>
+  </app-admin-filter-toolbar>
 
   @if (loading()) {
     <app-table-skeleton

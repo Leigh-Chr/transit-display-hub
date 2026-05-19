@@ -7,7 +7,7 @@
     </button>
   </app-admin-page-header>
 
-  <div class="toolbar">
+  <app-admin-filter-toolbar>
     <app-search-input
       [placeholder]="t('admin.messages.searchPlaceholder')"
       [initialValue]="tableState.search"
@@ -31,7 +31,7 @@
     >
       {{ t('admin.messages.activeOnly') }}
     </mat-checkbox>
-  </div>
+  </app-admin-filter-toolbar>
 
   @if (loading()) {
     <div class="messages-list">

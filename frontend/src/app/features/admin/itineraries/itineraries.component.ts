@@ -18,6 +18,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { Itinerary, UpdateItineraryStopsRequest, CreateItineraryRequest } from '@shared/models';
 import { ItineraryDialogComponent } from './itinerary-dialog.component';
 import { ItineraryStopsDialogComponent } from './itinerary-stops-dialog.component';
+import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
@@ -47,6 +48,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatChipsModule,
     MatTooltipModule,
     RouterLink,
+    AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
     LineBadgeComponent,
     TableSkeletonComponent,

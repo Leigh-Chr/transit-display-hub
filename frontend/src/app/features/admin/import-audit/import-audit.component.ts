@@ -13,6 +13,7 @@ import { GtfsDataService } from '@core/api/gtfs-data.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { NotifyService } from '@core/services/notify.service';
 import { ImportAudit, ImportStatus } from '@shared/models';
+import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { EmptyStateComponent } from '@shared/components/empty-state/empty-state.component';
@@ -42,6 +43,7 @@ import { bcp47 } from '@shared/utils/locale-date.utils';
     MatTooltipModule,
     MatExpansionModule,
     MatProgressSpinnerModule,
+    AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
     StatusBadgeComponent,
     EmptyStateComponent,

@@ -24,14 +24,7 @@
   margin-right: 8px;
 }
 
-.toolbar {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-    .toolbar app-search-input {
+    app-search-input {
       flex: 1;
     }
 

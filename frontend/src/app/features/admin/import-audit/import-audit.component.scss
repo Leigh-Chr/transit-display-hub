@@ -1,11 +1,5 @@
 .audit-page { max-width: 1300px; }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
     .muted { color: var(--mat-sys-on-surface-variant); font-size: var(--m3-type-body-medium); }
 
     .audit-table-wrapper {

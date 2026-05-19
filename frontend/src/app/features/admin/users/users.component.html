@@ -7,13 +7,13 @@
         </button>
       </app-admin-page-header>
 
-      <div class="toolbar">
+      <app-admin-filter-toolbar>
         <app-search-input
           [placeholder]="t('admin.users.searchPlaceholder')"
           [initialValue]="tableState.search"
           (searchChange)="tableState.onSearchChange($event)"
         />
-      </div>
+      </app-admin-filter-toolbar>
 
       @if (loading()) {
         <app-table-skeleton

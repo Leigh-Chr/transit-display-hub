@@ -13,6 +13,7 @@ import { UserService } from '@core/api/user.service';
 import { AuthService } from '@core/auth/auth.service';
 import { User, CreateUserRequest, UpdateUserRequest } from '@shared/models';
 import { UserDialogComponent } from './user-dialog.component';
+import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
@@ -37,6 +38,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatSortModule,
     MatPaginatorModule,
     MatTooltipModule,
+    AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
     StatusBadgeComponent,
     TableSkeletonComponent,

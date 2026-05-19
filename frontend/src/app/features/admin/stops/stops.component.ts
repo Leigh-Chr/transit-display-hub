@@ -22,6 +22,7 @@ import {
   HubDisplayDialogComponent,
   HubDisplayDialogResult,
 } from '@shared/components/hub-display-dialog/hub-display-dialog.component';
+import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
 import { TableSkeletonComponent } from '@shared/components/skeleton/table-skeleton.component';
@@ -49,6 +50,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
     MatPaginatorModule,
     MatTooltipModule,
     RouterLink,
+    AdminFilterToolbarComponent,
     AdminPageHeaderComponent,
     LineBadgeComponent,
     TableSkeletonComponent,
