@@ -1,20 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
-  MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
 import { Schedule, CreateScheduleRequest, LineInfo, Itinerary } from '@shared/models';
 import { ItineraryService } from '@core/api/itinerary.service';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { CrudDialogComponent } from '@shared/components/crud-dialog/crud-dialog.component';
+import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
 
 export interface ScheduleDialogData {
   entry?: Schedule;
@@ -28,22 +27,25 @@ export interface ScheduleDialogData {
   standalone: true,
   imports: [
     FormsModule,
-    MatDialogModule,
-    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
+    CrudDialogComponent,
+    LineBadgeComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-    <h2 mat-dialog-title>
-      {{ data.entry ? t('admin.schedules.dialog.titleEdit') : t('admin.schedules.dialog.titleCreate') }}
-    </h2>
-    <mat-dialog-content>
-      <form #scheduleForm="ngForm" class="form-container">
+    <app-crud-dialog
+      [title]="data.entry ? t('admin.schedules.dialog.titleEdit') : t('admin.schedules.dialog.titleCreate')"
+      [submitLabel]="data.entry ? t('admin.schedules.dialog.actionSave') : t('admin.schedules.dialog.actionCreate')"
+      [cancelLabel]="t('common.cancel')"
+      [submitDisabled]="!scheduleForm.valid || !form.itineraryId"
+      [submitting]="submitting()"
+      (submitted)="save()"
+    >
+      <form #scheduleForm="ngForm">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ t('admin.schedules.dialog.fieldItinerary') }}</mat-label>
           <mat-select
@@ -56,9 +58,7 @@ export interface ScheduleDialogData {
                 @for (itinerary of getItinerariesForLine(line.id!); track itinerary.id) {
                   <mat-option [value]="itinerary.id">
                     <span class="itinerary-option">
-                      <span class="line-badge-small" [style.backgroundColor]="line.color">
-                        {{ line.code }}
-                      </span>
+                      <app-line-badge [code]="line.code" [color]="line.color" />
                       {{ itinerary.terminusName || itinerary.name }}
                     </span>
                   </mat-option>
@@ -81,32 +81,10 @@ export interface ScheduleDialogData {
           <mat-error>{{ t('admin.schedules.dialog.fieldTimeRequired') }}</mat-error>
         </mat-form-field>
       </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!scheduleForm.valid || !form.itineraryId || submitting()"
-        (click)="save()"
-      >
-        @if (submitting()) {
-          <mat-progress-spinner mode="indeterminate" diameter="18" />
-        }
-        {{ data.entry ? t('admin.schedules.dialog.actionSave') : t('admin.schedules.dialog.actionCreate') }}
-      </button>
-    </mat-dialog-actions>
+    </app-crud-dialog>
     </ng-container>
   `,
   styles: `
-    .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: var(--app-dialog-min-width);
-      padding-top: 8px;
-    }
-
     .full-width {
       width: 100%;
     }
@@ -115,15 +93,6 @@ export interface ScheduleDialogData {
       display: flex;
       align-items: center;
       gap: 10px;
-    }
-
-    .line-badge-small {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: var(--app-line-badge-radius);
-      color: white;
-      font-size: var(--m3-type-label-medium);
-      font-weight: 600;
     }
   `,
 })

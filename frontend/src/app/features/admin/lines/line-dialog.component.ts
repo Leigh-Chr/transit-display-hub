@@ -1,19 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
-  MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
 import { Line, CreateLineRequest, LineType } from '@shared/models';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { CrudDialogComponent } from '@shared/components/crud-dialog/crud-dialog.component';
 
 export interface LineDialogData {
   line?: Line;
@@ -33,20 +31,24 @@ interface LineForm {
   standalone: true,
   imports: [
     FormsModule,
-    MatDialogModule,
-    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
+    CrudDialogComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-    <h2 mat-dialog-title>{{ data.line ? t('admin.lines.dialog.titleEdit') : t('admin.lines.dialog.titleCreate') }}</h2>
-    <mat-dialog-content>
-      <form #lineForm="ngForm" class="form-container">
+    <app-crud-dialog
+      [title]="data.line ? t('admin.lines.dialog.titleEdit') : t('admin.lines.dialog.titleCreate')"
+      [submitLabel]="data.line ? t('admin.lines.dialog.actionSave') : t('admin.lines.dialog.actionCreate')"
+      [cancelLabel]="t('common.cancel')"
+      [submitDisabled]="!lineForm.valid"
+      [submitting]="submitting()"
+      (submitted)="save()"
+    >
+      <form #lineForm="ngForm">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ t('admin.lines.dialog.fieldCode') }}</mat-label>
           <input
@@ -101,32 +103,10 @@ interface LineForm {
           />
         </div>
       </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!lineForm.valid || submitting()"
-        (click)="save()"
-      >
-        @if (submitting()) {
-          <mat-progress-spinner mode="indeterminate" diameter="18" />
-        }
-        {{ data.line ? t('admin.lines.dialog.actionSave') : t('admin.lines.dialog.actionCreate') }}
-      </button>
-    </mat-dialog-actions>
+    </app-crud-dialog>
     </ng-container>
   `,
   styles: `
-    .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: var(--app-dialog-min-width);
-      padding-top: 12px;
-    }
-
     .full-width {
       width: 100%;
     }

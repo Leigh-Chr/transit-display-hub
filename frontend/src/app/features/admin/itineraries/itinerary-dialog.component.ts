@@ -1,20 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
-  MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Itinerary, Line, CreateItineraryRequest } from '@shared/models';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { CrudDialogComponent } from '@shared/components/crud-dialog/crud-dialog.component';
 import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
 
 export interface ItineraryDialogData {
@@ -34,24 +32,26 @@ interface ItineraryForm {
   standalone: true,
   imports: [
     FormsModule,
-    MatDialogModule,
-    MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
+    CrudDialogComponent,
     LineBadgeComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-    <h2 mat-dialog-title>
-      {{ data.itinerary ? t('admin.itineraries.dialog.titleEdit') : t('admin.itineraries.dialog.titleCreate') }}
-    </h2>
-    <mat-dialog-content>
-      <form #itineraryForm="ngForm" class="form-container">
+    <app-crud-dialog
+      [title]="data.itinerary ? t('admin.itineraries.dialog.titleEdit') : t('admin.itineraries.dialog.titleCreate')"
+      [submitLabel]="data.itinerary ? t('admin.itineraries.dialog.actionSave') : t('admin.itineraries.dialog.actionCreate')"
+      [cancelLabel]="t('common.cancel')"
+      [submitDisabled]="!itineraryForm.valid"
+      [submitting]="submitting()"
+      (submitted)="save()"
+    >
+      <form #itineraryForm="ngForm">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ t('admin.itineraries.dialog.fieldLine') }}</mat-label>
           <mat-select
@@ -102,32 +102,10 @@ interface ItineraryForm {
           </p>
         }
       </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!itineraryForm.valid || submitting()"
-        (click)="save()"
-      >
-        @if (submitting()) {
-          <mat-progress-spinner mode="indeterminate" diameter="18" />
-        }
-        {{ data.itinerary ? t('admin.itineraries.dialog.actionSave') : t('admin.itineraries.dialog.actionCreate') }}
-      </button>
-    </mat-dialog-actions>
+    </app-crud-dialog>
     </ng-container>
   `,
   styles: `
-    .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: var(--app-dialog-min-width);
-      padding-top: 8px;
-    }
-
     .full-width {
       width: 100%;
     }

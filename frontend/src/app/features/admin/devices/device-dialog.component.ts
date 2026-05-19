@@ -1,19 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
-  MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Line, Stop, RegisterDeviceRequest, DeviceRegistration } from '@shared/models';
 import { StopService } from '@core/api/stop.service';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { CrudDialogComponent } from '@shared/components/crud-dialog/crud-dialog.component';
 
 export interface DeviceDialogData {
   lines: Line[];
@@ -31,19 +29,23 @@ interface DeviceForm {
   standalone: true,
   imports: [
     FormsModule,
-    MatDialogModule,
-    MatButtonModule,
     MatFormFieldModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
+    CrudDialogComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-      <h2 mat-dialog-title>{{ t('admin.devices.dialog.title') }}</h2>
-      <mat-dialog-content>
-        <form #deviceForm="ngForm" class="form-container">
+      <app-crud-dialog
+        [title]="t('admin.devices.dialog.title')"
+        [submitLabel]="t('admin.devices.dialog.actionRegister')"
+        [cancelLabel]="t('common.cancel')"
+        [submitDisabled]="!deviceForm.valid"
+        [submitting]="submitting()"
+        (submitted)="save()"
+      >
+        <form #deviceForm="ngForm">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>{{ t('admin.devices.dialog.fieldLine') }}</mat-label>
             <mat-select
@@ -79,32 +81,10 @@ interface DeviceForm {
             <mat-error>{{ t('admin.devices.dialog.fieldStopRequired') }}</mat-error>
           </mat-form-field>
         </form>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
-        <button
-          mat-flat-button
-          color="primary"
-          [disabled]="!deviceForm.valid || submitting()"
-          (click)="save()"
-        >
-          @if (submitting()) {
-            <mat-progress-spinner mode="indeterminate" diameter="18" />
-          }
-          {{ t('admin.devices.dialog.actionRegister') }}
-        </button>
-      </mat-dialog-actions>
+      </app-crud-dialog>
     </ng-container>
   `,
   styles: `
-    .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: var(--app-dialog-min-width);
-      padding-top: 8px;
-    }
-
     .full-width {
       width: 100%;
     }

@@ -1,14 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
-  MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
 import {
@@ -22,6 +19,7 @@ import {
 import { StopService } from '@core/api/stop.service';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { CrudDialogComponent } from '@shared/components/crud-dialog/crud-dialog.component';
 
 export interface MessageDialogData {
   message?: BroadcastMessage;
@@ -46,22 +44,25 @@ interface MessageForm {
   standalone: true,
   imports: [
     FormsModule,
-    MatDialogModule,
-    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
+    CrudDialogComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-    <h2 mat-dialog-title>
-      {{ data.message ? t('admin.messages.dialog.titleEdit') : t('admin.messages.dialog.titleCreate') }}
-    </h2>
-    <mat-dialog-content>
-      <form #messageForm="ngForm" class="form-container">
+    <app-crud-dialog
+      [title]="data.message ? t('admin.messages.dialog.titleEdit') : t('admin.messages.dialog.titleCreate')"
+      [submitLabel]="data.message ? t('admin.messages.dialog.actionSave') : t('admin.messages.dialog.actionCreate')"
+      [cancelLabel]="t('common.cancel')"
+      [submitDisabled]="!messageForm.valid || !isDateRangeValid()"
+      [submitting]="submitting()"
+      [wide]="true"
+      (submitted)="save()"
+    >
+      <form #messageForm="ngForm">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ t('admin.messages.dialog.fieldTitle') }}</mat-label>
           <input
@@ -181,32 +182,10 @@ interface MessageForm {
           </mat-form-field>
         </div>
       </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!messageForm.valid || !isDateRangeValid() || submitting()"
-        (click)="save()"
-      >
-        @if (submitting()) {
-          <mat-progress-spinner mode="indeterminate" diameter="18" />
-        }
-        {{ data.message ? t('admin.messages.dialog.actionSave') : t('admin.messages.dialog.actionCreate') }}
-      </button>
-    </mat-dialog-actions>
+    </app-crud-dialog>
     </ng-container>
   `,
   styles: `
-    .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: var(--app-dialog-min-width-lg);
-      padding-top: 8px;
-    }
-
     .full-width {
       width: 100%;
     }

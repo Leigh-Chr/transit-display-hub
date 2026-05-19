@@ -1,20 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
-  MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Observable } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { User, UserRole, CreateUserRequest, UpdateUserRequest } from '@shared/models';
 import { runDialogSubmit } from '@shared/admin/dialog-submit';
+import { CrudDialogComponent } from '@shared/components/crud-dialog/crud-dialog.component';
 
 export interface UserDialogData {
   user?: User;
@@ -28,23 +26,25 @@ export interface UserDialogData {
   standalone: true,
   imports: [
     FormsModule,
-    MatDialogModule,
-    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
     MatSlideToggleModule,
+    CrudDialogComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-    <h2 mat-dialog-title>
-      {{ data.user ? t('admin.users.dialog.titleEdit') : t('admin.users.dialog.titleCreate') }}
-    </h2>
-    <mat-dialog-content>
-      <form #userForm="ngForm" class="form-container">
+    <app-crud-dialog
+      [title]="data.user ? t('admin.users.dialog.titleEdit') : t('admin.users.dialog.titleCreate')"
+      [submitLabel]="data.user ? t('admin.users.dialog.actionSave') : t('admin.users.dialog.actionCreate')"
+      [cancelLabel]="t('common.cancel')"
+      [submitDisabled]="!isFormValid()"
+      [submitting]="submitting()"
+      (submitted)="save()"
+    >
+      <form #userForm="ngForm">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ t('admin.users.dialog.fieldUsername') }}</mat-label>
           <input
@@ -109,32 +109,10 @@ export interface UserDialogData {
           </div>
         }
       </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="submitting()">{{ t('common.cancel') }}</button>
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!isFormValid() || submitting()"
-        (click)="save()"
-      >
-        @if (submitting()) {
-          <mat-progress-spinner mode="indeterminate" diameter="18" />
-        }
-        {{ data.user ? t('admin.users.dialog.actionSave') : t('admin.users.dialog.actionCreate') }}
-      </button>
-    </mat-dialog-actions>
+    </app-crud-dialog>
     </ng-container>
   `,
   styles: `
-    .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: var(--app-dialog-min-width);
-      padding-top: 8px;
-    }
-
     .full-width {
       width: 100%;
     }
