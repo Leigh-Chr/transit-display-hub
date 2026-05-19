@@ -21,7 +21,7 @@ import { StopDialogComponent } from './stop-dialog.component';
 import {
   HubDisplayDialogComponent,
   HubDisplayDialogResult,
-} from '@shared/components/hub-display-dialog/hub-display-dialog.component';
+} from './hub-display-dialog/hub-display-dialog.component';
 import { AdminFilterToolbarComponent } from '@shared/components/admin-filter-toolbar/admin-filter-toolbar.component';
 import { AdminPageHeaderComponent } from '@shared/components/admin-page-header/admin-page-header.component';
 import { LineBadgeComponent } from '@shared/components/line-badge/line-badge.component';
