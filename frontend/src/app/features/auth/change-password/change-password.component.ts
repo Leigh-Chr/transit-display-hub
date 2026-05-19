@@ -1,9 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { NgOptimizedImage } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { NotifyService } from '@core/services/notify.service';
 import { AuthService } from '@core/auth/auth.service';
+import { AuthCardComponent } from '@shared/components/auth-card/auth-card.component';
 
 /** Minimum new-password length — must stay in sync with the backend
  *  {@code ChangePasswordRequest.newPassword @Size(min)} constraint. */
@@ -20,36 +19,29 @@ const MIN_PASSWORD_LENGTH = 12;
   selector: 'app-change-password',
   standalone: true,
   imports: [
-    NgOptimizedImage,
     FormsModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    AuthCardComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="change-password-container" *transloco="let t">
-      <mat-card class="change-password-card">
-        <mat-card-header>
-          <div class="change-password-brand">
-            <img ngSrc="assets/logo.png" width="72" height="72"
-                 [alt]="t('auth.login.logoAlt')" class="brand-logo" priority>
-            <h1 class="change-password-title">{{ t('auth.changePassword.title') }}</h1>
-            <p class="change-password-subtitle">{{ t('auth.changePassword.subtitle') }}</p>
-          </div>
-        </mat-card-header>
+    <ng-container *transloco="let t">
+      <app-auth-card
+        [title]="t('auth.changePassword.title')"
+        [subtitle]="t('auth.changePassword.subtitle')"
+        [logoAlt]="t('auth.login.logoAlt')"
+      >
+        <div class="must-change-notice" role="status">
+          <mat-icon>info</mat-icon>
+          {{ t('auth.changePassword.mustChangeNotice') }}
+        </div>
 
-        <mat-card-content>
-          <div class="must-change-notice" role="status">
-            <mat-icon>info</mat-icon>
-            {{ t('auth.changePassword.mustChangeNotice') }}
-          </div>
-
-          <form (ngSubmit)="onSubmit()" #form="ngForm">
+        <form (ngSubmit)="onSubmit()" #form="ngForm">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>{{ t('auth.changePassword.currentPassword') }}</mat-label>
               <mat-icon matPrefix>lock</mat-icon>
@@ -111,65 +103,10 @@ const MIN_PASSWORD_LENGTH = 12;
               }
             </button>
           </form>
-        </mat-card-content>
-      </mat-card>
-    </main>
+      </app-auth-card>
+    </ng-container>
   `,
   styles: `
-    .change-password-container {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(
-        135deg,
-        var(--app-auth-bg-from) 0%,
-        var(--app-auth-bg-via) 50%,
-        var(--app-auth-bg-to) 100%
-      );
-    }
-
-    .change-password-card {
-      width: 100%;
-      max-width: 460px;
-      padding: 24px;
-      border-radius: var(--app-radius-lg);
-    }
-
-    mat-card-header {
-      justify-content: center;
-      margin-bottom: 24px;
-    }
-
-    .change-password-brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-    }
-
-    .brand-logo {
-      width: 72px;
-      height: 72px;
-    }
-
-    .change-password-title {
-      font-size: var(--m3-type-headline-medium);
-      font-weight: 700;
-      color: var(--app-on-surface);
-      letter-spacing: -0.5px;
-      margin: 0;
-      text-align: center;
-    }
-
-    .change-password-subtitle {
-      color: var(--app-on-surface-variant);
-      font-size: var(--m3-type-body-medium);
-      margin: 0;
-      text-align: center;
-    }
-
     .must-change-notice {
       display: flex;
       align-items: center;

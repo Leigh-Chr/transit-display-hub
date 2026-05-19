@@ -1,46 +1,36 @@
 import { ChangeDetectionStrategy, Component, inject, isDevMode, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { NgOptimizedImage } from '@angular/common';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { NotifyService } from '@core/services/notify.service';
 import { AuthService } from '@core/auth/auth.service';
+import { AuthCardComponent } from '@shared/components/auth-card/auth-card.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
-    NgOptimizedImage,
     FormsModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
     MatDialogModule,
+    AuthCardComponent,
     TranslocoDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="login-container" *transloco="let t">
-      <mat-card class="login-card">
-        <mat-card-header>
-          <div class="login-brand">
-            <img ngSrc="assets/logo.png" width="72" height="72" [alt]="t('auth.login.logoAlt')" class="brand-logo" priority>
-            <h1 class="login-title">{{ t('common.appName') }}</h1>
-          </div>
-        </mat-card-header>
-
-        <mat-card-content>
-          <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+    <ng-container *transloco="let t">
+      <app-auth-card [title]="t('common.appName')" [logoAlt]="t('auth.login.logoAlt')">
+        <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>{{ t('auth.login.usernameLabel') }}</mat-label>
               <mat-icon matPrefix>person</mat-icon>
@@ -97,65 +87,14 @@ import { AuthService } from '@core/auth/auth.service';
               {{ t('auth.login.forgotPassword') }}
             </button>
           </form>
-        </mat-card-content>
 
-        @if (devMode) {
-          <mat-card-footer>
-            <p class="hint-text">{{ t('auth.login.devHint') }}</p>
-          </mat-card-footer>
-        }
-      </mat-card>
-    </main>
+          @if (devMode) {
+            <p footer class="hint-text">{{ t('auth.login.devHint') }}</p>
+          }
+      </app-auth-card>
+    </ng-container>
   `,
   styles: `
-    .login-container {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(
-        135deg,
-        var(--app-auth-bg-from) 0%,
-        var(--app-auth-bg-via) 50%,
-        var(--app-auth-bg-to) 100%
-      );
-    }
-
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      padding: 24px;
-      border-radius: var(--app-radius-lg);
-    }
-
-    mat-card-header {
-      justify-content: center;
-      margin-bottom: 32px;
-    }
-
-    .login-brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      width: 100%;
-    }
-
-    .brand-logo {
-      width: 72px;
-      height: 72px;
-    }
-
-    .login-title {
-      font-size: var(--m3-type-headline-medium);
-      font-weight: 700;
-      color: var(--app-on-surface);
-      letter-spacing: -0.5px;
-      margin: 0;
-      text-align: center;
-      width: 100%;
-    }
-
     .full-width {
       width: 100%;
     }
