@@ -106,10 +106,6 @@ interface ItineraryForm {
     </ng-container>
   `,
   styles: `
-    .full-width {
-      width: 100%;
-    }
-
     .line-option {
       display: flex;
       align-items: center;

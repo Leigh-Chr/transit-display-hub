@@ -85,10 +85,6 @@ export interface ScheduleDialogData {
     </ng-container>
   `,
   styles: `
-    .full-width {
-      width: 100%;
-    }
-
     .itinerary-option {
       display: flex;
       align-items: center;

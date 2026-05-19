@@ -186,10 +186,6 @@ interface MessageForm {
     </ng-container>
   `,
   styles: `
-    .full-width {
-      width: 100%;
-    }
-
     .datetime-row {
       display: grid;
       grid-template-columns: 1fr 1fr;

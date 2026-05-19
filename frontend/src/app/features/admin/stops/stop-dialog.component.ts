@@ -111,10 +111,6 @@ interface StopForm {
     </ng-container>
   `,
   styles: `
-    .full-width {
-      width: 100%;
-    }
-
     .coordinates-row {
       display: flex;
       gap: 16px;

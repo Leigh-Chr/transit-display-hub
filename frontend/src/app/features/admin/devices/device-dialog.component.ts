@@ -84,11 +84,6 @@ interface DeviceForm {
       </app-crud-dialog>
     </ng-container>
   `,
-  styles: `
-    .full-width {
-      width: 100%;
-    }
-  `,
 })
 export class DeviceDialogComponent {
   private readonly stopService = inject(StopService);

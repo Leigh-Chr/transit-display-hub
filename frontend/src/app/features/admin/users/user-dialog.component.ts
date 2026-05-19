@@ -113,10 +113,6 @@ export interface UserDialogData {
     </ng-container>
   `,
   styles: `
-    .full-width {
-      width: 100%;
-    }
-
     .role-option {
       display: flex;
       flex-direction: column;

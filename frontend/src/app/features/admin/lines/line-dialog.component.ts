@@ -107,10 +107,6 @@ interface LineForm {
     </ng-container>
   `,
   styles: `
-    .full-width {
-      width: 100%;
-    }
-
     .color-field {
       display: flex;
       gap: 14px;
