@@ -1,6 +1,7 @@
 package com.transit.hub.infrastructure.persistence;
 
 import com.transit.hub.domain.model.ItineraryStop;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -55,6 +56,12 @@ public interface ItineraryStopRepository extends JpaRepository<ItineraryStop, UU
            "WHERE is.itinerary.id = :itineraryId AND is.position > :removedPosition")
     int compactPositionsAbove(UUID itineraryId, int removedPosition);
 
+    /**
+     * Returns {@code null} when the itinerary has no stops (SQL {@code MAX}
+     * over an empty set) and when the itinerary id does not exist; callers
+     * (e.g. {@code ItineraryService#addStopToItinerary}) treat both as
+     * "start at position 0".
+     */
     @Query("SELECT MAX(is.position) FROM ItineraryStop is WHERE is.itinerary.id = :itineraryId")
-    Integer findMaxPositionByItineraryId(UUID itineraryId);
+    @Nullable Integer findMaxPositionByItineraryId(UUID itineraryId);
 }

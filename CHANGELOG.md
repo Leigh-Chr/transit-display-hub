@@ -67,6 +67,16 @@ overload — same observability, fewer copies.
   SCSS mixin parameterised by active colour (was the only intra-file
   jscpd clone).
 
+### Fixed
+
+- Adding the first stop to an empty itinerary returned HTTP 500
+  instead of 201. Cause: `ItineraryStopRepository.findMaxPositionByItineraryId`
+  declared a non-nullable `Integer` return, but `SELECT MAX(...)` over
+  an empty set yields `null` — which Spring Data 4's nullness validator
+  (now strict against the `@NullMarked` persistence package) rejects
+  with `EmptyResultDataAccessException`. The method is now annotated
+  `@Nullable`; callers already handled the null contract.
+
 ### Removed
 
 - `_admin-page.scss` partial (`crud-page-header`, `crud-page-title`,
